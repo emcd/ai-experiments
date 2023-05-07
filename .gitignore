@@ -1,3 +1,6 @@
 .ipynb_checkpoints/
+.local/environments/
+.local/installations/
+.local/utilities/
 credentials.toml
 langchain-venv/

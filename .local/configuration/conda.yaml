@@ -1,0 +1,7 @@
+name: langchain
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python >=3.10,<3.11
+  - faiss-cpu
