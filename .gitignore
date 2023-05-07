@@ -3,4 +3,5 @@
 .local/installations/
 .local/utilities/
 credentials.toml
-langchain-venv/
+scrapes/
+vectorstore.pypickle

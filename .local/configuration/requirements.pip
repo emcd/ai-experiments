@@ -5,5 +5,7 @@ langchain
 notebook
 openai
 panel
+pytesseract
 tiktoken
 tomli
+unstructured
