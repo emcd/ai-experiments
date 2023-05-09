@@ -1,0 +1,3 @@
+[submodule "data-sources/github/langchain"]
+	path = data-sources/github/langchain
+	url = https://github.com/hwchase17/langchain.git

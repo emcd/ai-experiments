@@ -75,6 +75,9 @@ def store_embeddings( documents ):
 def main( ):
     from pprint import pprint
     openai_credentials = provide_openai_credentials( )
+    # TODO: Loop over entries in a manifest file,
+    #       which specify locations in the 'data-sources' directory
+    #       or perhaps OpenAPI or GraphQL schema endpoints.
     documents = ingest_directory( '../THIRD_PARTY/langchain/docs' )
     from tiktoken import get_encoding
     encoding = get_encoding( 'cl100k_base' )
