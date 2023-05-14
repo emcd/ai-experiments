@@ -6,6 +6,7 @@ notebook
 openai
 panel
 pytesseract
+scrapy
 tiktoken
 tomli
 unstructured
