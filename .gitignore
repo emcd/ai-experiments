@@ -3,5 +3,5 @@
 .local/installations/
 .local/utilities/
 credentials.toml
-scrapes/
+data-sources/readthedocs/
 vectorstore.pypickle

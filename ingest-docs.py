@@ -11,47 +11,33 @@ def provide_openai_credentials( ):
         openai_organization = credentials['openai']['organization'] )
 
 
-def ingest_directory( location ):
-    from langchain.document_loaders import DirectoryLoader
-    documents = [ ]
-    for glob, control in DELEGATE_LOADERS.items( ):
-        subloader_class = control[ 'loader_class' ]
-        splitter = control[ 'splitter' ]
-        loader = DirectoryLoader(
-            location, glob = glob, loader_cls = subloader_class )
-        documents.extend( splitter.split_documents( loader.load( ) ) )
-    return documents
-
-
 def _provide_delegate_loaders( ):
     from types import MappingProxyType as DictionaryProxy
-    from langchain.document_loaders import(
-        NotebookLoader,
-        PythonLoader,
-        UnstructuredFileLoader,
-        UnstructuredMarkdownLoader,
-    )
-    from langchain.text_splitter import (
-        PythonCodeTextSplitter,
-        RecursiveCharacterTextSplitter,
-    )
-    python_splitter = PythonCodeTextSplitter(
-        chunk_size = 30, chunk_overlap = 0 )
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size = 1000, chunk_overlap = 200 )
     return DictionaryProxy( {
         '**/*.ipynb': DictionaryProxy( dict(
-            loader_class = NotebookLoader,
-            splitter = text_splitter, ) ),
+            loader_class = 'NotebookLoader',
+            splitter = {
+                'class': 'RecursiveCharacterTextSplitter',
+                'args': { 'chunk_size': 1000, 'chunk_overlap': 200 },
+            } ) ),
         '**/*.md': DictionaryProxy( dict(
-            loader_class = UnstructuredMarkdownLoader,
-            splitter = text_splitter, ) ),
+            loader_class = 'UnstructuredMarkdownLoader',
+            splitter = {
+                'class': 'RecursiveCharacterTextSplitter',
+                'args': { 'chunk_size': 1000, 'chunk_overlap': 200 },
+            } ) ),
         '**/*.py': DictionaryProxy( dict(
-            loader_class = PythonLoader,
-            splitter = python_splitter, ) ),
+            loader_class = 'PythonLoader',
+            splitter = {
+                'class': 'PythonCodeTextSplitter',
+                'args': { 'chunk_size': 30, 'chunk_overlap': 0 },
+            } ) ),
         '**/*.rst': DictionaryProxy( dict(
-            loader_class = UnstructuredFileLoader,
-            splitter = text_splitter, ) ),
+            loader_class = 'UnstructuredFileLoader',
+            splitter = {
+                'class': 'RecursiveCharacterTextSplitter',
+                'args': { 'chunk_size': 1000, 'chunk_overlap': 200 },
+            } ) ),
     } )
 
 DELEGATE_LOADERS = _provide_delegate_loaders( )
@@ -72,19 +58,69 @@ def store_embeddings( documents ):
         dump( vectorstore, file )
 
 
+def load_manifest_file( manifest_path ):
+    import tomli as tomllib
+    with open( manifest_path, 'rb' ) as manifest_file:
+        manifest = tomllib.load( manifest_file )
+    return manifest[ 'repositories' ]
+
+
+def ingest_source( source_config ):
+    source_type = source_config[ 'type' ]
+    source_path = source_config[ 'path' ]
+    delegate_loaders = DELEGATE_LOADERS.copy( )
+    if 'config' in source_config:
+        for pattern, config in source_config[ 'config' ].items( ):
+            delegate_loaders[ pattern ] = config
+    for pattern, control in delegate_loaders.items( ):
+        splitter = _instantiate_splitter( control[ 'splitter' ] )
+        control[ 'splitter' ] = splitter
+        loader_class = _get_loader_class( control[ 'loader_class' ] )
+        control[ 'loader_class' ] = loader_class
+    if source_type == 'directory':
+        return ingest_directory( source_path, delegate_loaders )
+    elif source_type in { 'openapi', 'graphql' }:
+        # TODO: Handle remote URLs for OpenAPI/GraphQL schemas
+        pass
+    else: raise ValueError( f"Unsupported source type: {source_type}" )
+
+
+def ingest_directory( location, delegate_loaders ):
+    from langchain.document_loaders import DirectoryLoader
+    documents = [ ]
+    for glob, control in delegate_loaders.items( ):
+        subloader_class = control[ 'loader_class' ]
+        splitter = control[ 'splitter' ]
+        loader = DirectoryLoader(
+            location, glob = glob, loader_cls = subloader_class )
+        documents.extend( splitter.split_documents( loader.load( ) ) )
+    return documents
+
+
+def _get_loader_class( class_name ):
+    from importlib import import_module
+    module = import_module( 'langchain.document_loaders' )
+    return getattr( module, class_name )
+
+
+def _instantiate_splitter( info ):
+    from importlib import import_module
+    module = import_module( 'langchain.text_splitter' )
+    return getattr( module, info[ 'class' ] )( **info[ 'args' ] )
+
+
 def main( ):
-    from pprint import pprint
     openai_credentials = provide_openai_credentials( )
-    # TODO: Loop over entries in a manifest file,
-    #       which specify locations in the 'data-sources' directory
-    #       or perhaps OpenAPI or GraphQL schema endpoints.
-    documents = ingest_directory( '../THIRD_PARTY/langchain/docs' )
+    manifest_path = 'data-sources/manifest.toml'
+    repositories = load_manifest_file( manifest_path )
     from tiktoken import get_encoding
     encoding = get_encoding( 'cl100k_base' )
-    print( sum(
-        len( encoding.encode( document.page_content ) )
-        for document in documents ) )
-    store_embeddings( documents )
+    for repo_config in repositories:
+        documents = ingest_source( repo_config )
+        print( sum(
+            len( encoding.encode( document.page_content ) )
+            for document in documents ) )
+        store_embeddings( documents )
 
 
 if '__main__' == __name__: main( )

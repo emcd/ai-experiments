@@ -1,0 +1,12 @@
+[[repositories]]
+type = "directory"
+path = "github/langchain/docs"
+
+#[[repositories]]
+#type = "openapi"
+#path = "https://api.example.com/v1/openapi.json"
+#
+#[[repositories]]
+#type = "directory"
+#path = "another_repo/docs"
+#config = { '**/*.md' = { loader_class = "UnstructuredMarkdownLoader", splitter = { class = "RecursiveCharacterTextSplitter", args = { chunk_size = 1200, chunk_overlap = 300 } } } }
