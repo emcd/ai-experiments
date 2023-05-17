@@ -1,7 +1,11 @@
 [[repositories]]
-type = "directory"
-path = "github/langchain/docs"
+type = "websites"
+path = "data-sources/websites/sphinx.json"
 
+#[[repositories]]
+#type = "directory"
+#path = "github/langchain/docs"
+#
 #[[repositories]]
 #type = "openapi"
 #path = "https://api.example.com/v1/openapi.json"

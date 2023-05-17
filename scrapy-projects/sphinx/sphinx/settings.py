@@ -13,7 +13,7 @@ SPIDER_MODULES = ["sphinx.spiders"]
 NEWSPIDER_MODULE = "sphinx.spiders"
 
 FEED_FORMAT = 'json'
-FEED_URI = '../../../data-sources/websites/sphinx.json'
+FEED_URI = '../../data-sources/websites/sphinx.json'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent

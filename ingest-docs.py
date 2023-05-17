@@ -14,30 +14,30 @@ def provide_openai_credentials( ):
 def _provide_delegate_loaders( ):
     from types import MappingProxyType as DictionaryProxy
     return DictionaryProxy( {
-        '**/*.ipynb': DictionaryProxy( dict(
+        '**/*.ipynb': dict(
             loader_class = 'NotebookLoader',
             splitter = {
                 'class': 'RecursiveCharacterTextSplitter',
                 'args': { 'chunk_size': 1000, 'chunk_overlap': 200 },
-            } ) ),
-        '**/*.md': DictionaryProxy( dict(
+            } ),
+        '**/*.md': dict(
             loader_class = 'UnstructuredMarkdownLoader',
             splitter = {
                 'class': 'RecursiveCharacterTextSplitter',
                 'args': { 'chunk_size': 1000, 'chunk_overlap': 200 },
-            } ) ),
-        '**/*.py': DictionaryProxy( dict(
+            } ),
+        '**/*.py': dict(
             loader_class = 'PythonLoader',
             splitter = {
                 'class': 'PythonCodeTextSplitter',
                 'args': { 'chunk_size': 30, 'chunk_overlap': 0 },
-            } ) ),
-        '**/*.rst': DictionaryProxy( dict(
+            } ),
+        '**/*.rst': dict(
             loader_class = 'UnstructuredFileLoader',
             splitter = {
                 'class': 'RecursiveCharacterTextSplitter',
                 'args': { 'chunk_size': 1000, 'chunk_overlap': 200 },
-            } ) ),
+            } ),
     } )
 
 DELEGATE_LOADERS = _provide_delegate_loaders( )
@@ -77,7 +77,9 @@ def ingest_source( source_config ):
         control[ 'splitter' ] = splitter
         loader_class = _get_loader_class( control[ 'loader_class' ] )
         control[ 'loader_class' ] = loader_class
-    if source_type == 'directory':
+    if source_type == 'websites':
+        return ingest_websites( source_path )
+    elif source_type == 'directory':
         return ingest_directory( source_path, delegate_loaders )
     elif source_type in { 'openapi', 'graphql' }:
         # TODO: Handle remote URLs for OpenAPI/GraphQL schemas
@@ -97,6 +99,22 @@ def ingest_directory( location, delegate_loaders ):
     return documents
 
 
+def ingest_websites( file_path ):
+    from json import load
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    with open( file_path, 'r' ) as file: scraped_data = load( file )
+    contents = [ ]
+    metadatas = [ ]
+    for data in scraped_data:
+        contents.append( data[ 'content' ] )
+        metadata = { 'url': data[ 'url' ], 'title': data[ 'title' ] }
+        metadatas.append( metadata )
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size = 1000, chunk_overlap = 200 )
+    documents = splitter.create_documents( contents, metadatas = metadatas )
+    return documents
+
+
 def _get_loader_class( class_name ):
     from importlib import import_module
     module = import_module( 'langchain.document_loaders' )
@@ -109,6 +127,8 @@ def _instantiate_splitter( info ):
     return getattr( module, info[ 'class' ] )( **info[ 'args' ] )
 
 
+COST_PER_THOUSAND_TOKENS = 0.0004
+
 def main( ):
     openai_credentials = provide_openai_credentials( )
     manifest_path = 'data-sources/manifest.toml'
@@ -117,10 +137,14 @@ def main( ):
     encoding = get_encoding( 'cl100k_base' )
     for repo_config in repositories:
         documents = ingest_source( repo_config )
-        print( sum(
+        total_tokens = sum(
             len( encoding.encode( document.page_content ) )
-            for document in documents ) )
-        store_embeddings( documents )
+            for document in documents )
+        cost = ( total_tokens / 1000 ) * COST_PER_THOUSAND_TOKENS
+        print( f"Total Tokens: {total_tokens}; Cost to Embed: ${cost:.4f}" )
+        confirmation = input( "Proceed with embedding? (y/n): " ).lower( )
+        if 'y' == confirmation: store_embeddings( documents )
+        else: print( "Embedding skipped." )
 
 
 if '__main__' == __name__: main( )

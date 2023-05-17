@@ -4,5 +4,5 @@ __pycache__/
 .local/installations/
 .local/utilities/
 credentials.toml
-data-sources/readthedocs/
+data-sources/websites/
 vectorstore.pypickle
