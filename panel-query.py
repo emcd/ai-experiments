@@ -10,7 +10,7 @@ def create_prompt( query, docs, initial_system_message ):
     prompt = [ initial_system_message ]
     prompt.append(
         "Additionally, you have the following pieces of supplemental "
-        "information available to you to help you accurately respond:" )
+        "information available to help you accurately respond:" )
     for i, doc in enumerate( docs ):
         prompt.append( f"## Supplement {i + 1}\n{doc.page_content}" )
     system_message = '\n\n'.join( prompt )
