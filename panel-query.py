@@ -1,42 +1,23 @@
-def load_vectorstore( ):
-    from pathlib import Path
-    from pickle import load
-    vectorstore_path = Path( 'vectorstore.pypickle' )
-    with vectorstore_path.open( 'rb' ) as file: vectorstore = load( file )
-    return vectorstore
-
-
-def create_prompt( layout_items, docs ):
-    query = layout_items[ 'left' ][ 'text_input_user' ].value
-    system_message = layout_items[ 'left' ][ 'text_input_system' ].value
-    prompt = [ system_message ]
-    prompt.append(
-        "Additionally, you have the following pieces of supplemental "
-        "information available to help you accurately respond:" )
-    for i, doc in enumerate( docs ):
-        prompt.append( f"## Supplement {i + 1}\n{doc.page_content}" )
-    system_message = '\n\n'.join( prompt )
-    messages = [ { 'role' : 'system', 'content' : system_message } ]
-    for item in layout_items[ 'right' ][ 'conversation_history' ]:
-        if item[ 0 ].value:  # if checkbox is checked
-            role = 'user' if item[ 1 ].object == 'Human' else 'assistant'
-            content = item[ 2 ].object
-            messages.append( { 'role': role, 'content': content } )
-    return messages
-
-
-def add_to_conversation( role, content, layout_items ):
-    from panel import Row
+def add_to_conversation( role, content, gui_items, kind = '' ):
+    from panel import Column, Row
     from panel.pane import Markdown
-    from panel.widgets import Checkbox
-    conversation_history = layout_items[ 'right' ][ 'conversation_history' ]
-    token_count = count_tokens( content )
-    checkbox = Checkbox( value = True, width = 20 )
+    from panel.widgets import Checkbox, StaticText
+    conversation_history = gui_items[ 'center' ][ 'conversation_history' ]
+    checkbox = Checkbox( value = True )
     checkbox.param.watch(
-        lambda event: update_token_count( layout_items ), 'value' )
-    message_cell = Markdown( content, width = 500 )
+        lambda event: update_token_count( gui_items ), 'value' )
+    if 'supplement' == kind:
+        content = f'''## Supplement ##\n\n{content}'''
+        message_cell = StaticText(
+            sizing_mode = 'stretch_both', value = content )
+    else:
+        message_cell = Markdown( content, sizing_mode = 'stretch_both' )
     message_cell.metadata = { 'tokens': count_tokens( content ) }
-    new_item = Row( checkbox, role, message_cell )
+    new_item = Row(
+        Column( f"**{role}**", checkbox ),
+        message_cell,
+        # TODO: Copy button, edit button, etc...
+    )
     conversation_history.append( new_item )
     return new_item
 
@@ -47,111 +28,86 @@ def count_tokens( content ):
     return len( encoding.encode( content ) )
 
 
-def update_token_count( layout_items ):
-    total_tokens = 0
-    for item in layout_items[ 'right' ][ 'conversation_history' ]:
-        checkbox, _, message_cell = item
-        if checkbox.value:
-            total_tokens += message_cell.metadata[ 'tokens' ]
-    total_tokens += count_tokens(
-        layout_items[ 'left' ][ 'text_input_user' ].value )
-    total_tokens += count_tokens(
-        layout_items[ 'left' ][ 'text_input_system' ].value )
-    layout_items[ 'left' ][ 'token_counter' ].value = total_tokens
-
-
-def run_query( event, layout_items, vectorstore ):
-    from openai import ChatCompletion
-    query = layout_items[ 'left' ][ 'text_input_user' ].value
-    add_to_conversation( 'Human', query, layout_items )
-    rows_results = layout_items[ 'left' ][ 'rows_results' ]
-    docs = vectorstore.similarity_search( query, k = len( rows_results ) )
-    for i, doc in enumerate( docs ):
-        rows_results[ i ][ 1 ].value = doc.page_content
-    messages = create_prompt( layout_items, docs )
-    response = ChatCompletion.create(
-        model = 'gpt-3.5-turbo',
-        messages = messages,
-        temperature = 0,
-    )
-    add_to_conversation(
-        'AI', response.choices[ 0 ].message[ 'content' ], layout_items )
-    layout_items[ 'left' ][ 'text_input_user' ].value = ''
-
-
-def layout_gui( vectorstore, number_of_results ):
+def create_dashboard( gui_items ):
     from panel import Column, Row
-    from panel.widgets import Button, IntInput, TextInput
-    layout_items = {
+    from panel.layout import HSpacer
+    return Row(
+        Column( *gui_items[ 'left' ].values( ), width = 640 ),
+        Row(
+            HSpacer( ),
+            Column(
+                *gui_items[ 'center' ].values( ),
+                sizing_mode = 'stretch_height', width = 1024 ),
+            HSpacer( ),
+            Column( *gui_items[ 'right' ].values( ) ),
+        )
+    )
+
+def generate_messages( gui_items ):
+    system_message = gui_items[ 'center' ][ 'text_input_system' ].value
+    # TODO: Set role for system message according to chat model.
+    messages = [ { 'role' : 'user', 'content' : system_message } ]
+    for item in gui_items[ 'center' ][ 'conversation_history' ]:
+        if not item[ 0 ][ 1 ].value: continue # if checkbox is not checked
+        role = 'user' if item[ 0 ][ 0 ].object == 'Human' else 'assistant'
+        content = item[ 1 ].object
+        messages.append( { 'role': role, 'content': content } )
+    return messages
+
+
+def layout_gui( ):
+    from panel import Column
+    from panel.widgets import Button, IntInput, IntSlider
+    from panel.widgets.input import TextAreaInput
+    gui_items = {
         'left': {
-            'text_input_user': TextInput(
-                value = '', placeholder = 'Enter user message here...' ),
-            'text_input_system': TextInput(
-                value = '', placeholder = 'Enter system message here...' ),
-            'button_run': Button( name = 'Run Query' ),
-            'rows_results': Column(
-                *( Row( str( i ), TextInput( value = '', width = 640 ) )
-                for i in range( number_of_results ) ) ),
+            'conversations_index': Column( ),
+        },
+        'center': {
+            'text_input_system': TextAreaInput(
+                height_policy = 'fit',
+                max_height = 480,
+                name = 'System Message',
+                placeholder = 'Enter system message here...', value = '' ),
+            'conversation_history': Column( sizing_mode = 'stretch_both' ),
+            'text_input_user': TextAreaInput(
+                align = ( 'start', 'end' ),
+                height_policy = 'fit',
+                max_height = 480,
+                name = 'User Message',
+                placeholder = 'Enter user message here...', value = '' ),
+        },
+        'right': {
+            'button_chat': Button( name = 'Chat' ),
+            'button_query': Button( name = 'Query' ),
+            'slider_documents_count': IntSlider(
+                name = 'Number of Documents',
+                start = 0, end = 5, step = 1, value = 3 ),
             'token_counter': IntInput(
                 name = 'Token Counter', value = 0, disabled = True ),
         },
-        'right': {
-            'conversation_history': Column(
-                sizing_mode = 'stretch_height', width = 640 ),
-        },
     }
-    layout_items[ 'left' ][ 'text_input_user' ].param.watch(
-        lambda event: update_token_count( layout_items ), 'value' )
-    layout_items[ 'left' ][ 'text_input_system' ].param.watch(
-        lambda event: update_token_count( layout_items ), 'value' )
-    layout_items[ 'left' ][ 'button_run' ].on_click(
-        lambda event: run_query( event, layout_items, vectorstore ) )
-    dashboard = Row(
-        Column( *layout_items[ 'left' ].values( ) ),
-        layout_items[ 'right' ][ 'conversation_history' ],
-    )
-    return dashboard
+    return create_dashboard( gui_items ), gui_items
 
 
-#def run_query( event, layout_items, vectorstore ):
-#    from openai import ChatCompletion
-#    query = layout_items[ 'text_input_user' ].value
-#    system_message = layout_items[ 'text_input_system' ].value
-#    rows_results = layout_items[ 'rows_results' ]
-#    docs = vectorstore.similarity_search( query, k = len( rows_results ) )
-#    for i, doc in enumerate( docs ):
-#        rows_results[ i ][ 1 ].object = doc.page_content
-#    messages = create_prompt( query, docs, system_message )
-#    response = ChatCompletion.create(
-#        model = 'gpt-3.5-turbo',
-#        messages = messages,
-#        temperature = 0, )
-#    layout_items[ 'token_counter' ].value = response.usage[ 'total_tokens' ]
-#    layout_items[ 'answer_display' ].object = (
-#        response.choices[ 0 ].message[ 'content' ] )
-#
-#
-#def layout_gui( vectorstore, number_of_results ):
-#    from panel import Column, Row
-#    from panel.pane import Markdown
-#    from panel.widgets import Button, IntInput, TextInput
-#    layout_items = dict(
-#        text_input_user = TextInput(
-#            value = '', placeholder = 'Enter user message here...' ),
-#        text_input_system = TextInput(
-#            value = '', placeholder = 'Enter system message here...' ),
-#        button_run = Button( name = 'Run Query' ),
-#        rows_results = Column(
-#            *(Row( f"{i}", Markdown( '', width = 640, ) )
-#              for i in range( number_of_results ) ) ),
-#        token_counter = IntInput(
-#            name = 'Token Counter', value = 0, disabled = True, ),
-#        answer_display = Markdown( '', width = 640, ),
-#    )
-#    dashboard = Column( *layout_items.values( ) )
-#    layout_items[ 'button_run' ].on_click(
-#        lambda event : run_query( event, layout_items, vectorstore ) )
-#    return dashboard
+def load_vectorstore( ):
+    from pathlib import Path
+    from pickle import load
+    vectorstore_path = Path( 'vectorstore.pypickle' )
+    with vectorstore_path.open( 'rb' ) as file: vectorstore = load( file )
+    return vectorstore
+
+
+def main( ):
+    import openai
+    import panel
+    openai_credentials = provide_credentials( )
+    openai.api_key = openai_credentials[ 'openai_api_key' ]
+    openai.organization = openai_credentials[ 'openai_organization' ]
+    dashboard, gui_items = layout_gui( )
+    vectorstore = load_vectorstore( )
+    register_gui_callbacks( gui_items, vectorstore )
+    panel.serve( dashboard, start = True )
 
 
 def provide_credentials( ):
@@ -164,16 +120,56 @@ def provide_credentials( ):
         openai_organization = credentials[ 'openai' ][ 'organization' ] )
 
 
-def main( ):
-    import openai
-    import panel
-    openai_credentials = provide_credentials( )
-    openai.api_key = openai_credentials[ 'openai_api_key' ]
-    openai.organization = openai_credentials[ 'openai_organization' ]
-    vectorstore = load_vectorstore( )
-    dashboard = layout_gui(
-        vectorstore = load_vectorstore( ), number_of_results = 3 )
-    panel.serve( dashboard, start = True )
+def register_gui_callbacks( gui_items, vectorstore ):
+    gui_items[ 'right' ][ 'button_chat' ].on_click(
+        lambda event: run_chat( event, gui_items ) )
+    gui_items[ 'right' ][ 'button_query' ].on_click(
+        lambda event: run_query( event, gui_items, vectorstore ) )
+    gui_items[ 'center' ][ 'text_input_system' ].param.watch(
+        lambda event: update_token_count( gui_items ), 'value' )
+    gui_items[ 'center' ][ 'text_input_user' ].param.watch(
+        lambda event: update_token_count( gui_items ), 'value' )
+
+
+def run_chat( event, gui_items ):
+    from openai import ChatCompletion
+    query = gui_items[ 'center' ][ 'text_input_user' ].value
+    if query:
+        add_to_conversation( 'Human', query, gui_items )
+        gui_items[ 'center' ][ 'text_input_user' ].value = ''
+    messages = generate_messages( gui_items )
+    response = ChatCompletion.create(
+        messages = messages, model = 'gpt-3.5-turbo', temperature = 0 )
+    add_to_conversation(
+        'AI', response.choices[ 0 ].message[ 'content' ], gui_items )
+    update_token_count( gui_items )
+
+
+def run_query( event, gui_items, vectorstore ):
+    query = gui_items[ 'center' ][ 'text_input_user' ].value
+    if not query: return
+    add_to_conversation( 'Human', query, gui_items )
+    gui_items[ 'center' ][ 'text_input_user' ].value = ''
+    documents_count = gui_items[ 'right' ][ 'slider_documents_count' ].value
+    if not documents_count: return
+    documents = vectorstore.similarity_search( query, k = documents_count )
+    for document in documents:
+        add_to_conversation(
+            'Human', document.page_content, gui_items, kind = 'supplement' )
+    update_token_count( gui_items )
+
+
+def update_token_count( gui_items ):
+    total_tokens = 0
+    for item in gui_items[ 'center' ][ 'conversation_history' ]:
+        left, message_cell = item
+        _, checkbox = left
+        if checkbox.value: total_tokens += message_cell.metadata[ 'tokens' ]
+    total_tokens += count_tokens(
+        gui_items[ 'center' ][ 'text_input_user' ].value )
+    total_tokens += count_tokens(
+        gui_items[ 'center' ][ 'text_input_system' ].value )
+    gui_items[ 'right' ][ 'token_counter' ].value = total_tokens
 
 
 if __name__ == "__main__": main( )
