@@ -1,8 +1,8 @@
-def add_to_conversation( role, content, gui_items, kind = '' ):
+def add_to_conversation( role, content, gui, kind = '' ):
     from panel import Column, Row
     from panel.pane import Markdown
     from panel.widgets import Checkbox, StaticText
-    conversation_history = gui_items[ 'center' ][ 'conversation_history' ]
+    conversation_history = gui.column_conversation_history
     if 'supplement' == kind:
         content = f'''## Supplement ##\n\n{content}'''
         emoji = '📄'
@@ -15,8 +15,7 @@ def add_to_conversation( role, content, gui_items, kind = '' ):
         if 'AI' == role:
             emoji = '🤖'
             style = {
-                'border-left': '2px solid LightGray',
-                'border-right': '2px solid LightGray',
+                'border': '2px solid LightGray',
                 'padding': '3px',
             }
         else:
@@ -32,8 +31,7 @@ def add_to_conversation( role, content, gui_items, kind = '' ):
         'token_count': count_tokens( content ),
     }
     checkbox = Checkbox( name = emoji, value = True, width = 40 )
-    checkbox.param.watch(
-        lambda event: update_token_count( gui_items ), 'value' )
+    checkbox.param.watch( lambda event: update_token_count( gui ), 'value' )
     new_item = Row(
         checkbox,
         message_cell,
@@ -49,30 +47,14 @@ def count_tokens( content ):
     return len( encoding.encode( content ) )
 
 
-def create_dashboard( gui_items ):
-    from panel import Column, Row
-    from panel.layout import HSpacer
-    return Row(
-        Column( *gui_items[ 'left' ].values( ), width = 640 ),
-        Row(
-            HSpacer( ),
-            Column(
-                *gui_items[ 'center' ].values( ),
-                sizing_mode = 'stretch_height', width = 1024 ),
-            HSpacer( ),
-            Column( *gui_items[ 'right' ].values( ) ),
-        )
-    )
-
-
 SYSTEM_MESSAGE_AWARE_MODELS = frozenset( ( 'gpt-4', ) )
-def generate_messages( gui_items ):
-    system_message = gui_items[ 'center' ][ 'text_input_system' ].value
-    model = gui_items[ 'right' ][ 'selector_model' ].value
+def generate_messages( gui ):
+    system_message = gui.text_input_system.value
+    model = gui.selector_model.value
     if model not in SYSTEM_MESSAGE_AWARE_MODELS: role = 'user'
     else: role = 'system'
     messages = [ { 'role': role, 'content': system_message } ]
-    for item in gui_items[ 'center' ][ 'conversation_history' ]:
+    for item in gui.column_conversation_history:
         if not item[ 0 ].value: continue # if checkbox is not checked
         role = (
             'user' if item[ 1 ].metadata[ 'role' ] in ( 'Human', 'Document' )
@@ -82,46 +64,16 @@ def generate_messages( gui_items ):
     return messages
 
 
-def layout_gui( ):
-    from panel import Column
-    from panel.widgets import Button, FloatSlider, IntSlider, Select
-    from panel.widgets.input import StaticText, TextAreaInput
-    gui_items = {
-        'left': {
-            'conversations_index': Column( ),
-        },
-        'center': {
-            'text_input_system': TextAreaInput(
-                height_policy = 'fit',
-                max_height = 480,
-                name = 'System Message',
-                placeholder = 'Enter system message here...', value = '' ),
-            'conversation_history': Column( sizing_mode = 'stretch_both' ),
-            'text_input_user': TextAreaInput(
-                align = ( 'start', 'end' ),
-                height_policy = 'fit',
-                max_height = 480,
-                name = 'User Message',
-                placeholder = 'Enter user message here...', value = '' ),
-        },
-        'right': {
-            'selector_model': Select(
-                name = 'Model',
-                options = [ 'gpt-3.5-turbo' ], value = 'gpt-3.5-turbo' ),
-            'slider_temperature': FloatSlider(
-                name = 'Temperature',
-                start = 0, end = 2, step = 0.1, value = 0 ),
-            # TODO: Move buttons to bottom of center panel.
-            'button_chat': Button( name = 'Chat' ),
-            'button_query': Button( name = 'Query' ),
-            'slider_documents_count': IntSlider(
-                name = 'Number of Documents',
-                start = 0, end = 5, step = 1, value = 3 ),
-            'token_counter': StaticText( name = 'Token Counter', value = '0' ),
-            'status': StaticText( name = 'Status', value = 'OK' ),
-        },
-    }
-    return create_dashboard( gui_items ), gui_items
+def layout_gui( real, spec, index ):
+    entry = spec[ index ]
+    elements = [ ]
+    for element_index in entry.get( 'contains', ( ) ):
+        elements.append( layout_gui( real, spec, element_index ) )
+    component_class = entry[ 'component_class' ]
+    component_arguments = entry.get( 'component_arguments', { } )
+    component = component_class( *elements, **component_arguments )
+    real[ index ] = component
+    return component
 
 
 def load_vectorstore( ):
@@ -133,26 +85,170 @@ def load_vectorstore( ):
 
 
 def main( ):
+    from types import SimpleNamespace
     import openai
     import panel
     openai_credentials = provide_credentials( )
     openai.api_key = openai_credentials[ 'openai_api_key' ]
     openai.organization = openai_credentials[ 'openai_organization' ]
-    dashboard, gui_items = layout_gui( )
-    populate_models_selection( gui_items )
+    gui = { }
+    dashboard = layout_gui( gui, prepare_gui_layout( ), 'dashboard' )
+    gui = SimpleNamespace( **gui )
+    populate_models_selection( gui )
     vectorstore = load_vectorstore( )
-    register_gui_callbacks( gui_items, vectorstore )
+    register_gui_callbacks( gui, vectorstore )
     panel.serve( dashboard, start = True )
 
 
-def populate_models_selection( gui_items ):
+def populate_models_selection( gui ):
     # TODO: Use API-appropriate call.
     from operator import itemgetter
     import openai
     models = sorted( map(
         itemgetter( 'id' ),
         openai.Model.list( ).to_dict_recursive( )[ 'data' ] ) )
-    gui_items[ 'right' ][ 'selector_model' ].options = models
+    gui.selector_model.options = models
+
+
+def prepare_gui_layout( ):
+    from panel import Column, Row
+    from panel.layout import HSpacer
+    from panel.widgets import Button, FloatSlider, IntSlider, Select
+    from panel.widgets.input import StaticText, TextAreaInput
+    return {
+        'dashboard': dict(
+            component_class = Row,
+            contains = [
+                'left_pane',
+                'left_spacer',
+                'center_pane',
+                'right_spacer',
+                'right_pane',
+            ]
+        ),
+        'left_pane': dict(
+            component_class = Column,
+            component_arguments = dict( width = 640 ),
+            contains = [
+                'button_new_conversation',
+                'column_conversations_index',
+            ],
+        ),
+        'left_spacer': dict( component_class = HSpacer ),
+        'center_pane': dict(
+            component_class = Column,
+            component_arguments = dict(
+                sizing_mode = 'stretch_height', width = 1024,
+            ),
+            contains = [
+                'row_system_prompt',
+                'column_conversation_history',
+                'row_user_prompt',
+                'row_actions',
+            ],
+        ),
+        'right_spacer': dict( component_class = HSpacer ),
+        'right_pane': dict(
+            component_class = Column,
+            contains = [
+                'selector_model',
+                'slider_temperature',
+                'slider_documents_count',
+                'text_tokens_total',
+                'text_status',
+            ],
+        ),
+        'button_new_conversation': dict(
+            component_class = Button,
+            component_arguments = dict(
+                name = 'New Conversation',
+                width_policy = 'min',
+            ),
+        ),
+        'column_conversations_index': dict( component_class = Column ),
+        'row_system_prompt': dict(
+            component_class = Row,
+            contains = [ 'label_system', 'text_input_system' ],
+        ),
+        'column_conversation_history': dict(
+            component_class = Column,
+            component_arguments = dict( sizing_mode = 'stretch_both' ),
+        ),
+        'row_user_prompt': dict(
+            component_class = Row,
+            contains = [ 'label_user', 'text_input_user' ],
+        ),
+        'row_actions': dict(
+            component_class = Row,
+            contains = [ 'button_chat', 'button_query' ],
+        ),
+        'selector_model': dict(
+            component_class = Select,
+            component_arguments = dict(
+                name = 'Model',
+                options = [ 'gpt-3.5-turbo' ],
+                value = 'gpt-3.5-turbo',
+            ),
+        ),
+        'slider_temperature': dict(
+            component_class = FloatSlider,
+            component_arguments = dict(
+                name = 'Temperature',
+                start = 0, end = 2, step = 0.1, value = 0,
+            ),
+        ),
+        'slider_documents_count': dict(
+            component_class = IntSlider,
+            component_arguments = dict(
+                name = 'Number of Documents',
+                start = 0, end = 5, step = 1, value = 3,
+            ),
+        ),
+        'text_tokens_total': dict(
+            component_class = StaticText,
+            component_arguments = dict( name = 'Token Counter', value = '0', ),
+        ),
+        'text_status': dict(
+            component_class = StaticText,
+            component_arguments = dict( name = 'Status', value = 'OK', ),
+        ),
+        'label_system': dict(
+            component_class = StaticText,
+            component_arguments = dict( value = '💬📏', width = 40, ),
+        ),
+        'text_input_system': dict(
+            component_class = TextAreaInput,
+            component_arguments = dict(
+                height_policy = 'fit',
+                max_height = 480,
+                placeholder = 'Enter system message here...',
+                value = '',
+                width_policy = 'max',
+            ),
+        ),
+        'label_user': dict(
+            component_class = StaticText,
+            component_arguments = dict( value = '💬🧑', width = 40, ),
+        ),
+        'text_input_user': dict(
+            component_class = TextAreaInput,
+            component_arguments = dict(
+                height_policy = 'fit',
+                max_height = 480,
+                placeholder = 'Enter user message here...',
+                value = '',
+                width_policy = 'max',
+            ),
+        ),
+        'button_chat': dict(
+            component_class = Button,
+            component_arguments = dict( name = 'Chat' ),
+        ),
+        'button_query': dict(
+            component_class = Button,
+            component_arguments = dict( name = 'Query' ),
+        ),
+    }
 
 
 def provide_credentials( ):
@@ -165,64 +261,59 @@ def provide_credentials( ):
         openai_organization = credentials[ 'openai' ][ 'organization' ] )
 
 
-def register_gui_callbacks( gui_items, vectorstore ):
-    gui_items[ 'right' ][ 'button_chat' ].on_click(
-        lambda event: run_chat( event, gui_items ) )
-    gui_items[ 'right' ][ 'button_query' ].on_click(
-        lambda event: run_query( event, gui_items, vectorstore ) )
-    gui_items[ 'center' ][ 'text_input_system' ].param.watch(
-        lambda event: update_token_count( gui_items ), 'value' )
-    gui_items[ 'center' ][ 'text_input_user' ].param.watch(
-        lambda event: update_token_count( gui_items ), 'value' )
+def register_gui_callbacks( gui, vectorstore ):
+    gui.button_chat.on_click( lambda event: run_chat( event, gui ) )
+    gui.button_query.on_click(
+        lambda event: run_query( event, gui, vectorstore ) )
+    gui.text_input_system.param.watch(
+        lambda event: update_token_count( gui ), 'value' )
+    gui.text_input_user.param.watch(
+        lambda event: update_token_count( gui ), 'value' )
 
 
-def run_chat( event, gui_items ):
-    gui_items[ 'right' ][ 'status' ].object = 'OK'
+def run_chat( event, gui ):
+    gui.text_status.value = 'OK'
     from openai import ChatCompletion, OpenAIError
-    query = gui_items[ 'center' ][ 'text_input_user' ].value
+    query = gui.text_input_user.value
     if query:
-        add_to_conversation( 'Human', query, gui_items )
-        gui_items[ 'center' ][ 'text_input_user' ].value = ''
-    messages = generate_messages( gui_items )
+        add_to_conversation( 'Human', query, gui )
+        gui.text_input_user.value = ''
+    messages = generate_messages( gui )
     try:
         response = ChatCompletion.create(
             messages = messages,
-            model = gui_items[ 'right' ][ 'selector_model' ].value,
-            temperature = gui_items[ 'right' ][ 'slider_temperature' ].value )
+            model = gui.selector_model.value,
+            temperature = gui.slider_temperature.value )
         add_to_conversation(
-            'AI', response.choices[ 0 ].message[ 'content' ].strip( ),
-            gui_items )
-    except OpenAIError as exc:
-        gui_items[ 'right' ][ 'status' ].object = f"Error: {exc}"
-    update_token_count( gui_items )
+            'AI', response.choices[ 0 ].message[ 'content' ].strip( ), gui )
+    except OpenAIError as exc: gui.text_status.value = f"Error: {exc}"
+    update_token_count( gui )
 
 
-def run_query( event, gui_items, vectorstore ):
-    gui_items[ 'right' ][ 'status' ].object = 'OK'
-    query = gui_items[ 'center' ][ 'text_input_user' ].value
+def run_query( event, gui, vectorstore ):
+    gui.text_status.value = 'OK'
+    query = gui.text_input_user.value
     if not query: return
-    add_to_conversation( 'Human', query, gui_items )
-    gui_items[ 'center' ][ 'text_input_user' ].value = ''
-    documents_count = gui_items[ 'right' ][ 'slider_documents_count' ].value
+    add_to_conversation( 'Human', query, gui )
+    gui.text_input_user.value = ''
+    documents_count = gui.slider_documents_count.value
     if not documents_count: return
     documents = vectorstore.similarity_search( query, k = documents_count )
     for document in documents:
         add_to_conversation(
-            'Human', document.page_content, gui_items, kind = 'supplement' )
-    update_token_count( gui_items )
+            'Human', document.page_content, gui, kind = 'supplement' )
+    update_token_count( gui )
 
 
-def update_token_count( gui_items ):
+def update_token_count( gui ):
     total_tokens = 0
-    for item in gui_items[ 'center' ][ 'conversation_history' ]:
+    for item in gui.column_conversation_history:
         checkbox, message_cell = item
         if checkbox.value:
             total_tokens += message_cell.metadata[ 'token_count' ]
-    total_tokens += count_tokens(
-        gui_items[ 'center' ][ 'text_input_user' ].value )
-    total_tokens += count_tokens(
-        gui_items[ 'center' ][ 'text_input_system' ].value )
-    gui_items[ 'right' ][ 'token_counter' ].value = str( total_tokens )
+    total_tokens += count_tokens( gui.text_input_user.value )
+    total_tokens += count_tokens( gui.text_input_system.value )
+    gui.text_tokens_total.value = str( total_tokens )
 
 
 if __name__ == "__main__": main( )
