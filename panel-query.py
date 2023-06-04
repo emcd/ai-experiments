@@ -170,7 +170,7 @@ def prepare_gui_layout( ):
                 'row_system_prompt',
                 'column_conversation_history',
                 'row_user_prompt',
-                'row_actions',
+                'row_summarization_prompt',
             ],
         ),
         'row_system_prompt': dict(
@@ -226,11 +226,15 @@ def prepare_gui_layout( ):
         ),
         'row_user_prompt': dict(
             component_class = Row,
-            contains = [ 'label_user', 'text_input_user' ],
+            contains = [ 'label_user', 'column_user_prompt' ],
         ),
         'label_user': dict(
             component_class = StaticText,
             component_arguments = dict( value = '💬🧑', width = 40, ),
+        ),
+        'column_user_prompt': dict(
+            component_class = Column,
+            contains = [ 'text_input_user', 'row_actions', ],
         ),
         'text_input_user': dict(
             component_class = TextAreaInput,
@@ -244,7 +248,7 @@ def prepare_gui_layout( ):
         ),
         'row_actions': dict(
             component_class = Row,
-            contains = [ 'button_chat', 'button_query' ],
+            contains = [ 'button_chat', 'button_query', ],
         ),
         'button_chat': dict(
             component_class = Button,
@@ -253,6 +257,30 @@ def prepare_gui_layout( ):
         'button_query': dict(
             component_class = Button,
             component_arguments = dict( name = 'Query' ),
+        ),
+        'row_summarization_prompt': dict(
+            component_class = Row,
+            contains = [
+                'label_summarization',
+                'selector_summarization_prompt',
+                'button_summarize',
+            ],
+        ),
+        'label_summarization': dict(
+            component_class = StaticText,
+            component_arguments = dict( value = '💬∑', width = 40, ),
+        ),
+        'selector_summarization_prompt': dict(
+            component_class = Select,
+            component_arguments = dict(
+                options = [ 'None' ],
+                value = 'None',
+            ),
+        ),
+        # TODO: "Load" button to load summarization prompt into user prompt.
+        'button_summarize': dict(
+            component_class = Button,
+            component_arguments = dict( name = 'Summarize' ),
         ),
         'right_spacer': dict( component_class = HSpacer ),
         'right_pane': dict(
