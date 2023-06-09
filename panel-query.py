@@ -96,6 +96,7 @@ def main( ):
     gui = SimpleNamespace( **gui )
     populate_models_selection( gui )
     populate_system_prompts_selection( gui )
+    populate_summarization_prompts_selection( gui )
     vectorstore = load_vectorstore( )
     register_gui_callbacks( gui, vectorstore )
     panel.serve( dashboard, start = True )
@@ -111,18 +112,35 @@ def populate_models_selection( gui ):
     gui.selector_model.options = models
 
 
-def populate_system_prompts_selection( gui ):
-    from pathlib import Path
+def populate_prompts_selection( gui_selector, prompts_directory ):
     from yaml import safe_load
     metadata = { }; prompt_names = [ ]
-    for prompt_path in Path( 'prompts' ).glob( '*.yaml' ):
+    for prompt_path in (
+        prompts_directory.resolve( strict = True ).glob( '*.yaml' )
+    ):
         with prompt_path.open( ) as file:
             contents = safe_load( file )
             id_ = contents[ 'id' ]
             metadata[ id_ ] = contents
             prompt_names.append( id_ )
-    gui.selector_system_prompt.metadata__ = metadata
-    gui.selector_system_prompt.options = prompt_names
+    gui_selector.metadata__ = metadata
+    gui_selector.options = prompt_names
+
+
+def populate_system_prompts_selection( gui ):
+    from pathlib import Path
+    populate_prompts_selection(
+        gui.selector_system_prompt,
+        Path( '.local/data/system-prompts' ) )
+    update_system_prompt_variables( gui )
+
+
+def populate_summarization_prompts_selection( gui ):
+    from pathlib import Path
+    populate_prompts_selection(
+        gui.selector_summarization_prompt,
+        Path( '.local/data/summarization-prompts' ) )
+    update_summarization_prompt_variables( gui )
 
 
 def prepare_gui_layout( ):
@@ -169,8 +187,8 @@ def prepare_gui_layout( ):
             contains = [
                 'row_system_prompt',
                 'column_conversation_history',
-                'row_user_prompt',
                 'row_summarization_prompt',
+                'row_user_prompt',
             ],
         ),
         'row_system_prompt': dict(
@@ -199,8 +217,8 @@ def prepare_gui_layout( ):
         'selector_system_prompt': dict(
             component_class = Select,
             component_arguments = dict(
-                options = [ 'Empty', ],
-                value = 'Empty',
+                options = [ 'None', ],
+                value = 'None',
             ),
         ),
         'checkbox_display_system_prompt': dict(
@@ -223,6 +241,53 @@ def prepare_gui_layout( ):
         'column_conversation_history': dict(
             component_class = Column,
             component_arguments = dict( sizing_mode = 'stretch_both' ),
+        ),
+        'row_summarization_prompt': dict(
+            component_class = Row,
+            contains = [
+                'label_summarization',
+                'column_summarization_prompt',
+            ],
+        ),
+        'label_summarization': dict(
+            component_class = StaticText,
+            component_arguments = dict( value = '💬∑', width = 40, ),
+        ),
+        'column_summarization_prompt': dict(
+            component_class = Column,
+            contains = [
+                'row_summarizer_selection',
+                'text_summarization_prompt',
+            ],
+        ),
+        'row_summarizer_selection': dict(
+            component_class = Row,
+            contains = [
+                'selector_summarization_prompt',
+                'checkbox_summarize',
+            ],
+        ),
+        'selector_summarization_prompt': dict(
+            component_class = Select,
+            component_arguments = dict(
+                options = [ 'None' ],
+                value = 'None',
+            ),
+        ),
+        'checkbox_summarize': dict(
+            component_class = Checkbox,
+            component_arguments = dict(
+                name = 'Display and Activate',
+                value = False,
+            ),
+        ),
+        'text_summarization_prompt': dict(
+            component_class = Markdown,
+            component_arguments = dict(
+                height_policy = 'fit',
+                width_policy = 'max',
+                visible = False,
+            ),
         ),
         'row_user_prompt': dict(
             component_class = Row,
@@ -257,30 +322,6 @@ def prepare_gui_layout( ):
         'button_query': dict(
             component_class = Button,
             component_arguments = dict( name = 'Query' ),
-        ),
-        'row_summarization_prompt': dict(
-            component_class = Row,
-            contains = [
-                'label_summarization',
-                'selector_summarization_prompt',
-                'button_summarize',
-            ],
-        ),
-        'label_summarization': dict(
-            component_class = StaticText,
-            component_arguments = dict( value = '💬∑', width = 40, ),
-        ),
-        'selector_summarization_prompt': dict(
-            component_class = Select,
-            component_arguments = dict(
-                options = [ 'None' ],
-                value = 'None',
-            ),
-        ),
-        # TODO: "Load" button to load summarization prompt into user prompt.
-        'button_summarize': dict(
-            component_class = Button,
-            component_arguments = dict( name = 'Summarize' ),
         ),
         'right_spacer': dict( component_class = HSpacer ),
         'right_pane': dict(
@@ -341,6 +382,10 @@ def register_gui_callbacks( gui, vectorstore ):
     gui.button_query.on_click( lambda event: run_query( gui, vectorstore ) )
     gui.checkbox_display_system_prompt.param.watch(
         lambda event: toggle_system_prompt_display( gui ), 'value' )
+    gui.checkbox_summarize.param.watch(
+        lambda event: toggle_summarization_prompt_display( gui ), 'value' )
+    gui.selector_summarization_prompt.param.watch(
+        lambda event: update_summarization_prompt_variables( gui ), 'value' )
     gui.selector_system_prompt.param.watch(
         lambda event: update_system_prompt_variables( gui ), 'value' )
     gui.text_input_user.param.watch(
@@ -368,10 +413,13 @@ def run_chat( gui ):
 
 def run_query( gui, vectorstore ):
     gui.text_status.value = 'OK'
-    query = gui.text_input_user.value
+    if gui.checkbox_summarize:
+        query = gui.text_summarization_prompt.object
+    else:
+        query = gui.text_input_user.value
+        gui.text_input_user.value = ''
     if not query: return
     add_to_conversation( 'Human', query, gui )
-    gui.text_input_user.value = ''
     documents_count = gui.slider_documents_count.value
     if not documents_count: return
     documents = vectorstore.similarity_search( query, k = documents_count )
@@ -381,8 +429,20 @@ def run_query( gui, vectorstore ):
     update_token_count( gui )
 
 
+def toggle_summarization_prompt_display( gui ):
+    gui.text_summarization_prompt.visible = gui.checkbox_summarize.value
+    update_token_count( gui )
+
+
 def toggle_system_prompt_display( gui ):
     gui.text_system_prompt.visible = gui.checkbox_display_system_prompt.value
+
+
+def update_summarization_prompt_text( gui ):
+    template = gui.selector_summarization_prompt.metadata__[
+        gui.selector_summarization_prompt.value ][ 'template' ]
+    # TODO: Interpolate variables into template.
+    gui.text_summarization_prompt.object = template
 
 
 def update_system_prompt_text( gui ):
@@ -395,6 +455,11 @@ def update_system_prompt_text( gui ):
     # TODO: Support alternative template types.
     gui.text_system_prompt.object = template.format( **variables )
     update_token_count( gui )
+
+
+def update_summarization_prompt_variables( gui ):
+    # TODO: Implement.
+    update_summarization_prompt_text( gui )
 
 
 def update_system_prompt_variables( gui ):
@@ -419,7 +484,10 @@ def update_token_count( gui ):
         checkbox, message_cell = item
         if checkbox.value:
             total_tokens += message_cell.metadata[ 'token_count' ]
-    total_tokens += count_tokens( gui.text_input_user.value )
+    if gui.checkbox_summarize.value:
+        total_tokens += count_tokens( gui.text_summarization_prompt.object )
+    else:
+        total_tokens += count_tokens( gui.text_input_user.value )
     total_tokens += count_tokens( gui.text_system_prompt.object )
     gui.text_tokens_total.value = str( total_tokens )
 

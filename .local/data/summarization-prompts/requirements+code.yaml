@@ -1,0 +1,15 @@
+id: Recap Requirements + Code
+template: |
+  Please recapitulate our design and requirements thus far, incorporating
+  refinements made in the course of the conversation. Also, if you are
+  following an outline or agenda, please restate this, marking off any
+  completed items and noting which ones are in progress. And, list the names
+  of all classes, functions, methods, and other relevant pieces of code that
+  you have created or modified and then display each of them in their most
+  recent form from the conversation.
+
+  Note that you will use this recapitulation as the basis for further chats;
+  earlier conversation history may be elided to economize on chat tokens. Thus,
+  it is important that you accurately and precisely capture all pertinent
+  information in the conversation so that we can continue it without loss of
+  fidelity from this new starting point.
