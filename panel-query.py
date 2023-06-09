@@ -277,6 +277,7 @@ def prepare_gui_layout( ):
         'checkbox_summarize': dict(
             component_class = Checkbox,
             component_arguments = dict(
+                align = 'center',
                 name = 'Display and Activate',
                 value = False,
             ),
@@ -395,10 +396,12 @@ def register_gui_callbacks( gui, vectorstore ):
 def run_chat( gui ):
     gui.text_status.value = 'OK'
     from openai import ChatCompletion, OpenAIError
-    query = gui.text_input_user.value
-    if query:
-        add_to_conversation( 'Human', query, gui )
+    if gui.checkbox_summarize.value:
+        query = gui.text_summarization_prompt.object
+    else:
+        query = gui.text_input_user.value
         gui.text_input_user.value = ''
+    if query: add_to_conversation( 'Human', query, gui )
     messages = generate_messages( gui )
     try:
         response = ChatCompletion.create(
@@ -408,16 +411,19 @@ def run_chat( gui ):
         add_to_conversation(
             'AI', response.choices[ 0 ].message[ 'content' ].strip( ), gui )
     except OpenAIError as exc: gui.text_status.value = f"Error: {exc}"
+    else:
+        if gui.checkbox_summarize.value:
+            gui.checkbox_summarize.value = False
+            # Uncheck conversation items above summarization.
+            for i in range( len( gui.column_conversation_history ) - 2 ):
+                gui.column_conversation_history[ i ][ 0 ].value = False
     update_token_count( gui )
 
 
 def run_query( gui, vectorstore ):
     gui.text_status.value = 'OK'
-    if gui.checkbox_summarize:
-        query = gui.text_summarization_prompt.object
-    else:
-        query = gui.text_input_user.value
-        gui.text_input_user.value = ''
+    query = gui.text_input_user.value
+    gui.text_input_user.value = ''
     if not query: return
     add_to_conversation( 'Human', query, gui )
     documents_count = gui.slider_documents_count.value
