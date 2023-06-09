@@ -1,32 +1,32 @@
-def add_to_conversation( role, content, gui, kind = '' ):
+def add_to_conversation( role, content, gui ):
     from panel import Column, Row
     from panel.pane import Markdown
     from panel.widgets import Checkbox, StaticText
     conversation_history = gui.column_conversation_history
-    if 'supplement' == kind:
+    if 'Document' == role:
         content = f'''## Supplement ##\n\n{content}'''
         emoji = '📄'
+        style = { 'background-color': 'WhiteSmoke' }
+    elif 'AI' == role:
+        emoji = '🤖'
+        style = { 'border': '2px solid LightGray', 'padding': '3px' }
+    else:
+        emoji = '🧑'
+        style = { 'background-color': 'White' }
+    # TODO: Create cell based on MIME type of content rather than role.
+    if role in ( 'Document', ):
         message_cell = StaticText(
             value = content,
             height_policy = 'fit',
             sizing_mode = 'stretch_width',
-            style = { 'background-color': 'WhiteSmoke' } )
+            style = style )
     else:
-        if 'AI' == role:
-            emoji = '🤖'
-            style = {
-                'border': '2px solid LightGray',
-                'padding': '3px',
-            }
-        else:
-            emoji = '🧑'
-            style = { 'background-color': 'White' }
         message_cell = Markdown(
             content,
             height_policy = 'fit',
             sizing_mode = 'stretch_width',
             style = style )
-    message_cell.metadata = {
+    message_cell.metadata__ = {
         'role': role,
         'token_count': count_tokens( content ),
     }
@@ -57,7 +57,7 @@ def generate_messages( gui ):
     for item in gui.column_conversation_history:
         if not item[ 0 ].value: continue # if checkbox is not checked
         role = (
-            'user' if item[ 1 ].metadata[ 'role' ] in ( 'Human', 'Document' )
+            'user' if item[ 1 ].metadata__[ 'role' ] in ( 'Human', 'Document' )
             else 'assistant' )
         content = item[ 1 ].object
         messages.append( { 'role': role, 'content': content } )
@@ -257,6 +257,7 @@ def prepare_gui_layout( ):
             component_class = Column,
             contains = [
                 'row_summarizer_selection',
+                'row_summarization_prompt_variables',
                 'text_summarization_prompt',
             ],
         ),
@@ -282,6 +283,7 @@ def prepare_gui_layout( ):
                 value = False,
             ),
         ),
+        'row_summarization_prompt_variables': dict( component_class = Row, ),
         'text_summarization_prompt': dict(
             component_class = Markdown,
             component_arguments = dict(
@@ -430,8 +432,7 @@ def run_query( gui, vectorstore ):
     if not documents_count: return
     documents = vectorstore.similarity_search( query, k = documents_count )
     for document in documents:
-        add_to_conversation(
-            'Human', document.page_content, gui, kind = 'supplement' )
+        add_to_conversation( 'Document', document.page_content, gui )
     update_token_count( gui )
 
 
@@ -444,44 +445,65 @@ def toggle_system_prompt_display( gui ):
     gui.text_system_prompt.visible = gui.checkbox_display_system_prompt.value
 
 
+def update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
+    row = getattr( gui, row_name )
+    selector = getattr( gui, selector_name )
+    text_prompt = getattr( gui, text_prompt_name )
+    template = selector.metadata__[ selector.value ][ 'template' ]
+    variables = {
+        element.metadata__[ 'id' ]: element.value for element in row
+    }
+    # TODO: Support alternative template types.
+    text_prompt.object = template.format( **variables )
+
+
 def update_summarization_prompt_text( gui ):
-    template = gui.selector_summarization_prompt.metadata__[
-        gui.selector_summarization_prompt.value ][ 'template' ]
-    # TODO: Interpolate variables into template.
-    gui.text_summarization_prompt.object = template
+    update_prompt_text(
+        gui,
+        'row_summarization_prompt_variables',
+        'selector_summarization_prompt',
+        'text_summarization_prompt' )
 
 
 def update_system_prompt_text( gui ):
-    template = gui.selector_system_prompt.metadata__[
-        gui.selector_system_prompt.value ][ 'template' ]
-    variables = {
-        element.metadata__[ 'id' ]: element.value
-        for element in gui.row_system_prompt_variables
-    }
-    # TODO: Support alternative template types.
-    gui.text_system_prompt.object = template.format( **variables )
+    update_prompt_text(
+        gui,
+        'row_system_prompt_variables',
+        'selector_system_prompt',
+        'text_system_prompt' )
     update_token_count( gui )
 
 
-def update_summarization_prompt_variables( gui ):
-    # TODO: Implement.
-    update_summarization_prompt_text( gui )
-
-
-def update_system_prompt_variables( gui ):
+def update_prompt_variables( gui, row_name, selector_name, callback ):
     from panel.widgets import TextInput
-    gui.row_system_prompt_variables.clear( )
-    variables = gui.selector_system_prompt.metadata__[
-        gui.selector_system_prompt.value ].get( 'variables', ( ) )
+    row = getattr( gui, row_name )
+    selector = getattr( gui, selector_name )
+    row.clear( )
+    variables = selector.metadata__[ selector.value ].get( 'variables', ( ) )
     for variable in variables:
         # TODO: Support other widget types, such as selectors and checkboxes.
         text_input = TextInput(
             name = variable[ 'label' ], value = variable[ 'default' ] )
         text_input.metadata__ = variable
-        text_input.param.watch(
-            lambda event: update_system_prompt_text( gui ), 'value' )
-        gui.row_system_prompt_variables.append( text_input )
-    update_system_prompt_text( gui )
+        text_input.param.watch( lambda event: callback( gui ), 'value' )
+        row.append( text_input )
+    callback( gui )
+
+
+def update_summarization_prompt_variables( gui ):
+    update_prompt_variables(
+        gui,
+        'row_summarization_prompt_variables',
+        'selector_summarization_prompt',
+        update_summarization_prompt_text )
+
+
+def update_system_prompt_variables( gui ):
+    update_prompt_variables(
+        gui,
+        'row_system_prompt_variables',
+        'selector_system_prompt',
+        update_system_prompt_text )
 
 
 def update_token_count( gui ):
@@ -489,7 +511,7 @@ def update_token_count( gui ):
     for item in gui.column_conversation_history:
         checkbox, message_cell = item
         if checkbox.value:
-            total_tokens += message_cell.metadata[ 'token_count' ]
+            total_tokens += message_cell.metadata__[ 'token_count' ]
     if gui.checkbox_summarize.value:
         total_tokens += count_tokens( gui.text_summarization_prompt.object )
     else:
