@@ -2,6 +2,7 @@ __pycache__/
 .ipynb_checkpoints/
 .local/environments/
 .local/installations/
+.local/state/
 .local/utilities/
 credentials.toml
 data-sources/websites/
