@@ -1,0 +1,7 @@
+format-version = 1
+
+[locations]
+state = '.local/state'
+
+[providers]
+use = [ 'openai' ]

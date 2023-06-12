@@ -85,18 +85,10 @@ def load_vectorstore( ):
 
 
 def main( ):
-    from pathlib import Path
-    from sys import path as module_search_paths
-    project_path = Path( __file__ ).parent.resolve( strict = True )
-    library_path = project_path / 'sources'
-    module_search_paths.insert( 0, str( library_path ) )
+    prepare( )
     from types import SimpleNamespace
-    import openai
     import panel
     from chatter.gui import layout as gui_layout
-    openai_credentials = provide_credentials( )
-    openai.api_key = openai_credentials[ 'openai_api_key' ]
-    openai.organization = openai_credentials[ 'openai_organization' ]
     gui = { }
     dashboard = layout_gui( gui, gui_layout, 'dashboard' )
     gui = SimpleNamespace( **gui )
@@ -149,14 +141,38 @@ def populate_summarization_prompts_selection( gui ):
     update_summarization_prompt_variables( gui )
 
 
-def provide_credentials( ):
+def prepare( ):
+    from pathlib import Path
+    from sys import path as module_search_paths
+    project_path = Path( __file__ ).parent.resolve( strict = True )
+    library_path = project_path / 'sources'
+    module_search_paths.insert( 0, str( library_path ) )
+    configuration = provide_configuration( project_path )
+    from dotenv import load_dotenv
+    with (
+        project_path / '.local/configuration/environment'
+    ).open( ) as environment_file: load_dotenv( stream = environment_file )
+    prepare_api_clients( )
+
+
+def prepare_api_clients( ):
+    from os import environ as cpe  # current process environment
+    if 'OPENAI_API_KEY' in cpe:
+        import openai
+        openai.api_key = cpe[ 'OPENAI_API_KEY' ]
+        if 'OPENAI_ORGANIZATION_ID' in cpe:
+            openai.organization = cpe[ 'OPENAI_ORGANIZATION_ID' ]
+
+
+def provide_configuration( project_path ):
+    from shutil import copyfile
     import tomli as tomllib
-    with open(
-        '.local/configuration/credentials.toml', 'rb'
-    ) as credentials_file: credentials = tomllib.load( credentials_file )
-    return dict(
-        openai_api_key = credentials[ 'openai' ][ 'token' ],
-        openai_organization = credentials[ 'openai' ][ 'organization' ] )
+    path = project_path / '.local/configuration/general.toml'
+    if not path.exists( ):
+        copyfile(
+            str( project_path / '.local/data/configuration/general.toml' ),
+            str( path ) )
+    with path.open( 'rb' ) as file: return tomllib.load( file )
 
 
 def register_gui_callbacks( gui, vectorstore ):

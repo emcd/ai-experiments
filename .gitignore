@@ -1,9 +1,10 @@
 __pycache__/
 .ipynb_checkpoints/
+.local/configuration/*.toml
+.local/configuration/environment
 .local/environments/
 .local/installations/
 .local/state/
 .local/utilities/
-credentials.toml
 data-sources/websites/
 vectorstore.pypickle
