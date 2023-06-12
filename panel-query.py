@@ -85,19 +85,11 @@ def load_vectorstore( ):
 
 
 def main( ):
-    prepare( )
-    from types import SimpleNamespace
-    import panel
-    from chatter.gui import layout as gui_layout
-    gui = { }
-    dashboard = layout_gui( gui, gui_layout, 'dashboard' )
-    gui = SimpleNamespace( **gui )
-    populate_models_selection( gui )
-    populate_system_prompts_selection( gui )
-    populate_summarization_prompts_selection( gui )
+    configuration, gui = prepare( )
     vectorstore = load_vectorstore( )
     register_gui_callbacks( gui, vectorstore )
-    panel.serve( dashboard, start = True )
+    import panel
+    panel.serve( gui.dashboard, start = True )
 
 
 def populate_models_selection( gui ):
@@ -148,11 +140,10 @@ def prepare( ):
     library_path = project_path / 'sources'
     module_search_paths.insert( 0, str( library_path ) )
     configuration = provide_configuration( project_path )
-    from dotenv import load_dotenv
-    with (
-        project_path / '.local/configuration/environment'
-    ).open( ) as environment_file: load_dotenv( stream = environment_file )
+    prepare_environment( project_path )
     prepare_api_clients( )
+    gui = prepare_gui( configuration )
+    return configuration, gui
 
 
 def prepare_api_clients( ):
@@ -162,6 +153,26 @@ def prepare_api_clients( ):
         openai.api_key = cpe[ 'OPENAI_API_KEY' ]
         if 'OPENAI_ORGANIZATION_ID' in cpe:
             openai.organization = cpe[ 'OPENAI_ORGANIZATION_ID' ]
+
+
+def prepare_environment( project_path ):
+    path = project_path / '.local/configuration/environment'
+    if not path.exists( ): return
+    from dotenv import load_dotenv
+    with path.open( ) as environment_file:
+        load_dotenv( stream = environment_file )
+
+
+def prepare_gui( configuration ):
+    from types import SimpleNamespace
+    from chatter.gui import layout as gui_layout
+    gui = { }
+    dashboard = layout_gui( gui, gui_layout, 'dashboard' )
+    gui = SimpleNamespace( **gui )
+    populate_models_selection( gui )
+    populate_system_prompts_selection( gui )
+    populate_summarization_prompts_selection( gui )
+    return gui
 
 
 def provide_configuration( project_path ):
