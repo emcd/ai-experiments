@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' GUI layout with Panel widgets. '''
+''' GUI layouts with Panel widgets. '''
 
 
 from panel.layout import Column, HSpacer, Row
@@ -273,52 +273,3 @@ layout.update( {
         persist = False,
     ),
 } )
-
-
-def save_conversation( gui, registry, path ):
-    state = { }
-    for name, data in layout.items( ):
-        if not data.get( 'persist', True ): continue
-        component_class = data[ 'component_class' ]
-        if component_class in ( Button, HSpacer, ): continue
-        component = getattr( gui, name )
-        if component_class in ( Column, Row, ):
-            if 'persistence_functions' not in data: continue
-            saver_name = data[ 'persistence_functions' ][ 'save' ]
-            saver = registry[ saver_name ]
-            state.update( saver( component ) )
-        elif component_class in (
-            Checkbox, FloatSlider, IntSlider, Select, TextAreaInput, TextInput,
-        ): state[ name ] = dict( value = component.value )
-        elif component_class in ( Markdown, StaticText, ):
-            state[ name ] = dict( value = component.object )
-        else:
-            raise ValueError(
-                f"Unrecognized component class '{component_class}' "
-                f"for component '{name}'." )
-    from json import dump
-    with path.open( 'w' ) as file: dump( state, file, indent = 2 )
-
-
-def restore_conversation( gui, registry, path ):
-    from json import load
-    with path.open( ) as file: state = load( file )
-    for name, data in layout.items( ):
-        if not data.get( 'persist', True ): continue
-        component_class = data[ 'component_class' ]
-        if component_class in ( Button, HSpacer, ): continue
-        component = getattr( gui, name )
-        if component_class in ( Column, Row, ):
-            if 'persistence_functions' not in data: continue
-            restorer_name = data[ 'persistence_functions' ][ 'restore' ]
-            restorer = registry[ restorer_name ]
-            restorer( component, state )
-        elif component_class in (
-            Checkbox, FloatSlider, IntSlider, Select, TextAreaInput, TextInput,
-        ): component.value = state[ name ][ 'value' ]
-        elif component_class in ( Markdown, StaticText, ):
-            component.object = state[ name ][ 'value' ]
-        else:
-            raise ValueError(
-                f"Unrecognized component class '{component_class}' "
-                f"for component '{name}'." )

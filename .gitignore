@@ -7,4 +7,3 @@ __pycache__/
 .local/state/
 .local/utilities/
 data-sources/websites/
-vectorstore.pypickle
