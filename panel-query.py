@@ -76,18 +76,8 @@ def layout_gui( real, spec, index ):
     return component
 
 
-def load_vectorstore( ):
-    from pathlib import Path
-    from pickle import load
-    vectorstore_path = Path( 'vectorstore.pypickle' )
-    with vectorstore_path.open( 'rb' ) as file: vectorstore = load( file )
-    return vectorstore
-
-
 def main( ):
     configuration, gui = prepare( )
-    vectorstore = load_vectorstore( )
-    register_gui_callbacks( gui, vectorstore )
     import panel
     panel.serve( gui.dashboard, start = True )
 
@@ -95,6 +85,7 @@ def main( ):
 def populate_models_selection( gui ):
     # TODO: Use provider-appropriate call.
     from operator import itemgetter
+    # TODO: Detect provider and populate accordingly.
     import openai
     models = sorted( map(
         itemgetter( 'id' ),
@@ -133,6 +124,11 @@ def populate_summarization_prompts_selection( gui ):
     update_summarization_prompt_variables( gui )
 
 
+def populate_vectorstores_selection( gui, vectorstores ):
+    gui.selector_vectorstore.metadata__ = vectorstores
+    gui.selector_vectorstore.options = list( vectorstores.keys( ) )
+
+
 def prepare( ):
     from pathlib import Path
     from sys import path as module_search_paths
@@ -142,7 +138,8 @@ def prepare( ):
     configuration = provide_configuration( project_path )
     prepare_environment( project_path )
     prepare_api_clients( )
-    gui = prepare_gui( configuration )
+    vectorstores = prepare_vectorstores( configuration )
+    gui = prepare_gui( vectorstores )
     return configuration, gui
 
 
@@ -163,7 +160,7 @@ def prepare_environment( project_path ):
         load_dotenv( stream = environment_file )
 
 
-def prepare_gui( configuration ):
+def prepare_gui( vectorstores ):
     from types import SimpleNamespace
     from chatter.gui import layout as gui_layout
     gui = { }
@@ -172,23 +169,49 @@ def prepare_gui( configuration ):
     populate_models_selection( gui )
     populate_system_prompts_selection( gui )
     populate_summarization_prompts_selection( gui )
+    populate_vectorstores_selection( gui, vectorstores )
+    register_gui_callbacks( gui )
     return gui
+
+
+def prepare_vectorstores( configuration ):
+    from pathlib import Path
+    from pickle import load as unpickle
+    from tomli import load as load_toml
+    state_path = Path( configuration[ 'locations' ][ 'state' ] )
+    registry_path = state_path / 'vectorstores.toml'
+    with registry_path.open( 'rb' ) as registry_file:
+        registry = load_toml( registry_file )
+    stores = { }
+    for data in registry[ 'stores' ]:
+        name = data[ 'name' ]
+        stores[ name ] = data.copy( )
+        provider = data[ 'provider' ]
+        if provider.startswith( 'file:' ):
+            format_ = data[ 'format' ]
+            location = Path( data[ 'location' ] )
+            if 'python-pickle' == format_:
+                with location.open( 'rb' ) as store_file:
+                    stores[ name ][ 'instance' ] = unpickle( store_file )
+        # TODO: Run local server containers, where relevant.
+        # TODO: Setup clients for server connections, where relevant.
+    return stores
 
 
 def provide_configuration( project_path ):
     from shutil import copyfile
-    import tomli as tomllib
+    from tomli import load
     path = project_path / '.local/configuration/general.toml'
     if not path.exists( ):
         copyfile(
             str( project_path / '.local/data/configuration/general.toml' ),
             str( path ) )
-    with path.open( 'rb' ) as file: return tomllib.load( file )
+    with path.open( 'rb' ) as file: return load( file )
 
 
-def register_gui_callbacks( gui, vectorstore ):
+def register_gui_callbacks( gui ):
     gui.button_chat.on_click( lambda event: run_chat( gui ) )
-    gui.button_query.on_click( lambda event: run_query( gui, vectorstore ) )
+    gui.button_query.on_click( lambda event: run_query( gui ) )
     gui.checkbox_display_system_prompt.param.watch(
         lambda event: toggle_system_prompt_display( gui ), 'value' )
     gui.checkbox_summarize.param.watch(
@@ -229,7 +252,7 @@ def run_chat( gui ):
     update_token_count( gui )
 
 
-def run_query( gui, vectorstore ):
+def run_query( gui ):
     gui.text_status.value = 'OK'
     query = gui.text_input_user.value
     gui.text_input_user.value = ''
@@ -237,6 +260,8 @@ def run_query( gui, vectorstore ):
     add_to_conversation( 'Human', query, gui )
     documents_count = gui.slider_documents_count.value
     if not documents_count: return
+    vectorstore = gui.selector_vectorstore.metadata__[
+        gui.selector_vectorstore.value ][ 'instance' ]
     documents = vectorstore.similarity_search( query, k = documents_count )
     for document in documents:
         add_to_conversation( 'Document', document.page_content, gui )

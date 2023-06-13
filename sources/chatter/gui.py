@@ -228,6 +228,7 @@ layout.update( {
         contains = [
             'selector_model',
             'slider_temperature',
+            'selector_vectorstore',
             'slider_documents_count',
             'text_tokens_total',
             'text_status',
@@ -246,6 +247,12 @@ layout.update( {
         component_arguments = dict(
             name = 'Temperature',
             start = 0, end = 2, step = 0.1, value = 0,
+        ),
+    ),
+    'selector_vectorstore': dict(
+        component_class = Select,
+        component_arguments = dict(
+            name = 'Vector Store',
         ),
     ),
     'slider_documents_count': dict(
