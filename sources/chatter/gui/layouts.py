@@ -226,6 +226,7 @@ layout.update( {
     'right_pane': dict(
         component_class = Column,
         contains = [
+            'selector_provider',
             'selector_model',
             'slider_temperature',
             'selector_vectorstore',
@@ -234,12 +235,20 @@ layout.update( {
             'text_status',
         ],
     ),
+    'selector_provider': dict(
+        component_class = Select,
+        component_arguments = dict(
+            name = 'Provider',
+            options = [ 'OpenAI' ],
+            value = 'OpenAI',
+        ),
+    ),
     'selector_model': dict(
         component_class = Select,
         component_arguments = dict(
             name = 'Model',
-            options = [ 'gpt-3.5-turbo' ],
-            value = 'gpt-3.5-turbo',
+            options = [ 'gpt-3.5-turbo-0613' ],
+            value = 'gpt-3.5-turbo-0613',
         ),
     ),
     'slider_temperature': dict(

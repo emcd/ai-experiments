@@ -21,9 +21,6 @@
 ''' Message processing utilities. '''
 
 
-SYSTEM_MESSAGE_AWARE_MODELS = frozenset( ( 'gpt-4', ) )
-
-
 def count_tokens( content ):
     from tiktoken import get_encoding
     encoding = get_encoding( 'cl100k_base' )

@@ -36,57 +36,49 @@ from panel.widgets import (
 
 
 def populate( gui, vectorstores ):
-    populate_models_selection( gui )
-    populate_system_prompts_selection( gui )
-    populate_summarization_prompts_selection( gui )
-    populate_vectorstores_selection( gui, vectorstores )
+    populate_providers_selector( gui )
+    populate_models_selector( gui )
+    populate_system_prompts_selector( gui )
+    populate_summarization_prompts_selector( gui )
+    populate_vectorstores_selector( gui, vectorstores )
 
 
-def populate_models_selection( gui ):
-    # TODO: Use provider-appropriate call.
-    from operator import itemgetter
-    # TODO: Detect provider and populate accordingly.
-    import openai
-    models = sorted( map(
-        itemgetter( 'id' ),
-        openai.Model.list( ).to_dict_recursive( )[ 'data' ] ) )
-    gui.selector_model.options = models
+def populate_models_selector( gui ):
+    provider = gui.selector_provider.metadata__[
+        gui.selector_provider.value ][ 'model-provider' ]
+    models = provider( )
+    gui.selector_model.options = list( models.keys( ) )
+    gui.selector_model.metadata__ = models
 
 
-def populate_prompts_selection( gui_selector, prompts_directory ):
-    from yaml import safe_load
-    metadata = { }; prompt_names = [ ]
-    for prompt_path in (
-        prompts_directory.resolve( strict = True ).glob( '*.yaml' )
-    ):
-        with prompt_path.open( ) as file:
-            contents = safe_load( file )
-            id_ = contents[ 'id' ]
-            metadata[ id_ ] = contents
-            prompt_names.append( id_ )
-    gui_selector.metadata__ = metadata
-    gui_selector.options = prompt_names
+def populate_providers_selector( gui ):
+    gui.selector_provider.options = [
+        'OpenAI',
+    ]
+    gui.selector_provider.metadata__ = {
+        'OpenAI': { 'model-provider': _provide_openai_models },
+    }
 
 
-def populate_system_prompts_selection( gui ):
+def populate_system_prompts_selector( gui ):
     from pathlib import Path
     from .callbacks import update_system_prompt_variables
-    populate_prompts_selection(
+    _populate_prompts_selector(
         gui.selector_system_prompt,
         Path( '.local/data/system-prompts' ) )
     update_system_prompt_variables( gui )
 
 
-def populate_summarization_prompts_selection( gui ):
+def populate_summarization_prompts_selector( gui ):
     from pathlib import Path
     from .callbacks import update_summarization_prompt_variables
-    populate_prompts_selection(
+    _populate_prompts_selector(
         gui.selector_summarization_prompt,
         Path( '.local/data/summarization-prompts' ) )
     update_summarization_prompt_variables( gui )
 
 
-def populate_vectorstores_selection( gui, vectorstores ):
+def populate_vectorstores_selector( gui, vectorstores ):
     gui.selector_vectorstore.metadata__ = vectorstores
     gui.selector_vectorstore.options = list( vectorstores.keys( ) )
 
@@ -140,3 +132,54 @@ def restore_conversation( gui, registry, path ):
             raise ValueError(
                 f"Unrecognized component class '{component_class}' "
                 f"for component '{name}'." )
+
+
+def _populate_prompts_selector( gui_selector, prompts_directory ):
+    from yaml import safe_load
+    metadata = { }; prompt_names = [ ]
+    for prompt_path in (
+        prompts_directory.resolve( strict = True ).glob( '*.yaml' )
+    ):
+        with prompt_path.open( ) as file:
+            contents = safe_load( file )
+            id_ = contents[ 'id' ]
+            metadata[ id_ ] = contents
+            prompt_names.append( id_ )
+    gui_selector.metadata__ = metadata
+    gui_selector.options = prompt_names
+
+
+def _provide_openai_models( ):
+    from collections import defaultdict
+    from operator import itemgetter
+    import openai
+    # TODO: Only call API when explicitly desired. Should persist to disk.
+    model_names = sorted( map(
+        itemgetter( 'id' ),
+        openai.Model.list( ).to_dict_recursive( )[ 'data' ] ) )
+    sysprompt_honor = defaultdict( lambda: False )
+    sysprompt_honor.update( {
+        'gpt-3.5-turbo-0613': True,
+        'gpt-3.5-turbo-16k-0613': True,
+        'gpt-4': True,
+        'gpt-4-32k': True,
+        'gpt-4-0613': True,
+        'gpt-4-32k-0613': True,
+    } )
+    tokens_limits = defaultdict( lambda: 4096 ) # Some are 4097... _shrug_.
+    tokens_limits.update( {
+        'code-davinci-002': 8000,
+        'gpt-3.5-turbo-16k': 16384,
+        'gpt-3.5-turbo-16k-0613': 16384,
+        'gpt-4': 8192,
+        'gpt-4-32k': 32768,
+        'gpt-4-0613': 8192,
+        'gpt-4-32k-0613': 32768,
+    } )
+    return {
+        model_name: {
+            'honors-system-prompt': sysprompt_honor[ model_name ],
+            'tokens-limit': tokens_limits[ model_name ],
+        }
+        for model_name in model_names
+    }

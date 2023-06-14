@@ -66,11 +66,10 @@ def add_to_conversation( role, content, gui ):
 
 
 def generate_messages( gui ):
-    from ..messages import SYSTEM_MESSAGE_AWARE_MODELS
     system_message = gui.text_system_prompt.object
-    model = gui.selector_model.value
-    if model not in SYSTEM_MESSAGE_AWARE_MODELS: role = 'user'
-    else: role = 'system'
+    sysprompt_honor = gui.selector_model.metadata__[
+        gui.selector_model.value ][ 'honors-system-prompt' ]
+    role = 'system' if sysprompt_honor else 'user'
     messages = [ { 'role': role, 'content': system_message } ]
     for item in gui.column_conversation_history:
         if not item[ 0 ].value: continue # if checkbox is not checked
@@ -240,4 +239,7 @@ def update_token_count( gui ):
     else:
         total_tokens += count_tokens( gui.text_input_user.value )
     total_tokens += count_tokens( gui.text_system_prompt.object )
-    gui.text_tokens_total.value = str( total_tokens )
+    tokens_limit = gui.selector_model.metadata__[
+        gui.selector_model.value ][ 'tokens-limit' ]
+    # TODO: Change color of text, depending on percentage of tokens limit.
+    gui.text_tokens_total.value = f"{total_tokens} / {tokens_limit}"
