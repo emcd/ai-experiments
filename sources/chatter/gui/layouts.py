@@ -132,6 +132,10 @@ layout.update( {
     'column_conversation_history': dict(
         component_class = Column,
         component_arguments = dict( sizing_mode = 'stretch_both' ),
+        persistence_functions = dict(
+            save = 'save_conversation_messages',
+            restore = 'restore_conversation_messages',
+        ),
     ),
     'row_summarization_prompt': dict(
         component_class = Row,

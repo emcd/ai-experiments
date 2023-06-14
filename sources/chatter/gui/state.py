@@ -83,7 +83,7 @@ def populate_vectorstores_selector( gui, vectorstores ):
     gui.selector_vectorstore.options = list( vectorstores.keys( ) )
 
 
-def save_conversation( gui, registry, path ):
+def save_conversation( gui, path ):
     from .layouts import layout
     state = { }
     for name, data in layout.items( ):
@@ -94,7 +94,7 @@ def save_conversation( gui, registry, path ):
         if component_class in ( Column, Row, ):
             if 'persistence_functions' not in data: continue
             saver_name = data[ 'persistence_functions' ][ 'save' ]
-            saver = registry[ saver_name ]
+            saver = globals( )[ saver_name ]
             state.update( saver( component ) )
         elif component_class in (
             Checkbox, FloatSlider, IntSlider, Select, TextAreaInput, TextInput,
@@ -109,7 +109,24 @@ def save_conversation( gui, registry, path ):
     with path.open( 'w' ) as file: dump( state, file, indent = 2 )
 
 
-def restore_conversation( gui, registry, path ):
+def save_conversation_messages( column ):
+    from .callbacks import ConversationTuple
+    state = [ ]
+    for row in column:
+        row_tuple = ConversationTuple( *row )
+        text_message = row_tuple.text_message
+        state.append( {
+            'role': text_message.metadata__[ 'role' ],
+            # TODO: Save MIME type of content.
+            'content': (
+                text_message.value if isinstance( text_message, StaticText )
+                else text_message.object ),
+            'include': row_tuple.checkbox_inclusion.value,
+        } )
+    return { 'column_conversation_history': state }
+
+
+def restore_conversation( gui, path ):
     from json import load
     from .layouts import layout
     with path.open( ) as file: state = load( file )
@@ -121,7 +138,7 @@ def restore_conversation( gui, registry, path ):
         if component_class in ( Column, Row, ):
             if 'persistence_functions' not in data: continue
             restorer_name = data[ 'persistence_functions' ][ 'restore' ]
-            restorer = registry[ restorer_name ]
+            restorer = globals( )[ restorer_name ]
             restorer( component, state )
         elif component_class in (
             Checkbox, FloatSlider, IntSlider, Select, TextAreaInput, TextInput,
@@ -132,6 +149,16 @@ def restore_conversation( gui, registry, path ):
             raise ValueError(
                 f"Unrecognized component class '{component_class}' "
                 f"for component '{name}'." )
+
+
+def restore_conversation_messages( column, state ):
+    from .callbacks import add_message
+    column.clear( )
+    for row_state in state.get( 'column_conversation_history', [ ] ):
+        role = row_state[ 'role' ]
+        content = row_state[ 'content' ]
+        include = row_state[ 'include' ]
+        add_message( gui, role, content, include = include )
 
 
 def _populate_prompts_selector( gui_selector, prompts_directory ):

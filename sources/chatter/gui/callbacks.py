@@ -21,7 +21,17 @@
 ''' Callbacks and their helpers for Panel GUI. '''
 
 
-def add_to_conversation( role, content, gui ):
+def _provide_auxiliary_classes( ):
+    from collections import namedtuple
+    return (
+        namedtuple(
+            'ConversationTuple', ( 'checkbox_inclusion', 'text_message' ) ),
+    )
+
+ConversationTuple, = _provide_auxiliary_classes( )
+
+
+def add_message( gui, role, content, include = True ):
     from panel import Column, Row
     from panel.pane import Markdown
     from panel.widgets import Checkbox, StaticText
@@ -54,15 +64,15 @@ def add_to_conversation( role, content, gui ):
         'role': role,
         'token_count': count_tokens( content ),
     }
-    checkbox = Checkbox( name = emoji, value = True, width = 40 )
+    checkbox = Checkbox( name = emoji, value = include, width = 40 )
     checkbox.param.watch( lambda event: update_token_count( gui ), 'value' )
-    new_item = Row(
+    row = Row(
         checkbox,
         message_cell,
         # TODO: Copy button, edit button, etc...
     )
-    conversation_history.append( new_item )
-    return new_item
+    conversation_history.append( row )
+    return ConversationTuple( *row )
 
 
 def generate_messages( gui ):
@@ -98,29 +108,33 @@ def register( gui ):
 
 def run_chat( gui ):
     gui.text_status.value = 'OK'
-    from openai import ChatCompletion, OpenAIError
     if gui.checkbox_summarize.value:
         query = gui.text_summarization_prompt.object
     else:
         query = gui.text_input_user.value
         gui.text_input_user.value = ''
-    if query: add_to_conversation( 'Human', query, gui )
+    if query: add_message( gui, 'Human', query )
     messages = generate_messages( gui )
+    # TODO: Choose completion function according to provider.
+    from openai import ChatCompletion, OpenAIError
     try:
+        # TODO: Support streaming operation.
         response = ChatCompletion.create(
             messages = messages,
             model = gui.selector_model.value,
             temperature = gui.slider_temperature.value )
-        add_to_conversation(
-            'AI', response.choices[ 0 ].message[ 'content' ].strip( ), gui )
+        add_message(
+            gui, 'AI', response.choices[ 0 ].message[ 'content' ].strip( ) )
     except OpenAIError as exc: gui.text_status.value = f"Error: {exc}"
     else:
         save_conversation( gui )
         if gui.checkbox_summarize.value:
             gui.checkbox_summarize.value = False
-            # Uncheck conversation items above summarization.
+            # Exclude conversation items above summarization.
             for i in range( len( gui.column_conversation_history ) - 2 ):
-                gui.column_conversation_history[ i ][ 0 ].value = False
+                conversation_tuple = ConversationTuple(
+                    *gui.column_conversation_history[ i ] )
+                conversation_tuple.checkbox_inclusion.value = False
     update_token_count( gui )
 
 
@@ -129,21 +143,25 @@ def run_query( gui ):
     query = gui.text_input_user.value
     gui.text_input_user.value = ''
     if not query: return
-    add_to_conversation( 'Human', query, gui )
+    add_message( gui, 'Human', query )
     documents_count = gui.slider_documents_count.value
     if not documents_count: return
     vectorstore = gui.selector_vectorstore.metadata__[
         gui.selector_vectorstore.value ][ 'instance' ]
     documents = vectorstore.similarity_search( query, k = documents_count )
     for document in documents:
-        add_to_conversation( 'Document', document.page_content, gui )
+        add_message( gui, 'Document', document.page_content )
     update_token_count( gui )
 
 
 def save_conversation( gui ):
     ai_message_count = sum(
-        1 for row in gui.column_conversation_history
-        if row[ 0 ].value and 'AI' == row[ 1 ].metadata__[ 'role' ] )
+        1 for conversation_tuple
+        in map(
+            lambda row: ConversationTuple( *row ),
+            gui.column_conversation_history )
+        if conversation_tuple.checkbox_inclusion.value
+        and 'AI' == conversation_tuple.text_message.metadata__[ 'role' ] )
     if 1 == ai_message_count:
         # TODO: Generate blurb.
         # TODO: add_conversation_to_index( gui )
@@ -154,7 +172,7 @@ def save_conversation( gui ):
         Path( __file__ ).parent.resolve( strict = True )
         / '.local/state/conversations' )
     conversations_path.mkdir( exist_ok = True, parents = True )
-    save( gui, { }, Path( '.local/state/conversations/test.json' ) )
+    save( gui, Path( '.local/state/conversations/test.json' ) )
 
 
 def toggle_summarization_prompt_display( gui ):
