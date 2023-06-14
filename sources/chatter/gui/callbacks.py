@@ -115,10 +115,12 @@ def run_chat( gui ):
         gui.text_input_user.value = ''
     if query: add_message( gui, 'Human', query )
     messages = generate_messages( gui )
+    conversation_tuple = add_message( gui, 'AI', '', include = False )
     # TODO: Choose completion function according to provider.
-    status = _try_run_openai_chat( gui, messages )
+    status = _try_run_openai_chat( gui, conversation_tuple, messages )
     gui.text_status.value = status
     if 'OK' == status:
+        update_message( conversation_tuple, include = True )
         save_conversation( gui )
         if gui.checkbox_summarize.value:
             gui.checkbox_summarize.value = False
@@ -174,6 +176,17 @@ def toggle_summarization_prompt_display( gui ):
 
 def toggle_system_prompt_display( gui ):
     gui.text_system_prompt.visible = gui.checkbox_display_system_prompt.value
+
+
+def update_message( conversation_tuple, include = True ):
+    from panel.widgets import StaticText
+    from ..messages import count_tokens
+    conversation_tuple.checkbox_inclusion.value = include
+    text_message = conversation_tuple.text_message
+    content = (
+        text_message.value if isinstance( text_message, StaticText )
+        else text_message.object )
+    text_message.metadata__[ 'token_count' ] = count_tokens( content )
 
 
 def update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
@@ -256,7 +269,7 @@ def update_token_count( gui ):
 
 
 # TODO? Move to dedicated OpenAI module.
-def _try_run_openai_chat( gui, messages ):
+def _try_run_openai_chat( gui, conversation_tuple, messages ):
     from openai import ChatCompletion, OpenAIError
     try:
         response = ChatCompletion.create(
@@ -266,7 +279,6 @@ def _try_run_openai_chat( gui, messages ):
             temperature = gui.slider_temperature.value )
         initial_chunk = next( response )
         # TODO? Validate initial chunk.
-        conversation_tuple = add_message( gui, 'AI', '' )
         for chunk in response:
             delta = chunk.choices[ 0 ].delta
             if not delta: break
