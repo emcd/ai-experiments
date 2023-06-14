@@ -116,17 +116,9 @@ def run_chat( gui ):
     if query: add_message( gui, 'Human', query )
     messages = generate_messages( gui )
     # TODO: Choose completion function according to provider.
-    from openai import ChatCompletion, OpenAIError
-    try:
-        # TODO: Support streaming operation.
-        response = ChatCompletion.create(
-            messages = messages,
-            model = gui.selector_model.value,
-            temperature = gui.slider_temperature.value )
-        add_message(
-            gui, 'AI', response.choices[ 0 ].message[ 'content' ].strip( ) )
-    except OpenAIError as exc: gui.text_status.value = f"Error: {exc}"
-    else:
+    status = _try_run_openai_chat( gui, messages )
+    gui.text_status.value = status
+    if 'OK' == status:
         save_conversation( gui )
         if gui.checkbox_summarize.value:
             gui.checkbox_summarize.value = False
@@ -261,3 +253,23 @@ def update_token_count( gui ):
         gui.selector_model.value ][ 'tokens-limit' ]
     # TODO: Change color of text, depending on percentage of tokens limit.
     gui.text_tokens_total.value = f"{total_tokens} / {tokens_limit}"
+
+
+# TODO? Move to dedicated OpenAI module.
+def _try_run_openai_chat( gui, messages ):
+    from openai import ChatCompletion, OpenAIError
+    try:
+        response = ChatCompletion.create(
+            messages = messages,
+            model = gui.selector_model.value,
+            stream = True,
+            temperature = gui.slider_temperature.value )
+        initial_chunk = next( response )
+        # TODO? Validate initial chunk.
+        conversation_tuple = add_message( gui, 'AI', '' )
+        for chunk in response:
+            delta = chunk.choices[ 0 ].delta
+            if not delta: break
+            conversation_tuple.text_message.object += delta[ 'content' ]
+    except OpenAIError as exc: return f"Error: {exc}"
+    return 'OK'
