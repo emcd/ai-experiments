@@ -18,42 +18,22 @@
 #============================================================================#
 
 
-''' Assorted data structures to help with GUI development. '''
+''' Classes, constants, and utilities common to the GUI. '''
 
 
-from panel.reactive import ReactiveHTML
+import dataclasses
+import typing as typ
+
+from collections import namedtuple
+from collections.abc import (
+    MutableSequence as AbstractMutableSequence,
+    Sequence as AbstractSequence,
+)
+from dataclasses import dataclass
+from pathlib import Path
+from types import SimpleNamespace
+
+import panel as pn
 import param
 
-
-class ConversationIndicator( ReactiveHTML ):
-
-    content = param.String( default = None )
-    identity = param.String( default = None )
-    selected = param.Event( default = False )
-
-    _template = (
-        '''<div id="ConversationIndicator" onclick="${_div_click}">'''
-        '''${content}</div>''' )
-
-    def __init__( self, content, identity, **params ):
-        self.content = content
-        self.identity = identity
-        super( ).__init__( **params )
-
-    def _div_click( self, event ):
-        self.selected = not self.selected
-        print( f"DEBUG: selected = {self.selected}" )
-
-
-def _provide_auxiliary_classes( ):
-    from collections import namedtuple
-    return (
-        namedtuple( 'ConversationTuple', ( 'text_title', ) ),
-        namedtuple(
-            'MessageTuple',
-            ( 'checkbox_inclusion', 'text_message', ) ),
-    )
-
-(   ConversationTuple,
-    MessageTuple,
-) = _provide_auxiliary_classes( )
+from panel.reactive import ReactiveHTML

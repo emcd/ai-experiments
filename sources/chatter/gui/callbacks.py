@@ -21,12 +21,53 @@
 ''' Callbacks and their helpers for Panel GUI. '''
 
 
+from . import base as __
+
+
+@__.dataclass
+class ConversationDescriptor:
+
+    identity: str
+    title: __.typ.Optional[ str ] = None
+    labels: __.AbstractMutableSequence[ str ] = (
+        __.dataclasses.field( default_factory = list ) )
+    gui: __.typ.Optional[ __.SimpleNamespace ] = None
+
+
+class ConversationIndicator( __.ReactiveHTML ):
+
+    selected = __.param.Event( default = False )
+    title = __.param.String( default = None )
+
+    _template = (
+        '''<div id="ConversationIndicator" onclick="${_div_click}">'''
+        '''${title}</div>''' )
+
+    def __init__( self, title, identity, **params ):
+        self.title = title
+        self.identity = identity
+        super( ).__init__( **params )
+
+    def _div_click( self, event ):
+        # Cannot run callback directly. Trigger via Event parameter.
+        self.selected = True
+
+
+ConversationTuple = __.namedtuple(
+    'ConversationTuple',
+    ( 'text_title', ) )
+
+
+MessageTuple = __.namedtuple(
+    'MessageTuple',
+    ( 'checkbox_inclusion', 'text_message', ) )
+
+
 def add_conversation_indicator( gui, descriptor, position = 0 ):
     from panel import Row
-    from .classes import ConversationIndicator
     # TODO: Handle style to indicate active/previous/unloaded conversation.
     text_title = ConversationIndicator(
-        descriptor[ 'title' ], descriptor[ 'identity' ],
+        descriptor.title, descriptor.identity,
         height_policy = 'fit',
         sizing_mode = 'stretch_width' )
     text_title.param.watch(
@@ -38,33 +79,21 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     conversations = gui.column_conversations_index
     if 'END' == position: conversations.append( row )
     else: conversations.insert( position, row )
-    conversations.index__[ descriptor[ 'identity' ] ] = descriptor
-    from .classes import ConversationTuple
+    conversations.index__[ descriptor.identity ] = descriptor
     return ConversationTuple( *row )
 
 
 def add_conversation_indicator_if_necessary( pane_gui ):
-    from .classes import MessageTuple
-    # TODO: Track AI message count on conversation to avoid recalculation.
-    ai_message_count = sum(
-        1 for conversation_tuple
-        in map(
-            lambda row: MessageTuple( *row ),
-            pane_gui.column_conversation_history )
-        if 'AI' == conversation_tuple.text_message.metadata__[ 'role' ] )
-    if 1 != ai_message_count: return
+    identity = pane_gui.identity__
+    dashboard_gui = pane_gui.parent__
+    if identity in dashboard_gui.column_conversations_index.index__: return
     # TODO: Generate blurb.
     # TODO: Generate labels.
-    descriptor = {
-        'gui': pane_gui,
-        'identity': pane_gui.identity__,
-        'labels': [ ],
-        'title': 'test',
-    }
-    dashboard_gui = pane_gui.parent__
+    descriptor = ConversationDescriptor(
+        identity = identity, title = 'test', labels = [ ], gui = pane_gui )
     conversation_tuple = add_conversation_indicator(
         dashboard_gui, descriptor )
-    # TODO: Select new indicator. (Deselects current pane, if there is one.)
+    save_conversations_index( dashboard_gui )
 
 
 def add_message( gui, role, content, include = True ):
@@ -107,7 +136,6 @@ def add_message( gui, role, content, include = True ):
         # TODO: Copy button, edit button, etc...
     )
     gui.column_conversation_history.append( row )
-    from .classes import MessageTuple
     return MessageTuple( *row )
 
 
@@ -117,7 +145,7 @@ def create_and_display_conversation( dashboard_gui ):
     old_id = conversations.current_id__
     if None is not old_id:
         old_descriptor = conversations.index__[ old_id ]
-        old_pane_gui = old_descriptor[ 'gui' ]
+        old_pane_gui = old_descriptor.gui
         old_pane_gui.conversation_pane.visible = False
     conversations.current_id__ = None
     dashboard_gui.conversation_panes.append( new_pane_gui.conversation_pane )
@@ -152,7 +180,6 @@ def generate_component( components, layout, component_name ):
 
 
 def generate_messages( gui ):
-    from .classes import MessageTuple
     system_message = gui.text_system_prompt.object
     sysprompt_honor = gui.selector_model.metadata__[
         gui.selector_model.value ][ 'honors-system-prompt' ]
@@ -171,27 +198,6 @@ def generate_messages( gui ):
         content = text_message.object
         messages.append( { 'role': role, 'content': content } )
     return messages
-
-
-def locate_and_restore_conversation( gui ):
-    from pathlib import Path
-    configuration = gui.auxiliary_data__[ 'configuration' ]
-    directories = gui.auxiliary_data__[ 'directories' ]
-    state_path = Path( configuration[ 'locations' ][ 'state' ].format(
-        user_state_path = directories.user_state_path ) )
-    conversations_path = state_path / 'conversations'
-    restore_conversation( gui, conversations_path / f"{gui.identity__}.json" )
-
-
-def locate_and_save_conversation( gui ):
-    add_conversation_indicator_if_necessary( gui )
-    from pathlib import Path
-    configuration = gui.auxiliary_data__[ 'configuration' ]
-    directories = gui.auxiliary_data__[ 'directories' ]
-    state_path = Path( configuration[ 'locations' ][ 'state' ].format(
-        user_state_path = directories.user_state_path ) )
-    conversations_path = state_path / 'conversations'
-    save_conversation( gui, conversations_path / f"{gui.identity__}.json" )
 
 
 def populate_conversation_pane( gui ):
@@ -229,18 +235,16 @@ def populate_providers_selector( gui ):
 
 
 def populate_system_prompts_selector( gui ):
-    from pathlib import Path
     _populate_prompts_selector(
         gui.selector_system_prompt,
-        Path( '.local/data/system-prompts' ) )
+        __.Path( '.local/data/system-prompts' ) )
     update_system_prompt_variables( gui )
 
 
 def populate_summarization_prompts_selector( gui ):
-    from pathlib import Path
     _populate_prompts_selector(
         gui.selector_summarization_prompt,
-        Path( '.local/data/summarization-prompts' ) )
+        __.Path( '.local/data/summarization-prompts' ) )
     update_summarization_prompt_variables( gui )
 
 
@@ -269,10 +273,11 @@ def register_dashboard_callbacks( gui ):
         lambda event: create_and_display_conversation( gui ) )
 
 
-def restore_conversation( gui, path ):
+def restore_conversation( gui ):
     from json import load
     import panel as pn
     from .layouts import conversation_layout as layout
+    path = _calculate_conversations_path( gui ) / f"{gui.identity__}.json"
     with path.open( ) as file: state = load( file )
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
@@ -305,28 +310,18 @@ def restore_conversation_messages( gui, column, state ):
 
 
 def restore_conversations_index( gui ):
-    from pathlib import Path
-    configuration = gui.auxiliary_data__[ 'configuration' ]
-    directories = gui.auxiliary_data__[ 'directories' ]
-    state_path = Path( configuration[ 'locations' ][ 'state' ].format(
-        user_state_path = directories.user_state_path ) )
-    conversations_path = state_path / 'conversations'
-    conversations_path.mkdir( exist_ok = True, parents = True )
+    conversations_path = _calculate_conversations_path( gui )
     index_path = conversations_path / 'index.toml'
+    if not index_path.exists( ): return save_conversations_index( gui )
     from tomli import load
-    from tomli_w import dump
-    if not index_path.exists( ):
-        with index_path.open( 'wb' ) as file:
-            dump( { 'format-version': 1 }, file )
-        return
     with index_path.open( 'rb' ) as file:
         descriptors = load( file )[ 'descriptors' ]
     for descriptor in descriptors:
-        add_conversation_indicator( gui, descriptor, position = 'END' )
+        add_conversation_indicator(
+            gui, ConversationDescriptor( **descriptor ), position = 'END' )
 
 
 def run_chat( gui ):
-    from .classes import MessageTuple
     gui.text_status.value = 'OK'
     if gui.checkbox_summarize.value:
         query = gui.text_summarization_prompt.object
@@ -335,20 +330,24 @@ def run_chat( gui ):
         gui.text_input_user.value = ''
     if query: add_message( gui, 'Human', query )
     messages = generate_messages( gui )
-    conversation_tuple = add_message( gui, 'AI', '', include = False )
+    message_tuple = add_message( gui, 'AI', '', include = False )
     # TODO: Choose completion function according to provider.
-    status = _try_run_openai_chat( gui, conversation_tuple, messages )
+    status = _try_run_openai_chat( gui, message_tuple, messages )
     gui.text_status.value = status
     if 'OK' == status:
-        update_message( conversation_tuple, include = True )
-        locate_and_save_conversation( gui )
+        update_message( message_tuple, include = True )
+        add_conversation_indicator_if_necessary( gui )
+        save_conversation( gui )
         if gui.checkbox_summarize.value:
             gui.checkbox_summarize.value = False
             # Exclude conversation items above summarization.
+            # TODO: Account for documents.
             for i in range( len( gui.column_conversation_history ) - 2 ):
-                conversation_tuple = MessageTuple(
+                message_tuple = MessageTuple(
                     *gui.column_conversation_history[ i ] )
-                conversation_tuple.checkbox_inclusion.value = False
+                message_tuple.checkbox_inclusion.value = False
+    # Retract AI message display on error.
+    else: gui.column_conversation_history.pop( -1 )
     update_token_count( gui )
 
 
@@ -368,7 +367,7 @@ def run_query( gui ):
     update_token_count( gui )
 
 
-def save_conversation( gui, path ):
+def save_conversation( gui ):
     import panel as pn
     from .layouts import conversation_layout as layout
     state = { }
@@ -394,11 +393,11 @@ def save_conversation( gui, path ):
                 f"Unrecognized component class '{component_class}' "
                 f"for component '{name}'." )
     from json import dump
+    path = _calculate_conversations_path( gui ) / f"{gui.identity__}.json"
     with path.open( 'w' ) as file: dump( state, file, indent = 2 )
 
 
 def save_conversation_messages( column ):
-    from .classes import MessageTuple
     state = [ ]
     for row in column:
         row_tuple = MessageTuple( *row )
@@ -412,6 +411,24 @@ def save_conversation_messages( column ):
     return { 'column_conversation_history': state }
 
 
+def save_conversations_index( gui ):
+    conversations_path = _calculate_conversations_path( gui )
+    conversations_path.mkdir( exist_ok = True, parents = True )
+    index_path = conversations_path / 'index.toml'
+    # Do not serialize GUI.
+    descriptors = [
+        dict(
+            identity = descriptor.identity,
+            title = descriptor.title,
+            labels = descriptor.labels,
+        )
+        for descriptor in getattr(
+            gui.column_conversations_index, 'index__', { } ).values( ) ]
+    from tomli_w import dump
+    with index_path.open( 'wb' ) as file:
+        dump( { 'format-version': 1, 'descriptors': descriptors }, file )
+
+
 def select_conversation( gui, event ):
     conversations = gui.column_conversations_index
     old_id = conversations.current_id__
@@ -420,17 +437,17 @@ def select_conversation( gui, event ):
     if None is old_id: gui.conversation_panes.pop( -1 )
     else:
         old_descriptor = conversations.index__[ old_id ]
-        old_pane_gui = old_descriptor[ 'gui' ]
+        old_pane_gui = old_descriptor.gui
         old_pane_gui.conversation_pane.visible = False
     new_descriptor = conversations.index__[ new_id ]
-    if None is new_descriptor.get( 'gui' ):
+    if None is new_descriptor.gui:
         new_pane_gui = create_conversation( gui )
         new_pane_gui.identity__ = new_id
-        locate_and_restore_conversation( new_pane_gui )
+        restore_conversation( new_pane_gui )
         gui.conversation_panes.append( new_pane_gui.conversation_pane )
-        new_descriptor[ 'gui' ] = new_pane_gui
+        new_descriptor.gui = new_pane_gui
     else:
-        new_pane_gui = new_descriptor[ 'gui' ]
+        new_pane_gui = new_descriptor.gui
         new_pane_gui.conversation_pane.visible = True
     conversations.current_id__ = new_id
     from pprint import pprint
@@ -534,6 +551,14 @@ def update_token_count( gui ):
         gui.selector_model.value ][ 'tokens-limit' ]
     # TODO: Change color of text, depending on percentage of tokens limit.
     gui.text_tokens_total.value = f"{total_tokens} / {tokens_limit}"
+
+
+def _calculate_conversations_path( gui ):
+    configuration = gui.auxiliary_data__[ 'configuration' ]
+    directories = gui.auxiliary_data__[ 'directories' ]
+    state_path = __.Path( configuration[ 'locations' ][ 'state' ].format(
+        user_state_path = directories.user_state_path ) )
+    return state_path / 'conversations'
 
 
 def _populate_prompts_selector( gui_selector, prompts_directory ):
