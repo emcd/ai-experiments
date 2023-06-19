@@ -1,0 +1,14 @@
+id: General Recap
+template: |
+  Please recapitulate our conversation thus far, incorporating any refinements
+  made to or tangents to the initially-stated objectives. Also, if you are
+  following an outline or agenda, please restate this, marking off any
+  completed items and noting which ones are in progress. And, any lists or
+  tables that you have been asked to make should be reproduced in their most
+  up-to-date form, along with any relevant notes.
+
+  Note that you will use this recapitulation as the basis for further chats;
+  earlier conversation history may be elided to economize on chat tokens. Thus,
+  it is imperative that you accurately and precisely capture all pertinent
+  information in the conversation so that we can continue it without loss of
+  fidelity from this new starting point.

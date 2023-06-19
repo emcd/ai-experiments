@@ -28,6 +28,7 @@ from . import base as __
 class ConversationDescriptor:
 
     identity: str
+    timestamp: int
     title: __.typ.Optional[ str ] = None
     labels: __.AbstractMutableSequence[ str ] = (
         __.dataclasses.field( default_factory = list ) )
@@ -90,9 +91,13 @@ def add_conversation_indicator_if_necessary( pane_gui ):
     # TODO: Generate blurb.
     # TODO: Generate labels.
     descriptor = ConversationDescriptor(
-        identity = identity, title = 'test', labels = [ ], gui = pane_gui )
+        identity = identity,
+        timestamp = __.time_ns( ),
+        title = 'test',
+        labels = [ ],
+        gui = pane_gui )
     conversation_tuple = add_conversation_indicator(
-        dashboard_gui, descriptor )
+        dashboard_gui, descriptor  )
     save_conversations_index( dashboard_gui )
 
 
@@ -140,15 +145,11 @@ def add_message( gui, role, content, include = True ):
 
 
 def create_and_display_conversation( dashboard_gui ):
-    new_pane_gui = create_conversation( dashboard_gui )
+    pane_gui = create_conversation( dashboard_gui )
     conversations = dashboard_gui.column_conversations_index
-    old_id = conversations.current_id__
-    if None is not old_id:
-        old_descriptor = conversations.index__[ old_id ]
-        old_pane_gui = old_descriptor.gui
-        old_pane_gui.conversation_pane.visible = False
+    dashboard_gui.conversation_panes.clear( )
     conversations.current_id__ = None
-    dashboard_gui.conversation_panes.append( new_pane_gui.conversation_pane )
+    dashboard_gui.conversation_panes.append( pane_gui.conversation_pane )
 
 
 def create_conversation( dashboard_gui ):
@@ -277,7 +278,7 @@ def restore_conversation( gui ):
     from json import load
     import panel as pn
     from .layouts import conversation_layout as layout
-    path = _calculate_conversations_path( gui ) / f"{gui.identity__}.json"
+    path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
     with path.open( ) as file: state = load( file )
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
@@ -310,7 +311,7 @@ def restore_conversation_messages( gui, column, state ):
 
 
 def restore_conversations_index( gui ):
-    conversations_path = _calculate_conversations_path( gui )
+    conversations_path = __.calculate_conversations_path( gui )
     index_path = conversations_path / 'index.toml'
     if not index_path.exists( ): return save_conversations_index( gui )
     from tomli import load
@@ -338,6 +339,7 @@ def run_chat( gui ):
         update_message( message_tuple, include = True )
         add_conversation_indicator_if_necessary( gui )
         save_conversation( gui )
+        update_conversation_timestamp( gui.parent__ )
         if gui.checkbox_summarize.value:
             gui.checkbox_summarize.value = False
             # Exclude conversation items above summarization.
@@ -393,7 +395,7 @@ def save_conversation( gui ):
                 f"Unrecognized component class '{component_class}' "
                 f"for component '{name}'." )
     from json import dump
-    path = _calculate_conversations_path( gui ) / f"{gui.identity__}.json"
+    path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
     with path.open( 'w' ) as file: dump( state, file, indent = 2 )
 
 
@@ -412,13 +414,14 @@ def save_conversation_messages( column ):
 
 
 def save_conversations_index( gui ):
-    conversations_path = _calculate_conversations_path( gui )
+    conversations_path = __.calculate_conversations_path( gui )
     conversations_path.mkdir( exist_ok = True, parents = True )
     index_path = conversations_path / 'index.toml'
     # Do not serialize GUI.
     descriptors = [
         dict(
             identity = descriptor.identity,
+            timestamp = descriptor.timestamp,
             title = descriptor.title,
             labels = descriptor.labels,
         )
@@ -434,24 +437,29 @@ def select_conversation( gui, event ):
     old_id = conversations.current_id__
     new_id = event.obj.identity
     if old_id == new_id: return
-    if None is old_id: gui.conversation_panes.pop( -1 )
-    else:
-        old_descriptor = conversations.index__[ old_id ]
-        old_pane_gui = old_descriptor.gui
-        old_pane_gui.conversation_pane.visible = False
+    gui.conversation_panes.clear( )
     new_descriptor = conversations.index__[ new_id ]
     if None is new_descriptor.gui:
         new_pane_gui = create_conversation( gui )
         new_pane_gui.identity__ = new_id
         restore_conversation( new_pane_gui )
-        gui.conversation_panes.append( new_pane_gui.conversation_pane )
         new_descriptor.gui = new_pane_gui
-    else:
-        new_pane_gui = new_descriptor.gui
-        new_pane_gui.conversation_pane.visible = True
+    else: new_pane_gui = new_descriptor.gui
+    gui.conversation_panes.append( new_pane_gui.conversation_pane )
     conversations.current_id__ = new_id
     from pprint import pprint
     pprint( event )
+
+
+def sort_conversations_index( gui ):
+    conversations = gui.column_conversations_index
+    conversations.index__ = dict( sorted(
+        conversations.index__.items( ),
+        key = lambda id_, desc: desc.timestamp,
+        reverse = True ) )
+    #conversations.clear( )
+    #conversations.extend( (
+    #    desc.indicator for id_, desc in conversations.index__.items( ) ) )
 
 
 def toggle_summarization_prompt_display( gui ):
@@ -461,6 +469,15 @@ def toggle_summarization_prompt_display( gui ):
 
 def toggle_system_prompt_display( gui ):
     gui.text_system_prompt.visible = gui.checkbox_display_system_prompt.value
+
+
+def update_conversation_timestamp( gui ):
+    conversations = gui.column_conversations_index
+    descriptor = conversations.index__[ conversations.current_id__ ]
+    descriptor.timestamp = __.time_ns( )
+    # If already at top, no need to sort again.
+    if conversations[ 0 ] is descriptor.gui.identity__: return
+    sort_conversations_index( gui )
 
 
 def update_message( conversation_tuple, include = True ):
@@ -551,14 +568,6 @@ def update_token_count( gui ):
         gui.selector_model.value ][ 'tokens-limit' ]
     # TODO: Change color of text, depending on percentage of tokens limit.
     gui.text_tokens_total.value = f"{total_tokens} / {tokens_limit}"
-
-
-def _calculate_conversations_path( gui ):
-    configuration = gui.auxiliary_data__[ 'configuration' ]
-    directories = gui.auxiliary_data__[ 'directories' ]
-    state_path = __.Path( configuration[ 'locations' ][ 'state' ].format(
-        user_state_path = directories.user_state_path ) )
-    return state_path / 'conversations'
 
 
 def _populate_prompts_selector( gui_selector, prompts_directory ):

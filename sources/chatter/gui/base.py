@@ -30,10 +30,23 @@ from collections.abc import (
     Sequence as AbstractSequence,
 )
 from dataclasses import dataclass
+from datetime import (
+    datetime as DateTime,
+    timezone as TimeZone,
+)
 from pathlib import Path
+from time import time_ns
 from types import SimpleNamespace
 
 import panel as pn
 import param
 
 from panel.reactive import ReactiveHTML
+
+
+def calculate_conversations_path( gui ):
+    configuration = gui.auxiliary_data__[ 'configuration' ]
+    directories = gui.auxiliary_data__[ 'directories' ]
+    state_path = Path( configuration[ 'locations' ][ 'state' ].format(
+        user_state_path = directories.user_state_path ) )
+    return state_path / 'conversations'
