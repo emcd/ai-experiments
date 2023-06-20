@@ -87,20 +87,15 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
 
 
 def add_conversation_indicator_if_necessary( pane_gui ):
-    identity = pane_gui.identity__
     dashboard_gui = pane_gui.parent__
     conversations = dashboard_gui.column_conversations_index
-    if identity in conversations.index__: return
+    descriptor = conversations.current_descriptor__
+    if descriptor.identity in conversations.index__: return
     # TODO: Generate blurb.
+    descriptor.title = 'test'
     # TODO: Generate labels.
-    descriptor = ConversationDescriptor(
-        identity = identity,
-        timestamp = __.time_ns( ),
-        title = 'test',
-        labels = [ ],
-        gui = pane_gui )
     add_conversation_indicator( dashboard_gui, descriptor  )
-    conversations.current_id__ = identity
+    conversations.current_descriptor__ = descriptor
     save_conversations_index( dashboard_gui )
 
 
@@ -149,9 +144,7 @@ def add_message( gui, role, content, include = True ):
 
 def create_and_display_conversation( dashboard_gui ):
     pane_gui = create_conversation( dashboard_gui )
-    conversations = dashboard_gui.column_conversations_index
     dashboard_gui.conversation_panes.clear( )
-    conversations.current_id__ = None
     dashboard_gui.conversation_panes.append( pane_gui.conversation_pane )
 
 
@@ -164,6 +157,11 @@ def create_conversation( dashboard_gui ):
     pane_gui.auxiliary_data__ = dashboard_gui.auxiliary_data__
     pane_gui.identity__ = uuid4( ).hex
     pane_gui.parent__ = dashboard_gui
+    conversations = dashboard_gui.column_conversations_index
+    conversations.current_descriptor__ = ConversationDescriptor(
+        identity = pane_gui.identity__,
+        timestamp = __.time_ns( ),
+        gui = pane_gui )
     populate_conversation_pane( pane_gui )
     register_conversation_pane_callbacks( pane_gui )
     return pane_gui
@@ -213,8 +211,8 @@ def populate_conversation_pane( gui ):
 
 
 def populate_dashboard( gui ):
-    gui.column_conversations_index.index__ = { }
-    gui.column_conversations_index.current_id__ = None
+    conversations = gui.column_conversations_index
+    conversations.index__ = { }
     restore_conversations_index( gui )
     pane_gui = create_conversation( gui )
     gui.conversation_panes.append( pane_gui.conversation_pane )
@@ -316,9 +314,11 @@ def restore_conversations_index( gui ):
     conversations_path = __.calculate_conversations_path( gui )
     index_path = conversations_path / 'index.toml'
     if not index_path.exists( ): return save_conversations_index( gui )
+    # TODO: Change format to match index dictionary conversations container.
     from tomli import load
     with index_path.open( 'rb' ) as file:
         descriptors = load( file )[ 'descriptors' ]
+    sort_conversations_index( gui ) # extra sanity
     for descriptor in descriptors:
         add_conversation_indicator(
             gui, ConversationDescriptor( **descriptor ), position = 'END' )
@@ -436,11 +436,11 @@ def save_conversations_index( gui ):
 
 def select_conversation( gui, event ):
     conversations = gui.column_conversations_index
-    old_id = conversations.current_id__
+    old_descriptor = conversations.current_descriptor__
     new_id = event.obj.identity
-    if old_id == new_id: return
-    gui.conversation_panes.clear( )
     new_descriptor = conversations.index__[ new_id ]
+    if old_descriptor.identity == new_id: return
+    gui.conversation_panes.clear( )
     if None is new_descriptor.gui:
         new_pane_gui = create_conversation( gui )
         new_pane_gui.identity__ = new_id
@@ -448,7 +448,7 @@ def select_conversation( gui, event ):
         new_descriptor.gui = new_pane_gui
     else: new_pane_gui = new_descriptor.gui
     gui.conversation_panes.append( new_pane_gui.conversation_pane )
-    conversations.current_id__ = new_id
+    conversations.current_descriptor__ = new_descriptor
     from pprint import pprint
     pprint( event )
 
@@ -461,7 +461,8 @@ def sort_conversations_index( gui ):
         reverse = True ) )
     conversations.clear( )
     conversations.extend( (
-        desc.indicator for desc in conversations.index__.values( ) ) )
+        desc.indicator for desc in conversations.index__.values( )
+        if None is not desc.indicator ) )
 
 
 def toggle_summarization_prompt_display( gui ):
@@ -475,7 +476,7 @@ def toggle_system_prompt_display( gui ):
 
 def update_conversation_timestamp( gui ):
     conversations = gui.column_conversations_index
-    descriptor = conversations.index__[ conversations.current_id__ ]
+    descriptor = conversations.current_descriptor__
     descriptor.timestamp = __.time_ns( )
     # If already at top, no need to sort again.
     if conversations[ 0 ] is descriptor.gui.identity__: return
