@@ -33,11 +33,12 @@ class ConversationDescriptor:
     labels: __.AbstractMutableSequence[ str ] = (
         __.dataclasses.field( default_factory = list ) )
     gui: __.typ.Optional[ __.SimpleNamespace ] = None
+    indicator: __.typ.Optional[ __.Row ] = None
 
 
 class ConversationIndicator( __.ReactiveHTML ):
 
-    selected = __.param.Event( default = False )
+    clicked = __.param.Event( default = False )
     title = __.param.String( default = None )
 
     _template = (
@@ -51,7 +52,7 @@ class ConversationIndicator( __.ReactiveHTML ):
 
     def _div_click( self, event ):
         # Cannot run callback directly. Trigger via Event parameter.
-        self.selected = True
+        self.clicked = True
 
 
 ConversationTuple = __.namedtuple(
@@ -72,7 +73,7 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
         height_policy = 'fit',
         sizing_mode = 'stretch_width' )
     text_title.param.watch(
-        lambda event: select_conversation( gui, event ), 'selected' )
+        lambda event: select_conversation( gui, event ), 'clicked' )
     row = Row(
         text_title,
         # TODO: Edit button, delete button, etc...
@@ -81,13 +82,15 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     if 'END' == position: conversations.append( row )
     else: conversations.insert( position, row )
     conversations.index__[ descriptor.identity ] = descriptor
+    descriptor.indicator = row
     return ConversationTuple( *row )
 
 
 def add_conversation_indicator_if_necessary( pane_gui ):
     identity = pane_gui.identity__
     dashboard_gui = pane_gui.parent__
-    if identity in dashboard_gui.column_conversations_index.index__: return
+    conversations = dashboard_gui.column_conversations_index
+    if identity in conversations.index__: return
     # TODO: Generate blurb.
     # TODO: Generate labels.
     descriptor = ConversationDescriptor(
@@ -96,8 +99,8 @@ def add_conversation_indicator_if_necessary( pane_gui ):
         title = 'test',
         labels = [ ],
         gui = pane_gui )
-    conversation_tuple = add_conversation_indicator(
-        dashboard_gui, descriptor  )
+    add_conversation_indicator( dashboard_gui, descriptor  )
+    conversations.current_id__ = identity
     save_conversations_index( dashboard_gui )
 
 
@@ -153,12 +156,11 @@ def create_and_display_conversation( dashboard_gui ):
 
 
 def create_conversation( dashboard_gui ):
-    from types import SimpleNamespace
     from uuid import uuid4
     from .layouts import conversation_layout as layout
     components = { }
     generate_component( components, layout, 'conversation_pane' )
-    pane_gui = SimpleNamespace( **components )
+    pane_gui = __.SimpleNamespace( **components )
     pane_gui.auxiliary_data__ = dashboard_gui.auxiliary_data__
     pane_gui.identity__ = uuid4( ).hex
     pane_gui.parent__ = dashboard_gui
@@ -455,11 +457,11 @@ def sort_conversations_index( gui ):
     conversations = gui.column_conversations_index
     conversations.index__ = dict( sorted(
         conversations.index__.items( ),
-        key = lambda id_, desc: desc.timestamp,
+        key = lambda pair: pair[ 1 ].timestamp,
         reverse = True ) )
-    #conversations.clear( )
-    #conversations.extend( (
-    #    desc.indicator for id_, desc in conversations.index__.items( ) ) )
+    conversations.clear( )
+    conversations.extend( (
+        desc.indicator for desc in conversations.index__.values( ) ) )
 
 
 def toggle_summarization_prompt_display( gui ):

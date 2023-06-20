@@ -41,6 +41,7 @@ from types import SimpleNamespace
 import panel as pn
 import param
 
+from panel.layout import Column, Row, HSpacer
 from panel.reactive import ReactiveHTML
 
 
