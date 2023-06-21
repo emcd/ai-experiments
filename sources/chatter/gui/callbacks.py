@@ -92,9 +92,23 @@ def add_conversation_indicator_if_necessary( gui ):
     conversations = gui.column_conversations_index
     descriptor = conversations.current_descriptor__
     if descriptor.identity in conversations.index__: return
-    # TODO: Generate blurb.
-    descriptor.title = 'test'
-    # TODO: Generate labels.
+    summarization_prompt = gui.selector_summarization_prompt.metadata__[
+        'Title + Labels' ][ 'template' ]
+    messages = [
+        generate_messages( gui )[ 1 ],
+        { 'role': 'user', 'content': summarization_prompt }
+    ]
+    provider_name = gui.selector_provider.value
+    provider = gui.selector_provider.auxiliary_data__[ provider_name ]
+    model = gui.selector_model.value
+    controls = dict( temperature = gui.slider_temperature.value )
+    chat_runner = provider[ 'chat-runner' ]
+    from json import loads
+    try: response = loads( chat_runner( model, messages, **controls ) )
+    # TODO: Find a way to signal that the title could not be generated.
+    except ChatCompletionError as exc: return
+    descriptor.title = response[ 'title' ]
+    descriptor.labels = response[ 'labels' ]
     add_conversation_indicator( gui, descriptor  )
     save_conversations_index( gui )
 
@@ -228,7 +242,7 @@ def populate_dashboard( gui ):
 
 
 def populate_models_selector( gui ):
-    provider = gui.selector_provider.metadata__[
+    provider = gui.selector_provider.auxiliary_data__[
         gui.selector_provider.value ][ 'model-provider' ]
     models = provider( )
     gui.selector_model.options = list( models.keys( ) )
@@ -236,12 +250,9 @@ def populate_models_selector( gui ):
 
 
 def populate_providers_selector( gui ):
-    gui.selector_provider.options = [
-        'OpenAI',
-    ]
-    gui.selector_provider.metadata__ = {
-        'OpenAI': { 'model-provider': _provide_openai_models },
-    }
+    from ..ai import registry
+    gui.selector_provider.options = list( registry.keys( ) )
+    gui.selector_provider.auxiliary_data__ = registry
 
 
 def populate_system_prompts_selector( gui ):
@@ -343,8 +354,7 @@ def run_chat( gui ):
     if query: add_message( gui, 'Human', query )
     messages = generate_messages( gui )
     message_tuple = add_message( gui, 'AI', '', include = False )
-    # TODO: Choose completion function according to provider.
-    status = _try_run_openai_chat( gui, message_tuple, messages )
+    status = _run_chat( gui, message_tuple, messages )
     gui.text_status.value = status
     if 'OK' == status:
         update_message( message_tuple, include = True )
@@ -598,56 +608,23 @@ def _populate_prompts_selector( gui_selector, prompts_directory ):
     gui_selector.options = prompt_names
 
 
-def _provide_openai_models( ):
-    from collections import defaultdict
-    from operator import itemgetter
-    import openai
-    # TODO: Only call API when explicitly desired. Should persist to disk.
-    model_names = sorted( map(
-        itemgetter( 'id' ),
-        openai.Model.list( ).to_dict_recursive( )[ 'data' ] ) )
-    sysprompt_honor = defaultdict( lambda: False )
-    sysprompt_honor.update( {
-        #'gpt-3.5-turbo-0613': True,
-        #'gpt-3.5-turbo-16k-0613': True,
-        'gpt-4': True,
-        'gpt-4-32k': True,
-        'gpt-4-0613': True,
-        'gpt-4-32k-0613': True,
-    } )
-    tokens_limits = defaultdict( lambda: 4096 ) # Some are 4097... _shrug_.
-    tokens_limits.update( {
-        'code-davinci-002': 8000,
-        'gpt-3.5-turbo-16k': 16384,
-        'gpt-3.5-turbo-16k-0613': 16384,
-        'gpt-4': 8192,
-        'gpt-4-32k': 32768,
-        'gpt-4-0613': 8192,
-        'gpt-4-32k-0613': 32768,
-    } )
-    return {
-        model_name: {
-            'honors-system-prompt': sysprompt_honor[ model_name ],
-            'tokens-limit': tokens_limits[ model_name ],
-        }
-        for model_name in model_names
-    }
-
-
-# TODO? Move to dedicated OpenAI module.
-def _try_run_openai_chat( gui, conversation_tuple, messages ):
-    from openai import ChatCompletion, OpenAIError
-    try:
-        response = ChatCompletion.create(
-            messages = messages,
-            model = gui.selector_model.value,
-            stream = True,
-            temperature = gui.slider_temperature.value )
-        initial_chunk = next( response )
-        # TODO? Validate initial chunk.
-        for chunk in response:
-            delta = chunk.choices[ 0 ].delta
-            if not delta: break
-            conversation_tuple.text_message.object += delta[ 'content' ]
-    except OpenAIError as exc: return f"Error: {exc}"
+def _run_chat( gui, conversation_tuple, messages ):
+    from ..ai import ChatCompletionError
+    provider_name = gui.selector_provider.value
+    provider = gui.selector_provider.auxiliary_data__[ provider_name ]
+    model = gui.selector_model.value
+    controls = dict( temperature = gui.slider_temperature.value )
+    chat_runner = provider.get( 'streaming-chat-runner' )
+    if None is chat_runner:
+        chat_runner = provider[ 'chat-runner' ]
+        try:
+            response = chat_runner( model, messages, **controls )
+            conversation_tuple.text_message.object = response
+        except ChatCompletionError as exc: return str( exc )
+    else:
+        try:
+            response = chat_runner( model, messages, **controls )
+            for chunk in response:
+                conversation_tuple.text_message.object += chunk
+        except ChatCompletionError as exc: return str( exc )
     return 'OK'
