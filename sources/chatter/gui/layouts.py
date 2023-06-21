@@ -252,8 +252,8 @@ conversation_control_layout = {
         component_class = Select,
         component_arguments = dict(
             name = 'Model',
-            options = [ 'gpt-3.5-turbo-0613' ],
-            value = 'gpt-3.5-turbo-0613',
+            options = [ 'gpt-3.5-turbo' ],
+            value = 'gpt-3.5-turbo',
         ),
     ),
     'slider_temperature': dict(

@@ -27,8 +27,10 @@ from . import base as __
 @__.dataclass
 class ConversationDescriptor:
 
-    identity: str
-    timestamp: int
+    identity: str = (
+        __.dataclasses.field( default_factory = lambda: __.uuid4( ).hex ) )
+    timestamp: int = (
+        __.dataclasses.field( default_factory = __.time_ns ) )
     title: __.typ.Optional[ str ] = None
     labels: __.AbstractMutableSequence[ str ] = (
         __.dataclasses.field( default_factory = list ) )
@@ -94,7 +96,6 @@ def add_conversation_indicator_if_necessary( gui ):
     descriptor.title = 'test'
     # TODO: Generate labels.
     add_conversation_indicator( gui, descriptor  )
-    conversations.current_descriptor__ = descriptor
     save_conversations_index( gui )
 
 
@@ -131,7 +132,8 @@ def add_message( gui, role, content, include = True ):
         'token_count': count_tokens( content ),
     }
     checkbox = Checkbox( name = emoji, value = include, width = 40 )
-    checkbox.param.watch( lambda event: update_token_count( gui ), 'value' )
+    checkbox.param.watch(
+        lambda event: update_and_save_conversation( gui ), 'value' )
     row = Row(
         checkbox,
         message_cell,
@@ -142,16 +144,14 @@ def add_message( gui, role, content, include = True ):
 
 
 def create_and_display_conversation( gui ):
-    from uuid import uuid4
-    descriptor = ConversationDescriptor(
-        identity = uuid4( ).hex, timestamp = __.time_ns( ) )
+    descriptor = ConversationDescriptor( )
     create_conversation( gui, descriptor )
     display_conversation( gui, descriptor )
 
 
 def create_conversation( gui, descriptor ):
     from .layouts import dashboard_layout as layout
-    components = { }
+    components = gui.__dict__.copy( )
     generate_component( components, layout, 'column_conversation' )
     generate_component( components, layout, 'column_conversation_control' )
     pane_gui = __.SimpleNamespace( **components )
@@ -166,9 +166,7 @@ def create_conversation( gui, descriptor ):
 def display_conversation( gui, descriptor ):
     conversations = gui.column_conversations_index
     conversations.current_descriptor__ = descriptor
-    gui.column_conversation = descriptor.gui.column_conversation
-    gui.column_conversation_control = (
-        descriptor.gui.column_conversation_control )
+    gui.__dict__.update( descriptor.gui.__dict__ )
     gui.dashboard.clear( )
     gui.dashboard.extend( (
         gui.column_conversations_manager,
@@ -224,6 +222,7 @@ def populate_conversation( gui ):
 def populate_dashboard( gui ):
     conversations = gui.column_conversations_index
     conversations.index__ = { }
+    conversations.current_descriptor__ = ConversationDescriptor( )
     restore_conversations_index( gui )
     create_and_display_conversation( gui )
 
@@ -276,7 +275,7 @@ def register_conversation_callbacks( gui ):
     gui.selector_system_prompt.param.watch(
         lambda event: update_system_prompt_variables( gui ), 'value' )
     gui.text_input_user.param.watch(
-        lambda event: update_token_count( gui ), 'value' )
+        lambda event: update_and_save_conversation( gui ), 'value' )
 
 
 def register_dashboard_callbacks( gui ):
@@ -286,17 +285,17 @@ def register_dashboard_callbacks( gui ):
 
 def restore_conversation( gui ):
     from json import load
-    import panel as pn
-    from .layouts import conversation_layout as layout
+    from .layouts import conversation_layout, conversation_control_layout
+    layout = dict( **conversation_layout, **conversation_control_layout )
     path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
     with path.open( ) as file: state = load( file )
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
         component_class = data[ 'component_class' ]
-        if component_class in ( pn.widgets.Button, pn.layout.HSpacer ):
+        if component_class in ( __.Button, __.HSpacer ):
             continue
         component = getattr( gui, name )
-        if component_class in ( pn.layout.Column, pn.layout.Row, ):
+        if component_class in ( __.Column, __.Row ):
             if 'persistence_functions' not in data: continue
             restorer_name = data[ 'persistence_functions' ][ 'restore' ]
             restorer = globals( )[ restorer_name ]
@@ -309,6 +308,7 @@ def restore_conversation( gui ):
             raise ValueError(
                 f"Unrecognized component class '{component_class}' "
                 f"for component '{name}'." )
+    update_token_count( gui )
 
 
 def restore_conversation_messages( gui, column, state ):
@@ -349,7 +349,6 @@ def run_chat( gui ):
     if 'OK' == status:
         update_message( message_tuple, include = True )
         add_conversation_indicator_if_necessary( gui )
-        save_conversation( gui )
         update_conversation_timestamp( gui )
         if gui.checkbox_summarize.value:
             gui.checkbox_summarize.value = False
@@ -361,7 +360,7 @@ def run_chat( gui ):
                 message_tuple.checkbox_inclusion.value = False
     # Retract AI message display on error.
     else: gui.column_conversation_history.pop( -1 )
-    update_token_count( gui )
+    update_and_save_conversation( gui )
 
 
 def run_query( gui ):
@@ -377,22 +376,25 @@ def run_query( gui ):
     documents = vectorstore.similarity_search( query, k = documents_count )
     for document in documents:
         add_message( gui, 'Document', document.page_content )
-    update_token_count( gui )
+    update_and_save_conversation( gui )
 
 
 def save_conversation( gui ):
-    import panel as pn
-    from .layouts import conversation_layout as layout
+    conversations = gui.column_conversations_index
+    descriptor = conversations.current_descriptor__
+    # Do not save conversation before first chat completion.
+    if descriptor.identity not in conversations.index__: return
+    # Do not save conversation while populating it.
+    if descriptor.identity != gui.identity__: return
+    from .layouts import conversation_layout, conversation_control_layout
+    layout = dict( **conversation_layout, **conversation_control_layout )
     state = { }
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
         component_class = data[ 'component_class' ]
-        if component_class in (
-            pn.widgets.Button,
-            pn.layout.HSpacer,
-        ): continue
+        if component_class in ( __.Button, __.HSpacer ): continue
         component = getattr( gui, name )
-        if component_class in ( pn.layout.Column, pn.layout.Row, ):
+        if component_class in ( __.Column, __.Row ):
             if 'persistence_functions' not in data: continue
             saver_name = data[ 'persistence_functions' ][ 'save' ]
             saver = globals( )[ saver_name ]
@@ -453,10 +455,7 @@ def select_conversation( gui, event ):
         new_pane_gui = create_conversation( gui, new_descriptor )
         restore_conversation( new_pane_gui )
         new_descriptor.gui = new_pane_gui
-    else: new_pane_gui = new_descriptor.gui
     display_conversation( gui, new_descriptor )
-    from pprint import pprint
-    pprint( event )
 
 
 def sort_conversations_index( gui ):
@@ -473,11 +472,16 @@ def sort_conversations_index( gui ):
 
 def toggle_summarization_prompt_display( gui ):
     gui.text_summarization_prompt.visible = gui.checkbox_summarize.value
-    update_token_count( gui )
+    update_and_save_conversation( gui )
 
 
 def toggle_system_prompt_display( gui ):
     gui.text_system_prompt.visible = gui.checkbox_display_system_prompt.value
+
+
+def update_and_save_conversation( gui ):
+    update_token_count( gui )
+    save_conversation( gui )
 
 
 def update_conversation_timestamp( gui ):
@@ -485,7 +489,7 @@ def update_conversation_timestamp( gui ):
     descriptor = conversations.current_descriptor__
     descriptor.timestamp = __.time_ns( )
     # If already at top, no need to sort again.
-    if conversations[ 0 ] is descriptor.gui.identity__: return
+    if conversations[ 0 ] is descriptor.indicator: return
     sort_conversations_index( gui )
 
 
@@ -526,7 +530,7 @@ def update_system_prompt_text( gui ):
         'row_system_prompt_variables',
         'selector_system_prompt',
         'text_system_prompt' )
-    update_token_count( gui )
+    update_and_save_conversation( gui )
 
 
 def update_prompt_variables( gui, row_name, selector_name, callback ):
@@ -604,8 +608,8 @@ def _provide_openai_models( ):
         openai.Model.list( ).to_dict_recursive( )[ 'data' ] ) )
     sysprompt_honor = defaultdict( lambda: False )
     sysprompt_honor.update( {
-        'gpt-3.5-turbo-0613': True,
-        'gpt-3.5-turbo-16k-0613': True,
+        #'gpt-3.5-turbo-0613': True,
+        #'gpt-3.5-turbo-16k-0613': True,
         'gpt-4': True,
         'gpt-4-32k': True,
         'gpt-4-0613': True,

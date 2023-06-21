@@ -37,12 +37,14 @@ from datetime import (
 from pathlib import Path
 from time import time_ns
 from types import SimpleNamespace
+from uuid import uuid4
 
 import panel as pn
 import param
 
 from panel.layout import Column, Row, HSpacer
 from panel.reactive import ReactiveHTML
+from panel.widgets import Button
 
 
 def calculate_conversations_path( gui ):
