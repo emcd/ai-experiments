@@ -86,17 +86,16 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     return ConversationTuple( *row )
 
 
-def add_conversation_indicator_if_necessary( pane_gui ):
-    dashboard_gui = pane_gui.parent__
-    conversations = dashboard_gui.column_conversations_index
+def add_conversation_indicator_if_necessary( gui ):
+    conversations = gui.column_conversations_index
     descriptor = conversations.current_descriptor__
     if descriptor.identity in conversations.index__: return
     # TODO: Generate blurb.
     descriptor.title = 'test'
     # TODO: Generate labels.
-    add_conversation_indicator( dashboard_gui, descriptor  )
+    add_conversation_indicator( gui, descriptor  )
     conversations.current_descriptor__ = descriptor
-    save_conversations_index( dashboard_gui )
+    save_conversations_index( gui )
 
 
 def add_message( gui, role, content, include = True ):
@@ -142,29 +141,41 @@ def add_message( gui, role, content, include = True ):
     return MessageTuple( *row )
 
 
-def create_and_display_conversation( dashboard_gui ):
-    pane_gui = create_conversation( dashboard_gui )
-    dashboard_gui.conversation_panes.clear( )
-    dashboard_gui.conversation_panes.append( pane_gui.conversation_pane )
-
-
-def create_conversation( dashboard_gui ):
+def create_and_display_conversation( gui ):
     from uuid import uuid4
-    from .layouts import conversation_layout as layout
+    descriptor = ConversationDescriptor(
+        identity = uuid4( ).hex, timestamp = __.time_ns( ) )
+    create_conversation( gui, descriptor )
+    display_conversation( gui, descriptor )
+
+
+def create_conversation( gui, descriptor ):
+    from .layouts import dashboard_layout as layout
     components = { }
-    generate_component( components, layout, 'conversation_pane' )
+    generate_component( components, layout, 'column_conversation' )
+    generate_component( components, layout, 'column_conversation_control' )
     pane_gui = __.SimpleNamespace( **components )
-    pane_gui.auxiliary_data__ = dashboard_gui.auxiliary_data__
-    pane_gui.identity__ = uuid4( ).hex
-    pane_gui.parent__ = dashboard_gui
-    conversations = dashboard_gui.column_conversations_index
-    conversations.current_descriptor__ = ConversationDescriptor(
-        identity = pane_gui.identity__,
-        timestamp = __.time_ns( ),
-        gui = pane_gui )
-    populate_conversation_pane( pane_gui )
-    register_conversation_pane_callbacks( pane_gui )
+    pane_gui.auxiliary_data__ = gui.auxiliary_data__
+    pane_gui.identity__ = descriptor.identity
+    descriptor.gui = pane_gui
+    populate_conversation( pane_gui )
+    register_conversation_callbacks( pane_gui )
     return pane_gui
+
+
+def display_conversation( gui, descriptor ):
+    conversations = gui.column_conversations_index
+    conversations.current_descriptor__ = descriptor
+    gui.column_conversation = descriptor.gui.column_conversation
+    gui.column_conversation_control = (
+        descriptor.gui.column_conversation_control )
+    gui.dashboard.clear( )
+    gui.dashboard.extend( (
+        gui.column_conversations_manager,
+        gui.left_spacer,
+        gui.column_conversation,
+        gui.right_spacer,
+        gui.column_conversation_control ) )
 
 
 def generate_component( components, layout, component_name ):
@@ -201,7 +212,7 @@ def generate_messages( gui ):
     return messages
 
 
-def populate_conversation_pane( gui ):
+def populate_conversation( gui ):
     populate_providers_selector( gui )
     populate_models_selector( gui )
     populate_system_prompts_selector( gui )
@@ -214,8 +225,7 @@ def populate_dashboard( gui ):
     conversations = gui.column_conversations_index
     conversations.index__ = { }
     restore_conversations_index( gui )
-    pane_gui = create_conversation( gui )
-    gui.conversation_panes.append( pane_gui.conversation_pane )
+    create_and_display_conversation( gui )
 
 
 def populate_models_selector( gui ):
@@ -254,7 +264,7 @@ def populate_vectorstores_selector( gui, vectorstores ):
     gui.selector_vectorstore.options = list( vectorstores.keys( ) )
 
 
-def register_conversation_pane_callbacks( gui ):
+def register_conversation_callbacks( gui ):
     gui.button_chat.on_click( lambda event: run_chat( gui ) )
     gui.button_query.on_click( lambda event: run_query( gui ) )
     gui.checkbox_display_system_prompt.param.watch(
@@ -314,7 +324,6 @@ def restore_conversations_index( gui ):
     conversations_path = __.calculate_conversations_path( gui )
     index_path = conversations_path / 'index.toml'
     if not index_path.exists( ): return save_conversations_index( gui )
-    # TODO: Change format to match index dictionary conversations container.
     from tomli import load
     with index_path.open( 'rb' ) as file:
         descriptors = load( file )[ 'descriptors' ]
@@ -341,7 +350,7 @@ def run_chat( gui ):
         update_message( message_tuple, include = True )
         add_conversation_indicator_if_necessary( gui )
         save_conversation( gui )
-        update_conversation_timestamp( gui.parent__ )
+        update_conversation_timestamp( gui )
         if gui.checkbox_summarize.value:
             gui.checkbox_summarize.value = False
             # Exclude conversation items above summarization.
@@ -440,15 +449,12 @@ def select_conversation( gui, event ):
     new_id = event.obj.identity
     new_descriptor = conversations.index__[ new_id ]
     if old_descriptor.identity == new_id: return
-    gui.conversation_panes.clear( )
     if None is new_descriptor.gui:
-        new_pane_gui = create_conversation( gui )
-        new_pane_gui.identity__ = new_id
+        new_pane_gui = create_conversation( gui, new_descriptor )
         restore_conversation( new_pane_gui )
         new_descriptor.gui = new_pane_gui
     else: new_pane_gui = new_descriptor.gui
-    gui.conversation_panes.append( new_pane_gui.conversation_pane )
-    conversations.current_descriptor__ = new_descriptor
+    display_conversation( gui, new_descriptor )
     from pprint import pprint
     pprint( event )
 

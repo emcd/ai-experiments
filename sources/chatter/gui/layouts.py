@@ -39,9 +39,15 @@ dashboard_layout = {
         component_class = Row,
         contains = [
             'column_conversations_manager',
-            'conversation_panes',
+            'left_spacer',
+            'column_conversation',
+            'right_spacer',
+            'column_conversation_control',
         ]
     ),
+}
+
+conversations_manager_layout = {
     'column_conversations_manager': dict(
         component_class = Column,
         component_arguments = dict( width = 640 ),
@@ -58,26 +64,11 @@ dashboard_layout = {
         ),
     ),
     'column_conversations_index': dict( component_class = Column ),
-    'conversation_panes': dict(
-        component_class = Column,
-        component_arguments = dict( width_policy = 'max' ),
-    ),
+    'left_spacer': dict( component_class = HSpacer ),
 }
+dashboard_layout.update( conversations_manager_layout )
 
 conversation_layout = {
-    'conversation_pane': dict(
-        component_class = Row,
-        contains = [
-            #'left_spacer',
-            'column_conversation',
-            'right_spacer',
-            'column_conversation_control',
-        ]
-    ),
-}
-
-conversation_layout.update( {
-    #'left_spacer': dict( component_class = HSpacer ),
     'column_conversation': dict(
         component_class = Column,
         component_arguments = dict(
@@ -232,9 +223,10 @@ conversation_layout.update( {
         component_class = Button,
         component_arguments = dict( name = 'Query' ),
     ),
-} )
+}
+dashboard_layout.update( conversation_layout )
 
-conversation_layout.update( {
+conversation_control_layout = {
     'right_spacer': dict( component_class = HSpacer ),
     'column_conversation_control': dict(
         component_class = Column,
@@ -294,4 +286,5 @@ conversation_layout.update( {
         component_arguments = dict( name = 'Status', value = 'OK', ),
         persist = False,
     ),
-} )
+}
+dashboard_layout.update( conversation_control_layout )
