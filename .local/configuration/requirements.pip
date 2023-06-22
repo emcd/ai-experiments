@@ -1,13 +1,13 @@
 beautifulsoup4
 chromadb
-dotenv
 faiss-cpu
 langchain
 notebook
 openai
-panel
+panel ~= 1.1
 platformdirs
 pytesseract
+python-dotenv
 scrapy
 tiktoken
 tomli

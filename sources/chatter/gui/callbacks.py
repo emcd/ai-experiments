@@ -48,24 +48,19 @@ class ConversationIndicator( __.ReactiveHTML ):
         '''${row}</div>''' )
 
     def __init__( self, title, identity, **params ):
-        self.row = __.Row(
-            title,
-            __.GridBox(
-                __.Button( name = '🗑️', width = 20 ),
-                __.Button( name = '📝', width = 20 ),
-                ncols = 2 ),
-            width_policy = 'max' )
+        from .layouts import conversation_indicator_layout as layout
+        components = { }
+        row = generate_component( components, layout, 'row_indicator' )
+        row_gui = __.SimpleNamespace( **components )
+        row_gui.text_title.object = title
+        self.gui = row_gui
+        self.row = row
         self.identity = identity
         super( ).__init__( **params )
 
     def _div_click( self, event ):
         # Cannot run callback directly. Trigger via Event parameter.
         self.clicked = True
-
-
-ConversationTuple = __.namedtuple(
-    'ConversationTuple',
-    ( 'text_title', 'grid_buttons', ) )
 
 
 MessageTuple = __.namedtuple(
@@ -78,7 +73,6 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     indicator = ConversationIndicator(
         descriptor.title, descriptor.identity,
         height_policy = 'fit',
-        #sizing_mode = 'stretch_width',
         width_policy = 'max' )
     indicator.param.watch(
         lambda event: select_conversation( gui, event ), 'clicked' )
@@ -87,7 +81,6 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     else: conversations.insert( position, indicator )
     conversations.descriptors__[ descriptor.identity ] = descriptor
     descriptor.indicator = indicator
-    return ConversationTuple( *indicator.row )
 
 
 def add_conversation_indicator_if_necessary( gui ):
@@ -115,45 +108,42 @@ def add_conversation_indicator_if_necessary( gui ):
 
 
 def add_message( gui, role, content, include = True ):
-    from panel import Row
-    from panel.pane import Markdown
-    from panel.widgets import Checkbox, StaticText
     from ..messages import count_tokens
+    styles = { 'background-color': 'White' }
     if 'Document' == role:
         content = f'''## Supplement ##\n\n{content}'''
         emoji = '📄'
-        style = { 'background-color': 'WhiteSmoke' }
+        styles.update( {
+            'border-top': '2px dashed LightGray',
+            'padding': '3px'
+        } )
     elif 'AI' == role:
         emoji = '🤖'
-        style = { 'border': '2px solid LightGray', 'padding': '3px' }
-    else:
-        emoji = '🧑'
-        style = { 'background-color': 'White' }
+        styles.update( { 'background-color': 'WhiteSmoke' } )
+    else: emoji = '🧑'
     # TODO: Create cell based on MIME type of content rather than role.
     if role in ( 'Document', ):
-        message_cell = StaticText(
+        message_cell = __.StaticText(
             value = content,
             height_policy = 'fit',
-            sizing_mode = 'stretch_width',
-            style = style )
+            width_policy = 'max' )
     else:
-        message_cell = Markdown(
+        message_cell = __.Markdown(
             content,
             height_policy = 'fit',
-            sizing_mode = 'stretch_width',
-            style = style )
+            width_policy = 'max' )
     message_cell.metadata__ = {
         'role': role,
         'token_count': count_tokens( content ),
     }
-    checkbox = Checkbox( name = emoji, value = include, width = 40 )
+    checkbox = __.Checkbox( name = emoji, value = include, width = 40 )
     checkbox.param.watch(
         lambda event: update_and_save_conversation( gui ), 'value' )
-    row = Row(
+    row = __.Row(
         checkbox,
         message_cell,
         # TODO: Copy button, edit button, etc...
-    )
+        styles = styles )
     gui.column_conversation_history.append( row )
     return MessageTuple( *row )
 

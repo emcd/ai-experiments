@@ -39,12 +39,12 @@ from time import time_ns
 from types import SimpleNamespace
 from uuid import uuid4
 
-import panel as pn
 import param
 
 from panel.layout import Column, GridBox, HSpacer, Row
+from panel.pane import Markdown
 from panel.reactive import ReactiveHTML
-from panel.widgets import Button
+from panel.widgets import Button, Checkbox, StaticText
 
 
 def calculate_conversations_path( gui ):

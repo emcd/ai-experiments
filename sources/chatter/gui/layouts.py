@@ -21,7 +21,7 @@
 ''' GUI layouts with Panel widgets. '''
 
 
-from panel.layout import Column, HSpacer, Row
+from panel.layout import Column, GridBox, HSpacer, Row
 from panel.pane import Markdown
 from panel.widgets import (
     Button,
@@ -37,6 +37,11 @@ from panel.widgets import (
 dashboard_layout = {
     'dashboard': dict(
         component_class = Row,
+        component_arguments = dict(
+            height_policy = 'max',
+            min_width = 1024,
+            width_policy = 'max',
+        ),
         contains = [
             'column_conversations_manager',
             'left_spacer',
@@ -50,7 +55,11 @@ dashboard_layout = {
 conversations_manager_layout = {
     'column_conversations_manager': dict(
         component_class = Column,
-        component_arguments = dict( width = 640 ),
+        component_arguments = dict(
+            max_width = 640,
+            min_width = 192,
+            width_policy = 'max',
+        ),
         contains = [
             'button_new_conversation',
             'column_conversations_indicators',
@@ -63,7 +72,13 @@ conversations_manager_layout = {
             width_policy = 'min',
         ),
     ),
-    'column_conversations_indicators': dict( component_class = Column ),
+    'column_conversations_indicators': dict(
+        component_class = Column,
+        component_arguments = dict(
+            height_policy = 'fit',
+            width_policy = 'max',
+        )
+    ),
     'left_spacer': dict( component_class = HSpacer ),
 }
 dashboard_layout.update( conversations_manager_layout )
@@ -72,7 +87,10 @@ conversation_layout = {
     'column_conversation': dict(
         component_class = Column,
         component_arguments = dict(
-            sizing_mode = 'stretch_height', width = 1024,
+            height_policy = 'max',
+            max_width = 1024,
+            min_width = 640,
+            width_policy = 'fit',
         ),
         contains = [
             'row_system_prompt',
@@ -131,7 +149,10 @@ conversation_layout = {
     ),
     'column_conversation_history': dict(
         component_class = Column,
-        component_arguments = dict( sizing_mode = 'stretch_both' ),
+        component_arguments = dict(
+            height_policy = 'max',
+            width_policy = 'max',
+        ),
         persistence_functions = dict(
             save = 'save_conversation_messages',
             restore = 'restore_conversation_messages',
@@ -190,6 +211,10 @@ conversation_layout = {
     ),
     'row_user_prompt': dict(
         component_class = Row,
+        component_arguments = dict(
+            align = ( 'end', 'start' ),
+            width_policy = 'max',
+        ),
         contains = [ 'label_user', 'column_user_prompt' ],
     ),
     'label_user': dict(
@@ -199,16 +224,16 @@ conversation_layout = {
     ),
     'column_user_prompt': dict(
         component_class = Column,
+        component_arguments = dict( width_policy = 'max' ),
         contains = [ 'text_input_user', 'row_actions', ],
     ),
     'text_input_user': dict(
         component_class = TextAreaInput,
         component_arguments = dict(
-            height_policy = 'fit',
-            max_height = 480,
-            placeholder = 'Enter user message here...',
             value = '',
-            width_policy = 'max',
+            placeholder = 'Enter user message here...',
+            height_policy = 'fit', width_policy = 'max',
+            max_height = 480, # min_height = 240,
         ),
     ),
     'row_actions': dict(
@@ -230,6 +255,11 @@ conversation_control_layout = {
     'right_spacer': dict( component_class = HSpacer ),
     'column_conversation_control': dict(
         component_class = Column,
+        component_arguments = dict(
+            max_width = 640,
+            min_width = 192,
+            width_policy = 'max',
+        ),
         contains = [
             'selector_provider',
             'selector_model',
@@ -288,3 +318,59 @@ conversation_control_layout = {
     ),
 }
 dashboard_layout.update( conversation_control_layout )
+
+conversation_indicator_layout = {
+    'row_indicator': dict(
+        component_class = Row,
+        component_arguments = dict( width_policy = 'max' ),
+        contains = [ 'gridbox_actions', 'text_title' ],
+    ),
+    'gridbox_actions': dict(
+        component_class = GridBox,
+        component_arguments = dict(
+            ncols = 2,
+            height_policy = 'min', width_policy = 'min',
+        ),
+        contains = [
+            'button_delete',
+            'button_edit_title',
+            'button_edit_labels',
+        ],
+    ),
+    'button_delete': dict(
+        component_class = Button,
+        component_arguments = dict(
+            align = 'center',
+            button_style = 'solid', button_type = 'light',
+            height_policy = 'fit', width_policy = 'fit',
+            icon = 'trash',
+            min_height = 20, min_width = 20,
+        ),
+    ),
+    'button_edit_title': dict(
+        component_class = Button,
+        component_arguments = dict(
+            align = 'center',
+            button_style = 'solid', button_type = 'light',
+            height_policy = 'fit', width_policy = 'fit',
+            icon = 'edit',
+            min_height = 20, min_width = 20,
+        ),
+    ),
+    'button_edit_labels': dict(
+        component_class = Button,
+        component_arguments = dict(
+            align = 'center',
+            button_style = 'solid', button_type = 'light',
+            height_policy = 'fit', width_policy = 'fit',
+            icon = 'bookmark-edit',
+            min_height = 20, min_width = 20,
+        ),
+    ),
+    'text_title': dict(
+        component_class = Markdown,
+        component_arguments = dict(
+            height_policy = 'fit', width_policy = 'max',
+        ),
+    ),
+}
