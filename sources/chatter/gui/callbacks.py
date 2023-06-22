@@ -41,14 +41,20 @@ class ConversationDescriptor:
 class ConversationIndicator( __.ReactiveHTML ):
 
     clicked = __.param.Event( default = False )
-    title = __.param.String( default = None )
+    row = __.param.Parameter( )
 
     _template = (
         '''<div id="ConversationIndicator" onclick="${_div_click}">'''
-        '''${title}</div>''' )
+        '''${row}</div>''' )
 
     def __init__( self, title, identity, **params ):
-        self.title = title
+        self.row = __.Row(
+            title,
+            __.GridBox(
+                __.Button( name = '🗑️', width = 20 ),
+                __.Button( name = '📝', width = 20 ),
+                ncols = 2 ),
+            width_policy = 'max' )
         self.identity = identity
         super( ).__init__( **params )
 
@@ -59,7 +65,7 @@ class ConversationIndicator( __.ReactiveHTML ):
 
 ConversationTuple = __.namedtuple(
     'ConversationTuple',
-    ( 'text_title', ) )
+    ( 'text_title', 'grid_buttons', ) )
 
 
 MessageTuple = __.namedtuple(
@@ -68,24 +74,20 @@ MessageTuple = __.namedtuple(
 
 
 def add_conversation_indicator( gui, descriptor, position = 0 ):
-    from panel import Row
     # TODO: Handle style to indicate active/previous/unloaded conversation.
-    text_title = ConversationIndicator(
+    indicator = ConversationIndicator(
         descriptor.title, descriptor.identity,
         height_policy = 'fit',
-        sizing_mode = 'stretch_width' )
-    text_title.param.watch(
+        #sizing_mode = 'stretch_width',
+        width_policy = 'max' )
+    indicator.param.watch(
         lambda event: select_conversation( gui, event ), 'clicked' )
-    row = Row(
-        text_title,
-        # TODO: Edit button, delete button, etc...
-    )
     conversations = gui.column_conversations_indicators
-    if 'END' == position: conversations.append( row )
-    else: conversations.insert( position, row )
+    if 'END' == position: conversations.append( indicator )
+    else: conversations.insert( position, indicator )
     conversations.descriptors__[ descriptor.identity ] = descriptor
-    descriptor.indicator = row
-    return ConversationTuple( *row )
+    descriptor.indicator = indicator
+    return ConversationTuple( *indicator.row )
 
 
 def add_conversation_indicator_if_necessary( gui ):

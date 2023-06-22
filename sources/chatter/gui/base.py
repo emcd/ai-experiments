@@ -42,7 +42,7 @@ from uuid import uuid4
 import panel as pn
 import param
 
-from panel.layout import Column, Row, HSpacer
+from panel.layout import Column, GridBox, HSpacer, Row
 from panel.reactive import ReactiveHTML
 from panel.widgets import Button
 
