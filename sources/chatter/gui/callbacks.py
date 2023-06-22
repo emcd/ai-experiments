@@ -63,11 +63,6 @@ class ConversationIndicator( __.ReactiveHTML ):
         self.clicked = True
 
 
-MessageTuple = __.namedtuple(
-    'MessageTuple',
-    ( 'checkbox_inclusion', 'text_message', ) )
-
-
 def add_conversation_indicator( gui, descriptor, position = 0 ):
     # TODO: Handle style to indicate active/previous/unloaded conversation.
     indicator = ConversationIndicator(
@@ -107,7 +102,7 @@ def add_conversation_indicator_if_necessary( gui ):
     add_conversation_indicator( gui, descriptor  )
 
 
-def add_message( gui, role, content, include = True ):
+def add_message( gui, role, content, behaviors = ( '💬', ) ):
     from ..messages import count_tokens
     styles = { 'background-color': 'White' }
     if 'Document' == role:
@@ -121,31 +116,27 @@ def add_message( gui, role, content, include = True ):
         emoji = '🤖'
         styles.update( { 'background-color': 'WhiteSmoke' } )
     else: emoji = '🧑'
-    # TODO: Create cell based on MIME type of content rather than role.
+    # TODO: Choose layout based on MIME type of content rather than role.
     if role in ( 'Document', ):
-        message_cell = __.StaticText(
-            value = content,
-            height_policy = 'fit',
-            width_policy = 'max' )
+        from .layouts import plain_conversation_message_layout as layout
     else:
-        message_cell = __.Markdown(
-            content,
-            height_policy = 'fit',
-            width_policy = 'max' )
-    message_cell.metadata__ = {
+        from .layouts import rich_conversation_message_layout as layout
+    components = { }
+    row = generate_component( components, layout, 'row_message' )
+    row.styles = styles
+    row_gui = __.SimpleNamespace( **components )
+    row.auxiliary_data__ = {
+        'gui': row_gui,
         'role': role,
         'token_count': count_tokens( content ),
     }
-    checkbox = __.Checkbox( name = emoji, value = include, width = 40 )
-    checkbox.param.watch(
+    row_gui.label_role.value = emoji
+    row_gui.text_message.object = content
+    row_gui.checkbuttons_behaviors.value = behaviors
+    row_gui.checkbuttons_behaviors.param.watch(
         lambda event: update_and_save_conversation( gui ), 'value' )
-    row = __.Row(
-        checkbox,
-        message_cell,
-        # TODO: Copy button, edit button, etc...
-        styles = styles )
     gui.column_conversation_history.append( row )
-    return MessageTuple( *row )
+    return row_gui
 
 
 def create_and_display_conversation( gui ):
@@ -200,17 +191,14 @@ def generate_messages( gui ):
         gui.selector_model.value ][ 'honors-system-prompt' ]
     role = 'system' if sysprompt_honor else 'user'
     messages = [ { 'role': role, 'content': system_message } ]
-    for item in map(
-        lambda row: MessageTuple( *row ),
+    for message_gui in map(
+        lambda row: row.auxiliary_data__[ 'gui' ],
         gui.column_conversation_history
     ):
-        if not item.checkbox_inclusion.value: continue
-        text_message = item.text_message
-        role = (
-            'user'
-            if text_message.metadata__[ 'role' ] in ( 'Human', 'Document' )
-            else 'assistant' )
-        content = text_message.object
+        if '💬' not in message_gui.checkbuttons_behaviors.value: continue
+        role = message_gui.row_message.auxiliary_data__[ 'role' ]
+        role = 'user' if role in ( 'Human', 'Document' ) else 'assistant'
+        content = message_gui.text_message.object
         messages.append( { 'role': role, 'content': content } )
     return messages
 
@@ -318,8 +306,8 @@ def restore_conversation_messages( gui, column, state ):
     for row_state in state.get( 'column_conversation_history', [ ] ):
         role = row_state[ 'role' ]
         content = row_state[ 'content' ]
-        include = row_state[ 'include' ]
-        add_message( gui, role, content, include = include )
+        behaviors = row_state[ 'behaviors' ]
+        add_message( gui, role, content, behaviors = behaviors )
 
 
 def restore_conversations_index( gui ):
@@ -344,21 +332,16 @@ def run_chat( gui ):
         gui.text_input_user.value = ''
     if query: add_message( gui, 'Human', query )
     messages = generate_messages( gui )
-    message_tuple = add_message( gui, 'AI', '', include = False )
-    status = _run_chat( gui, message_tuple, messages )
+    message_gui = add_message( gui, 'AI', '', behaviors = ( ) )
+    status = _run_chat( gui, message_gui, messages )
     gui.text_status.value = status
     if 'OK' == status:
-        update_message( message_tuple, include = True )
+        update_message( message_gui )
         add_conversation_indicator_if_necessary( gui )
         update_and_save_conversations_index( gui )
         if gui.checkbox_summarize.value:
             gui.checkbox_summarize.value = False
-            # Exclude conversation items above summarization.
-            # TODO: Account for documents.
-            for i in range( len( gui.column_conversation_history ) - 2 ):
-                message_tuple = MessageTuple(
-                    *gui.column_conversation_history[ i ] )
-                message_tuple.checkbox_inclusion.value = False
+            _update_messages_post_summarization( gui )
     # Retract AI message display on error.
     else: gui.column_conversation_history.pop( -1 )
     update_and_save_conversation( gui )
@@ -416,13 +399,12 @@ def save_conversation( gui ):
 def save_conversation_messages( column ):
     state = [ ]
     for row in column:
-        row_tuple = MessageTuple( *row )
-        text_message = row_tuple.text_message
+        message_gui = row.auxiliary_data__[ 'gui' ]
         state.append( {
-            'role': text_message.metadata__[ 'role' ],
+            'role': row.auxiliary_data__[ 'role' ],
             # TODO: Save MIME type of content.
-            'content': text_message.object,
-            'include': row_tuple.checkbox_inclusion.value,
+            'content': message_gui.text_message.object,
+            'behaviors': message_gui.checkbuttons_behaviors.value,
         } )
     return { 'column_conversation_history': state }
 
@@ -500,15 +482,12 @@ def update_conversation_timestamp( gui ):
     sort_conversations_index( gui )
 
 
-def update_message( conversation_tuple, include = True ):
-    from panel.widgets import StaticText
+def update_message( message_gui, behaviors = ( '💬', ) ):
     from ..messages import count_tokens
-    conversation_tuple.checkbox_inclusion.value = include
-    text_message = conversation_tuple.text_message
-    content = (
-        text_message.value if isinstance( text_message, StaticText )
-        else text_message.object )
-    text_message.metadata__[ 'token_count' ] = count_tokens( content )
+    message_gui.checkbuttons_behaviors.value = behaviors
+    content = message_gui.text_message.object
+    message_gui.row_message.auxiliary_data__[ 'token_count' ] = (
+        count_tokens( content ) )
 
 
 def update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
@@ -575,10 +554,10 @@ def update_system_prompt_variables( gui ):
 def update_token_count( gui ):
     from ..messages import count_tokens
     total_tokens = 0
-    for item in gui.column_conversation_history:
-        checkbox, message_cell = item
-        if checkbox.value:
-            total_tokens += message_cell.metadata__[ 'token_count' ]
+    for row in gui.column_conversation_history:
+        message_gui = row.auxiliary_data__[ 'gui' ]
+        if '💬' in message_gui.checkbuttons_behaviors.value:
+            total_tokens += row.auxiliary_data__[ 'token_count' ]
     if gui.checkbox_summarize.value:
         total_tokens += count_tokens( gui.text_summarization_prompt.object )
     else:
@@ -605,7 +584,7 @@ def _populate_prompts_selector( gui_selector, prompts_directory ):
     gui_selector.options = prompt_names
 
 
-def _run_chat( gui, conversation_tuple, messages ):
+def _run_chat( gui, message_gui, messages ):
     from ..ai import ChatCompletionError
     provider_name = gui.selector_provider.value
     provider = gui.selector_provider.auxiliary_data__[ provider_name ]
@@ -616,12 +595,24 @@ def _run_chat( gui, conversation_tuple, messages ):
         chat_runner = provider[ 'chat-runner' ]
         try:
             response = chat_runner( model, messages, **controls )
-            conversation_tuple.text_message.object = response
+            message_gui.text_message.object = response
         except ChatCompletionError as exc: return str( exc )
     else:
         try:
             response = chat_runner( model, messages, **controls )
             for chunk in response:
-                conversation_tuple.text_message.object += chunk
+                message_gui.text_message.object += chunk
         except ChatCompletionError as exc: return str( exc )
     return 'OK'
+
+
+def _update_messages_post_summarization( gui ):
+    ''' Exclude conversation items above summarization request. '''
+    # TODO: Account for documents.
+    for i in range( len( gui.column_conversation_history ) - 2 ):
+        row_gui = (
+            gui.column_conversation_history[ i ].auxiliary_data__[ 'gui' ] )
+        behaviors = row_gui.checkbuttons_behaviors.value
+        if '💬' not in behaviors: continue # already inactive, nothing to do
+        if '📌' in behaviors: continue # skip pinned messages
+        behaviors.remove( '💬' )

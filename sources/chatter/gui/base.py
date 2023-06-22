@@ -41,10 +41,9 @@ from uuid import uuid4
 
 import param
 
-from panel.layout import Column, GridBox, HSpacer, Row
-from panel.pane import Markdown
+from panel.layout import Column, HSpacer, Row
 from panel.reactive import ReactiveHTML
-from panel.widgets import Button, Checkbox, StaticText
+from panel.widgets import Button
 
 
 def calculate_conversations_path( gui ):

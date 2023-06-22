@@ -26,6 +26,7 @@ from panel.pane import Markdown
 from panel.widgets import (
     Button,
     Checkbox,
+    CheckButtonGroup,
     FloatSlider,
     IntSlider,
     Select,
@@ -56,9 +57,9 @@ conversations_manager_layout = {
     'column_conversations_manager': dict(
         component_class = Column,
         component_arguments = dict(
-            max_width = 640,
-            min_width = 192,
-            width_policy = 'max',
+            height_policy = 'max', width_policy = 'max',
+            max_width = 480, min_width = 192,
+            styles = { 'background': 'LightGray' },
         ),
         contains = [
             'button_new_conversation',
@@ -75,8 +76,7 @@ conversations_manager_layout = {
     'column_conversations_indicators': dict(
         component_class = Column,
         component_arguments = dict(
-            height_policy = 'fit',
-            width_policy = 'max',
+            height_policy = 'min', width_policy = 'max',
         )
     ),
     'left_spacer': dict( component_class = HSpacer ),
@@ -87,10 +87,8 @@ conversation_layout = {
     'column_conversation': dict(
         component_class = Column,
         component_arguments = dict(
-            height_policy = 'max',
-            max_width = 1024,
-            min_width = 640,
-            width_policy = 'fit',
+            height_policy = 'max', width_policy = 'max',
+            max_width = 1280, min_width = 640,
         ),
         contains = [
             'row_system_prompt',
@@ -101,6 +99,11 @@ conversation_layout = {
     ),
     'row_system_prompt': dict(
         component_class = Row,
+        component_arguments = dict(
+            height_policy = 'min', width_policy = 'max',
+            # TODO: Use style variable instead for theming.
+            styles = { 'background': 'WhiteSmoke' },
+        ),
         contains = [ 'label_system', 'column_system_prompt', ],
     ),
     'label_system': dict(
@@ -150,8 +153,7 @@ conversation_layout = {
     'column_conversation_history': dict(
         component_class = Column,
         component_arguments = dict(
-            height_policy = 'max',
-            width_policy = 'max',
+            height_policy = 'max', width_policy = 'max',
         ),
         persistence_functions = dict(
             save = 'save_conversation_messages',
@@ -160,6 +162,9 @@ conversation_layout = {
     ),
     'row_summarization_prompt': dict(
         component_class = Row,
+        component_arguments = dict(
+            height_policy = 'min', width_policy = 'max',
+        ),
         contains = [
             'label_summarization',
             'column_summarization_prompt',
@@ -256,9 +261,9 @@ conversation_control_layout = {
     'column_conversation_control': dict(
         component_class = Column,
         component_arguments = dict(
-            max_width = 640,
-            min_width = 192,
-            width_policy = 'max',
+            height_policy = 'max', width_policy = 'max',
+            max_width = 480, min_width = 192,
+            styles = { 'background': 'LightGray' },
         ),
         contains = [
             'selector_provider',
@@ -328,8 +333,11 @@ conversation_indicator_layout = {
     'gridbox_actions': dict(
         component_class = GridBox,
         component_arguments = dict(
-            ncols = 2,
+            ncols = 3,
+            align = 'center',
             height_policy = 'min', width_policy = 'min',
+            margin = 5,
+            styles = { 'padding': '2px' },
         ),
         contains = [
             'button_delete',
@@ -341,36 +349,149 @@ conversation_indicator_layout = {
         component_class = Button,
         component_arguments = dict(
             align = 'center',
-            button_style = 'solid', button_type = 'light',
-            height_policy = 'fit', width_policy = 'fit',
-            icon = 'trash',
-            min_height = 20, min_width = 20,
+            button_style = 'outline', button_type = 'light',
+            height_policy = 'min', width_policy = 'min',
+            icon = 'trash', icon_size = '1em',
+            margin = 1,
+            styles = { 'border': '0', 'padding': '0' },
         ),
     ),
     'button_edit_title': dict(
         component_class = Button,
         component_arguments = dict(
             align = 'center',
-            button_style = 'solid', button_type = 'light',
-            height_policy = 'fit', width_policy = 'fit',
-            icon = 'edit',
-            min_height = 20, min_width = 20,
+            button_style = 'outline', button_type = 'light',
+            height_policy = 'min', width_policy = 'min',
+            icon = 'edit', icon_size = '1em',
+            margin = 1,
+            styles = { 'border': '0', 'padding': '0' },
         ),
     ),
     'button_edit_labels': dict(
         component_class = Button,
         component_arguments = dict(
             align = 'center',
-            button_style = 'solid', button_type = 'light',
-            height_policy = 'fit', width_policy = 'fit',
-            icon = 'bookmark-edit',
-            min_height = 20, min_width = 20,
+            button_style = 'outline', button_type = 'light',
+            height_policy = 'min', width_policy = 'min',
+            icon = 'bookmark-edit', icon_size = '1em',
+            margin = 1,
+            styles = { 'border': '0', 'padding': '0' },
         ),
     ),
     'text_title': dict(
         component_class = Markdown,
         component_arguments = dict(
-            height_policy = 'fit', width_policy = 'max',
+            align = 'center',
+            height_policy = 'min', width_policy = 'max',
         ),
     ),
 }
+
+conversation_message_common_layout = {
+    'row_message': dict(
+        component_class = Row,
+        component_arguments = dict(
+            height_policy = 'min', width_policy = 'max',
+        ),
+        contains = [ 'column_header', 'text_message' ],
+    ),
+    'column_header': dict(
+        component_class = Column,
+        component_arguments = dict(
+            height_policy = 'min', width_policy = 'min',
+        ),
+        contains = [ 'row_behaviors', 'gridbox_actions' ],
+    ),
+    'row_behaviors': dict(
+        component_class = Row,
+        component_arguments = dict(
+            height_policy = 'min', width_policy = 'min',
+        ),
+        contains = [ 'label_role', 'checkbuttons_behaviors' ]
+    ),
+    'label_role': dict(
+        component_class = StaticText,
+        component_arguments = dict(
+            align = 'center',
+            height_policy = 'min', width_policy = 'min',
+            margin = 5,
+        ),
+    ),
+    'checkbuttons_behaviors': dict(
+        component_class = CheckButtonGroup,
+        component_arguments = dict(
+            options = [ '💬', '📌' ],
+            value = [ '💬' ],
+            align = 'center',
+            button_style = 'outline', button_type = 'light',
+            height_policy = 'min', width_policy = 'min',
+            margin = 5,
+            styles = { 'padding': '2px' },
+        ),
+    ),
+    'gridbox_actions': dict(
+        component_class = GridBox,
+        component_arguments = dict(
+            ncols = 3,
+            align = ( 'start', 'end' ),
+            height_policy = 'min', width_policy = 'min',
+            margin = 5,
+            styles = { 'padding': '2px' },
+            visible = False,
+        ),
+        contains = [ 'button_delete', 'button_edit', 'button_copy' ],
+    ),
+    'button_delete': dict(
+        component_class = Button,
+        component_arguments = dict(
+            align = 'center',
+            button_style = 'outline', button_type = 'light',
+            height_policy = 'min', width_policy = 'min',
+            icon = 'trash',
+            margin = 0,
+            styles = { 'padding': '0' },
+        ),
+    ),
+    'button_edit': dict(
+        component_class = Button,
+        component_arguments = dict(
+            align = 'center',
+            button_style = 'outline', button_type = 'light',
+            height_policy = 'min', width_policy = 'min',
+            icon = 'edit',
+            margin = 0,
+            styles = { 'padding': '0' },
+        ),
+    ),
+    'button_copy': dict(
+        component_class = Button,
+        component_arguments = dict(
+            align = 'center',
+            button_style = 'outline', button_type = 'light',
+            height_policy = 'min', width_policy = 'min',
+            icon = 'copy',
+            margin = 0,
+            styles = { 'padding': '0' },
+        ),
+    ),
+}
+
+plain_conversation_message_layout = conversation_message_common_layout.copy( )
+plain_conversation_message_layout.update( {
+    'text_message': dict(
+        component_class = StaticText,
+        component_arguments = dict(
+            height_policy = 'min', width_policy = 'max',
+        ),
+    ),
+} )
+
+rich_conversation_message_layout = conversation_message_common_layout.copy( )
+rich_conversation_message_layout.update( {
+    'text_message': dict(
+        component_class = Markdown,
+        component_arguments = dict(
+            height_policy = 'min', width_policy = 'max',
+        ),
+    ),
+} )
