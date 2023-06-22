@@ -53,7 +53,7 @@ conversations_manager_layout = {
         component_arguments = dict( width = 640 ),
         contains = [
             'button_new_conversation',
-            'column_conversations_index',
+            'column_conversations_indicators',
         ],
     ),
     'button_new_conversation': dict(
@@ -63,7 +63,7 @@ conversations_manager_layout = {
             width_policy = 'min',
         ),
     ),
-    'column_conversations_index': dict( component_class = Column ),
+    'column_conversations_indicators': dict( component_class = Column ),
     'left_spacer': dict( component_class = HSpacer ),
 }
 dashboard_layout.update( conversations_manager_layout )

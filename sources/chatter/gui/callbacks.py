@@ -80,18 +80,18 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
         text_title,
         # TODO: Edit button, delete button, etc...
     )
-    conversations = gui.column_conversations_index
+    conversations = gui.column_conversations_indicators
     if 'END' == position: conversations.append( row )
     else: conversations.insert( position, row )
-    conversations.index__[ descriptor.identity ] = descriptor
+    conversations.descriptors__[ descriptor.identity ] = descriptor
     descriptor.indicator = row
     return ConversationTuple( *row )
 
 
 def add_conversation_indicator_if_necessary( gui ):
-    conversations = gui.column_conversations_index
+    conversations = gui.column_conversations_indicators
     descriptor = conversations.current_descriptor__
-    if descriptor.identity in conversations.index__: return
+    if descriptor.identity in conversations.descriptors__: return
     summarization_prompt = gui.selector_summarization_prompt.metadata__[
         'Title + Labels' ][ 'template' ]
     messages = [
@@ -110,7 +110,6 @@ def add_conversation_indicator_if_necessary( gui ):
     descriptor.title = response[ 'title' ]
     descriptor.labels = response[ 'labels' ]
     add_conversation_indicator( gui, descriptor  )
-    save_conversations_index( gui )
 
 
 def add_message( gui, role, content, include = True ):
@@ -178,7 +177,7 @@ def create_conversation( gui, descriptor ):
 
 
 def display_conversation( gui, descriptor ):
-    conversations = gui.column_conversations_index
+    conversations = gui.column_conversations_indicators
     conversations.current_descriptor__ = descriptor
     gui.__dict__.update( descriptor.gui.__dict__ )
     gui.dashboard.clear( )
@@ -234,8 +233,8 @@ def populate_conversation( gui ):
 
 
 def populate_dashboard( gui ):
-    conversations = gui.column_conversations_index
-    conversations.index__ = { }
+    conversations = gui.column_conversations_indicators
+    conversations.descriptors__ = { }
     conversations.current_descriptor__ = ConversationDescriptor( )
     restore_conversations_index( gui )
     create_and_display_conversation( gui )
@@ -338,10 +337,10 @@ def restore_conversations_index( gui ):
     from tomli import load
     with index_path.open( 'rb' ) as file:
         descriptors = load( file )[ 'descriptors' ]
-    sort_conversations_index( gui ) # extra sanity
     for descriptor in descriptors:
         add_conversation_indicator(
             gui, ConversationDescriptor( **descriptor ), position = 'END' )
+    sort_conversations_index( gui ) # extra sanity
 
 
 def run_chat( gui ):
@@ -359,7 +358,7 @@ def run_chat( gui ):
     if 'OK' == status:
         update_message( message_tuple, include = True )
         add_conversation_indicator_if_necessary( gui )
-        update_conversation_timestamp( gui )
+        update_and_save_conversations_index( gui )
         if gui.checkbox_summarize.value:
             gui.checkbox_summarize.value = False
             # Exclude conversation items above summarization.
@@ -390,10 +389,10 @@ def run_query( gui ):
 
 
 def save_conversation( gui ):
-    conversations = gui.column_conversations_index
+    conversations = gui.column_conversations_indicators
     descriptor = conversations.current_descriptor__
     # Do not save conversation before first chat completion.
-    if descriptor.identity not in conversations.index__: return
+    if descriptor.identity not in conversations.descriptors__: return
     # Do not save conversation while populating it.
     if descriptor.identity != gui.identity__: return
     from .layouts import conversation_layout, conversation_control_layout
@@ -440,6 +439,7 @@ def save_conversations_index( gui ):
     conversations_path = __.calculate_conversations_path( gui )
     conversations_path.mkdir( exist_ok = True, parents = True )
     index_path = conversations_path / 'index.toml'
+    conversations = gui.column_conversations_indicators
     # Do not serialize GUI.
     descriptors = [
         dict(
@@ -448,18 +448,18 @@ def save_conversations_index( gui ):
             title = descriptor.title,
             labels = descriptor.labels,
         )
-        for descriptor in getattr(
-            gui.column_conversations_index, 'index__', { } ).values( ) ]
+        for descriptor in conversations.descriptors__.values( )
+    ]
     from tomli_w import dump
     with index_path.open( 'wb' ) as file:
         dump( { 'format-version': 1, 'descriptors': descriptors }, file )
 
 
 def select_conversation( gui, event ):
-    conversations = gui.column_conversations_index
+    conversations = gui.column_conversations_indicators
     old_descriptor = conversations.current_descriptor__
     new_id = event.obj.identity
-    new_descriptor = conversations.index__[ new_id ]
+    new_descriptor = conversations.descriptors__[ new_id ]
     if old_descriptor.identity == new_id: return
     if None is new_descriptor.gui:
         new_pane_gui = create_conversation( gui, new_descriptor )
@@ -469,14 +469,14 @@ def select_conversation( gui, event ):
 
 
 def sort_conversations_index( gui ):
-    conversations = gui.column_conversations_index
-    conversations.index__ = dict( sorted(
-        conversations.index__.items( ),
+    conversations = gui.column_conversations_indicators
+    conversations.descriptors__ = dict( sorted(
+        conversations.descriptors__.items( ),
         key = lambda pair: pair[ 1 ].timestamp,
         reverse = True ) )
     conversations.clear( )
     conversations.extend( (
-        desc.indicator for desc in conversations.index__.values( )
+        desc.indicator for desc in conversations.descriptors__.values( )
         if None is not desc.indicator ) )
 
 
@@ -494,8 +494,13 @@ def update_and_save_conversation( gui ):
     save_conversation( gui )
 
 
+def update_and_save_conversations_index( gui ):
+    update_conversation_timestamp( gui )
+    save_conversations_index( gui )
+
+
 def update_conversation_timestamp( gui ):
-    conversations = gui.column_conversations_index
+    conversations = gui.column_conversations_indicators
     descriptor = conversations.current_descriptor__
     descriptor.timestamp = __.time_ns( )
     # If already at top, no need to sort again.
