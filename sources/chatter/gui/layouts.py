@@ -39,24 +39,25 @@ from panel.widgets import (
 )
 
 
-_sticky_css = '''
-div.sticky {
-    position: sticky;
-}
-'''
-class StickyContainer( ReactiveHTML ):
-
-    containee = param.Parameter( )
-
-    _template = (
-        '''<div id="StickyContainer" class="sticky">${containee}</div>''' )
-
-    def __init__( self, containee, **params ):
-        self.containee = containee
-        stylesheets = params.get( 'stylesheets', [ ] ).copy( )
-        stylesheets.append( _sticky_css )
-        params[ 'stylesheets' ] = stylesheets
-        super( ).__init__( **params )
+#_sticky_css = '''
+#div.sticky {
+#    position: sticky;
+#    top: 0;
+#}
+#'''
+#class StickyContainer( ReactiveHTML ):
+#
+#    containee = param.Parameter( )
+#
+#    _template = (
+#        '''<div id="StickyContainer" class="sticky">${containee}</div>''' )
+#
+#    def __init__( self, containee, **params ):
+#        self.containee = containee
+#        stylesheets = params.get( 'stylesheets', [ ] ).copy( )
+#        stylesheets.append( _sticky_css )
+#        params[ 'stylesheets' ] = stylesheets
+#        super( ).__init__( **params )
 
 
 dashboard_layout = {
@@ -83,6 +84,7 @@ conversations_manager_layout = {
         component_arguments = dict(
             height_policy = 'max', width_policy = 'max',
             max_width = 480, min_width = 192,
+            # TODO: Use style variable instead for theming.
             styles = { 'background': 'LightGray' },
         ),
         contains = [
@@ -111,7 +113,7 @@ conversation_layout = {
     'column_conversation': dict(
         component_class = Column,
         component_arguments = dict(
-            height_policy = 'max', width_policy = 'max',
+            height_policy = 'auto', width_policy = 'max',
             max_width = 1280, min_width = 640,
         ),
         contains = [
@@ -123,7 +125,7 @@ conversation_layout = {
     'row_system_prompt': dict(
         component_class = Row,
         component_arguments = dict(
-            height_policy = 'min', width_policy = 'max',
+            height_policy = 'auto', width_policy = 'max',
             # TODO: Use style variable instead for theming.
             styles = { 'background': 'WhiteSmoke' },
         ),
@@ -136,6 +138,9 @@ conversation_layout = {
     ),
     'column_system_prompt': dict(
         component_class = Column,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+        ),
         contains = [
             'row_system_prompt_selector',
             'row_system_prompt_variables',
@@ -144,6 +149,9 @@ conversation_layout = {
     ),
     'row_system_prompt_selector': dict(
         component_class = Row,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+        ),
         contains = [
             'selector_system_prompt',
             'checkbox_display_system_prompt',
@@ -164,7 +172,12 @@ conversation_layout = {
             value = False,
         ),
     ),
-    'row_system_prompt_variables': dict(component_class = Row, ),
+    'row_system_prompt_variables': dict(
+        component_class = Row,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+        ),
+    ),
     'text_system_prompt': dict(
         component_class = Markdown,
         component_arguments = dict(
@@ -176,8 +189,8 @@ conversation_layout = {
     'column_conversation_history': dict(
         component_class = Column,
         component_arguments = dict(
-            height_policy = 'max', width_policy = 'max',
-            styles = { 'overflow': 'auto' },
+            height_policy = 'auto', width_policy = 'max',
+            #styles = { 'overflow': 'auto' },
         ),
         persistence_functions = dict(
             save = 'save_conversation_messages',
@@ -189,7 +202,7 @@ conversation_layout = {
         component_arguments = dict(
             # TODO: Use style variable instead for theming.
             styles = { 'background': 'White' },
-            width_policy = 'max',
+            height_policy = 'auto', width_policy = 'max',
         ),
         contains = [
             'row_summarization_prompt',
@@ -199,7 +212,7 @@ conversation_layout = {
     'row_summarization_prompt': dict(
         component_class = Row,
         component_arguments = dict(
-            height_policy = 'min', width_policy = 'max',
+            height_policy = 'auto', width_policy = 'max',
         ),
         contains = [
             'label_summarization',
@@ -213,6 +226,9 @@ conversation_layout = {
     ),
     'column_summarization_prompt': dict(
         component_class = Column,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+        ),
         contains = [
             'row_summarizer_selection',
             'row_summarization_prompt_variables',
@@ -221,6 +237,9 @@ conversation_layout = {
     ),
     'row_summarizer_selection': dict(
         component_class = Row,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+        ),
         contains = [
             'selector_summarization_prompt',
             'checkbox_summarize',
@@ -241,7 +260,12 @@ conversation_layout = {
             value = False,
         ),
     ),
-    'row_summarization_prompt_variables': dict( component_class = Row, ),
+    'row_summarization_prompt_variables': dict(
+        component_class = Row,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+        ),
+    ),
     'text_summarization_prompt': dict(
         component_class = Markdown,
         component_arguments = dict(
@@ -253,8 +277,7 @@ conversation_layout = {
     'row_user_prompt': dict(
         component_class = Row,
         component_arguments = dict(
-            #align = ( 'end', 'start' ),
-            width_policy = 'max',
+            height_policy = 'auto', width_policy = 'max',
         ),
         contains = [ 'label_user', 'column_user_prompt' ],
     ),
@@ -265,7 +288,9 @@ conversation_layout = {
     ),
     'column_user_prompt': dict(
         component_class = Column,
-        component_arguments = dict( width_policy = 'max' ),
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+        ),
         contains = [ 'text_input_user', 'row_actions', ],
     ),
     'text_input_user': dict(
@@ -273,12 +298,15 @@ conversation_layout = {
         component_arguments = dict(
             value = '',
             placeholder = 'Enter user message here...',
-            height_policy = 'fit', width_policy = 'max',
+            height_policy = 'auto', width_policy = 'max',
             max_height = 480, # min_height = 240,
         ),
     ),
     'row_actions': dict(
         component_class = Row,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+        ),
         contains = [ 'button_chat', 'button_query', ],
     ),
     'button_chat': dict(
@@ -517,7 +545,7 @@ plain_conversation_message_layout.update( {
     'text_message': dict(
         component_class = StaticText,
         component_arguments = dict(
-            height_policy = 'auto', width_policy = 'max',
+            height_policy = 'auto', width_policy = 'auto',
             styles = { 'overflow': 'auto' },
         ),
     ),

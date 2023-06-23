@@ -276,14 +276,13 @@ def register_dashboard_callbacks( gui ):
 def restore_conversation( gui ):
     from json import load
     from .layouts import conversation_layout, conversation_control_layout
-    from .layouts import StickyContainer
     layout = dict( **conversation_layout, **conversation_control_layout )
     path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
     with path.open( ) as file: state = load( file )
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
         component_class = data[ 'component_class' ]
-        if component_class in ( __.Button, __.HSpacer, StickyContainer ):
+        if component_class in ( __.Button, __.HSpacer ):
             continue
         component = getattr( gui, name )
         if component_class in ( __.Column, __.Row ):
@@ -372,13 +371,12 @@ def save_conversation( gui ):
     # Do not save conversation while populating it.
     if descriptor.identity != gui.identity__: return
     from .layouts import conversation_layout, conversation_control_layout
-    from .layouts import StickyContainer
     layout = dict( **conversation_layout, **conversation_control_layout )
     state = { }
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
         component_class = data[ 'component_class' ]
-        if component_class in ( __.Button, __.HSpacer, StickyContainer ):
+        if component_class in ( __.Button, __.HSpacer ):
             continue
         component = getattr( gui, name )
         if component_class in ( __.Column, __.Row ):
