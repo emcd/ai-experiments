@@ -102,7 +102,7 @@ def add_conversation_indicator_if_necessary( gui ):
     add_conversation_indicator( gui, descriptor  )
 
 
-def add_message( gui, role, content, behaviors = ( '💬', ) ):
+def add_message( gui, role, content, behaviors = ( 'active', ) ):
     from ..messages import count_tokens
     styles = { 'background-color': 'White' }
     if 'Document' == role:
@@ -132,9 +132,11 @@ def add_message( gui, role, content, behaviors = ( '💬', ) ):
     }
     row_gui.label_role.value = emoji
     row_gui.text_message.object = content
-    row_gui.checkbuttons_behaviors.value = behaviors
-    row_gui.checkbuttons_behaviors.param.watch(
+    for behavior in behaviors:
+        getattr( row_gui, f"toggle_{behavior}" ).value = True
+    row_gui.toggle_active.param.watch(
         lambda event: update_and_save_conversation( gui ), 'value' )
+    # TODO: Register callback for 'toggle_pinned'.
     gui.column_conversation_history.append( row )
     return row_gui
 
@@ -193,7 +195,7 @@ def generate_messages( gui ):
         lambda row: row.auxiliary_data__[ 'gui' ],
         gui.column_conversation_history
     ):
-        if '💬' not in message_gui.checkbuttons_behaviors.value: continue
+        if not message_gui.toggle_active.value: continue
         role = message_gui.row_message.auxiliary_data__[ 'role' ]
         role = 'user' if role in ( 'Human', 'Document' ) else 'assistant'
         content = message_gui.text_message.object
@@ -399,11 +401,15 @@ def save_conversation_messages( column ):
     state = [ ]
     for row in column:
         message_gui = row.auxiliary_data__[ 'gui' ]
+        behaviors = [ ]
+        for behavior in ( 'active', 'pinned' ):
+            if getattr( message_gui, f"toggle_{behavior}" ).value:
+                behaviors.append( behavior )
         state.append( {
             'role': row.auxiliary_data__[ 'role' ],
             # TODO: Save MIME type of content.
             'content': message_gui.text_message.object,
-            'behaviors': message_gui.checkbuttons_behaviors.value,
+            'behaviors': behaviors,
         } )
     return { 'column_conversation_history': state }
 
@@ -481,9 +487,11 @@ def update_conversation_timestamp( gui ):
     sort_conversations_index( gui )
 
 
-def update_message( message_gui, behaviors = ( '💬', ) ):
+def update_message( message_gui, behaviors = ( 'active', ) ):
     from ..messages import count_tokens
-    message_gui.checkbuttons_behaviors.value = behaviors
+    for behavior in ( 'active', 'pinned' ):
+        getattr( message_gui, f"toggle_{behavior}" ).value = (
+            behavior in behaviors )
     content = message_gui.text_message.object
     message_gui.row_message.auxiliary_data__[ 'token_count' ] = (
         count_tokens( content ) )
@@ -555,7 +563,7 @@ def update_token_count( gui ):
     total_tokens = 0
     for row in gui.column_conversation_history:
         message_gui = row.auxiliary_data__[ 'gui' ]
-        if '💬' in message_gui.checkbuttons_behaviors.value:
+        if message_gui.toggle_active.value:
             total_tokens += row.auxiliary_data__[ 'token_count' ]
     if gui.checkbox_summarize.value:
         total_tokens += count_tokens( gui.text_summarization_prompt.object )
@@ -609,9 +617,8 @@ def _update_messages_post_summarization( gui ):
     ''' Exclude conversation items above summarization request. '''
     # TODO: Account for documents.
     for i in range( len( gui.column_conversation_history ) - 2 ):
-        row_gui = (
+        message_gui = (
             gui.column_conversation_history[ i ].auxiliary_data__[ 'gui' ] )
-        behaviors = row_gui.checkbuttons_behaviors.value
-        if '💬' not in behaviors: continue # already inactive, nothing to do
-        if '📌' in behaviors: continue # skip pinned messages
-        behaviors.remove( '💬' )
+        if not message_gui.toggle_active.value: continue # already inactive
+        if message_gui.toggle_pinned.value: continue # skip pinned messages
+        message_gui.toggle_active.value = False

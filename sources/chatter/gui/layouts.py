@@ -29,13 +29,13 @@ from panel.reactive import ReactiveHTML
 from panel.widgets import (
     Button,
     Checkbox,
-    CheckButtonGroup,
     FloatSlider,
     IntSlider,
     Select,
     StaticText,
     TextAreaInput,
     TextInput,
+    Toggle,
 )
 
 
@@ -69,6 +69,14 @@ div[class="codehilite"] {
 _central_column_width_attributes = dict(
     max_width = 1024, min_width = 640,
     width = 1024,
+)
+
+_little_button_attributes = dict(
+    align = 'center',
+    button_style = 'outline', button_type = 'light',
+    height_policy = 'min', width_policy = 'min',
+    margin = 0,
+    styles = { 'padding': '0' },
 )
 
 _message_header_attributes = dict(
@@ -248,7 +256,7 @@ conversation_layout = {
     'label_summarization': dict(
         component_class = StaticText,
         component_arguments = dict(
-            value = '∑💬',
+            value = '📑💬',
             **_message_header_attributes,
         ),
         persist = False,
@@ -517,26 +525,32 @@ conversation_message_common_layout = {
         component_arguments = dict(
             height_policy = 'min', width_policy = 'min',
         ),
-        contains = [ 'label_role', 'checkbuttons_behaviors' ]
+        contains = [ 'label_role', 'toggle_active', 'toggle_pinned' ],
     ),
     'label_role': dict(
         component_class = StaticText,
         component_arguments = dict(
             align = 'center',
             height_policy = 'min', width_policy = 'min',
-            margin = 5,
+            margin = 0,
         ),
     ),
-    'checkbuttons_behaviors': dict(
-        component_class = CheckButtonGroup,
+    'toggle_active': dict(
+        component_class = Toggle,
         component_arguments = dict(
-            options = [ '💬', '📌' ],
-            value = [ '💬' ],
-            align = 'center',
-            button_style = 'outline', button_type = 'light',
-            height_policy = 'min', width_policy = 'min',
-            margin = 5,
-            styles = { 'padding': '2px' },
+            name = '💬',
+            #icon = 'message-dots',
+            value = False,
+            **_little_button_attributes,
+        ),
+    ),
+    'toggle_pinned': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '📌',
+            #icon = 'pin',
+            value = False,
+            **_little_button_attributes,
         ),
     ),
     'gridbox_actions': dict(
