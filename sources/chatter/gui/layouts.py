@@ -21,8 +21,11 @@
 ''' GUI layouts with Panel widgets. '''
 
 
+import param
+
 from panel.layout import Column, GridBox, HSpacer, Row
 from panel.pane import Markdown
+from panel.reactive import ReactiveHTML
 from panel.widgets import (
     Button,
     Checkbox,
@@ -34,6 +37,27 @@ from panel.widgets import (
     TextAreaInput,
     TextInput,
 )
+
+
+_sticky_css = '''
+div.sticky {
+    position: sticky;
+}
+'''
+class StickyContainer( ReactiveHTML ):
+
+    containee = param.Parameter( )
+
+    _template = (
+        '''<div id="StickyContainer" class="sticky">${containee}</div>''' )
+
+    def __init__( self, containee, **params ):
+        self.containee = containee
+        stylesheets = params.get( 'stylesheets', [ ] ).copy( )
+        stylesheets.append( _sticky_css )
+        params[ 'stylesheets' ] = stylesheets
+        super( ).__init__( **params )
+
 
 dashboard_layout = {
     'dashboard': dict(
@@ -93,8 +117,7 @@ conversation_layout = {
         contains = [
             'row_system_prompt',
             'column_conversation_history',
-            'row_summarization_prompt',
-            'row_user_prompt',
+            'column_user_prompts',
         ],
     ),
     'row_system_prompt': dict(
@@ -154,11 +177,24 @@ conversation_layout = {
         component_class = Column,
         component_arguments = dict(
             height_policy = 'max', width_policy = 'max',
+            styles = { 'overflow': 'auto' },
         ),
         persistence_functions = dict(
             save = 'save_conversation_messages',
             restore = 'restore_conversation_messages',
         ),
+    ),
+    'column_user_prompts': dict(
+        component_class = Column,
+        component_arguments = dict(
+            # TODO: Use style variable instead for theming.
+            styles = { 'background': 'White' },
+            width_policy = 'max',
+        ),
+        contains = [
+            'row_summarization_prompt',
+            'row_user_prompt',
+        ]
     ),
     'row_summarization_prompt': dict(
         component_class = Row,
@@ -217,7 +253,7 @@ conversation_layout = {
     'row_user_prompt': dict(
         component_class = Row,
         component_arguments = dict(
-            align = ( 'end', 'start' ),
+            #align = ( 'end', 'start' ),
             width_policy = 'max',
         ),
         contains = [ 'label_user', 'column_user_prompt' ],
@@ -391,14 +427,14 @@ conversation_message_common_layout = {
     'row_message': dict(
         component_class = Row,
         component_arguments = dict(
-            height_policy = 'min', width_policy = 'max',
+            height_policy = 'auto', width_policy = 'max',
         ),
         contains = [ 'column_header', 'text_message' ],
     ),
     'column_header': dict(
         component_class = Column,
         component_arguments = dict(
-            height_policy = 'min', width_policy = 'min',
+            height_policy = 'min', width_policy = 'auto',
         ),
         contains = [ 'row_behaviors', 'gridbox_actions' ],
     ),
@@ -481,7 +517,8 @@ plain_conversation_message_layout.update( {
     'text_message': dict(
         component_class = StaticText,
         component_arguments = dict(
-            height_policy = 'min', width_policy = 'max',
+            height_policy = 'auto', width_policy = 'max',
+            styles = { 'overflow': 'auto' },
         ),
     ),
 } )
@@ -491,7 +528,8 @@ rich_conversation_message_layout.update( {
     'text_message': dict(
         component_class = Markdown,
         component_arguments = dict(
-            height_policy = 'min', width_policy = 'max',
+            height_policy = 'auto', width_policy = 'auto',
+            styles = { 'overflow': 'auto' },
         ),
     ),
 } )
