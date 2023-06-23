@@ -166,9 +166,7 @@ def display_conversation( gui, descriptor ):
     gui.dashboard.clear( )
     gui.dashboard.extend( (
         gui.column_conversations_manager,
-        gui.left_spacer,
         gui.column_conversation,
-        gui.right_spacer,
         gui.column_conversation_control ) )
 
 

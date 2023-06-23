@@ -60,19 +60,33 @@ from panel.widgets import (
 #        super( ).__init__( **params )
 
 
+_css_code_overflow = '''
+div[class="codehilite"] {
+    overflow-x: auto;
+}
+'''
+
+_central_column_width_attributes = dict(
+    max_width = 1024, min_width = 640,
+    width = 1024,
+)
+
+_message_header_attributes = dict(
+    height_policy = 'auto', width_policy = 'max',
+    max_width = 110, width = 110,
+)
+
+
 dashboard_layout = {
     'dashboard': dict(
         component_class = Row,
         component_arguments = dict(
-            height_policy = 'max',
+            height_policy = 'max', width_policy = 'max',
             min_width = 1024,
-            width_policy = 'max',
         ),
         contains = [
             'column_conversations_manager',
-            'left_spacer',
             'column_conversation',
-            'right_spacer',
             'column_conversation_control',
         ]
     ),
@@ -85,7 +99,8 @@ conversations_manager_layout = {
             height_policy = 'max', width_policy = 'max',
             max_width = 480, min_width = 192,
             # TODO: Use style variable instead for theming.
-            styles = { 'background': 'LightGray' },
+            styles = { 'background': '#e8e8e8' },
+            width = 480,
         ),
         contains = [
             'button_new_conversation',
@@ -105,7 +120,6 @@ conversations_manager_layout = {
             height_policy = 'min', width_policy = 'max',
         )
     ),
-    'left_spacer': dict( component_class = HSpacer ),
 }
 dashboard_layout.update( conversations_manager_layout )
 
@@ -114,7 +128,6 @@ conversation_layout = {
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
-            max_width = 1280, min_width = 640,
         ),
         contains = [
             'row_system_prompt',
@@ -129,17 +142,27 @@ conversation_layout = {
             # TODO: Use style variable instead for theming.
             styles = { 'background': 'WhiteSmoke' },
         ),
-        contains = [ 'label_system', 'column_system_prompt', ],
+        contains = [
+            'spacer_left_system_prompt',
+            'label_system',
+            'column_system_prompt',
+            'spacer_right_system_prompt',
+        ],
     ),
+    'spacer_left_system_prompt': dict( component_class = HSpacer ),
     'label_system': dict(
         component_class = StaticText,
-        component_arguments = dict( value = '💬📏', width = 40, ),
+        component_arguments = dict(
+            value = '📏💬',
+            **_message_header_attributes,
+        ),
         persist = False,
     ),
     'column_system_prompt': dict(
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
+            **_central_column_width_attributes,
         ),
         contains = [
             'row_system_prompt_selector',
@@ -186,11 +209,11 @@ conversation_layout = {
             visible = False,
         ),
     ),
+    'spacer_right_system_prompt': dict( component_class = HSpacer ),
     'column_conversation_history': dict(
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
-            #styles = { 'overflow': 'auto' },
         ),
         persistence_functions = dict(
             save = 'save_conversation_messages',
@@ -200,9 +223,9 @@ conversation_layout = {
     'column_user_prompts': dict(
         component_class = Column,
         component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
             # TODO: Use style variable instead for theming.
             styles = { 'background': 'White' },
-            height_policy = 'auto', width_policy = 'max',
         ),
         contains = [
             'row_summarization_prompt',
@@ -215,19 +238,26 @@ conversation_layout = {
             height_policy = 'auto', width_policy = 'max',
         ),
         contains = [
+            'spacer_left_summarization_prompt',
             'label_summarization',
             'column_summarization_prompt',
+            'spacer_right_summarization_prompt',
         ],
     ),
+    'spacer_left_summarization_prompt': dict( component_class = HSpacer ),
     'label_summarization': dict(
         component_class = StaticText,
-        component_arguments = dict( value = '💬∑', width = 40, ),
+        component_arguments = dict(
+            value = '∑💬',
+            **_message_header_attributes,
+        ),
         persist = False,
     ),
     'column_summarization_prompt': dict(
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
+            **_central_column_width_attributes,
         ),
         contains = [
             'row_summarizer_selection',
@@ -274,22 +304,33 @@ conversation_layout = {
             visible = False,
         ),
     ),
+    'spacer_right_summarization_prompt': dict( component_class = HSpacer ),
     'row_user_prompt': dict(
         component_class = Row,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
         ),
-        contains = [ 'label_user', 'column_user_prompt' ],
+        contains = [
+            'spacer_left_user_prompt',
+            'label_user',
+            'column_user_prompt',
+            'spacer_right_user_prompt',
+        ],
     ),
+    'spacer_left_user_prompt': dict( component_class = HSpacer ),
     'label_user': dict(
         component_class = StaticText,
-        component_arguments = dict( value = '💬🧑', width = 40, ),
+        component_arguments = dict(
+            value = '🧑💬',
+            **_message_header_attributes,
+        ),
         persist = False,
     ),
     'column_user_prompt': dict(
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
+            **_central_column_width_attributes,
         ),
         contains = [ 'text_input_user', 'row_actions', ],
     ),
@@ -317,17 +358,18 @@ conversation_layout = {
         component_class = Button,
         component_arguments = dict( name = 'Query' ),
     ),
+    'spacer_right_user_prompt': dict( component_class = HSpacer ),
 }
 dashboard_layout.update( conversation_layout )
 
 conversation_control_layout = {
-    'right_spacer': dict( component_class = HSpacer ),
     'column_conversation_control': dict(
         component_class = Column,
         component_arguments = dict(
             height_policy = 'max', width_policy = 'max',
             max_width = 480, min_width = 192,
-            styles = { 'background': 'LightGray' },
+            styles = { 'background': '#e8e8e8' },
+            width = 480,
         ),
         contains = [
             'selector_provider',
@@ -457,13 +499,17 @@ conversation_message_common_layout = {
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
         ),
-        contains = [ 'column_header', 'text_message' ],
+        contains = [
+            'spacer_left',
+            'column_header',
+            'text_message',
+            'spacer_right',
+        ],
     ),
+    'spacer_left': dict( component_class = HSpacer ),
     'column_header': dict(
         component_class = Column,
-        component_arguments = dict(
-            height_policy = 'min', width_policy = 'auto',
-        ),
+        component_arguments = dict( **_message_header_attributes ),
         contains = [ 'row_behaviors', 'gridbox_actions' ],
     ),
     'row_behaviors': dict(
@@ -538,6 +584,7 @@ conversation_message_common_layout = {
             styles = { 'padding': '0' },
         ),
     ),
+    'spacer_right': dict( component_class = HSpacer ),
 }
 
 plain_conversation_message_layout = conversation_message_common_layout.copy( )
@@ -545,8 +592,9 @@ plain_conversation_message_layout.update( {
     'text_message': dict(
         component_class = StaticText,
         component_arguments = dict(
-            height_policy = 'auto', width_policy = 'auto',
+            height_policy = 'auto', width_policy = 'max',
             styles = { 'overflow': 'auto' },
+            **_central_column_width_attributes,
         ),
     ),
 } )
@@ -556,8 +604,10 @@ rich_conversation_message_layout.update( {
     'text_message': dict(
         component_class = Markdown,
         component_arguments = dict(
-            height_policy = 'auto', width_policy = 'auto',
+            height_policy = 'auto', width_policy = 'max',
             styles = { 'overflow': 'auto' },
+            stylesheets = [ _css_code_overflow ],
+            **_central_column_width_attributes,
         ),
     ),
 } )
