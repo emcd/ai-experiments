@@ -28,7 +28,6 @@ from panel.pane import Markdown
 from panel.reactive import ReactiveHTML
 from panel.widgets import (
     Button,
-    Checkbox,
     FloatSlider,
     IntSlider,
     Select,
@@ -212,8 +211,8 @@ conversation_layout = {
             height_policy = 'auto', width_policy = 'max',
         ),
         persistence_functions = dict(
-            save = 'save_system_prompt_variables',
-            restore = 'restore_system_prompt_variables',
+            save = 'save_prompt_variables',
+            restore = 'restore_prompt_variables',
         ),
     ),
     'text_system_prompt': dict(
@@ -243,75 +242,92 @@ conversation_layout = {
             styles = { 'background': 'White' },
         ),
         contains = [
-            'row_summarization_prompt',
+            'row_canned_prompt',
             'row_user_prompt',
         ]
     ),
-    'row_summarization_prompt': dict(
+    'row_canned_prompt': dict(
         component_class = Row,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
         ),
         contains = [
-            'spacer_left_summarization_prompt',
-            'label_summarization',
-            'column_summarization_prompt',
-            'spacer_right_summarization_prompt',
+            'spacer_left_canned_prompt',
+            'row_canned_prompt_header',
+            'column_canned_prompt',
+            'spacer_right_canned_prompt',
         ],
     ),
-    'spacer_left_summarization_prompt': dict( component_class = HSpacer ),
-    'label_summarization': dict(
+    'spacer_left_canned_prompt': dict( component_class = HSpacer ),
+    'row_canned_prompt_header': dict(
+        component_class = Row,
+        component_arguments = dict( **_message_header_attributes ),
+        contains = [
+            'label_canned',
+            'spacer_label_canned',
+            'toggle_canned_prompt_active',
+            'toggle_canned_prompt_display',
+        ],
+    ),
+    'label_canned': dict(
         component_class = StaticText,
-        component_arguments = dict(
-            value = '📑💬',
-            **_message_header_attributes,
-        ),
+        component_arguments = dict( value = '🥫' ),
         persist = False,
     ),
-    'column_summarization_prompt': dict(
+    'spacer_label_canned': dict( component_class = HSpacer ),
+    'toggle_canned_prompt_active': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '💬', value = False, **_little_button_attributes,
+        ),
+    ),
+    'toggle_canned_prompt_display': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '\N{Eye}\uFE0F', value = False, **_little_button_attributes,
+        ),
+    ),
+    'column_canned_prompt': dict(
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
             **_central_column_width_attributes,
         ),
         contains = [
-            'row_summarizer_selection',
-            'row_summarization_prompt_variables',
-            'text_summarization_prompt',
+            'row_canned_prompt_selection',
+            'row_canned_prompt_variables',
+            'text_canned_prompt',
         ],
     ),
-    'row_summarizer_selection': dict(
+    'row_canned_prompt_selection': dict(
         component_class = Row,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
         ),
         contains = [
-            'selector_summarization_prompt',
-            'checkbox_summarize',
+            'selector_canned_prompt', 'button_refine_canned_prompt',
         ],
     ),
-    'selector_summarization_prompt': dict(
+    'selector_canned_prompt': dict(
         component_class = Select,
         component_arguments = dict(
-            options = [ 'None' ],
-            value = 'None',
+            options = [ 'Recap: General Conversation' ],
+            value = 'Recap: General Conversation',
         ),
     ),
-    'checkbox_summarize': dict(
-        component_class = Checkbox,
+    'button_refine_canned_prompt': dict(
+        component_class = Button,
         component_arguments = dict(
-            align = 'center',
-            name = 'Display and Activate',
-            value = False,
+            icon = 'arrow-big-down', icon_size = '16px',
         ),
     ),
-    'row_summarization_prompt_variables': dict(
+    'row_canned_prompt_variables': dict(
         component_class = Row,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
         ),
     ),
-    'text_summarization_prompt': dict(
+    'text_canned_prompt': dict(
         component_class = Markdown,
         component_arguments = dict(
             height_policy = 'fit',
@@ -319,7 +335,7 @@ conversation_layout = {
             visible = False,
         ),
     ),
-    'spacer_right_summarization_prompt': dict( component_class = HSpacer ),
+    'spacer_right_canned_prompt': dict( component_class = HSpacer ),
     'row_user_prompt': dict(
         component_class = Row,
         component_arguments = dict(
@@ -327,19 +343,39 @@ conversation_layout = {
         ),
         contains = [
             'spacer_left_user_prompt',
-            'label_user',
+            'row_user_prompt_header',
             'column_user_prompt',
             'spacer_right_user_prompt',
         ],
     ),
     'spacer_left_user_prompt': dict( component_class = HSpacer ),
+    'row_user_prompt_header': dict(
+        component_class = Row,
+        component_arguments = dict( **_message_header_attributes ),
+        contains = [
+            'label_user',
+            'spacer_label_user',
+            'toggle_user_prompt_active',
+            'toggle_user_prompt_dork',
+        ],
+    ),
     'label_user': dict(
         component_class = StaticText,
-        component_arguments = dict(
-            value = '🧑💬',
-            **_message_header_attributes,
-        ),
+        component_arguments = dict( value = '🧑' ),
         persist = False,
+    ),
+    'spacer_label_user': dict( component_class = HSpacer ),
+    'toggle_user_prompt_active': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '💬', value = True, **_little_button_attributes,
+        ),
+    ),
+    'toggle_user_prompt_dork': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '💍', value = False, **_little_button_attributes,
+        ),
     ),
     'column_user_prompt': dict(
         component_class = Column,
@@ -367,11 +403,11 @@ conversation_layout = {
     ),
     'button_chat': dict(
         component_class = Button,
-        component_arguments = dict( name = 'Chat' ),
+        component_arguments = dict( name = '💬 Chat AI' ),
     ),
     'button_query': dict(
         component_class = Button,
-        component_arguments = dict( name = 'Query' ),
+        component_arguments = dict( name = '🔍 Query Documents' ),
     ),
     'spacer_right_user_prompt': dict( component_class = HSpacer ),
 }
@@ -547,8 +583,7 @@ conversation_message_common_layout = {
     'toggle_active': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💬',
-            #icon = 'message-dots',
+            name = '💬', #icon = 'message-dots',
             value = False,
             **_little_button_attributes,
         ),
@@ -556,8 +591,7 @@ conversation_message_common_layout = {
     'toggle_pinned': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '📌',
-            #icon = 'pin',
+            name = '📌', #icon = 'pin',
             value = False,
             **_little_button_attributes,
         ),

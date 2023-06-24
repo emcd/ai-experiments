@@ -1,4 +1,4 @@
-id: Title + Labels
+id: 'JSON: Title + Labels'
 template: |
   Please summarize this conversation in five or fewer words, such that the
   summary could be used a title or short blurb to identify the conversation

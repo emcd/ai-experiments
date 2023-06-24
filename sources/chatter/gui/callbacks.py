@@ -91,11 +91,13 @@ def add_conversation_indicator_if_necessary( gui ):
     conversations = gui.column_conversations_indicators
     descriptor = conversations.current_descriptor__
     if descriptor.identity in conversations.descriptors__: return
-    summarization_prompt = gui.selector_summarization_prompt.metadata__[
-        'Title + Labels' ][ 'template' ]
+    # TODO: Encapsulate in provider as response format may vary by provider.
+    canned_prompt = gui.selector_canned_prompt.metadata__[
+        'JSON: Title + Labels' ][ 'template' ]
     messages = [
+        # TODO? Regen title from more mature conversation.
         generate_messages( gui )[ 1 ],
-        { 'role': 'user', 'content': summarization_prompt }
+        { 'role': 'user', 'content': canned_prompt }
     ]
     provider_name = gui.selector_provider.value
     provider = gui.selector_provider.auxiliary_data__[ provider_name ]
@@ -148,6 +150,10 @@ def add_message( gui, role, content, behaviors = ( 'active', ) ):
     # TODO: Register callback for 'toggle_pinned'.
     gui.column_conversation_history.append( row )
     return row_gui
+
+
+def copy_canned_prompt_to_user( gui ):
+    gui.text_input_user.value = gui.text_canned_prompt.object
 
 
 def create_and_display_conversation( gui ):
@@ -219,7 +225,7 @@ def populate_conversation( gui ):
     populate_providers_selector( gui )
     populate_models_selector( gui )
     populate_system_prompts_selector( gui )
-    populate_summarization_prompts_selector( gui )
+    populate_canned_prompts_selector( gui )
     populate_vectorstores_selector(
         gui, gui.auxiliary_data__[ 'vectorstores' ] )
 
@@ -256,24 +262,22 @@ def populate_system_prompt_variables( gui ):
 
 def populate_system_prompts_selector( gui ):
     _populate_prompts_selector(
-        gui.selector_system_prompt,
-        __.Path( '.local/data/system-prompts' ) )
+        gui.selector_system_prompt, __.Path( '.local/data/system-prompts' ) )
     populate_system_prompt_variables( gui )
 
 
-def populate_summarization_prompt_variables( gui ):
+def populate_canned_prompt_variables( gui ):
     _populate_prompt_variables(
         gui,
-        'row_summarization_prompt_variables',
-        'selector_summarization_prompt',
-        update_summarization_prompt_text )
+        'row_canned_prompt_variables',
+        'selector_canned_prompt',
+        update_canned_prompt_text )
 
 
-def populate_summarization_prompts_selector( gui ):
+def populate_canned_prompts_selector( gui ):
     _populate_prompts_selector(
-        gui.selector_summarization_prompt,
-        __.Path( '.local/data/summarization-prompts' ) )
-    populate_summarization_prompt_variables( gui )
+        gui.selector_canned_prompt, __.Path( '.local/data/canned-prompts' ) )
+    populate_canned_prompt_variables( gui )
 
 
 def populate_vectorstores_selector( gui, vectorstores ):
@@ -284,18 +288,24 @@ def populate_vectorstores_selector( gui, vectorstores ):
 def register_conversation_callbacks( gui ):
     gui.button_chat.on_click( lambda event: run_chat( gui ) )
     gui.button_query.on_click( lambda event: run_query( gui ) )
-    gui.checkbox_summarize.param.watch(
-        lambda event: toggle_summarization_prompt_display( gui ), 'value' )
-    gui.selector_summarization_prompt.param.watch(
-        lambda event: populate_summarization_prompt_variables( gui ), 'value' )
+    gui.button_refine_canned_prompt.on_click(
+        lambda event: copy_canned_prompt_to_user( gui ) )
+    gui.selector_canned_prompt.param.watch(
+        lambda event: populate_canned_prompt_variables( gui ), 'value' )
     gui.selector_system_prompt.param.watch(
         lambda event: populate_system_prompt_variables( gui ), 'value' )
     gui.text_input_user.param.watch(
         lambda event: update_and_save_conversation( gui ), 'value' )
+    gui.toggle_canned_prompt_active.param.watch(
+        lambda event: toggle_canned_prompt_active( gui ), 'value' )
+    gui.toggle_canned_prompt_display.param.watch(
+        lambda event: toggle_canned_prompt_display( gui ), 'value' )
     gui.toggle_system_prompt_active.param.watch(
         lambda event: toggle_system_prompt_active( gui ), 'value' )
     gui.toggle_system_prompt_display.param.watch(
         lambda event: toggle_system_prompt_display( gui ), 'value' )
+    gui.toggle_user_prompt_active.param.watch(
+        lambda event: toggle_user_prompt_active( gui ), 'value' )
 
 
 def register_dashboard_callbacks( gui ):
@@ -319,7 +329,7 @@ def restore_conversation( gui ):
             if 'persistence_functions' not in data: continue
             restorer_name = data[ 'persistence_functions' ][ 'restore' ]
             restorer = globals( )[ restorer_name ]
-            restorer( gui, component, state )
+            restorer( gui, name, state )
         elif hasattr( component, 'value' ):
             component.value = state[ name ][ 'value' ]
         elif hasattr( component, 'object' ):
@@ -331,9 +341,10 @@ def restore_conversation( gui ):
     update_token_count( gui )
 
 
-def restore_conversation_messages( gui, column, state ):
+def restore_conversation_messages( gui, column_name, state ):
+    column = getattr( gui, column_name )
     column.clear( )
-    for row_state in state.get( 'column_conversation_history', [ ] ):
+    for row_state in state.get( column_name, [ ] ):
         role = row_state[ 'role' ]
         content = row_state[ 'content' ]
         behaviors = row_state[ 'behaviors' ]
@@ -353,10 +364,9 @@ def restore_conversations_index( gui ):
     sort_conversations_index( gui ) # extra sanity
 
 
-def restore_system_prompt_variables( gui, row, state ):
+def restore_prompt_variables( gui, row_name, state ):
     for widget_state, widget in zip(
-        state.get( 'row_system_prompt_variables', ( ) ),
-        row
+        state.get( row_name, ( ) ), getattr( gui, row_name )
     ):
         # TODO: Sanity check widget names.
         widget.value = widget_state[ 'value' ]
@@ -364,8 +374,8 @@ def restore_system_prompt_variables( gui, row, state ):
 
 def run_chat( gui ):
     gui.text_status.value = 'OK'
-    if gui.checkbox_summarize.value:
-        query = gui.text_summarization_prompt.object
+    if gui.toggle_canned_prompt_active.value:
+        query = gui.text_canned_prompt.object
     else:
         query = gui.text_input_user.value
         gui.text_input_user.value = ''
@@ -378,8 +388,8 @@ def run_chat( gui ):
         update_message( message_gui )
         add_conversation_indicator_if_necessary( gui )
         update_and_save_conversations_index( gui )
-        if gui.checkbox_summarize.value:
-            gui.checkbox_summarize.value = False
+        if gui.toggle_canned_prompt_active.value:
+            gui.toggle_canned_prompt_active.value = False
             _update_messages_post_summarization( gui )
     # Retract AI message display on error.
     else: gui.column_conversation_history.pop( -1 )
@@ -422,7 +432,7 @@ def save_conversation( gui ):
             if 'persistence_functions' not in data: continue
             saver_name = data[ 'persistence_functions' ][ 'save' ]
             saver = globals( )[ saver_name ]
-            state.update( saver( component ) )
+            state.update( saver( gui, name ) )
         elif hasattr( component, 'value' ):
             state[ name ] = dict( value = component.value )
         elif hasattr( component, 'object' ):
@@ -436,9 +446,9 @@ def save_conversation( gui ):
     with path.open( 'w' ) as file: dump( state, file, indent = 2 )
 
 
-def save_conversation_messages( column ):
+def save_conversation_messages( gui, column_name ):
     state = [ ]
-    for row in column:
+    for row in getattr( gui, column_name ):
         message_gui = row.auxiliary_data__[ 'gui' ]
         behaviors = [ ]
         for behavior in ( 'active', 'pinned' ):
@@ -450,7 +460,7 @@ def save_conversation_messages( column ):
             'content': message_gui.text_message.object,
             'behaviors': behaviors,
         } )
-    return { 'column_conversation_history': state }
+    return { column_name: state }
 
 
 def save_conversations_index( gui ):
@@ -473,11 +483,11 @@ def save_conversations_index( gui ):
         dump( { 'format-version': 1, 'descriptors': descriptors }, file )
 
 
-def save_system_prompt_variables( row ):
+def save_prompt_variables( gui, row_name ):
     state = [ ]
-    for widget in row:
+    for widget in getattr( gui, row_name ):
         state.append( { 'name': widget.name, 'value': widget.value } )
-    return { 'row_system_prompt_variables': state }
+    return { row_name: state }
 
 
 def select_conversation( gui, event ):
@@ -506,17 +516,32 @@ def sort_conversations_index( gui ):
         if None is not desc.indicator ) )
 
 
-def toggle_summarization_prompt_display( gui ):
-    gui.text_summarization_prompt.visible = gui.checkbox_summarize.value
-    update_and_save_conversation( gui )
+def toggle_canned_prompt_active( gui ):
+    canned_state = gui.toggle_canned_prompt_active.value
+    user_state = gui.toggle_user_prompt_active.value
+    if canned_state == user_state:
+        gui.toggle_user_prompt_active.value = not canned_state
+        update_and_save_conversation( gui )
+
+
+def toggle_canned_prompt_display( gui ):
+    gui.text_canned_prompt.visible = gui.toggle_canned_prompt_display.value
 
 
 def toggle_system_prompt_active( gui ):
-    update_token_count( gui )
+    update_and_save_conversation( gui )
 
 
 def toggle_system_prompt_display( gui ):
     gui.text_system_prompt.visible = gui.toggle_system_prompt_display.value
+
+
+def toggle_user_prompt_active( gui ):
+    canned_state = gui.toggle_canned_prompt_active.value
+    user_state = gui.toggle_user_prompt_active.value
+    if canned_state == user_state:
+        gui.toggle_canned_prompt_active.value = not user_state
+        update_and_save_conversation( gui )
 
 
 def update_and_save_conversation( gui ):
@@ -562,33 +587,24 @@ def update_message( message_gui, behaviors = ( 'active', ) ):
         count_tokens( content ) )
 
 
-def update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
-    row = getattr( gui, row_name )
-    selector = getattr( gui, selector_name )
-    text_prompt = getattr( gui, text_prompt_name )
-    template = selector.metadata__[ selector.value ][ 'template' ]
-    variables = {
-        element.metadata__[ 'id' ]: element.value for element in row
-    }
-    # TODO: Support alternative template types.
-    text_prompt.object = template.format( **variables )
-
-
-def update_summarization_prompt_text( gui ):
-    update_prompt_text(
+def update_canned_prompt_text( gui ):
+    _update_prompt_text(
         gui,
-        'row_summarization_prompt_variables',
-        'selector_summarization_prompt',
-        'text_summarization_prompt' )
+        'row_canned_prompt_variables',
+        'selector_canned_prompt',
+        'text_canned_prompt' )
+    if gui.toggle_canned_prompt_active.value:
+        update_and_save_conversation( gui )
 
 
 def update_system_prompt_text( gui ):
-    update_prompt_text(
+    _update_prompt_text(
         gui,
         'row_system_prompt_variables',
         'selector_system_prompt',
         'text_system_prompt' )
-    update_and_save_conversation( gui )
+    if gui.toggle_system_prompt_active.value:
+        update_and_save_conversation( gui )
 
 
 def update_token_count( gui ):
@@ -600,9 +616,9 @@ def update_token_count( gui ):
         message_gui = row.auxiliary_data__[ 'gui' ]
         if message_gui.toggle_active.value:
             total_tokens += row.auxiliary_data__[ 'token_count' ]
-    if gui.checkbox_summarize.value:
-        total_tokens += count_tokens( gui.text_summarization_prompt.object )
-    else:
+    if gui.toggle_canned_prompt_active.value:
+        total_tokens += count_tokens( gui.text_canned_prompt.object )
+    if gui.toggle_user_prompt_active.value:
         total_tokens += count_tokens( gui.text_input_user.value )
     tokens_limit = gui.selector_model.metadata__[
         gui.selector_model.value ][ 'tokens-limit' ]
@@ -672,3 +688,15 @@ def _update_messages_post_summarization( gui ):
         if not message_gui.toggle_active.value: continue # already inactive
         if message_gui.toggle_pinned.value: continue # skip pinned messages
         message_gui.toggle_active.value = False
+
+
+def _update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
+    row = getattr( gui, row_name )
+    selector = getattr( gui, selector_name )
+    text_prompt = getattr( gui, text_prompt_name )
+    template = selector.metadata__[ selector.value ][ 'template' ]
+    variables = {
+        element.metadata__[ 'id' ]: element.value for element in row
+    }
+    # TODO: Support alternative template types.
+    text_prompt.object = template.format( **variables )
