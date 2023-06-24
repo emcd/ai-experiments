@@ -44,13 +44,16 @@ class ConversationIndicator( __.ReactiveHTML ):
     row = __.param.Parameter( )
 
     _template = (
-        '''<div id="ConversationIndicator" onclick="${_div_click}">'''
-        '''${row}</div>''' )
+        '''<div id="ConversationIndicator" '''
+        '''onclick="${_div_click}" '''
+        '''onmouseenter="${_div_mouseenter}" '''
+        '''onmouseleave="${_div_mouseleave}" '''
+        '''>${row}</div>''' )
 
     def __init__( self, title, identity, **params ):
         from .layouts import conversation_indicator_layout as layout
         components = { }
-        row = generate_component( components, layout, 'row_indicator' )
+        row = generate_component( components, layout, 'column_indicator' )
         row_gui = __.SimpleNamespace( **components )
         row_gui.text_title.object = title
         self.gui = row_gui
@@ -61,6 +64,12 @@ class ConversationIndicator( __.ReactiveHTML ):
     def _div_click( self, event ):
         # Cannot run callback directly. Trigger via Event parameter.
         self.clicked = True
+
+    def _div_mouseenter( self, event ):
+        self.gui.row_actions.visible = True
+
+    def _div_mouseleave( self, event ):
+        self.gui.row_actions.visible = False
 
 
 def add_conversation_indicator( gui, descriptor, position = 0 ):
@@ -144,6 +153,7 @@ def add_message( gui, role, content, behaviors = ( 'active', ) ):
 def create_and_display_conversation( gui ):
     descriptor = ConversationDescriptor( )
     create_conversation( gui, descriptor )
+    update_conversation_hilite( gui, new_descriptor = descriptor )
     display_conversation( gui, descriptor )
 
 
@@ -444,6 +454,7 @@ def select_conversation( gui, event ):
         new_pane_gui = create_conversation( gui, new_descriptor )
         restore_conversation( new_pane_gui )
         new_descriptor.gui = new_pane_gui
+    update_conversation_hilite( gui, new_descriptor = new_descriptor )
     display_conversation( gui, new_descriptor )
 
 
@@ -475,7 +486,20 @@ def update_and_save_conversation( gui ):
 
 def update_and_save_conversations_index( gui ):
     update_conversation_timestamp( gui )
+    update_conversation_hilite( gui )
     save_conversations_index( gui )
+
+
+def update_conversation_hilite( gui, new_descriptor = None ):
+    conversations = gui.column_conversations_indicators
+    old_descriptor = conversations.current_descriptor__
+    if None is new_descriptor: new_descriptor = old_descriptor
+    if new_descriptor is not old_descriptor:
+        if None is not old_descriptor.indicator:
+            old_descriptor.indicator.styles.pop( 'background', None )
+        if None is not new_descriptor.indicator:
+            new_descriptor.indicator.styles.update(
+                { 'background': 'LightGray' } )
 
 
 def update_conversation_timestamp( gui ):

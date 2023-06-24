@@ -439,19 +439,34 @@ conversation_control_layout = {
 dashboard_layout.update( conversation_control_layout )
 
 conversation_indicator_layout = {
-    'row_indicator': dict(
-        component_class = Row,
+    'column_indicator': dict(
+        component_class = Column,
         component_arguments = dict( width_policy = 'max' ),
-        contains = [ 'gridbox_actions', 'text_title' ],
+        contains = [ 'text_title', 'row_actions_structure' ],
     ),
-    'gridbox_actions': dict(
-        component_class = GridBox,
+    'text_title': dict(
+        component_class = Markdown,
         component_arguments = dict(
-            ncols = 3,
             align = 'center',
+            height_policy = 'min', width_policy = 'max',
+        ),
+    ),
+    'row_actions_structure': dict(
+        component_class = Row,
+        component_arguments = dict(
+            height = 40, min_height = 40,
+            height_policy = 'min', width_policy = 'max',
+        ),
+        contains = [ 'row_actions' ]
+    ),
+    'row_actions': dict(
+        component_class = Row,
+        component_arguments = dict(
+            align = ( 'center', 'end' ),
             height_policy = 'min', width_policy = 'min',
             margin = 5,
             styles = { 'padding': '2px' },
+            visible = False,
         ),
         contains = [
             'button_delete',
@@ -490,13 +505,6 @@ conversation_indicator_layout = {
             icon = 'bookmark-edit', icon_size = '1em',
             margin = 1,
             styles = { 'border': '0', 'padding': '0' },
-        ),
-    ),
-    'text_title': dict(
-        component_class = Markdown,
-        component_arguments = dict(
-            align = 'center',
-            height_policy = 'min', width_policy = 'max',
         ),
     ),
 }
