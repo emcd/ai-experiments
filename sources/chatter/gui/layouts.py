@@ -81,6 +81,7 @@ _little_button_attributes = dict(
 
 _message_header_attributes = dict(
     height_policy = 'auto', width_policy = 'max',
+    margin = 5,
     max_width = 110, width = 110,
 )
 
@@ -152,19 +153,39 @@ conversation_layout = {
         ),
         contains = [
             'spacer_left_system_prompt',
-            'label_system',
+            'row_system_prompt_header',
             'column_system_prompt',
             'spacer_right_system_prompt',
         ],
     ),
     'spacer_left_system_prompt': dict( component_class = HSpacer ),
+    'row_system_prompt_header': dict(
+        component_class = Row,
+        component_arguments = dict( **_message_header_attributes ),
+        contains = [
+            'label_system',
+            'spacer_label_system',
+            'toggle_system_prompt_active',
+            'toggle_system_prompt_display',
+        ],
+    ),
     'label_system': dict(
         component_class = StaticText,
-        component_arguments = dict(
-            value = '📏💬',
-            **_message_header_attributes,
-        ),
+        component_arguments = dict( value = '📏' ),
         persist = False,
+    ),
+    'spacer_label_system': dict( component_class = HSpacer ),
+    'toggle_system_prompt_active': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '💬', value = True, **_little_button_attributes,
+        ),
+    ),
+    'toggle_system_prompt_display': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '\N{Eye}\uFE0F', value = False, **_little_button_attributes,
+        ),
     ),
     'column_system_prompt': dict(
         component_class = Column,
@@ -173,40 +194,26 @@ conversation_layout = {
             **_central_column_width_attributes,
         ),
         contains = [
-            'row_system_prompt_selector',
+            'selector_system_prompt',
             'row_system_prompt_variables',
             'text_system_prompt',
-        ],
-    ),
-    'row_system_prompt_selector': dict(
-        component_class = Row,
-        component_arguments = dict(
-            height_policy = 'auto', width_policy = 'max',
-        ),
-        contains = [
-            'selector_system_prompt',
-            'checkbox_display_system_prompt',
         ],
     ),
     'selector_system_prompt': dict(
         component_class = Select,
         component_arguments = dict(
-            options = [ 'None', ],
-            value = 'None',
-        ),
-    ),
-    'checkbox_display_system_prompt': dict(
-        component_class = Checkbox,
-        component_arguments = dict(
-            align = 'center',
-            name = 'Display',
-            value = False,
+            options = [ 'General Conversation' ],
+            value = 'General Conversation',
         ),
     ),
     'row_system_prompt_variables': dict(
         component_class = Row,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
+        ),
+        persistence_functions = dict(
+            save = 'save_system_prompt_variables',
+            restore = 'restore_system_prompt_variables',
         ),
     ),
     'text_system_prompt': dict(
@@ -464,8 +471,8 @@ conversation_indicator_layout = {
         component_arguments = dict(
             align = ( 'center', 'end' ),
             height_policy = 'min', width_policy = 'min',
-            margin = 5,
-            styles = { 'padding': '2px' },
+            #margin = 5,
+            #styles = { 'padding': '2px' },
             visible = False,
         ),
         contains = [
@@ -477,34 +484,22 @@ conversation_indicator_layout = {
     'button_delete': dict(
         component_class = Button,
         component_arguments = dict(
-            align = 'center',
-            button_style = 'outline', button_type = 'light',
-            height_policy = 'min', width_policy = 'min',
-            icon = 'trash', icon_size = '1em',
-            margin = 1,
-            styles = { 'border': '0', 'padding': '0' },
+            icon = 'trash', # icon_size = '1em',
+            **_little_button_attributes,
         ),
     ),
     'button_edit_title': dict(
         component_class = Button,
         component_arguments = dict(
-            align = 'center',
-            button_style = 'outline', button_type = 'light',
-            height_policy = 'min', width_policy = 'min',
-            icon = 'edit', icon_size = '1em',
-            margin = 1,
-            styles = { 'border': '0', 'padding': '0' },
+            icon = 'edit', # icon_size = '1em',
+            **_little_button_attributes,
         ),
     ),
     'button_edit_labels': dict(
         component_class = Button,
         component_arguments = dict(
-            align = 'center',
-            button_style = 'outline', button_type = 'light',
-            height_policy = 'min', width_policy = 'min',
-            icon = 'bookmark-edit', icon_size = '1em',
-            margin = 1,
-            styles = { 'border': '0', 'padding': '0' },
+            icon = 'bookmark-edit', # icon_size = '1em',
+            **_little_button_attributes,
         ),
     ),
 }
@@ -533,7 +528,12 @@ conversation_message_common_layout = {
         component_arguments = dict(
             height_policy = 'min', width_policy = 'min',
         ),
-        contains = [ 'label_role', 'toggle_active', 'toggle_pinned' ],
+        contains = [
+            'label_role',
+            'spacer_role',
+            'toggle_active',
+            'toggle_pinned',
+        ],
     ),
     'label_role': dict(
         component_class = StaticText,
@@ -543,6 +543,7 @@ conversation_message_common_layout = {
             margin = 0,
         ),
     ),
+    'spacer_role': dict( component_class = HSpacer ),
     'toggle_active': dict(
         component_class = Toggle,
         component_arguments = dict(

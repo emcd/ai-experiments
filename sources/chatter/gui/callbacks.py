@@ -196,11 +196,13 @@ def generate_component( components, layout, component_name ):
 
 
 def generate_messages( gui ):
-    system_message = gui.text_system_prompt.object
-    sysprompt_honor = gui.selector_model.metadata__[
-        gui.selector_model.value ][ 'honors-system-prompt' ]
-    role = 'system' if sysprompt_honor else 'user'
-    messages = [ { 'role': role, 'content': system_message } ]
+    messages = [ ]
+    if gui.toggle_system_prompt_active.value:
+        system_message = gui.text_system_prompt.object
+        sysprompt_honor = gui.selector_model.metadata__[
+            gui.selector_model.value ][ 'honors-system-prompt' ]
+        role = 'system' if sysprompt_honor else 'user'
+        messages.append( { 'role': role, 'content': system_message } )
     for message_gui in map(
         lambda row: row.auxiliary_data__[ 'gui' ],
         gui.column_conversation_history
@@ -244,18 +246,34 @@ def populate_providers_selector( gui ):
     gui.selector_provider.auxiliary_data__ = registry
 
 
+def populate_system_prompt_variables( gui ):
+    _populate_prompt_variables(
+        gui,
+        'row_system_prompt_variables',
+        'selector_system_prompt',
+        update_system_prompt_text )
+
+
 def populate_system_prompts_selector( gui ):
     _populate_prompts_selector(
         gui.selector_system_prompt,
         __.Path( '.local/data/system-prompts' ) )
-    update_system_prompt_variables( gui )
+    populate_system_prompt_variables( gui )
+
+
+def populate_summarization_prompt_variables( gui ):
+    _populate_prompt_variables(
+        gui,
+        'row_summarization_prompt_variables',
+        'selector_summarization_prompt',
+        update_summarization_prompt_text )
 
 
 def populate_summarization_prompts_selector( gui ):
     _populate_prompts_selector(
         gui.selector_summarization_prompt,
         __.Path( '.local/data/summarization-prompts' ) )
-    update_summarization_prompt_variables( gui )
+    populate_summarization_prompt_variables( gui )
 
 
 def populate_vectorstores_selector( gui, vectorstores ):
@@ -266,16 +284,18 @@ def populate_vectorstores_selector( gui, vectorstores ):
 def register_conversation_callbacks( gui ):
     gui.button_chat.on_click( lambda event: run_chat( gui ) )
     gui.button_query.on_click( lambda event: run_query( gui ) )
-    gui.checkbox_display_system_prompt.param.watch(
-        lambda event: toggle_system_prompt_display( gui ), 'value' )
     gui.checkbox_summarize.param.watch(
         lambda event: toggle_summarization_prompt_display( gui ), 'value' )
     gui.selector_summarization_prompt.param.watch(
-        lambda event: update_summarization_prompt_variables( gui ), 'value' )
+        lambda event: populate_summarization_prompt_variables( gui ), 'value' )
     gui.selector_system_prompt.param.watch(
-        lambda event: update_system_prompt_variables( gui ), 'value' )
+        lambda event: populate_system_prompt_variables( gui ), 'value' )
     gui.text_input_user.param.watch(
         lambda event: update_and_save_conversation( gui ), 'value' )
+    gui.toggle_system_prompt_active.param.watch(
+        lambda event: toggle_system_prompt_active( gui ), 'value' )
+    gui.toggle_system_prompt_display.param.watch(
+        lambda event: toggle_system_prompt_display( gui ), 'value' )
 
 
 def register_dashboard_callbacks( gui ):
@@ -331,6 +351,15 @@ def restore_conversations_index( gui ):
         add_conversation_indicator(
             gui, ConversationDescriptor( **descriptor ), position = 'END' )
     sort_conversations_index( gui ) # extra sanity
+
+
+def restore_system_prompt_variables( gui, row, state ):
+    for widget_state, widget in zip(
+        state.get( 'row_system_prompt_variables', ( ) ),
+        row
+    ):
+        # TODO: Sanity check widget names.
+        widget.value = widget_state[ 'value' ]
 
 
 def run_chat( gui ):
@@ -444,6 +473,13 @@ def save_conversations_index( gui ):
         dump( { 'format-version': 1, 'descriptors': descriptors }, file )
 
 
+def save_system_prompt_variables( row ):
+    state = [ ]
+    for widget in row:
+        state.append( { 'name': widget.name, 'value': widget.value } )
+    return { 'row_system_prompt_variables': state }
+
+
 def select_conversation( gui, event ):
     conversations = gui.column_conversations_indicators
     old_descriptor = conversations.current_descriptor__
@@ -475,8 +511,12 @@ def toggle_summarization_prompt_display( gui ):
     update_and_save_conversation( gui )
 
 
+def toggle_system_prompt_active( gui ):
+    update_token_count( gui )
+
+
 def toggle_system_prompt_display( gui ):
-    gui.text_system_prompt.visible = gui.checkbox_display_system_prompt.value
+    gui.text_system_prompt.visible = gui.toggle_system_prompt_display.value
 
 
 def update_and_save_conversation( gui ):
@@ -498,6 +538,7 @@ def update_conversation_hilite( gui, new_descriptor = None ):
         if None is not old_descriptor.indicator:
             old_descriptor.indicator.styles.pop( 'background', None )
         if None is not new_descriptor.indicator:
+            # TODO: Use style variable rather than hard-coded value.
             new_descriptor.indicator.styles.update(
                 { 'background': 'LightGray' } )
 
@@ -550,7 +591,26 @@ def update_system_prompt_text( gui ):
     update_and_save_conversation( gui )
 
 
-def update_prompt_variables( gui, row_name, selector_name, callback ):
+def update_token_count( gui ):
+    from ..messages import count_tokens
+    total_tokens = 0
+    if gui.toggle_system_prompt_active.value:
+        total_tokens += count_tokens( gui.text_system_prompt.object )
+    for row in gui.column_conversation_history:
+        message_gui = row.auxiliary_data__[ 'gui' ]
+        if message_gui.toggle_active.value:
+            total_tokens += row.auxiliary_data__[ 'token_count' ]
+    if gui.checkbox_summarize.value:
+        total_tokens += count_tokens( gui.text_summarization_prompt.object )
+    else:
+        total_tokens += count_tokens( gui.text_input_user.value )
+    tokens_limit = gui.selector_model.metadata__[
+        gui.selector_model.value ][ 'tokens-limit' ]
+    # TODO: Change color of text, depending on percentage of tokens limit.
+    gui.text_tokens_total.value = f"{total_tokens} / {tokens_limit}"
+
+
+def _populate_prompt_variables( gui, row_name, selector_name, callback ):
     from panel.widgets import TextInput
     row = getattr( gui, row_name )
     selector = getattr( gui, selector_name )
@@ -564,40 +624,6 @@ def update_prompt_variables( gui, row_name, selector_name, callback ):
         text_input.param.watch( lambda event: callback( gui ), 'value' )
         row.append( text_input )
     callback( gui )
-
-
-def update_summarization_prompt_variables( gui ):
-    update_prompt_variables(
-        gui,
-        'row_summarization_prompt_variables',
-        'selector_summarization_prompt',
-        update_summarization_prompt_text )
-
-
-def update_system_prompt_variables( gui ):
-    update_prompt_variables(
-        gui,
-        'row_system_prompt_variables',
-        'selector_system_prompt',
-        update_system_prompt_text )
-
-
-def update_token_count( gui ):
-    from ..messages import count_tokens
-    total_tokens = 0
-    for row in gui.column_conversation_history:
-        message_gui = row.auxiliary_data__[ 'gui' ]
-        if message_gui.toggle_active.value:
-            total_tokens += row.auxiliary_data__[ 'token_count' ]
-    if gui.checkbox_summarize.value:
-        total_tokens += count_tokens( gui.text_summarization_prompt.object )
-    else:
-        total_tokens += count_tokens( gui.text_input_user.value )
-    total_tokens += count_tokens( gui.text_system_prompt.object )
-    tokens_limit = gui.selector_model.metadata__[
-        gui.selector_model.value ][ 'tokens-limit' ]
-    # TODO: Change color of text, depending on percentage of tokens limit.
-    gui.text_tokens_total.value = f"{total_tokens} / {tokens_limit}"
 
 
 def _populate_prompts_selector( gui_selector, prompts_directory ):
