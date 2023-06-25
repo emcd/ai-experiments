@@ -46,6 +46,34 @@ from panel.reactive import ReactiveHTML
 from panel.widgets import Button
 
 
+roles_emoji = {
+    'AI': '🤖',
+    'Document': '📄',
+    'Human': '🧑',
+    'Utility': '\N{Hammer and Wrench}\uFE0F',
+}
+
+# TODO: Use style variables.
+roles_styles = {
+    'AI': {
+        'background-color': 'WhiteSmoke',
+    },
+    'Document': {
+        'background-color': 'White',
+        'border-top': '2px dashed LightGray',
+        'padding': '3px',
+    },
+    'Human': {
+        'background-color': 'White',
+    },
+    'Utility': {
+        'background-color': 'White',
+        'border-top': '2px dashed LightGray',
+        'padding': '3px',
+    },
+}
+
+
 def calculate_conversations_path( gui ):
     configuration = gui.auxiliary_data__[ 'configuration' ]
     directories = gui.auxiliary_data__[ 'directories' ]

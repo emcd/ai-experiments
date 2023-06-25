@@ -72,12 +72,48 @@ class ConversationIndicator( __.ReactiveHTML ):
         self.gui.row_actions.visible = False
 
 
+class ConversationMessage( __.ReactiveHTML ):
+
+    row = __.param.Parameter( )
+
+    _template = (
+        '''<div id="ConversationMessage" '''
+        '''onmouseenter="${_div_mouseenter}" '''
+        '''onmouseleave="${_div_mouseleave}" '''
+        '''>${row}</div>''' )
+
+    def __init__( self, role, **params ):
+        emoji = __.roles_emoji[ role ]
+        styles = __.roles_styles[ role ]
+        # TODO: Choose layout based on MIME type of content rather than role.
+        if role in ( 'Document', ):
+            from .layouts import plain_conversation_message_layout as layout
+        else:
+            from .layouts import rich_conversation_message_layout as layout
+        components = { }
+        row = generate_component( components, layout, 'row_message' )
+        row.styles.update( styles )
+        row_gui = __.SimpleNamespace( **components )
+        self.auxiliary_data__ = {
+            'gui': row_gui,
+            'role': role,
+        }
+        row_gui.label_role.value = emoji
+        self.gui = row_gui
+        self.row = row
+        super( ).__init__( **params )
+
+    def _div_mouseenter( self, event ):
+        self.gui.row_actions.visible = True
+
+    def _div_mouseleave( self, event ):
+        self.gui.row_actions.visible = False
+
+
 def add_conversation_indicator( gui, descriptor, position = 0 ):
-    # TODO: Handle style to indicate active/previous/unloaded conversation.
     indicator = ConversationIndicator(
         descriptor.title, descriptor.identity,
-        height_policy = 'fit',
-        width_policy = 'max' )
+        height_policy = 'auto', width_policy = 'max' )
     indicator.param.watch(
         lambda event: select_conversation( gui, event ), 'clicked' )
     conversations = gui.column_conversations_indicators
@@ -114,42 +150,22 @@ def add_conversation_indicator_if_necessary( gui ):
 
 
 def add_message( gui, role, content, behaviors = ( 'active', ) ):
-    from ..messages import count_tokens
-    styles = { 'background-color': 'White' }
+    message = ConversationMessage(
+        role, height_policy = 'auto', width_policy = 'max' )
+    message_gui = message.gui
+    # TODO: Less intrusive supplementation.
     if 'Document' == role:
         content = f'''## Supplement ##\n\n{content}'''
-        emoji = '📄'
-        styles.update( {
-            'border-top': '2px dashed LightGray',
-            'padding': '3px'
-        } )
-    elif 'AI' == role:
-        emoji = '🤖'
-        styles.update( { 'background-color': 'WhiteSmoke' } )
-    else: emoji = '🧑'
-    # TODO: Choose layout based on MIME type of content rather than role.
-    if role in ( 'Document', ):
-        from .layouts import plain_conversation_message_layout as layout
-    else:
-        from .layouts import rich_conversation_message_layout as layout
-    components = { }
-    row = generate_component( components, layout, 'row_message' )
-    row.styles = styles
-    row_gui = __.SimpleNamespace( **components )
-    row.auxiliary_data__ = {
-        'gui': row_gui,
-        'role': role,
-        'token_count': count_tokens( content ),
-    }
-    row_gui.label_role.value = emoji
-    row_gui.text_message.object = content
+    message_gui.text_message.object = content
     for behavior in behaviors:
-        getattr( row_gui, f"toggle_{behavior}" ).value = True
-    row_gui.toggle_active.param.watch(
+        getattr( message_gui, f"toggle_{behavior}" ).value = True
+    from ..messages import count_tokens
+    message.auxiliary_data__[ 'token_count' ] = count_tokens( content )
+    message_gui.toggle_active.param.watch(
         lambda event: update_and_save_conversation( gui ), 'value' )
     # TODO: Register callback for 'toggle_pinned'.
-    gui.column_conversation_history.append( row )
-    return row_gui
+    gui.column_conversation_history.append( message )
+    return message
 
 
 def copy_canned_prompt_to_user( gui ):
@@ -209,12 +225,10 @@ def generate_messages( gui ):
             gui.selector_model.value ][ 'honors-system-prompt' ]
         role = 'system' if sysprompt_honor else 'user'
         messages.append( { 'role': role, 'content': system_message } )
-    for message_gui in map(
-        lambda row: row.auxiliary_data__[ 'gui' ],
-        gui.column_conversation_history
-    ):
+    for row in gui.column_conversation_history:
+        message_gui = row.auxiliary_data__[ 'gui' ]
         if not message_gui.toggle_active.value: continue
-        role = message_gui.row_message.auxiliary_data__[ 'role' ]
+        role = row.auxiliary_data__[ 'role' ]
         role = 'user' if role in ( 'Human', 'Document' ) else 'assistant'
         content = message_gui.text_message.object
         messages.append( { 'role': role, 'content': content } )
@@ -381,11 +395,11 @@ def run_chat( gui ):
         gui.text_input_user.value = ''
     if query: add_message( gui, 'Human', query )
     messages = generate_messages( gui )
-    message_gui = add_message( gui, 'AI', '', behaviors = ( ) )
-    status = _run_chat( gui, message_gui, messages )
+    message_row = add_message( gui, 'AI', '', behaviors = ( ) )
+    status = _run_chat( gui, message_row, messages )
     gui.text_status.value = status
     if 'OK' == status:
-        update_message( message_gui )
+        update_message( message_row )
         add_conversation_indicator_if_necessary( gui )
         update_and_save_conversations_index( gui )
         if gui.toggle_canned_prompt_active.value:
@@ -577,14 +591,14 @@ def update_conversation_timestamp( gui ):
     sort_conversations_index( gui )
 
 
-def update_message( message_gui, behaviors = ( 'active', ) ):
-    from ..messages import count_tokens
+def update_message( message_row, behaviors = ( 'active', ) ):
+    message_gui = message_row.gui
     for behavior in ( 'active', 'pinned' ):
         getattr( message_gui, f"toggle_{behavior}" ).value = (
             behavior in behaviors )
     content = message_gui.text_message.object
-    message_gui.row_message.auxiliary_data__[ 'token_count' ] = (
-        count_tokens( content ) )
+    from ..messages import count_tokens
+    message_row.auxiliary_data__[ 'token_count' ] = count_tokens( content )
 
 
 def update_canned_prompt_text( gui ):
@@ -613,7 +627,7 @@ def update_token_count( gui ):
     if gui.toggle_system_prompt_active.value:
         total_tokens += count_tokens( gui.text_system_prompt.object )
     for row in gui.column_conversation_history:
-        message_gui = row.auxiliary_data__[ 'gui' ]
+        message_gui = row.gui
         if message_gui.toggle_active.value:
             total_tokens += row.auxiliary_data__[ 'token_count' ]
     if gui.toggle_canned_prompt_active.value:
@@ -657,8 +671,9 @@ def _populate_prompts_selector( gui_selector, prompts_directory ):
     gui_selector.options = prompt_names
 
 
-def _run_chat( gui, message_gui, messages ):
+def _run_chat( gui, message_row, messages ):
     from ..ai import ChatCompletionError
+    message_gui = message_row.gui
     provider_name = gui.selector_provider.value
     provider = gui.selector_provider.auxiliary_data__[ provider_name ]
     model = gui.selector_model.value

@@ -104,7 +104,7 @@ conversations_manager_layout = {
     'column_conversations_manager': dict(
         component_class = Column,
         component_arguments = dict(
-            height_policy = 'max', width_policy = 'max',
+            height_policy = 'max', width_policy = 'fit',
             max_width = 480, min_width = 192,
             # TODO: Use style variable instead for theming.
             styles = { 'background': '#e8e8e8' },
@@ -417,7 +417,7 @@ conversation_control_layout = {
     'column_conversation_control': dict(
         component_class = Column,
         component_arguments = dict(
-            height_policy = 'max', width_policy = 'max',
+            height_policy = 'max', width_policy = 'fit',
             max_width = 480, min_width = 192,
             styles = { 'background': '#e8e8e8' },
             width = 480,
@@ -557,12 +557,12 @@ conversation_message_common_layout = {
     'column_header': dict(
         component_class = Column,
         component_arguments = dict( **_message_header_attributes ),
-        contains = [ 'row_behaviors', 'gridbox_actions' ],
+        contains = [ 'row_behaviors', 'row_actions' ],
     ),
     'row_behaviors': dict(
         component_class = Row,
         component_arguments = dict(
-            height_policy = 'min', width_policy = 'min',
+            height_policy = 'auto', width_policy = 'max',
         ),
         contains = [
             'label_role',
@@ -596,10 +596,9 @@ conversation_message_common_layout = {
             **_little_button_attributes,
         ),
     ),
-    'gridbox_actions': dict(
-        component_class = GridBox,
+    'row_actions': dict(
+        component_class = Row,
         component_arguments = dict(
-            ncols = 3,
             align = ( 'start', 'end' ),
             height_policy = 'min', width_policy = 'min',
             margin = 5,
@@ -611,34 +610,22 @@ conversation_message_common_layout = {
     'button_delete': dict(
         component_class = Button,
         component_arguments = dict(
-            align = 'center',
-            button_style = 'outline', button_type = 'light',
-            height_policy = 'min', width_policy = 'min',
             icon = 'trash',
-            margin = 0,
-            styles = { 'padding': '0' },
+            **_little_button_attributes,
         ),
     ),
     'button_edit': dict(
         component_class = Button,
         component_arguments = dict(
-            align = 'center',
-            button_style = 'outline', button_type = 'light',
-            height_policy = 'min', width_policy = 'min',
             icon = 'edit',
-            margin = 0,
-            styles = { 'padding': '0' },
+            **_little_button_attributes,
         ),
     ),
     'button_copy': dict(
         component_class = Button,
         component_arguments = dict(
-            align = 'center',
-            button_style = 'outline', button_type = 'light',
-            height_policy = 'min', width_policy = 'min',
             icon = 'copy',
-            margin = 0,
-            styles = { 'padding': '0' },
+            **_little_button_attributes,
         ),
     ),
     'spacer_right': dict( component_class = HSpacer ),
