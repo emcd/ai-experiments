@@ -21,9 +21,11 @@
 ''' GUI layouts with Panel widgets. '''
 
 
+from types import SimpleNamespace
+
 import param
 
-from panel.layout import Column, GridBox, HSpacer, Row
+from panel.layout import Column, FlexBox, GridBox, HSpacer, Row
 from panel.pane import Markdown
 from panel.reactive import ReactiveHTML
 from panel.widgets import (
@@ -38,25 +40,20 @@ from panel.widgets import (
 )
 
 
-#_sticky_css = '''
-#div.sticky {
-#    position: sticky;
-#    top: 0;
-#}
-#'''
-#class StickyContainer( ReactiveHTML ):
-#
-#    containee = param.Parameter( )
-#
-#    _template = (
-#        '''<div id="StickyContainer" class="sticky">${containee}</div>''' )
-#
-#    def __init__( self, containee, **params ):
-#        self.containee = containee
-#        stylesheets = params.get( 'stylesheets', [ ] ).copy( )
-#        stylesheets.append( _sticky_css )
-#        params[ 'stylesheets' ] = stylesheets
-#        super( ).__init__( **params )
+sizes = SimpleNamespace( **dict(
+    element_margin = 2,
+    icon_button_height = 40, # Bokeh/Panel limitation
+    icon_size = '1em',
+    sidebar_width_max = 336,
+    standard_margin = 5,
+) )
+sizes.icon_button_width = sizes.icon_button_height
+sizes.actions_width = (
+      3 * sizes.icon_button_width
+    + 6 * sizes.element_margin
+    + 10 # border widths + extra fudge
+)
+sizes.actions_height = sizes.icon_button_height + 2 * sizes.element_margin
 
 
 _css_code_overflow = '''
@@ -70,12 +67,12 @@ _central_column_width_attributes = dict(
     width = 1024,
 )
 
-_little_button_attributes = dict(
+_icon_button_attributes = dict(
     align = 'center',
     button_style = 'outline', button_type = 'light',
-    height_policy = 'min', width_policy = 'min',
-    margin = 0,
-    styles = { 'padding': '0' },
+    height = sizes.icon_button_height, width = sizes.icon_button_width,
+    height_policy = 'fixed', width_policy = 'fixed',
+    margin = sizes.element_margin,
 )
 
 _message_header_attributes = dict(
@@ -104,11 +101,14 @@ conversations_manager_layout = {
     'column_conversations_manager': dict(
         component_class = Column,
         component_arguments = dict(
-            height_policy = 'max', width_policy = 'fit',
-            max_width = 480, min_width = 192,
+            height_policy = 'max', width_policy = 'max',
+            max_width = sizes.sidebar_width_max, # min_width = 192,
             # TODO: Use style variable instead for theming.
-            styles = { 'background': '#e8e8e8' },
-            width = 480,
+            styles = {
+                'background': '#e8e8e8',
+                'border-right': '1px solid black'
+            },
+            width = sizes.sidebar_width_max,
         ),
         contains = [
             'button_new_conversation',
@@ -177,13 +177,13 @@ conversation_layout = {
     'toggle_system_prompt_active': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💬', value = True, **_little_button_attributes,
+            name = '💬', value = True, **_icon_button_attributes,
         ),
     ),
     'toggle_system_prompt_display': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '\N{Eye}\uFE0F', value = False, **_little_button_attributes,
+            name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
         ),
     ),
     'column_system_prompt': dict(
@@ -278,13 +278,13 @@ conversation_layout = {
     'toggle_canned_prompt_active': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💬', value = False, **_little_button_attributes,
+            name = '💬', value = False, **_icon_button_attributes,
         ),
     ),
     'toggle_canned_prompt_display': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '\N{Eye}\uFE0F', value = False, **_little_button_attributes,
+            name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
         ),
     ),
     'column_canned_prompt': dict(
@@ -368,13 +368,13 @@ conversation_layout = {
     'toggle_user_prompt_active': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💬', value = True, **_little_button_attributes,
+            name = '💬', value = True, **_icon_button_attributes,
         ),
     ),
     'toggle_user_prompt_dork': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💍', value = False, **_little_button_attributes,
+            name = '💍', value = False, **_icon_button_attributes,
         ),
     ),
     'column_user_prompt': dict(
@@ -417,10 +417,14 @@ conversation_control_layout = {
     'column_conversation_control': dict(
         component_class = Column,
         component_arguments = dict(
-            height_policy = 'max', width_policy = 'fit',
-            max_width = 480, min_width = 192,
-            styles = { 'background': '#e8e8e8' },
-            width = 480,
+            height_policy = 'max', width_policy = 'max',
+            max_width = sizes.sidebar_width_max, # min_width = 192,
+            # TODO: Use style variable instead for theming.
+            styles = {
+                'background': '#e8e8e8',
+                'border-left': '1px solid black'
+            },
+            width = sizes.sidebar_width_max,
         ),
         contains = [
             'selector_provider',
@@ -484,21 +488,35 @@ dashboard_layout.update( conversation_control_layout )
 conversation_indicator_layout = {
     'column_indicator': dict(
         component_class = Column,
-        component_arguments = dict( width_policy = 'max' ),
+        #contains = [ 'row_indicator', 'flexbox_labels' ],
+        contains = [ 'row_indicator' ],
+    ),
+    'row_indicator': dict(
+        component_class = Row,
         contains = [ 'text_title', 'row_actions_structure' ],
     ),
     'text_title': dict(
         component_class = Markdown,
         component_arguments = dict(
-            align = 'center',
-            height_policy = 'min', width_policy = 'max',
+            align = ( 'center', 'start' ),
+            height_policy = 'auto', width_policy = 'max',
+            margin = sizes.standard_margin,
+            max_width = (
+                sizes.sidebar_width_max
+                - sizes.actions_width
+                - sizes.standard_margin * 2 ),
+            width = (
+                sizes.sidebar_width_max
+                - sizes.actions_width
+                - sizes.standard_margin * 2 ),
         ),
     ),
     'row_actions_structure': dict(
         component_class = Row,
         component_arguments = dict(
-            height = 40, min_height = 40,
-            height_policy = 'min', width_policy = 'max',
+            height = sizes.actions_height, width = sizes.actions_width,
+            height_policy = 'fixed', width_policy = 'fixed',
+            margin = sizes.standard_margin,
         ),
         contains = [ 'row_actions' ]
     ),
@@ -506,9 +524,6 @@ conversation_indicator_layout = {
         component_class = Row,
         component_arguments = dict(
             align = ( 'center', 'end' ),
-            height_policy = 'min', width_policy = 'min',
-            #margin = 5,
-            #styles = { 'padding': '2px' },
             visible = False,
         ),
         contains = [
@@ -520,22 +535,22 @@ conversation_indicator_layout = {
     'button_delete': dict(
         component_class = Button,
         component_arguments = dict(
-            icon = 'trash', # icon_size = '1em',
-            **_little_button_attributes,
+            icon = 'trash', icon_size = sizes.icon_size,
+            **_icon_button_attributes,
         ),
     ),
     'button_edit_title': dict(
         component_class = Button,
         component_arguments = dict(
-            icon = 'edit', # icon_size = '1em',
-            **_little_button_attributes,
+            icon = 'edit', icon_size = sizes.icon_size,
+            **_icon_button_attributes,
         ),
     ),
     'button_edit_labels': dict(
         component_class = Button,
         component_arguments = dict(
-            icon = 'bookmark-edit', # icon_size = '1em',
-            **_little_button_attributes,
+            icon = 'bookmark-edit', icon_size = sizes.icon_size,
+            **_icon_button_attributes,
         ),
     ),
 }
@@ -557,7 +572,7 @@ conversation_message_common_layout = {
     'column_header': dict(
         component_class = Column,
         component_arguments = dict( **_message_header_attributes ),
-        contains = [ 'row_behaviors', 'row_actions' ],
+        contains = [ 'row_behaviors', 'row_actions_structure' ],
     ),
     'row_behaviors': dict(
         component_class = Row,
@@ -585,7 +600,7 @@ conversation_message_common_layout = {
         component_arguments = dict(
             name = '💬', #icon = 'message-dots',
             value = False,
-            **_little_button_attributes,
+            **_icon_button_attributes,
         ),
     ),
     'toggle_pinned': dict(
@@ -593,8 +608,16 @@ conversation_message_common_layout = {
         component_arguments = dict(
             name = '📌', #icon = 'pin',
             value = False,
-            **_little_button_attributes,
+            **_icon_button_attributes,
         ),
+    ),
+    'row_actions_structure': dict(
+        component_class = Row,
+        component_arguments = dict(
+            height = 40, min_height = 40,
+            height_policy = 'min', width_policy = 'max',
+        ),
+        contains = [ 'row_actions' ]
     ),
     'row_actions': dict(
         component_class = Row,
@@ -611,21 +634,21 @@ conversation_message_common_layout = {
         component_class = Button,
         component_arguments = dict(
             icon = 'trash',
-            **_little_button_attributes,
+            **_icon_button_attributes,
         ),
     ),
     'button_edit': dict(
         component_class = Button,
         component_arguments = dict(
             icon = 'edit',
-            **_little_button_attributes,
+            **_icon_button_attributes,
         ),
     ),
     'button_copy': dict(
         component_class = Button,
         component_arguments = dict(
             icon = 'copy',
-            **_little_button_attributes,
+            **_icon_button_attributes,
         ),
     ),
     'spacer_right': dict( component_class = HSpacer ),
@@ -649,9 +672,30 @@ rich_conversation_message_layout.update( {
         component_class = Markdown,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
-            styles = { 'overflow': 'auto' },
+            styles = { 'overflow': 'auto', 'padding': '0' },
             stylesheets = [ _css_code_overflow ],
             **_central_column_width_attributes,
         ),
     ),
 } )
+
+
+#_sticky_css = '''
+#div.sticky {
+#    position: sticky;
+#    top: 0;
+#}
+#'''
+#class StickyContainer( ReactiveHTML ):
+#
+#    containee = param.Parameter( )
+#
+#    _template = (
+#        '''<div id="StickyContainer" class="sticky">${containee}</div>''' )
+#
+#    def __init__( self, containee, **params ):
+#        self.containee = containee
+#        stylesheets = params.get( 'stylesheets', [ ] ).copy( )
+#        stylesheets.append( _sticky_css )
+#        params[ 'stylesheets' ] = stylesheets
+#        super( ).__init__( **params )

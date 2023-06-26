@@ -71,7 +71,7 @@ def prepare_vectorstores( configuration, directories ):
     if not registry_path.exists( ): return stores
     with registry_path.open( 'rb' ) as registry_file:
         registry = load_toml( registry_file )
-    for data in registry[ 'stores' ]:
+    for data in registry.get( 'stores', ( ) ):
         name = data[ 'name' ]
         stores[ name ] = data.copy( )
         provider = data[ 'provider' ]

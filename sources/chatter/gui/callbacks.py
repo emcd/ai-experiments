@@ -41,14 +41,14 @@ class ConversationDescriptor:
 class ConversationIndicator( __.ReactiveHTML ):
 
     clicked = __.param.Event( default = False )
-    row = __.param.Parameter( )
+    row__ = __.param.Parameter( )
 
     _template = (
         '''<div id="ConversationIndicator" '''
         '''onclick="${_div_click}" '''
         '''onmouseenter="${_div_mouseenter}" '''
         '''onmouseleave="${_div_mouseleave}" '''
-        '''>${row}</div>''' )
+        '''>${row__}</div>''' )
 
     def __init__( self, title, identity, **params ):
         from .layouts import conversation_indicator_layout as layout
@@ -56,9 +56,9 @@ class ConversationIndicator( __.ReactiveHTML ):
         row = generate_component( components, layout, 'column_indicator' )
         row_gui = __.SimpleNamespace( **components )
         row_gui.text_title.object = title
-        self.gui = row_gui
-        self.row = row
-        self.identity = identity
+        self.gui__ = row_gui
+        self.row__ = row
+        self.identity__ = identity
         super( ).__init__( **params )
 
     def _div_click( self, event ):
@@ -66,21 +66,21 @@ class ConversationIndicator( __.ReactiveHTML ):
         self.clicked = True
 
     def _div_mouseenter( self, event ):
-        self.gui.row_actions.visible = True
+        self.gui__.row_actions.visible = True
 
     def _div_mouseleave( self, event ):
-        self.gui.row_actions.visible = False
+        self.gui__.row_actions.visible = False
 
 
 class ConversationMessage( __.ReactiveHTML ):
 
-    row = __.param.Parameter( )
+    row__ = __.param.Parameter( )
 
     _template = (
         '''<div id="ConversationMessage" '''
         '''onmouseenter="${_div_mouseenter}" '''
         '''onmouseleave="${_div_mouseleave}" '''
-        '''>${row}</div>''' )
+        '''>${row__}</div>''' )
 
     def __init__( self, role, **params ):
         emoji = __.roles_emoji[ role ]
@@ -99,21 +99,19 @@ class ConversationMessage( __.ReactiveHTML ):
             'role': role,
         }
         row_gui.label_role.value = emoji
-        self.gui = row_gui
-        self.row = row
+        self.gui__ = row_gui
+        self.row__ = row
         super( ).__init__( **params )
 
     def _div_mouseenter( self, event ):
-        self.gui.row_actions.visible = True
+        self.gui__.row_actions.visible = True
 
     def _div_mouseleave( self, event ):
-        self.gui.row_actions.visible = False
+        self.gui__.row_actions.visible = False
 
 
 def add_conversation_indicator( gui, descriptor, position = 0 ):
-    indicator = ConversationIndicator(
-        descriptor.title, descriptor.identity,
-        height_policy = 'auto', width_policy = 'max' )
+    indicator = ConversationIndicator( descriptor.title, descriptor.identity )
     indicator.param.watch(
         lambda event: select_conversation( gui, event ), 'clicked' )
     conversations = gui.column_conversations_indicators
@@ -152,7 +150,7 @@ def add_conversation_indicator_if_necessary( gui ):
 def add_message( gui, role, content, behaviors = ( 'active', ) ):
     message = ConversationMessage(
         role, height_policy = 'auto', width_policy = 'max' )
-    message_gui = message.gui
+    message_gui = message.gui__
     # TODO: Less intrusive supplementation.
     if 'Document' == role:
         content = f'''## Supplement ##\n\n{content}'''
@@ -507,7 +505,7 @@ def save_prompt_variables( gui, row_name ):
 def select_conversation( gui, event ):
     conversations = gui.column_conversations_indicators
     old_descriptor = conversations.current_descriptor__
-    new_id = event.obj.identity
+    new_id = event.obj.identity__
     new_descriptor = conversations.descriptors__[ new_id ]
     if old_descriptor.identity == new_id: return
     if None is new_descriptor.gui:
@@ -592,7 +590,7 @@ def update_conversation_timestamp( gui ):
 
 
 def update_message( message_row, behaviors = ( 'active', ) ):
-    message_gui = message_row.gui
+    message_gui = message_row.gui__
     for behavior in ( 'active', 'pinned' ):
         getattr( message_gui, f"toggle_{behavior}" ).value = (
             behavior in behaviors )
@@ -627,7 +625,7 @@ def update_token_count( gui ):
     if gui.toggle_system_prompt_active.value:
         total_tokens += count_tokens( gui.text_system_prompt.object )
     for row in gui.column_conversation_history:
-        message_gui = row.gui
+        message_gui = row.gui__
         if message_gui.toggle_active.value:
             total_tokens += row.auxiliary_data__[ 'token_count' ]
     if gui.toggle_canned_prompt_active.value:
@@ -673,7 +671,7 @@ def _populate_prompts_selector( gui_selector, prompts_directory ):
 
 def _run_chat( gui, message_row, messages ):
     from ..ai import ChatCompletionError
-    message_gui = message_row.gui
+    message_gui = message_row.gui__
     provider_name = gui.selector_provider.value
     provider = gui.selector_provider.auxiliary_data__[ provider_name ]
     model = gui.selector_model.value
