@@ -18,7 +18,21 @@
 #============================================================================#
 
 
-''' GUI layouts with Panel widgets. '''
+''' GUI layouts with Panel widgets.
+
+    Based on experience with Bokeh/Panel and GUI layout, in general, the
+    following guidance should be considered:
+
+    * Do not use height and width policies except where necessary. Excessive
+      policy use can lead to hard-to-debug display behaviors.
+
+    * Used fixed sizes only for small elements. These serve as the basis for
+      consistent sizing on a larger scale.
+
+    * The 'max' height policy needs both 'height' and 'max_height' to be
+      effective. Similarly for the 'max' width policy.
+
+    * Prefer margins over padding for greater control. '''
 
 
 from types import SimpleNamespace
@@ -42,18 +56,30 @@ from panel.widgets import (
 
 sizes = SimpleNamespace( **dict(
     element_margin = 2,
-    icon_button_height = 40, # Bokeh/Panel limitation
+    icon_button_height = 40, # distortion if smaller, Bokeh/Panel limitation
     icon_size = '1em',
+    message_width_max = 1024,
+    message_width_min = 480,
     sidebar_width_max = 336,
     standard_margin = 5,
 ) )
 sizes.icon_button_width = sizes.icon_button_height
+sizes.actions_height = sizes.icon_button_height + 2 * sizes.element_margin
 sizes.actions_width = (
       3 * sizes.icon_button_width
     + 6 * sizes.element_margin
     + 10 # border widths + extra fudge
 )
-sizes.actions_height = sizes.icon_button_height + 2 * sizes.element_margin
+sizes.central_width_max = (
+      4 * sizes.standard_margin
+    + sizes.actions_width
+    + sizes.message_width_max
+)
+sizes.central_width_min = (
+      4 * sizes.standard_margin
+    + sizes.actions_width
+    + sizes.message_width_min
+)
 
 
 _css_code_overflow = '''
@@ -62,9 +88,9 @@ div[class="codehilite"] {
 }
 '''
 
-_central_column_width_attributes = dict(
-    max_width = 1024, min_width = 640,
-    width = 1024,
+_message_column_width_attributes = dict(
+    max_width = sizes.message_width_max, min_width = sizes.message_width_min,
+    width = sizes.message_width_max,
 )
 
 _icon_button_attributes = dict(
@@ -77,8 +103,8 @@ _icon_button_attributes = dict(
 
 _message_header_attributes = dict(
     height_policy = 'auto', width_policy = 'max',
-    margin = 5,
-    max_width = 110, width = 110,
+    margin = sizes.standard_margin,
+    max_width = sizes.actions_width, width = sizes.actions_width,
 )
 
 
@@ -106,7 +132,7 @@ conversations_manager_layout = {
             # TODO: Use style variable instead for theming.
             styles = {
                 'background': '#e8e8e8',
-                'border-right': '1px solid black'
+                'border-right': '1px solid black',
             },
             width = sizes.sidebar_width_max,
         ),
@@ -134,9 +160,6 @@ dashboard_layout.update( conversations_manager_layout )
 conversation_layout = {
     'column_conversation': dict(
         component_class = Column,
-        component_arguments = dict(
-            height_policy = 'auto', width_policy = 'max',
-        ),
         contains = [
             'row_system_prompt',
             'column_conversation_history',
@@ -146,7 +169,6 @@ conversation_layout = {
     'row_system_prompt': dict(
         component_class = Row,
         component_arguments = dict(
-            height_policy = 'auto', width_policy = 'max',
             # TODO: Use style variable instead for theming.
             styles = { 'background': 'WhiteSmoke' },
         ),
@@ -163,14 +185,16 @@ conversation_layout = {
         component_arguments = dict( **_message_header_attributes ),
         contains = [
             'label_system',
-            'spacer_label_system',
+            #'spacer_label_system',
             'toggle_system_prompt_active',
             'toggle_system_prompt_display',
         ],
     ),
     'label_system': dict(
         component_class = StaticText,
-        component_arguments = dict( value = '📏' ),
+        component_arguments = dict(
+            value = '📏', align = 'center', width = sizes.icon_button_width,
+        ),
         persist = False,
     ),
     'spacer_label_system': dict( component_class = HSpacer ),
@@ -190,7 +214,8 @@ conversation_layout = {
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
-            **_central_column_width_attributes,
+            margin = sizes.standard_margin,
+            **_message_column_width_attributes,
         ),
         contains = [
             'selector_system_prompt',
@@ -207,9 +232,6 @@ conversation_layout = {
     ),
     'row_system_prompt_variables': dict(
         component_class = Row,
-        component_arguments = dict(
-            height_policy = 'auto', width_policy = 'max',
-        ),
         persistence_functions = dict(
             save = 'save_prompt_variables',
             restore = 'restore_prompt_variables',
@@ -218,8 +240,7 @@ conversation_layout = {
     'text_system_prompt': dict(
         component_class = Markdown,
         component_arguments = dict(
-            height_policy = 'fit',
-            width_policy = 'max',
+            height_policy = 'auto', width_policy = 'max',
             visible = False,
         ),
     ),
@@ -264,14 +285,16 @@ conversation_layout = {
         component_arguments = dict( **_message_header_attributes ),
         contains = [
             'label_canned',
-            'spacer_label_canned',
+            #'spacer_label_canned',
             'toggle_canned_prompt_active',
             'toggle_canned_prompt_display',
         ],
     ),
     'label_canned': dict(
         component_class = StaticText,
-        component_arguments = dict( value = '🥫' ),
+        component_arguments = dict(
+            value = '🥫', align = 'center', width = sizes.icon_button_width,
+        ),
         persist = False,
     ),
     'spacer_label_canned': dict( component_class = HSpacer ),
@@ -291,7 +314,8 @@ conversation_layout = {
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
-            **_central_column_width_attributes,
+            margin = sizes.standard_margin,
+            **_message_column_width_attributes,
         ),
         contains = [
             'row_canned_prompt_selection',
@@ -301,9 +325,6 @@ conversation_layout = {
     ),
     'row_canned_prompt_selection': dict(
         component_class = Row,
-        component_arguments = dict(
-            height_policy = 'auto', width_policy = 'max',
-        ),
         contains = [
             'selector_canned_prompt', 'button_refine_canned_prompt',
         ],
@@ -318,20 +339,17 @@ conversation_layout = {
     'button_refine_canned_prompt': dict(
         component_class = Button,
         component_arguments = dict(
-            icon = 'arrow-big-down', icon_size = '16px',
+            icon = 'arrow-big-down', icon_size = sizes.icon_size,
+            **_icon_button_attributes,
         ),
     ),
     'row_canned_prompt_variables': dict(
         component_class = Row,
-        component_arguments = dict(
-            height_policy = 'auto', width_policy = 'max',
-        ),
     ),
     'text_canned_prompt': dict(
         component_class = Markdown,
         component_arguments = dict(
-            height_policy = 'fit',
-            width_policy = 'max',
+            height_policy = 'auto', width_policy = 'max',
             visible = False,
         ),
     ),
@@ -354,14 +372,16 @@ conversation_layout = {
         component_arguments = dict( **_message_header_attributes ),
         contains = [
             'label_user',
-            'spacer_label_user',
+            #'spacer_label_user',
             'toggle_user_prompt_active',
             'toggle_user_prompt_dork',
         ],
     ),
     'label_user': dict(
         component_class = StaticText,
-        component_arguments = dict( value = '🧑' ),
+        component_arguments = dict(
+            value = '🧑', align = 'center', width = sizes.icon_button_width,
+        ),
         persist = False,
     ),
     'spacer_label_user': dict( component_class = HSpacer ),
@@ -381,7 +401,8 @@ conversation_layout = {
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
-            **_central_column_width_attributes,
+            margin = sizes.standard_margin,
+            **_message_column_width_attributes,
         ),
         contains = [ 'text_input_user', 'row_actions', ],
     ),
@@ -396,9 +417,6 @@ conversation_layout = {
     ),
     'row_actions': dict(
         component_class = Row,
-        component_arguments = dict(
-            height_policy = 'auto', width_policy = 'max',
-        ),
         contains = [ 'button_chat', 'button_query', ],
     ),
     'button_chat': dict(
@@ -422,7 +440,8 @@ conversation_control_layout = {
             # TODO: Use style variable instead for theming.
             styles = {
                 'background': '#e8e8e8',
-                'border-left': '1px solid black'
+                'border-left': '1px solid black',
+                'padding': f"{sizes.standard_margin}px",
             },
             width = sizes.sidebar_width_max,
         ),
@@ -527,17 +546,10 @@ conversation_indicator_layout = {
             visible = False,
         ),
         contains = [
-            'button_delete',
             'button_edit_title',
             'button_edit_labels',
+            'button_delete',
         ],
-    ),
-    'button_delete': dict(
-        component_class = Button,
-        component_arguments = dict(
-            icon = 'trash', icon_size = sizes.icon_size,
-            **_icon_button_attributes,
-        ),
     ),
     'button_edit_title': dict(
         component_class = Button,
@@ -550,6 +562,13 @@ conversation_indicator_layout = {
         component_class = Button,
         component_arguments = dict(
             icon = 'bookmark-edit', icon_size = sizes.icon_size,
+            **_icon_button_attributes,
+        ),
+    ),
+    'button_delete': dict(
+        component_class = Button,
+        component_arguments = dict(
+            icon = 'trash', icon_size = sizes.icon_size,
             **_icon_button_attributes,
         ),
     ),
@@ -572,7 +591,10 @@ conversation_message_common_layout = {
     'column_header': dict(
         component_class = Column,
         component_arguments = dict( **_message_header_attributes ),
-        contains = [ 'row_behaviors', 'row_actions_structure' ],
+        contains = [
+            'row_behaviors',
+            'row_actions_structure',
+        ],
     ),
     'row_behaviors': dict(
         component_class = Row,
@@ -581,7 +603,7 @@ conversation_message_common_layout = {
         ),
         contains = [
             'label_role',
-            'spacer_role',
+            #'spacer_role',
             'toggle_active',
             'toggle_pinned',
         ],
@@ -589,9 +611,7 @@ conversation_message_common_layout = {
     'label_role': dict(
         component_class = StaticText,
         component_arguments = dict(
-            align = 'center',
-            height_policy = 'min', width_policy = 'min',
-            margin = 0,
+            align = 'center', width = sizes.icon_button_width,
         ),
     ),
     'spacer_role': dict( component_class = HSpacer ),
@@ -614,21 +634,25 @@ conversation_message_common_layout = {
     'row_actions_structure': dict(
         component_class = Row,
         component_arguments = dict(
-            height = 40, min_height = 40,
-            height_policy = 'min', width_policy = 'max',
+            height = sizes.actions_height, width = sizes.actions_width,
+            height_policy = 'fixed', width_policy = 'fixed',
         ),
         contains = [ 'row_actions' ]
     ),
     'row_actions': dict(
         component_class = Row,
         component_arguments = dict(
-            align = ( 'start', 'end' ),
-            height_policy = 'min', width_policy = 'min',
-            margin = 5,
-            styles = { 'padding': '2px' },
+            align = ( 'center', 'end' ),
             visible = False,
         ),
-        contains = [ 'button_delete', 'button_edit', 'button_copy' ],
+        contains = [ 'button_copy', 'button_delete', 'button_edit' ],
+    ),
+    'button_copy': dict(
+        component_class = Button,
+        component_arguments = dict(
+            icon = 'copy',
+            **_icon_button_attributes,
+        ),
     ),
     'button_delete': dict(
         component_class = Button,
@@ -644,13 +668,6 @@ conversation_message_common_layout = {
             **_icon_button_attributes,
         ),
     ),
-    'button_copy': dict(
-        component_class = Button,
-        component_arguments = dict(
-            icon = 'copy',
-            **_icon_button_attributes,
-        ),
-    ),
     'spacer_right': dict( component_class = HSpacer ),
 }
 
@@ -660,8 +677,9 @@ plain_conversation_message_layout.update( {
         component_class = StaticText,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
+            margin = sizes.standard_margin,
             styles = { 'overflow': 'auto' },
-            **_central_column_width_attributes,
+            **_message_column_width_attributes,
         ),
     ),
 } )
@@ -672,9 +690,10 @@ rich_conversation_message_layout.update( {
         component_class = Markdown,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
-            styles = { 'overflow': 'auto', 'padding': '0' },
+            margin = sizes.standard_margin,
+            styles = { 'overflow': 'auto' },
             stylesheets = [ _css_code_overflow ],
-            **_central_column_width_attributes,
+            **_message_column_width_attributes,
         ),
     ),
 } )

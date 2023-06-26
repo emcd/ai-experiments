@@ -149,7 +149,7 @@ def add_conversation_indicator_if_necessary( gui ):
 
 def add_message( gui, role, content, behaviors = ( 'active', ) ):
     message = ConversationMessage(
-        role, height_policy = 'auto', width_policy = 'max' )
+        role, height_policy = 'auto', margin = 0, width_policy = 'max' )
     message_gui = message.gui__
     # TODO: Less intrusive supplementation.
     if 'Document' == role:
