@@ -34,6 +34,7 @@ def prepare( ):
     directories = PlatformDirs( 'llm-chatter', 'emcd', ensure_exists = True )
     configuration = provide_configuration( project_path, directories )
     prepare_environment( configuration, directories, project_path )
+    prepare_inscribers( configuration, directories )
     prepare_api_clients( )
     vectorstores = prepare_vectorstores( configuration, directories )
     from chatter.gui import prepare as prepare_gui
@@ -59,6 +60,11 @@ def prepare_environment( configuration, directories, project_path ):
     from dotenv import load_dotenv
     with path.open( ) as environment_file:
         load_dotenv( stream = environment_file )
+
+
+def prepare_inscribers( configuration, directories ):
+    from icecream import install
+    install( )
 
 
 def prepare_vectorstores( configuration, directories ):

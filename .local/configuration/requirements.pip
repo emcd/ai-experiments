@@ -1,6 +1,7 @@
 beautifulsoup4
 chromadb
 faiss-cpu
+icecream
 langchain
 notebook
 openai

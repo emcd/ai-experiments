@@ -413,6 +413,7 @@ conversation_layout = {
             placeholder = 'Enter user message here...',
             height_policy = 'auto', width_policy = 'max',
             max_height = 480, # min_height = 240,
+            max_length = 32767,
         ),
     ),
     'row_actions': dict(

@@ -62,8 +62,16 @@ class ConversationIndicator( __.ReactiveHTML ):
         super( ).__init__( **params )
 
     def _div_click( self, event ):
+        # TODO: Suppress event propagation from buttons contained in this.
+        #       Especially for 'delete' button as this results in a
+        #       'bokeh.core.serialization.DeserializationError' from
+        #       an unresolved reference after deletion.
         # Cannot run callback directly. Trigger via Event parameter.
         self.clicked = True
+        #ic( event.event_name )
+        #ic( event.node )
+        #ic( event.model )
+        #ic( event.data )
 
     def _div_mouseenter( self, event ):
         self.gui__.row_actions.visible = True
@@ -114,6 +122,8 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     indicator = ConversationIndicator( descriptor.title, descriptor.identity )
     indicator.param.watch(
         lambda event: select_conversation( gui, event ), 'clicked' )
+    indicator.gui__.button_delete.on_click(
+        lambda event: delete_conversation( gui, descriptor ) )
     conversations = gui.column_conversations_indicators
     if 'END' == position: conversations.append( indicator )
     else: conversations.insert( position, indicator )
@@ -189,6 +199,25 @@ def create_conversation( gui, descriptor ):
     populate_conversation( pane_gui )
     register_conversation_callbacks( pane_gui )
     return pane_gui
+
+
+def delete_conversation( gui, descriptor ):
+    # TODO: Confirmation modal dialog:
+    #   https://discourse.holoviz.org/t/can-i-use-create-a-modal-dialog-in-panel/1207/4
+    create_and_display_conversation( gui )
+    conversations = gui.column_conversations_indicators
+    conversations.descriptors__.pop( descriptor.identity )
+    descriptor.gui = None # break possible GC cycles
+    indicators = [
+        indicator for indicator in conversations
+        if indicator.identity__ != descriptor.identity ]
+    #conversations.clear( )
+    #conversations.extend( indicators )
+    conversations.objects = indicators
+    descriptor.indicator = None # break possible GC cycles
+    path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
+    if path.exists( ): path.unlink( )
+    save_conversations_index( gui )
 
 
 def display_conversation( gui, descriptor ):
