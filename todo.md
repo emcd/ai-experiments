@@ -10,9 +10,6 @@
 
 * Theme components with color scheme used in blog.
 
-* Support specification of preferred canned prompts to accompany system
-  prompts.
-
 * Change message border on mouse enter/leave.
 
 * Change conversation indicator background on mouse enter/leave.

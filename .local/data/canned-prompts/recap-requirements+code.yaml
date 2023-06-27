@@ -13,3 +13,16 @@ template: |
   it is imperative that you accurately and precisely capture all pertinent
   information in the conversation so that we can continue it without loss of
   fidelity from this new starting point.
+variables:
+  - id: 'requirements'
+    label: 'Requirements'
+    species: 'boolean'
+    default: true
+  - id: 'agenda'
+    label: 'Agenda'
+    species: 'boolean'
+    default: true
+  - id: 'code'
+    label: 'Code'
+    species: 'boolean'
+    default: true

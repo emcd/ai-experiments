@@ -299,6 +299,21 @@ def populate_system_prompt_variables( gui ):
         'row_system_prompt_variables',
         'selector_system_prompt',
         update_system_prompt_text )
+    # If there is a canned prompt preference, then update accordingly.
+    can_update = hasattr( gui.selector_canned_prompt, 'auxiliary_data__' )
+    summarization = gui.selector_system_prompt.auxiliary_data__[
+        gui.selector_system_prompt.value ].get( 'summarization-preference' )
+    if can_update and None is not summarization:
+        gui.selector_canned_prompt.value = summarization[ 'id' ]
+        defaults = summarization.get( 'defaults', { } )
+        for i, variable in enumerate(
+            gui.selector_canned_prompt.auxiliary_data__[
+                gui.selector_canned_prompt.value ].get( 'variables', ( ) )
+        ):
+            variable_id = variable[ 'id' ]
+            if variable_id not in defaults: continue
+            gui.row_canned_prompt_variables[ i ].value = defaults[
+                variable_id ]
 
 
 def populate_system_prompts_selector( gui ):

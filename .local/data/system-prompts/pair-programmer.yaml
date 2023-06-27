@@ -36,6 +36,8 @@ template: |
   outline of your chain of thought.
 
   Be concise.
+summarization-preference:
+  id: 'Recap: Requirements + Code'
 variables:
   - id: 'language'
     label: 'Language'

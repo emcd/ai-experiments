@@ -12,3 +12,16 @@ template: |
   it is imperative that you accurately and precisely capture all pertinent
   information in the conversation so that we can continue it without loss of
   fidelity from this new starting point.
+variables:
+  - id: 'subject'
+    label: 'Subject or Objectives'
+    species: 'boolean'
+    default: true
+  - id: 'agenda'
+    label: 'Agenda or Outline'
+    species: 'boolean'
+    default: true
+  - id: 'tables'
+    label: 'Lists and Tables'
+    species: 'boolean'
+    default: true
