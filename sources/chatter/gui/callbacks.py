@@ -362,11 +362,9 @@ def restore_conversation( gui ):
     with path.open( ) as file: state = load( file )
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
-        component_class = data[ 'component_class' ]
-        if component_class in ( __.Button, __.HSpacer ):
-            continue
         component = getattr( gui, name )
-        if component_class in ( __.Column, __.Row ):
+        if hasattr( component, 'on_click' ): continue
+        elif hasattr( component, 'objects' ):
             if 'persistence_functions' not in data: continue
             restorer_name = data[ 'persistence_functions' ][ 'restore' ]
             restorer = globals( )[ restorer_name ]
@@ -375,10 +373,7 @@ def restore_conversation( gui ):
             component.value = state[ name ][ 'value' ]
         elif hasattr( component, 'object' ):
             component.object = state[ name ][ 'value' ]
-        else:
-            raise ValueError(
-                f"Unrecognized component class '{component_class}' "
-                f"for component '{name}'." )
+        else: continue
     update_token_count( gui )
 
 
@@ -465,11 +460,9 @@ def save_conversation( gui ):
     state = { }
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
-        component_class = data[ 'component_class' ]
-        if component_class in ( __.Button, __.HSpacer ):
-            continue
         component = getattr( gui, name )
-        if component_class in ( __.Column, __.Row ):
+        if hasattr( component, 'on_click' ): continue
+        elif hasattr( component, 'objects' ):
             if 'persistence_functions' not in data: continue
             saver_name = data[ 'persistence_functions' ][ 'save' ]
             saver = globals( )[ saver_name ]
@@ -478,10 +471,7 @@ def save_conversation( gui ):
             state[ name ] = dict( value = component.value )
         elif hasattr( component, 'object' ):
             state[ name ] = dict( value = component.object )
-        else:
-            raise ValueError(
-                f"Unrecognized component class '{component_class}' "
-                f"for component '{name}'." )
+        else: continue
     from json import dump
     path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
     with path.open( 'w' ) as file: dump( state, file, indent = 2 )
@@ -668,19 +658,33 @@ def update_token_count( gui ):
 
 
 def _populate_prompt_variables( gui, row_name, selector_name, callback ):
-    from panel.widgets import TextInput
+    from panel.widgets import Checkbox, Select, TextInput
     row = getattr( gui, row_name )
     selector = getattr( gui, selector_name )
     row.clear( )
     variables = selector.auxiliary_data__[
         selector.value ].get( 'variables', ( ) )
     for variable in variables:
-        # TODO: Support other widget types, such as selectors and checkboxes.
-        text_input = TextInput(
-            name = variable[ 'label' ], value = variable[ 'default' ] )
-        text_input.auxiliary_data__ = variable
-        text_input.param.watch( lambda event: callback( gui ), 'value' )
-        row.append( text_input )
+        # TODO: Validation of template variables.
+        species = variable.get( 'species', 'text' )
+        label = variable[ 'label' ]
+        default = variable[ 'default' ]
+        if 'text' == species:
+            component = TextInput( name = label, value = default )
+        elif 'boolean' == species:
+            component = Checkbox( name = label, value = default )
+        elif 'options' == species:
+            component = Select(
+                name = label,
+                options = variable[ 'options' ],
+                value = default )
+        else:
+            raise ValueError(
+                f"Invalid component species, '{species}', "
+                f"for prompt variable '{name}'." )
+        component.param.watch( lambda event: callback( gui ), 'value' )
+        component.auxiliary_data__ = variable
+        row.append( component )
     callback( gui )
 
 

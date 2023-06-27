@@ -41,9 +41,8 @@ from uuid import uuid4
 
 import param
 
-from panel.layout import Column, HSpacer, Row
+from panel.layout import Column, Row
 from panel.reactive import ReactiveHTML
-from panel.widgets import Button
 
 
 roles_emoji = {

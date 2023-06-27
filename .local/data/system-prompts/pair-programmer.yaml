@@ -40,3 +40,10 @@ variables:
   - id: 'language'
     label: 'Language'
     default: 'Python'
+  - id: 'persona'
+    label: 'Persona'
+    species: 'options'
+    default: 'Collaborator'
+    options:
+      - 'Collaborator'
+      - 'Redditor / Stack Overflower'

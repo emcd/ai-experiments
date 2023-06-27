@@ -185,7 +185,6 @@ conversation_layout = {
         component_arguments = dict( **_message_header_attributes ),
         contains = [
             'label_system',
-            #'spacer_label_system',
             'toggle_system_prompt_active',
             'toggle_system_prompt_display',
         ],
@@ -197,7 +196,6 @@ conversation_layout = {
         ),
         persist = False,
     ),
-    'spacer_label_system': dict( component_class = HSpacer ),
     'toggle_system_prompt_active': dict(
         component_class = Toggle,
         component_arguments = dict(
@@ -285,7 +283,6 @@ conversation_layout = {
         component_arguments = dict( **_message_header_attributes ),
         contains = [
             'label_canned',
-            #'spacer_label_canned',
             'toggle_canned_prompt_active',
             'toggle_canned_prompt_display',
         ],
@@ -297,7 +294,6 @@ conversation_layout = {
         ),
         persist = False,
     ),
-    'spacer_label_canned': dict( component_class = HSpacer ),
     'toggle_canned_prompt_active': dict(
         component_class = Toggle,
         component_arguments = dict(
@@ -372,7 +368,6 @@ conversation_layout = {
         component_arguments = dict( **_message_header_attributes ),
         contains = [
             'label_user',
-            #'spacer_label_user',
             'toggle_user_prompt_active',
             'toggle_user_prompt_dork',
         ],
@@ -384,7 +379,6 @@ conversation_layout = {
         ),
         persist = False,
     ),
-    'spacer_label_user': dict( component_class = HSpacer ),
     'toggle_user_prompt_active': dict(
         component_class = Toggle,
         component_arguments = dict(
