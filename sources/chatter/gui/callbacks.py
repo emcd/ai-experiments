@@ -136,7 +136,7 @@ def add_conversation_indicator_if_necessary( gui ):
     descriptor = conversations.current_descriptor__
     if descriptor.identity in conversations.descriptors__: return
     # TODO: Encapsulate in provider as response format may vary by provider.
-    canned_prompt = gui.selector_canned_prompt.metadata__[
+    canned_prompt = gui.selector_canned_prompt.auxiliary_data__[
         'JSON: Title + Labels' ][ 'template' ]
     messages = [
         # TODO? Regen title from more mature conversation.
@@ -248,7 +248,7 @@ def generate_messages( gui ):
     messages = [ ]
     if gui.toggle_system_prompt_active.value:
         system_message = gui.text_system_prompt.object
-        sysprompt_honor = gui.selector_model.metadata__[
+        sysprompt_honor = gui.selector_model.auxiliary_data__[
             gui.selector_model.value ][ 'honors-system-prompt' ]
         role = 'system' if sysprompt_honor else 'user'
         messages.append( { 'role': role, 'content': system_message } )
@@ -284,7 +284,7 @@ def populate_models_selector( gui ):
         gui.selector_provider.value ][ 'model-provider' ]
     models = provider( )
     gui.selector_model.options = list( models.keys( ) )
-    gui.selector_model.metadata__ = models
+    gui.selector_model.auxiliary_data__ = models
 
 
 def populate_providers_selector( gui ):
@@ -322,7 +322,7 @@ def populate_canned_prompts_selector( gui ):
 
 
 def populate_vectorstores_selector( gui, vectorstores ):
-    gui.selector_vectorstore.metadata__ = vectorstores
+    gui.selector_vectorstore.auxiliary_data__ = vectorstores
     gui.selector_vectorstore.options = list( vectorstores.keys( ) )
 
 
@@ -445,7 +445,7 @@ def run_query( gui ):
     add_message( gui, 'Human', query )
     documents_count = gui.slider_documents_count.value
     if not documents_count: return
-    vectorstore = gui.selector_vectorstore.metadata__[
+    vectorstore = gui.selector_vectorstore.auxiliary_data__[
         gui.selector_vectorstore.value ][ 'instance' ]
     documents = vectorstore.similarity_search( query, k = documents_count )
     for document in documents:
@@ -661,7 +661,7 @@ def update_token_count( gui ):
         total_tokens += count_tokens( gui.text_canned_prompt.object )
     if gui.toggle_user_prompt_active.value:
         total_tokens += count_tokens( gui.text_input_user.value )
-    tokens_limit = gui.selector_model.metadata__[
+    tokens_limit = gui.selector_model.auxiliary_data__[
         gui.selector_model.value ][ 'tokens-limit' ]
     # TODO: Change color of text, depending on percentage of tokens limit.
     gui.text_tokens_total.value = f"{total_tokens} / {tokens_limit}"
@@ -672,12 +672,13 @@ def _populate_prompt_variables( gui, row_name, selector_name, callback ):
     row = getattr( gui, row_name )
     selector = getattr( gui, selector_name )
     row.clear( )
-    variables = selector.metadata__[ selector.value ].get( 'variables', ( ) )
+    variables = selector.auxiliary_data__[
+        selector.value ].get( 'variables', ( ) )
     for variable in variables:
         # TODO: Support other widget types, such as selectors and checkboxes.
         text_input = TextInput(
             name = variable[ 'label' ], value = variable[ 'default' ] )
-        text_input.metadata__ = variable
+        text_input.auxiliary_data__ = variable
         text_input.param.watch( lambda event: callback( gui ), 'value' )
         row.append( text_input )
     callback( gui )
@@ -685,16 +686,16 @@ def _populate_prompt_variables( gui, row_name, selector_name, callback ):
 
 def _populate_prompts_selector( gui_selector, prompts_directory ):
     from yaml import safe_load
-    metadata = { }; prompt_names = [ ]
+    auxiliary_data = { }; prompt_names = [ ]
     for prompt_path in (
         prompts_directory.resolve( strict = True ).glob( '*.yaml' )
     ):
         with prompt_path.open( ) as file:
             contents = safe_load( file )
             id_ = contents[ 'id' ]
-            metadata[ id_ ] = contents
+            auxiliary_data[ id_ ] = contents
             prompt_names.append( id_ )
-    gui_selector.metadata__ = metadata
+    gui_selector.auxiliary_data__ = auxiliary_data
     gui_selector.options = prompt_names
 
 
@@ -736,9 +737,9 @@ def _update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
     row = getattr( gui, row_name )
     selector = getattr( gui, selector_name )
     text_prompt = getattr( gui, text_prompt_name )
-    template = selector.metadata__[ selector.value ][ 'template' ]
+    template = selector.auxiliary_data__[ selector.value ][ 'template' ]
     variables = {
-        element.metadata__[ 'id' ]: element.value for element in row
+        element.auxiliary_data__[ 'id' ]: element.value for element in row
     }
     # TODO: Support alternative template types.
     text_prompt.object = template.format( **variables )
