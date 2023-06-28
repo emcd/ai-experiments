@@ -760,5 +760,5 @@ def _update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
     variables = {
         element.auxiliary_data__[ 'id' ]: element.value for element in row
     }
-    # TODO: Support alternative template types.
-    text_prompt.object = template.format( **variables )
+    from mako.template import Template
+    text_prompt.object = Template( template ).render( **variables )

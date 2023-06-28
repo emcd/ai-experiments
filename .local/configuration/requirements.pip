@@ -3,6 +3,7 @@ chromadb
 faiss-cpu
 icecream
 langchain
+mako
 notebook
 openai
 panel ~= 1.1
