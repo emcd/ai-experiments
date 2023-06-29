@@ -262,6 +262,18 @@ def generate_messages( gui ):
     return messages
 
 
+def on_model_selection( gui, event ):
+    supports_functions = gui.selector_model.auxiliary_data__[
+        gui.selector_model.value ][ 'supports-functions' ]
+    gui.row_functions_prompt.visible = supports_functions
+    update_functions_prompt( gui )
+
+
+def on_system_prompt_selection( gui, event ):
+    populate_system_prompt_variables( gui )
+    update_functions_prompt( gui )
+
+
 def populate_conversation( gui ):
     populate_providers_selector( gui )
     populate_models_selector( gui )
@@ -348,8 +360,10 @@ def register_conversation_callbacks( gui ):
         lambda event: copy_canned_prompt_to_user( gui ) )
     gui.selector_canned_prompt.param.watch(
         lambda event: populate_canned_prompt_variables( gui ), 'value' )
+    gui.selector_model.param.watch(
+        lambda event: on_model_selection( gui, event ), 'value' )
     gui.selector_system_prompt.param.watch(
-        lambda event: populate_system_prompt_variables( gui ), 'value' )
+        lambda event: on_system_prompt_selection( gui, event ), 'value' )
     gui.text_input_user.param.watch(
         lambda event: update_and_save_conversation( gui ), 'value' )
     gui.toggle_canned_prompt_active.param.watch(
@@ -601,6 +615,16 @@ def update_and_save_conversations_index( gui ):
     save_conversations_index( gui )
 
 
+def update_canned_prompt_text( gui ):
+    _update_prompt_text(
+        gui,
+        'row_canned_prompt_variables',
+        'selector_canned_prompt',
+        'text_canned_prompt' )
+    if gui.toggle_canned_prompt_active.value:
+        update_and_save_conversation( gui )
+
+
 def update_conversation_hilite( gui, new_descriptor = None ):
     conversations = gui.column_conversations_indicators
     old_descriptor = conversations.current_descriptor__
@@ -623,6 +647,22 @@ def update_conversation_timestamp( gui ):
     sort_conversations_index( gui )
 
 
+def update_functions_prompt( gui ):
+    if not hasattr( gui.multichoice_functions, 'auxiliary_data__' ): return
+    gui.multichoice_functions.value = [ ]
+    sprompt_data = gui.selector_system_prompt.auxiliary_data__[
+        gui.selector_system_prompt.value ]
+    available_functions = gui.multichoice_functions.auxiliary_data__[
+        'functions' ]
+    associated_functions = sprompt_data.get( 'associated-functions', { } )
+    gui.multichoice_functions.options = [
+        function_name for function_name in available_functions.keys( )
+        if function_name in associated_functions ]
+    gui.multichoice_functions.values = [
+        function_name for function_name in available_functions.keys( )
+        if associated_functions.get( function_name, False ) ]
+
+
 def update_message( message_row, behaviors = ( 'active', ) ):
     message_gui = message_row.gui__
     for behavior in ( 'active', 'pinned' ):
@@ -631,16 +671,6 @@ def update_message( message_row, behaviors = ( 'active', ) ):
     content = message_gui.text_message.object
     from ..messages import count_tokens
     message_row.auxiliary_data__[ 'token_count' ] = count_tokens( content )
-
-
-def update_canned_prompt_text( gui ):
-    _update_prompt_text(
-        gui,
-        'row_canned_prompt_variables',
-        'selector_canned_prompt',
-        'text_canned_prompt' )
-    if gui.toggle_canned_prompt_active.value:
-        update_and_save_conversation( gui )
 
 
 def update_system_prompt_text( gui ):

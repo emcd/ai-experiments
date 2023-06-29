@@ -41,6 +41,13 @@ def provide_models( ):
         'gpt-4-0613': True,
         'gpt-4-32k-0613': True,
     } )
+    function_support = defaultdict( lambda: False )
+    function_support.update( {
+        'gpt-3.5-turbo-0613': True,
+        'gpt-3.5-turbo-16k-0613': True,
+        'gpt-4-0613': True,
+        'gpt-4-32k-0613': True,
+    } )
     tokens_limits = defaultdict( lambda: 4096 ) # Some are 4097... _shrug_.
     tokens_limits.update( {
         'code-davinci-002': 8000,
@@ -54,6 +61,7 @@ def provide_models( ):
     return {
         model_name: {
             'honors-system-prompt': sysprompt_honor[ model_name ],
+            'supports-functions': function_support[ model_name ],
             'tokens-limit': tokens_limits[ model_name ],
         }
         for model_name in model_names

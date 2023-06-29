@@ -46,6 +46,7 @@ from panel.widgets import (
     Button,
     FloatSlider,
     IntSlider,
+    MultiChoice,
     Select,
     StaticText,
     TextAreaInput,
@@ -161,17 +162,28 @@ conversation_layout = {
     'column_conversation': dict(
         component_class = Column,
         contains = [
-            'row_system_prompt',
+            'column_system_prompts',
             'column_conversation_history',
             'column_user_prompts',
         ],
     ),
-    'row_system_prompt': dict(
-        component_class = Row,
+}
+
+conversation_layout.update( {
+    'column_system_prompts': dict(
+        component_class = Column,
         component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
             # TODO: Use style variable instead for theming.
             styles = { 'background': 'WhiteSmoke' },
         ),
+        contains = [
+            'row_system_prompt',
+            'row_functions_prompt',
+        ]
+    ),
+    'row_system_prompt': dict(
+        component_class = Row,
         contains = [
             'spacer_left_system_prompt',
             'row_system_prompt_header',
@@ -243,6 +255,71 @@ conversation_layout = {
         ),
     ),
     'spacer_right_system_prompt': dict( component_class = HSpacer ),
+    'row_functions_prompt': dict(
+        component_class = Row,
+        component_arguments = dict( visible = False ),
+        contains = [
+            'spacer_left_functions_prompt',
+            'row_functions_prompt_header',
+            'column_functions_prompt',
+            'spacer_right_functions_prompt',
+        ],
+    ),
+    'spacer_left_functions_prompt': dict( component_class = HSpacer ),
+    'row_functions_prompt_header': dict(
+        component_class = Row,
+        component_arguments = dict( **_message_header_attributes ),
+        contains = [
+            'label_functions',
+            'toggle_functions_prompt_active',
+            'toggle_functions_prompt_display',
+        ],
+    ),
+    'label_functions': dict(
+        component_class = StaticText,
+        component_arguments = dict(
+            value = '🧰', align = 'center', width = sizes.icon_button_width,
+        ),
+        persist = False,
+    ),
+    'toggle_functions_prompt_active': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '💬', value = False, **_icon_button_attributes,
+        ),
+    ),
+    'toggle_functions_prompt_display': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
+        ),
+    ),
+    'column_functions_prompt': dict(
+        component_class = Column,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+            margin = sizes.standard_margin,
+            **_message_column_width_attributes,
+        ),
+        contains = [
+            'multichoice_functions',
+            'column_functions_json',
+        ],
+    ),
+    'multichoice_functions': dict(
+        component_class = MultiChoice,
+        component_arguments = dict(
+            placeholder = 'Please click to select functions.',
+            delete_button = True,
+        ),
+    ),
+    'column_functions_json': dict(
+        component_class = Column,
+    ),
+    'spacer_right_functions_prompt': dict( component_class = HSpacer ),
+} )
+
+conversation_layout.update( {
     'column_conversation_history': dict(
         component_class = Column,
         component_arguments = dict(
@@ -253,6 +330,9 @@ conversation_layout = {
             restore = 'restore_conversation_messages',
         ),
     ),
+} )
+
+conversation_layout.update( {
     'column_user_prompts': dict(
         component_class = Column,
         component_arguments = dict(
@@ -423,7 +503,8 @@ conversation_layout = {
         component_arguments = dict( name = '🔍 Query Documents' ),
     ),
     'spacer_right_user_prompt': dict( component_class = HSpacer ),
-}
+} )
+
 dashboard_layout.update( conversation_layout )
 
 conversation_control_layout = {

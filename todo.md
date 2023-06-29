@@ -28,6 +28,11 @@
 
 * Add `Run Tools` button. Add support for tools messages.
 
+* Disable `Chat` button if tokens limit plus tokens count exceeds context
+  window size.
+
+* Disable `Query` button if no vectorstore selected.
+
 * Vim key bindings:
 
     - `dd` to delete selected message
