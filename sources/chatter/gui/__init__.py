@@ -21,7 +21,7 @@
 ''' GUI with Panel widgets. '''
 
 
-def prepare( configuration, directories, vectorstores ):
+def prepare( configuration, directories, ai_functions, vectorstores ):
     from types import SimpleNamespace
     from .callbacks import (
         generate_component,
@@ -33,6 +33,7 @@ def prepare( configuration, directories, vectorstores ):
     generate_component( components, layout, 'dashboard' )
     gui = SimpleNamespace( **components )
     gui.auxiliary_data__ = {
+        'ai-functions': ai_functions,
         'configuration': configuration,
         'directories': directories,
         'vectorstores': vectorstores,

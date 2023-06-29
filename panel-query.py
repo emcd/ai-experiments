@@ -36,10 +36,17 @@ def prepare( ):
     prepare_environment( configuration, directories, project_path )
     prepare_inscribers( configuration, directories )
     prepare_api_clients( )
+    ai_functions = prepare_ai_functions( configuration, directories )
     vectorstores = prepare_vectorstores( configuration, directories )
     from chatter.gui import prepare as prepare_gui
-    gui = prepare_gui( configuration, directories, vectorstores )
+    gui = prepare_gui(
+        configuration, directories, ai_functions, vectorstores )
     return configuration, gui
+
+
+def prepare_ai_functions( configuration, directories ):
+    from chatter.ai_functions import registry
+    return registry
 
 
 def prepare_api_clients( ):

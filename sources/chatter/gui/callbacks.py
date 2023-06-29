@@ -256,13 +256,19 @@ def generate_messages( gui ):
         message_gui = row.auxiliary_data__[ 'gui' ]
         if not message_gui.toggle_active.value: continue
         role = row.auxiliary_data__[ 'role' ]
-        role = 'user' if role in ( 'Human', 'Document' ) else 'assistant'
+        # TODO: Handle 'function' role separately, where relevant.
+        role = (
+            'user' if role in ( 'Human', 'Document', 'Utility' )
+            else 'assistant' )
         content = message_gui.text_message.object
         messages.append( { 'role': role, 'content': content } )
     return messages
 
 
 def on_model_selection( gui, event ):
+    # TODO: For models which do not explicitly support functions,
+    #       weave selected functions into system prompt.
+    #       Then, functions prompt row should always be visible.
     supports_functions = gui.selector_model.auxiliary_data__[
         gui.selector_model.value ][ 'supports-functions' ]
     gui.row_functions_prompt.visible = supports_functions
@@ -446,6 +452,7 @@ def run_chat( gui ):
         gui.text_input_user.value = ''
     if query: add_message( gui, 'Human', query )
     messages = generate_messages( gui )
+    # TODO: Build list of AI functions where relevant.
     message_row = add_message( gui, 'AI', '', behaviors = ( ) )
     status = _run_chat( gui, message_row, messages )
     gui.text_status.value = status
@@ -648,17 +655,15 @@ def update_conversation_timestamp( gui ):
 
 
 def update_functions_prompt( gui ):
-    if not hasattr( gui.multichoice_functions, 'auxiliary_data__' ): return
     gui.multichoice_functions.value = [ ]
     sprompt_data = gui.selector_system_prompt.auxiliary_data__[
         gui.selector_system_prompt.value ]
-    available_functions = gui.multichoice_functions.auxiliary_data__[
-        'functions' ]
+    available_functions = gui.auxiliary_data__[ 'ai-functions' ]
     associated_functions = sprompt_data.get( 'associated-functions', { } )
     gui.multichoice_functions.options = [
         function_name for function_name in available_functions.keys( )
         if function_name in associated_functions ]
-    gui.multichoice_functions.values = [
+    gui.multichoice_functions.value = [
         function_name for function_name in available_functions.keys( )
         if associated_functions.get( function_name, False ) ]
 
