@@ -56,6 +56,7 @@ from panel.widgets import (
 
 
 sizes = SimpleNamespace( **dict(
+    action_button_width = 100,
     element_margin = 2,
     icon_button_height = 40, # distortion if smaller, Bokeh/Panel limitation
     icon_size = '1em',
@@ -92,6 +93,13 @@ div[class="codehilite"] {
 _message_column_width_attributes = dict(
     max_width = sizes.message_width_max, min_width = sizes.message_width_min,
     width = sizes.message_width_max,
+)
+
+
+_action_button_attributes = dict(
+    #align = 'center',
+    button_style = 'solid', # button_type = 'light',
+    width = sizes.action_button_width, width_policy = 'fixed',
 )
 
 _icon_button_attributes = dict(
@@ -146,7 +154,8 @@ conversations_manager_layout = {
         component_class = Button,
         component_arguments = dict(
             name = 'New Conversation',
-            width_policy = 'min',
+            button_type = 'light',
+            **_action_button_attributes,
         ),
     ),
     'column_conversations_indicators': dict(
@@ -492,15 +501,29 @@ conversation_layout.update( {
     ),
     'row_actions': dict(
         component_class = Row,
-        contains = [ 'button_chat', 'button_query', ],
+        contains = [ 'button_chat', 'button_search', 'button_run' ],
     ),
     'button_chat': dict(
         component_class = Button,
-        component_arguments = dict( name = '💬 Chat AI' ),
+        component_arguments = dict(
+            name = '💬 Chat',
+            button_type = 'primary',
+            **_action_button_attributes,
+        ),
     ),
-    'button_query': dict(
+    'button_search': dict(
         component_class = Button,
-        component_arguments = dict( name = '🔍 Query Documents' ),
+        component_arguments = dict(
+            name = '🔍 Search',
+            **_action_button_attributes,
+        ),
+    ),
+    'button_run': dict(
+        component_class = Button,
+        component_arguments = dict(
+            name = '🎬 Run',
+            **_action_button_attributes,
+        ),
     ),
     'spacer_right_user_prompt': dict( component_class = HSpacer ),
 } )

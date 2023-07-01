@@ -246,20 +246,22 @@ def generate_component( components, layout, component_name ):
 
 def generate_messages( gui ):
     messages = [ ]
+    model_data = gui.selector_model.auxiliary_data__[
+        gui.selector_model.value ]
     if gui.toggle_system_prompt_active.value:
         system_message = gui.text_system_prompt.object
-        sysprompt_honor = gui.selector_model.auxiliary_data__[
-            gui.selector_model.value ][ 'honors-system-prompt' ]
+        sysprompt_honor = model_data[ 'honors-system-prompt' ]
         role = 'system' if sysprompt_honor else 'user'
         messages.append( { 'role': role, 'content': system_message } )
+    supports_functions = model_data[ 'supports-functions' ]
     for row in gui.column_conversation_history:
         message_gui = row.auxiliary_data__[ 'gui' ]
         if not message_gui.toggle_active.value: continue
         role = row.auxiliary_data__[ 'role' ]
-        # TODO: Handle 'function' role separately, where relevant.
-        role = (
-            'user' if role in ( 'Human', 'Document', 'Utility' )
-            else 'assistant' )
+        # TODO? Map to provider-specific role names.
+        if supports_functions and 'Utility' == role: role = 'function'
+        elif role in ( 'Human', 'Document', 'Utility' ): role = 'user'
+        else: role = 'assistant'
         content = message_gui.text_message.object
         messages.append( { 'role': role, 'content': content } )
     return messages
@@ -361,7 +363,8 @@ def populate_vectorstores_selector( gui, vectorstores ):
 
 def register_conversation_callbacks( gui ):
     gui.button_chat.on_click( lambda event: run_chat( gui ) )
-    gui.button_query.on_click( lambda event: run_query( gui ) )
+    gui.button_search.on_click( lambda event: run_search( gui ) )
+    gui.button_run.on_click( lambda event: run_tools( gui ) )
     gui.button_refine_canned_prompt.on_click(
         lambda event: copy_canned_prompt_to_user( gui ) )
     gui.selector_canned_prompt.param.watch(
@@ -446,11 +449,11 @@ def restore_prompt_variables( gui, row_name, state ):
 def run_chat( gui ):
     gui.text_status.value = 'OK'
     if gui.toggle_canned_prompt_active.value:
-        query = gui.text_canned_prompt.object
+        prompt = gui.text_canned_prompt.object
     else:
-        query = gui.text_input_user.value
+        prompt = gui.text_input_user.value
         gui.text_input_user.value = ''
-    if query: add_message( gui, 'Human', query )
+    if prompt: add_message( gui, 'Human', prompt )
     messages = generate_messages( gui )
     # TODO: Build list of AI functions where relevant.
     message_row = add_message( gui, 'AI', '', behaviors = ( ) )
@@ -468,20 +471,25 @@ def run_chat( gui ):
     update_and_save_conversation( gui )
 
 
-def run_query( gui ):
+def run_search( gui ):
     gui.text_status.value = 'OK'
-    query = gui.text_input_user.value
+    prompt = gui.text_input_user.value
     gui.text_input_user.value = ''
-    if not query: return
-    add_message( gui, 'Human', query )
+    if not prompt: return
+    add_message( gui, 'Human', prompt )
     documents_count = gui.slider_documents_count.value
     if not documents_count: return
     vectorstore = gui.selector_vectorstore.auxiliary_data__[
         gui.selector_vectorstore.value ][ 'instance' ]
-    documents = vectorstore.similarity_search( query, k = documents_count )
+    documents = vectorstore.similarity_search( prompt, k = documents_count )
     for document in documents:
         add_message( gui, 'Document', document.page_content )
     update_and_save_conversation( gui )
+
+
+def run_tool( gui ):
+    # TODO: Inspect most recent AI response and dispatch appropriate utility.
+    pass
 
 
 def save_conversation( gui ):
