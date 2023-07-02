@@ -34,17 +34,16 @@ def roll_dice( dice ):
         r'''(?P<number>\d+)d(?P<sides>\d+)(?P<offset>[+\-]\d+)?''' )
     match = regex.match( dice )
     if not match: raise ValueError( f"Invalid dice spec, '{dice}'." )
+    number = int( match.group( 'number' ) )
+    sides = int( match.group( 'sides' ) )
     offset = match.group( 'offset' )
-    number, sides, offset = (
-        int( match.group( 'number' ) ),
-        int( match.group( 'sides' ) ),
-        int( offset ) if offset else 0 )
+    offset = int( offset ) if offset else 0
     if number < 1 or sides < 4 or sides % 2 == 1 or number + offset < 1:
         raise ValueError( f"Invalid dice spec, '{dice}'." )
     return sum( randint( 1, sides ) for _ in range( number ) ) + offset
 
 roll_dice.__doc__ = json.dumps( {
-    'name': 'role_dice',
+    'name': 'roll_dice',
     'description':
         'Given a dice specification, '
         'returns a roll of the dice, plus any offset, as an integer.',
@@ -65,9 +64,10 @@ of 0. '''
         },
         'required': [ 'dice' ]
     }
-} )
+}, indent = 2 )
 
 
 registry = {
-    'Roll Dice': roll_dice,
+    json.loads( function.__doc__ )[ 'name' ]: function
+    for function in ( roll_dice, )
 }

@@ -19,7 +19,7 @@ template: |
   If you are uncertain about something, then you will ask a followup question
   or note your uncertainty as part of your response.
 associated-functions:
-  'Roll Dice': true
+  'roll_dice': true
 summarization-preference:
   id: 'Recap: General Conversation'
   defaults:

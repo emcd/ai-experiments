@@ -18,4 +18,26 @@
 #============================================================================#
 
 
+import typing as typ
+
+from dataclasses import dataclass
+
+
 class ChatCompletionError( Exception ): pass
+
+
+@dataclass
+class ChatCallbacks:
+
+    allocator: typ.Callable[ [ str ], typ.Any ] = (
+        lambda mime_type: None )
+    deallocator: typ.Callable[ [ typ.Any ], None ] = (
+        lambda handle: None )
+    failure_notifier: typ.Callable[ [ str ], None ] = (
+        lambda status: None )
+    progress_notifier: typ.Callable[ [ int ], None ] = (
+        lambda tokens_count: None )
+    success_notifier: typ.Callable[ [ typ.Any ], None ] = (
+        lambda status: None )
+    updater: typ.Callable[ [ typ.Any, str ], None ] = (
+        lambda handle, content: None )

@@ -40,7 +40,7 @@ from types import SimpleNamespace
 import param
 
 from panel.layout import Column, FlexBox, GridBox, HSpacer, Row
-from panel.pane import Markdown
+from panel.pane import JSON, Markdown
 from panel.reactive import ReactiveHTML
 from panel.widgets import (
     Button,
@@ -56,7 +56,7 @@ from panel.widgets import (
 
 
 sizes = SimpleNamespace( **dict(
-    action_button_width = 100,
+    action_button_width = 120,
     element_margin = 2,
     icon_button_height = 40, # distortion if smaller, Bokeh/Panel limitation
     icon_size = '1em',
@@ -72,16 +72,6 @@ sizes.actions_width = (
     + 6 * sizes.element_margin
     + 10 # border widths + extra fudge
 )
-sizes.central_width_max = (
-      4 * sizes.standard_margin
-    + sizes.actions_width
-    + sizes.message_width_max
-)
-sizes.central_width_min = (
-      4 * sizes.standard_margin
-    + sizes.actions_width
-    + sizes.message_width_min
-)
 
 
 _css_code_overflow = '''
@@ -89,11 +79,6 @@ div[class="codehilite"] {
     overflow-x: auto;
 }
 '''
-
-_message_column_width_attributes = dict(
-    max_width = sizes.message_width_max, min_width = sizes.message_width_min,
-    width = sizes.message_width_max,
-)
 
 
 _action_button_attributes = dict(
@@ -108,6 +93,11 @@ _icon_button_attributes = dict(
     height = sizes.icon_button_height, width = sizes.icon_button_width,
     height_policy = 'fixed', width_policy = 'fixed',
     margin = sizes.element_margin,
+)
+
+_message_column_width_attributes = dict(
+    max_width = sizes.message_width_max, min_width = sizes.message_width_min,
+    width = sizes.message_width_max,
 )
 
 _message_header_attributes = dict(
@@ -769,6 +759,20 @@ conversation_message_common_layout = {
     ),
     'spacer_right': dict( component_class = HSpacer ),
 }
+
+json_conversation_message_layout = conversation_message_common_layout.copy( )
+json_conversation_message_layout.update( {
+    'text_message': dict(
+        component_class = JSON,
+        component_arguments = dict(
+            depth = -1, theme = 'light',
+            height_policy = 'auto', width_policy = 'max',
+            margin = sizes.standard_margin,
+            styles = { 'overflow': 'auto' },
+            **_message_column_width_attributes,
+        ),
+    ),
+} )
 
 plain_conversation_message_layout = conversation_message_common_layout.copy( )
 plain_conversation_message_layout.update( {

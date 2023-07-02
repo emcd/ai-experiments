@@ -68,26 +68,82 @@ def provide_models( ):
     }
 
 
-def run_chat( model, messages, **controls ):
+def run_chat( messages, special_data, controls, callbacks ):
+    special_data = _canonicalize_special_data( special_data )
+    controls = _canonicalize_controls( controls )
     from openai import ChatCompletion, OpenAIError
     try:
         response = ChatCompletion.create(
-            messages = messages, model = model, **controls )
-        return response.choices[ 0 ].message.content
+            messages = messages, **special_data, **controls )
     except OpenAIError as exc:
+        callbacks.failure_notifier( f"Error: {exc}" )
         raise __.ChatCompletionError( f"Error: {exc}" ) from exc
+    if not controls.get( 'stream', True ):
+        message = response.choices[ 0 ].message
+        if 'content' in message:
+            handle = callbacks.allocator( 'text/markdown' )
+            callbacks.updater( handle, message.content )
+        elif 'function_call' in message:
+            handle = callbacks.allocator( 'application/json' )
+            callbacks.updater(
+                handle, _reconstitute_function_call( message.function_call ) )
+        return handle
+    try: # streaming mode
+        chunk0 = next( response )
+        delta = chunk0.choices[ 0 ].delta
+        if delta.get( 'function_call' ):
+            handle = callbacks.allocator( 'application/json' )
+            _gather_function_chunks( chunk0, response, handle, callbacks )
+        else:
+            handle = callbacks.allocator( 'text/markdown' )
+            _stream_content_chunks( chunk0, response, handle, callbacks )
+    except OpenAIError as exc:
+        callbacks.deallocator( handle )
+        callbacks.failure_notifier( f"Error: {exc}" )
+        raise __.ChatCompletionError( f"Error: {exc}" ) from exc
+    return handle
 
 
-def run_streaming_chat( model, messages, **controls ):
-    from openai import ChatCompletion, OpenAIError
-    try:
-        response = ChatCompletion.create(
-            messages = messages, model = model, stream = True, **controls )
-        initial_chunk = next( response )
-        # TODO? Validate initial chunk.
-        for chunk in response:
-            delta = chunk.choices[ 0 ].delta
-            if not delta: break
-            yield delta[ 'content' ]
-    except OpenAIError as exc:
-        raise __.ChatCompletionError( f"Error: {exc}" ) from exc
+def _canonicalize_controls( controls ):
+    nomargs = {
+        name: value for name, value in controls.items( )
+        if name in ( 'model', 'temperature', )
+    }
+    nomargs[ 'stream' ] = True
+    return nomargs
+
+
+def _canonicalize_special_data( data ):
+    nomargs = { }
+    if 'ai-functions' in data:
+        nomargs[ 'functions' ] = data[ 'ai-functions' ]
+    return nomargs
+
+
+def _gather_function_chunks( chunk0, response, handle, callbacks ):
+    from collections import defaultdict
+    from itertools import chain
+    function_call = defaultdict( str )
+    for chunk in chain( ( chunk0, ), response ):
+        delta = chunk.choices[ 0 ].delta
+        if not delta: break
+        if 'name' in delta.function_call:
+            function_call[ 'name' ] = delta.function_call[ 'name' ]
+        if 'arguments' in delta.function_call:
+            function_call[ 'arguments' ] += delta.function_call[ 'arguments' ]
+    callbacks.updater( handle, _reconstitute_function_call( function_call ) )
+
+
+def _reconstitute_function_call( function_call ):
+    from json import dumps, loads
+    function_call[ 'arguments' ] = loads( function_call[ 'arguments' ] )
+    return dumps( function_call )
+
+
+def _stream_content_chunks( chunk0, response, handle, callbacks ):
+    from itertools import chain
+    for chunk in chain( ( chunk0, ), response ):
+        delta = chunk.choices[ 0 ].delta
+        if not delta: break
+        if not delta.get( 'content' ): continue
+        callbacks.updater( handle, delta.content )

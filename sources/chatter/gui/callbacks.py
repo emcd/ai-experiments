@@ -90,12 +90,13 @@ class ConversationMessage( __.ReactiveHTML ):
         '''onmouseleave="${_div_mouseleave}" '''
         '''>${row__}</div>''' )
 
-    def __init__( self, role, **params ):
+    def __init__( self, role, mime_type, **params ):
         emoji = __.roles_emoji[ role ]
         styles = __.roles_styles[ role ]
-        # TODO: Choose layout based on MIME type of content rather than role.
-        if role in ( 'Document', ):
+        if 'text/plain' == mime_type:
             from .layouts import plain_conversation_message_layout as layout
+        elif 'application/json' == mime_type:
+            from .layouts import json_conversation_message_layout as layout
         else:
             from .layouts import rich_conversation_message_layout as layout
         components = { }
@@ -104,6 +105,7 @@ class ConversationMessage( __.ReactiveHTML ):
         row_gui = __.SimpleNamespace( **components )
         self.auxiliary_data__ = {
             'gui': row_gui,
+            'mime-type': mime_type,
             'role': role,
         }
         row_gui.label_role.value = emoji
@@ -145,35 +147,52 @@ def add_conversation_indicator_if_necessary( gui ):
     ]
     provider_name = gui.selector_provider.value
     provider = gui.selector_provider.auxiliary_data__[ provider_name ]
-    model = gui.selector_model.value
-    controls = dict( temperature = gui.slider_temperature.value )
-    chat_runner = provider[ 'chat-runner' ]
+    controls = dict(
+        model = gui.selector_model.value,
+        temperature = gui.slider_temperature.value,
+    )
+    chat_runner = provider.run_chat
     from json import loads
-    try: response = loads( chat_runner( model, messages, **controls ) )
-    # TODO: Find a way to signal that the title could not be generated.
+    from chatter.ai import ChatCallbacks, ChatCompletionError
+    callbacks = ChatCallbacks(
+        allocator = ( lambda mime_type: [ ] ),
+        updater = ( lambda handle, content: handle.append( content ) ),
+    )
+    try:
+        handle = provider.run_chat( messages, { }, controls, callbacks )
+    # TODO: Use callbacks to signal that the title could not be generated.
     except ChatCompletionError as exc: return
+    response = loads( ''.join( handle ) )
     descriptor.title = response[ 'title' ]
     descriptor.labels = response[ 'labels' ]
     add_conversation_indicator( gui, descriptor  )
+    update_conversation_hilite( gui, new_descriptor = descriptor )
 
 
-def add_message( gui, role, content, behaviors = ( 'active', ) ):
-    message = ConversationMessage(
-        role, height_policy = 'auto', margin = 0, width_policy = 'max' )
-    message_gui = message.gui__
+# TODO: Fold into initializer for ConversationMessage.
+def add_message(
+        gui, role, content,
+        behaviors = ( 'active', ),
+        mime_type = 'text/markdown',
+):
+    component = ConversationMessage(
+        role, mime_type,
+        height_policy = 'auto', margin = 0, width_policy = 'max' )
+    message_gui = component.gui__
     # TODO: Less intrusive supplementation.
+    #       Consider multi-part MIME attachment encoding from SMTP.
     if 'Document' == role:
         content = f'''## Supplement ##\n\n{content}'''
     message_gui.text_message.object = content
     for behavior in behaviors:
         getattr( message_gui, f"toggle_{behavior}" ).value = True
     from ..messages import count_tokens
-    message.auxiliary_data__[ 'token_count' ] = count_tokens( content )
+    component.auxiliary_data__[ 'token_count' ] = count_tokens( content )
     message_gui.toggle_active.param.watch(
         lambda event: update_and_save_conversation( gui ), 'value' )
     # TODO: Register callback for 'toggle_pinned'.
-    gui.column_conversation_history.append( message )
-    return message
+    gui.column_conversation_history.append( component )
+    return component
 
 
 def copy_canned_prompt_to_user( gui ):
@@ -204,6 +223,7 @@ def create_conversation( gui, descriptor ):
 def delete_conversation( gui, descriptor ):
     # TODO: Confirmation modal dialog:
     #   https://discourse.holoviz.org/t/can-i-use-create-a-modal-dialog-in-panel/1207/4
+    # TODO: Only create new conversation if deletion is active conversation.
     create_and_display_conversation( gui )
     conversations = gui.column_conversations_indicators
     conversations.descriptors__.pop( descriptor.identity )
@@ -211,11 +231,10 @@ def delete_conversation( gui, descriptor ):
     indicators = [
         indicator for indicator in conversations
         if indicator.identity__ != descriptor.identity ]
-    #conversations.clear( )
-    #conversations.extend( indicators )
     conversations.objects = indicators
     descriptor.indicator = None # break possible GC cycles
-    path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
+    path = __.calculate_conversations_path( gui ).joinpath(
+        f"{descriptor.identity}.json" )
     if path.exists( ): path.unlink( )
     save_conversations_index( gui )
 
@@ -301,7 +320,7 @@ def populate_dashboard( gui ):
 
 def populate_models_selector( gui ):
     provider = gui.selector_provider.auxiliary_data__[
-        gui.selector_provider.value ][ 'model-provider' ]
+        gui.selector_provider.value ].provide_models
     models = provider( )
     gui.selector_model.options = list( models.keys( ) )
     gui.selector_model.auxiliary_data__ = models
@@ -400,6 +419,7 @@ def restore_conversation( gui ):
     with path.open( ) as file: state = load( file )
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
+        if name not in state: continue # allows new UI features
         component = getattr( gui, name )
         if hasattr( component, 'on_click' ): continue
         elif hasattr( component, 'objects' ):
@@ -420,9 +440,12 @@ def restore_conversation_messages( gui, column_name, state ):
     column.clear( )
     for row_state in state.get( column_name, [ ] ):
         role = row_state[ 'role' ]
+        # XXX: Temporary until existing conversations are upgraded and saved.
+        mime_type = row_state.get( 'mime-type', 'text/markdown' )
         content = row_state[ 'content' ]
         behaviors = row_state[ 'behaviors' ]
-        add_message( gui, role, content, behaviors = behaviors )
+        add_message(
+            gui, role, content, behaviors = behaviors, mime_type = mime_type )
 
 
 def restore_conversations_index( gui ):
@@ -454,21 +477,49 @@ def run_chat( gui ):
         prompt = gui.text_input_user.value
         gui.text_input_user.value = ''
     if prompt: add_message( gui, 'Human', prompt )
-    messages = generate_messages( gui )
-    # TODO: Build list of AI functions where relevant.
-    message_row = add_message( gui, 'AI', '', behaviors = ( ) )
-    status = _run_chat( gui, message_row, messages )
-    gui.text_status.value = status
-    if 'OK' == status:
-        update_message( message_row )
+    from chatter.ai import ChatCompletionError
+    try: message_component = _run_chat( gui )
+    except ChatCompletionError as exc: pass
+    else:
+        update_message( message_component )
         add_conversation_indicator_if_necessary( gui )
         update_and_save_conversations_index( gui )
         if gui.toggle_canned_prompt_active.value:
             gui.toggle_canned_prompt_active.value = False
             _update_messages_post_summarization( gui )
-    # Retract AI message display on error.
-    else: gui.column_conversation_history.pop( -1 )
     update_and_save_conversation( gui )
+
+
+def _run_chat( gui ):
+    messages = generate_messages( gui )
+    controls = dict(
+        model = gui.selector_model.value,
+        temperature = gui.slider_temperature.value,
+    )
+    special_data = { }
+    supports_functions = gui.selector_model.auxiliary_data__[
+        gui.selector_model.value ][ 'supports-functions' ]
+    if supports_functions:
+        special_data[ 'ai-functions' ] = _provide_active_ai_functions( gui )
+    from chatter.ai import ChatCallbacks
+    callbacks = ChatCallbacks(
+        allocator = (
+            lambda mime_type:
+            add_message(
+                gui, 'AI', '', behaviors = ( ), mime_type = mime_type ) ),
+        deallocator = (
+            lambda handle: gui.column_conversation_history.pop( -1 ) ),
+        failure_notifier = (
+            lambda status: setattr( gui.text_status, 'value', status ) ),
+        updater = (
+            lambda handle, content:
+            setattr(
+                handle.gui__.text_message, 'object',
+                getattr( handle.gui__.text_message, 'object' ) + content ) ),
+    )
+    provider = gui.selector_provider.auxiliary_data__[
+        gui.selector_provider.value ]
+    return provider.run_chat( messages, special_data, controls, callbacks )
 
 
 def run_search( gui ):
@@ -483,7 +534,9 @@ def run_search( gui ):
         gui.selector_vectorstore.value ][ 'instance' ]
     documents = vectorstore.similarity_search( prompt, k = documents_count )
     for document in documents:
-        add_message( gui, 'Document', document.page_content )
+        # TODO: Determine MIME type from document metadata, if available.
+        add_message(
+            gui, 'Document', document.page_content, mime_type = 'text/plain' )
     update_and_save_conversation( gui )
 
 
@@ -531,7 +584,9 @@ def save_conversation_messages( gui, column_name ):
                 behaviors.append( behavior )
         state.append( {
             'role': row.auxiliary_data__[ 'role' ],
-            # TODO: Save MIME type of content.
+            # XXX: Temporary until conversations have been resaved.
+            'mime-type':
+                row.auxiliary_data__.get( 'mime-type', 'text/markdown' ),
             'content': message_gui.text_message.object,
             'behaviors': behaviors,
         } )
@@ -646,11 +701,12 @@ def update_conversation_hilite( gui, new_descriptor = None ):
     if None is new_descriptor: new_descriptor = old_descriptor
     if new_descriptor is not old_descriptor:
         if None is not old_descriptor.indicator:
+            # TODO: Cycle to a "previously seen" background color.
             old_descriptor.indicator.styles.pop( 'background', None )
-        if None is not new_descriptor.indicator:
-            # TODO: Use style variable rather than hard-coded value.
-            new_descriptor.indicator.styles.update(
-                { 'background': 'LightGray' } )
+    if None is not new_descriptor.indicator:
+        # TODO: Use style variable rather than hard-coded value.
+        new_descriptor.indicator.styles.update(
+            { 'background': 'LightGray' } )
 
 
 def update_conversation_timestamp( gui ):
@@ -761,27 +817,14 @@ def _populate_prompts_selector( gui_selector, prompts_directory ):
     gui_selector.options = prompt_names
 
 
-def _run_chat( gui, message_row, messages ):
-    from ..ai import ChatCompletionError
-    message_gui = message_row.gui__
-    provider_name = gui.selector_provider.value
-    provider = gui.selector_provider.auxiliary_data__[ provider_name ]
-    model = gui.selector_model.value
-    controls = dict( temperature = gui.slider_temperature.value )
-    chat_runner = provider.get( 'streaming-chat-runner' )
-    if None is chat_runner:
-        chat_runner = provider[ 'chat-runner' ]
-        try:
-            response = chat_runner( model, messages, **controls )
-            message_gui.text_message.object = response
-        except ChatCompletionError as exc: return str( exc )
-    else:
-        try:
-            response = chat_runner( model, messages, **controls )
-            for chunk in response:
-                message_gui.text_message.object += chunk
-        except ChatCompletionError as exc: return str( exc )
-    return 'OK'
+def _provide_active_ai_functions( gui ):
+    from json import loads
+    if not gui.toggle_functions_prompt_active.value: return [ ]
+    if not gui.multichoice_functions.value: return [ ]
+    return list(
+        loads( function.__doc__ )
+        for name, function in gui.auxiliary_data__[ 'ai-functions' ].items( )
+        if name in gui.multichoice_functions.value )
 
 
 def _update_messages_post_summarization( gui ):

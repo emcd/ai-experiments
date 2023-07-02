@@ -21,14 +21,10 @@
 ''' Functionality for various AI providers. '''
 
 
-from .base import ChatCompletionError
+from .base import ChatCallbacks, ChatCompletionError
 from . import openai
 
 
 registry = {
-    openai.name: {
-        'chat-runner': openai.run_chat,
-        'model-provider': openai.provide_models,
-        'streaming-chat-runner': openai.run_streaming_chat,
-    },
+    openai.name: openai,
 }
