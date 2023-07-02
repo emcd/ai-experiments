@@ -26,6 +26,7 @@ import typing as typ
 
 from collections import namedtuple
 from collections.abc import (
+    Mapping as AbstractDictionary,
     MutableSequence as AbstractMutableSequence,
     Sequence as AbstractSequence,
 )
@@ -48,8 +49,8 @@ from panel.reactive import ReactiveHTML
 roles_emoji = {
     'AI': '🤖',
     'Document': '📄',
+    'Function': '\N{Hammer and Wrench}\uFE0F',
     'Human': '🧑',
-    'Utility': '\N{Hammer and Wrench}\uFE0F',
 }
 
 # TODO: Use style variables.
@@ -62,13 +63,13 @@ roles_styles = {
         'border-top': '2px dashed LightGray',
         'padding': '3px',
     },
+    'Function': {
+        'background-color': 'White',
+        #'border-top': '2px dashed LightGray',
+        #'padding': '3px',
+    },
     'Human': {
         'background-color': 'White',
-    },
-    'Utility': {
-        'background-color': 'White',
-        'border-top': '2px dashed LightGray',
-        'padding': '3px',
     },
 }
 

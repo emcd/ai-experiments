@@ -90,7 +90,7 @@ class ConversationMessage( __.ReactiveHTML ):
         '''onmouseleave="${_div_mouseleave}" '''
         '''>${row__}</div>''' )
 
-    def __init__( self, role, mime_type, **params ):
+    def __init__( self, role, mime_type, actor_name = None, **params ):
         emoji = __.roles_emoji[ role ]
         styles = __.roles_styles[ role ]
         if 'text/plain' == mime_type:
@@ -108,6 +108,7 @@ class ConversationMessage( __.ReactiveHTML ):
             'mime-type': mime_type,
             'role': role,
         }
+        if actor_name: self.auxiliary_data__[ 'actor-name' ] = actor_name
         row_gui.label_role.value = emoji
         self.gui__ = row_gui
         self.row__ = row
@@ -171,14 +172,15 @@ def add_conversation_indicator_if_necessary( gui ):
 
 # TODO: Fold into initializer for ConversationMessage.
 def add_message(
-        gui, role, content,
-        behaviors = ( 'active', ),
-        mime_type = 'text/markdown',
+    gui, role, content,
+    actor_name = None,
+    behaviors = ( 'active', ),
+    mime_type = 'text/markdown',
 ):
-    component = ConversationMessage(
-        role, mime_type,
+    rehtml_message = ConversationMessage(
+        role, mime_type, actor_name = actor_name,
         height_policy = 'auto', margin = 0, width_policy = 'max' )
-    message_gui = component.gui__
+    message_gui = rehtml_message.gui__
     # TODO: Less intrusive supplementation.
     #       Consider multi-part MIME attachment encoding from SMTP.
     if 'Document' == role:
@@ -187,12 +189,12 @@ def add_message(
     for behavior in behaviors:
         getattr( message_gui, f"toggle_{behavior}" ).value = True
     from ..messages import count_tokens
-    component.auxiliary_data__[ 'token_count' ] = count_tokens( content )
+    rehtml_message.auxiliary_data__[ 'token_count' ] = count_tokens( content )
     message_gui.toggle_active.param.watch(
         lambda event: update_and_save_conversation( gui ), 'value' )
     # TODO: Register callback for 'toggle_pinned'.
-    gui.column_conversation_history.append( component )
-    return component
+    gui.column_conversation_history.append( rehtml_message )
+    return rehtml_message
 
 
 def copy_canned_prompt_to_user( gui ):
@@ -263,6 +265,7 @@ def generate_component( components, layout, component_name ):
     return component
 
 
+# TODO: Provide as callback to provider-specific chat implementation.
 def generate_messages( gui ):
     messages = [ ]
     model_data = gui.selector_model.auxiliary_data__[
@@ -278,11 +281,16 @@ def generate_messages( gui ):
         if not message_gui.toggle_active.value: continue
         role = row.auxiliary_data__[ 'role' ]
         # TODO? Map to provider-specific role names.
-        if supports_functions and 'Utility' == role: role = 'function'
-        elif role in ( 'Human', 'Document', 'Utility' ): role = 'user'
+        if supports_functions and 'Function' == role: role = 'function'
+        elif role in ( 'Human', 'Document', 'Function' ): role = 'user'
         else: role = 'assistant'
-        content = message_gui.text_message.object
-        messages.append( { 'role': role, 'content': content } )
+        message = dict(
+            content = message_gui.text_message.object,
+            role = role,
+        )
+        if 'actor-name' in row.auxiliary_data__:
+            message[ 'name' ] = row.auxiliary_data__[ 'actor-name' ]
+        messages.append( message )
     return messages
 
 
@@ -385,7 +393,7 @@ def populate_vectorstores_selector( gui, vectorstores ):
 
 
 def register_conversation_callbacks( gui ):
-    gui.button_call.on_click( lambda event: run_tools( gui ) )
+    gui.button_call.on_click( lambda event: run_tool( gui ) )
     gui.button_chat.on_click( lambda event: run_chat( gui ) )
     gui.button_search.on_click( lambda event: run_search( gui ) )
     gui.button_refine_canned_prompt.on_click(
@@ -449,12 +457,16 @@ def restore_conversation_messages( gui, column_name, state ):
     column = getattr( gui, column_name )
     column.clear( )
     for row_state in state.get( column_name, [ ] ):
-        role = row_state[ 'role' ]
-        mime_type = row_state[ 'mime-type' ]
-        content = row_state[ 'content' ]
+        actor_name = row_state.get( 'actor-name' )
         behaviors = row_state[ 'behaviors' ]
+        content = row_state[ 'content' ]
+        mime_type = row_state[ 'mime-type' ]
+        role = row_state[ 'role' ]
         add_message(
-            gui, role, content, behaviors = behaviors, mime_type = mime_type )
+            gui, role, content,
+            actor_name = actor_name,
+            behaviors = behaviors,
+            mime_type = mime_type )
 
 
 def restore_conversations_index( gui ):
@@ -549,9 +561,32 @@ def run_search( gui ):
     update_and_save_conversation( gui )
 
 
+# TODO: Report and display proper errors.
 def run_tool( gui ):
-    # TODO: Inspect most recent AI response and dispatch appropriate utility.
-    pass
+    # TODO: Disable button when it should not be able to be run.
+    #       Then we can remove the checks here.
+    if 0 == len( gui.column_conversation_history ): raise RuntimeError
+    rehtml_message = gui.column_conversation_history[ -1 ]
+    role = rehtml_message.auxiliary_data__[ 'role' ]
+    if 'AI' != role: raise RuntimeError
+    message = rehtml_message.gui__.text_message.object
+    # TODO: Handle multipart MIME.
+    from json import dumps, loads
+    try: data = loads( message )
+    except: raise ValueError
+    if not isinstance( data, __.AbstractDictionary ): raise ValueError
+    if 'name' not in data: raise ValueError
+    name = data[ 'name' ]
+    arguments = data.get( 'arguments', { } )
+    ai_functions = gui.auxiliary_data__[ 'ai-functions' ]
+    # TODO: Check against multichoice values instead.
+    if name not in ai_functions: raise ValueError
+    result = ai_functions[ name ]( **arguments )
+    add_message(
+        gui, 'Function', dumps( result ),
+        actor_name = name,
+        mime_type = 'application/json' )
+    run_chat( gui )
 
 
 def save_conversation( gui ):
@@ -591,12 +626,15 @@ def save_conversation_messages( gui, column_name ):
         for behavior in ( 'active', 'pinned' ):
             if getattr( message_gui, f"toggle_{behavior}" ).value:
                 behaviors.append( behavior )
-        state.append( {
-            'role': row.auxiliary_data__[ 'role' ],
-            'mime-type': row.auxiliary_data__[ 'mime-type' ],
-            'content': message_gui.text_message.object,
+        substate = {
             'behaviors': behaviors,
+            'content': message_gui.text_message.object,
+        }
+        substate.update( {
+            key: value for key, value in row.auxiliary_data__.items( )
+            if key in ( 'actor-name', 'mime-type', 'role' )
         } )
+        state.append( substate )
     return { column_name: state }
 
 
