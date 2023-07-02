@@ -143,7 +143,7 @@ conversations_manager_layout = {
     'button_new_conversation': dict(
         component_class = Button,
         component_arguments = dict(
-            name = 'New Conversation',
+            name = '🆕 New Conversation',
             button_type = 'light',
             **_action_button_attributes,
         ),
@@ -284,7 +284,7 @@ conversation_layout.update( {
     'toggle_functions_prompt_active': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💬', value = False, **_icon_button_attributes,
+            name = '💬', value = True, **_icon_button_attributes,
         ),
     ),
     'toggle_functions_prompt_display': dict(
@@ -314,6 +314,7 @@ conversation_layout.update( {
     ),
     'column_functions_json': dict(
         component_class = Column,
+        component_arguments = dict( visible = False ),
     ),
     'spacer_right_functions_prompt': dict( component_class = HSpacer ),
 } )
@@ -491,12 +492,12 @@ conversation_layout.update( {
     ),
     'row_actions': dict(
         component_class = Row,
-        contains = [ 'button_chat', 'button_search', 'button_run' ],
+        contains = [ 'button_chat', 'button_search', 'button_call' ],
     ),
     'button_chat': dict(
         component_class = Button,
         component_arguments = dict(
-            name = '💬 Chat',
+            name = '💬 Communicate',
             button_type = 'primary',
             **_action_button_attributes,
         ),
@@ -504,14 +505,14 @@ conversation_layout.update( {
     'button_search': dict(
         component_class = Button,
         component_arguments = dict(
-            name = '🔍 Search',
+            name = '🔍 Query',
             **_action_button_attributes,
         ),
     ),
-    'button_run': dict(
+    'button_call': dict(
         component_class = Button,
         component_arguments = dict(
-            name = '🎬 Run',
+            name = '\N{Hammer and Wrench}\uFE0F Invoke',
             **_action_button_attributes,
         ),
     ),

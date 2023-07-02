@@ -223,9 +223,9 @@ def create_conversation( gui, descriptor ):
 def delete_conversation( gui, descriptor ):
     # TODO: Confirmation modal dialog:
     #   https://discourse.holoviz.org/t/can-i-use-create-a-modal-dialog-in-panel/1207/4
-    # TODO: Only create new conversation if deletion is active conversation.
-    create_and_display_conversation( gui )
     conversations = gui.column_conversations_indicators
+    if descriptor is conversations.current_descriptor__:
+        create_and_display_conversation( gui )
     conversations.descriptors__.pop( descriptor.identity )
     descriptor.gui = None # break possible GC cycles
     indicators = [
@@ -284,6 +284,10 @@ def generate_messages( gui ):
         content = message_gui.text_message.object
         messages.append( { 'role': role, 'content': content } )
     return messages
+
+
+def on_functions_selection( gui, event ):
+    update_active_functions( gui )
 
 
 def on_model_selection( gui, event ):
@@ -381,11 +385,13 @@ def populate_vectorstores_selector( gui, vectorstores ):
 
 
 def register_conversation_callbacks( gui ):
+    gui.button_call.on_click( lambda event: run_tools( gui ) )
     gui.button_chat.on_click( lambda event: run_chat( gui ) )
     gui.button_search.on_click( lambda event: run_search( gui ) )
-    gui.button_run.on_click( lambda event: run_tools( gui ) )
     gui.button_refine_canned_prompt.on_click(
         lambda event: copy_canned_prompt_to_user( gui ) )
+    gui.multichoice_functions.param.watch(
+        lambda event: on_functions_selection( gui, event ), 'value' )
     gui.selector_canned_prompt.param.watch(
         lambda event: populate_canned_prompt_variables( gui ), 'value' )
     gui.selector_model.param.watch(
@@ -398,6 +404,10 @@ def register_conversation_callbacks( gui ):
         lambda event: toggle_canned_prompt_active( gui ), 'value' )
     gui.toggle_canned_prompt_display.param.watch(
         lambda event: toggle_canned_prompt_display( gui ), 'value' )
+    gui.toggle_functions_prompt_active.param.watch(
+        lambda event: toggle_functions_prompt_active( gui ), 'value' )
+    gui.toggle_functions_prompt_display.param.watch(
+        lambda event: toggle_functions_prompt_display( gui ), 'value' )
     gui.toggle_system_prompt_active.param.watch(
         lambda event: toggle_system_prompt_active( gui ), 'value' )
     gui.toggle_system_prompt_display.param.watch(
@@ -440,8 +450,7 @@ def restore_conversation_messages( gui, column_name, state ):
     column.clear( )
     for row_state in state.get( column_name, [ ] ):
         role = row_state[ 'role' ]
-        # XXX: Temporary until existing conversations are upgraded and saved.
-        mime_type = row_state.get( 'mime-type', 'text/markdown' )
+        mime_type = row_state[ 'mime-type' ]
         content = row_state[ 'content' ]
         behaviors = row_state[ 'behaviors' ]
         add_message(
@@ -584,9 +593,7 @@ def save_conversation_messages( gui, column_name ):
                 behaviors.append( behavior )
         state.append( {
             'role': row.auxiliary_data__[ 'role' ],
-            # XXX: Temporary until conversations have been resaved.
-            'mime-type':
-                row.auxiliary_data__.get( 'mime-type', 'text/markdown' ),
+            'mime-type': row.auxiliary_data__[ 'mime-type' ],
             'content': message_gui.text_message.object,
             'behaviors': behaviors,
         } )
@@ -658,6 +665,15 @@ def toggle_canned_prompt_display( gui ):
     gui.text_canned_prompt.visible = gui.toggle_canned_prompt_display.value
 
 
+def toggle_functions_prompt_active( gui ):
+    update_and_save_conversation( gui )
+
+
+def toggle_functions_prompt_display( gui ):
+    gui.column_functions_json.visible = (
+        gui.toggle_functions_prompt_display.value )
+
+
 def toggle_system_prompt_active( gui ):
     update_and_save_conversation( gui )
 
@@ -672,6 +688,25 @@ def toggle_user_prompt_active( gui ):
     if canned_state == user_state:
         gui.toggle_canned_prompt_active.value = not user_state
         update_and_save_conversation( gui )
+
+
+def update_active_functions( gui ):
+    available_functions = gui.auxiliary_data__[ 'ai-functions' ]
+    # TODO: Construct components from layout.
+    from panel.pane import JSON
+    from .layouts import _message_column_width_attributes, sizes
+    gui.column_functions_json.objects = [
+        JSON(
+            function.__doc__,
+            depth = -1, theme = 'light',
+            height_policy = 'auto', width_policy = 'max',
+            margin = sizes.standard_margin,
+            styles = { 'overflow': 'auto' },
+            **_message_column_width_attributes,
+        )
+        for name, function in available_functions.items( )
+        if name in gui.multichoice_functions.value ]
+    update_token_count( gui )
 
 
 def update_and_save_conversation( gui ):
@@ -730,6 +765,7 @@ def update_functions_prompt( gui ):
     gui.multichoice_functions.value = [
         function_name for function_name in available_functions.keys( )
         if associated_functions.get( function_name, False ) ]
+    update_active_functions( gui )
 
 
 def update_message( message_row, behaviors = ( 'active', ) ):
@@ -754,21 +790,27 @@ def update_system_prompt_text( gui ):
 
 def update_token_count( gui ):
     from ..messages import count_tokens
-    total_tokens = 0
+    tokens_total = 0
     if gui.toggle_system_prompt_active.value:
-        total_tokens += count_tokens( gui.text_system_prompt.object )
+        tokens_total += count_tokens( gui.text_system_prompt.object )
+    supports_functions = gui.selector_model.auxiliary_data__[
+        gui.selector_model.value ][ 'supports-functions' ]
+    if supports_functions and gui.toggle_functions_prompt_active.value:
+        for pane in gui.column_functions_json:
+            tokens_total += count_tokens( pane.object )
+    # else, included as part of system prompt
     for row in gui.column_conversation_history:
         message_gui = row.gui__
         if message_gui.toggle_active.value:
-            total_tokens += row.auxiliary_data__[ 'token_count' ]
+            tokens_total += row.auxiliary_data__[ 'token_count' ]
     if gui.toggle_canned_prompt_active.value:
-        total_tokens += count_tokens( gui.text_canned_prompt.object )
+        tokens_total += count_tokens( gui.text_canned_prompt.object )
     if gui.toggle_user_prompt_active.value:
-        total_tokens += count_tokens( gui.text_input_user.value )
+        tokens_total += count_tokens( gui.text_input_user.value )
     tokens_limit = gui.selector_model.auxiliary_data__[
         gui.selector_model.value ][ 'tokens-limit' ]
     # TODO: Change color of text, depending on percentage of tokens limit.
-    gui.text_tokens_total.value = f"{total_tokens} / {tokens_limit}"
+    gui.text_tokens_total.value = f"{tokens_total} / {tokens_limit}"
 
 
 def _populate_prompt_variables( gui, row_name, selector_name, callback ):
@@ -819,12 +861,15 @@ def _populate_prompts_selector( gui_selector, prompts_directory ):
 
 def _provide_active_ai_functions( gui ):
     from json import loads
+    # TODO: Remove visibility restriction once fill of system prompt
+    #       is implemented for non-functions-supporting models.
+    if not gui.row_functions_prompt.visible: return [ ]
     if not gui.toggle_functions_prompt_active.value: return [ ]
     if not gui.multichoice_functions.value: return [ ]
-    return list(
+    return [
         loads( function.__doc__ )
         for name, function in gui.auxiliary_data__[ 'ai-functions' ].items( )
-        if name in gui.multichoice_functions.value )
+        if name in gui.multichoice_functions.value ]
 
 
 def _update_messages_post_summarization( gui ):
