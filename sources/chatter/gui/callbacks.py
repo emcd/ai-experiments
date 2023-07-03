@@ -103,12 +103,12 @@ class ConversationMessage( __.ReactiveHTML ):
         row = generate_component( components, layout, 'row_message' )
         row.styles.update( styles )
         row_gui = __.SimpleNamespace( **components )
-        self.auxiliary_data__ = {
+        self.auxdata__ = {
             'gui': row_gui,
             'mime-type': mime_type,
             'role': role,
         }
-        if actor_name: self.auxiliary_data__[ 'actor-name' ] = actor_name
+        if actor_name: self.auxdata__[ 'actor-name' ] = actor_name
         row_gui.label_role.value = emoji
         self.gui__ = row_gui
         self.row__ = row
@@ -139,7 +139,7 @@ def add_conversation_indicator_if_necessary( gui ):
     descriptor = conversations.current_descriptor__
     if descriptor.identity in conversations.descriptors__: return
     # TODO: Encapsulate in provider as response format may vary by provider.
-    canned_prompt = gui.selector_canned_prompt.auxiliary_data__[
+    canned_prompt = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
     messages = [
         # TODO? Regen title from more mature conversation.
@@ -147,7 +147,7 @@ def add_conversation_indicator_if_necessary( gui ):
         { 'role': 'user', 'content': canned_prompt }
     ]
     provider_name = gui.selector_provider.value
-    provider = gui.selector_provider.auxiliary_data__[ provider_name ]
+    provider = gui.selector_provider.auxdata__[ provider_name ]
     controls = dict(
         model = gui.selector_model.value,
         temperature = gui.slider_temperature.value,
@@ -189,7 +189,7 @@ def add_message(
     for behavior in behaviors:
         getattr( message_gui, f"toggle_{behavior}" ).value = True
     from ..messages import count_tokens
-    rehtml_message.auxiliary_data__[ 'token_count' ] = count_tokens( content )
+    rehtml_message.auxdata__[ 'token_count' ] = count_tokens( content )
     message_gui.toggle_active.param.watch(
         lambda event: update_and_save_conversation( gui ), 'value' )
     # TODO: Register callback for 'toggle_pinned'.
@@ -214,7 +214,7 @@ def create_conversation( gui, descriptor ):
     generate_component( components, layout, 'column_conversation' )
     generate_component( components, layout, 'column_conversation_control' )
     pane_gui = __.SimpleNamespace( **components )
-    pane_gui.auxiliary_data__ = gui.auxiliary_data__
+    pane_gui.auxdata__ = gui.auxdata__
     pane_gui.identity__ = descriptor.identity
     descriptor.gui = pane_gui
     populate_conversation( pane_gui )
@@ -268,8 +268,7 @@ def generate_component( components, layout, component_name ):
 # TODO: Provide as callback to provider-specific chat implementation.
 def generate_messages( gui ):
     messages = [ ]
-    model_data = gui.selector_model.auxiliary_data__[
-        gui.selector_model.value ]
+    model_data = gui.selector_model.auxdata__[ gui.selector_model.value ]
     if gui.toggle_system_prompt_active.value:
         system_message = gui.text_system_prompt.object
         sysprompt_honor = model_data[ 'honors-system-prompt' ]
@@ -277,9 +276,9 @@ def generate_messages( gui ):
         messages.append( { 'role': role, 'content': system_message } )
     supports_functions = model_data[ 'supports-functions' ]
     for row in gui.column_conversation_history:
-        message_gui = row.auxiliary_data__[ 'gui' ]
+        message_gui = row.auxdata__[ 'gui' ]
         if not message_gui.toggle_active.value: continue
-        role = row.auxiliary_data__[ 'role' ]
+        role = row.auxdata__[ 'role' ]
         # TODO? Map to provider-specific role names.
         if supports_functions and 'Function' == role: role = 'function'
         elif role in ( 'Human', 'Document', 'Function' ): role = 'user'
@@ -288,8 +287,8 @@ def generate_messages( gui ):
             content = message_gui.text_message.object,
             role = role,
         )
-        if 'actor-name' in row.auxiliary_data__:
-            message[ 'name' ] = row.auxiliary_data__[ 'actor-name' ]
+        if 'actor-name' in row.auxdata__:
+            message[ 'name' ] = row.auxdata__[ 'actor-name' ]
         messages.append( message )
     return messages
 
@@ -302,7 +301,7 @@ def on_model_selection( gui, event ):
     # TODO: For models which do not explicitly support functions,
     #       weave selected functions into system prompt.
     #       Then, functions prompt row should always be visible.
-    supports_functions = gui.selector_model.auxiliary_data__[
+    supports_functions = gui.selector_model.auxdata__[
         gui.selector_model.value ][ 'supports-functions' ]
     gui.row_functions_prompt.visible = supports_functions
     update_functions_prompt( gui )
@@ -318,8 +317,7 @@ def populate_conversation( gui ):
     populate_models_selector( gui )
     populate_system_prompts_selector( gui )
     populate_canned_prompts_selector( gui )
-    populate_vectorstores_selector(
-        gui, gui.auxiliary_data__[ 'vectorstores' ] )
+    populate_vectorstores_selector( gui )
 
 
 def populate_dashboard( gui ):
@@ -331,17 +329,17 @@ def populate_dashboard( gui ):
 
 
 def populate_models_selector( gui ):
-    provider = gui.selector_provider.auxiliary_data__[
+    provider = gui.selector_provider.auxdata__[
         gui.selector_provider.value ].provide_models
     models = provider( )
     gui.selector_model.options = list( models.keys( ) )
-    gui.selector_model.auxiliary_data__ = models
+    gui.selector_model.auxdata__ = models
 
 
 def populate_providers_selector( gui ):
     from ..ai import registry
     gui.selector_provider.options = list( registry.keys( ) )
-    gui.selector_provider.auxiliary_data__ = registry
+    gui.selector_provider.auxdata__ = registry
 
 
 def populate_system_prompt_variables( gui ):
@@ -351,14 +349,14 @@ def populate_system_prompt_variables( gui ):
         'selector_system_prompt',
         update_system_prompt_text )
     # If there is a canned prompt preference, then update accordingly.
-    can_update = hasattr( gui.selector_canned_prompt, 'auxiliary_data__' )
-    summarization = gui.selector_system_prompt.auxiliary_data__[
+    can_update = hasattr( gui.selector_canned_prompt, 'auxdata__' )
+    summarization = gui.selector_system_prompt.auxdata__[
         gui.selector_system_prompt.value ].get( 'summarization-preference' )
     if can_update and None is not summarization:
         gui.selector_canned_prompt.value = summarization[ 'id' ]
         defaults = summarization.get( 'defaults', { } )
         for i, variable in enumerate(
-            gui.selector_canned_prompt.auxiliary_data__[
+            gui.selector_canned_prompt.auxdata__[
                 gui.selector_canned_prompt.value ].get( 'variables', ( ) )
         ):
             variable_id = variable[ 'id' ]
@@ -387,8 +385,8 @@ def populate_canned_prompts_selector( gui ):
     populate_canned_prompt_variables( gui )
 
 
-def populate_vectorstores_selector( gui, vectorstores ):
-    gui.selector_vectorstore.auxiliary_data__ = vectorstores
+def populate_vectorstores_selector( gui ):
+    vectorstores = gui.auxdata__[ 'vectorstores' ]
     gui.selector_vectorstore.options = list( vectorstores.keys( ) )
 
 
@@ -518,7 +516,7 @@ def _run_chat( gui ):
         temperature = gui.slider_temperature.value,
     )
     special_data = { }
-    supports_functions = gui.selector_model.auxiliary_data__[
+    supports_functions = gui.selector_model.auxdata__[
         gui.selector_model.value ][ 'supports-functions' ]
     if supports_functions:
         special_data[ 'ai-functions' ] = _provide_active_ai_functions( gui )
@@ -538,8 +536,7 @@ def _run_chat( gui ):
                 handle.gui__.text_message, 'object',
                 getattr( handle.gui__.text_message, 'object' ) + content ) ),
     )
-    provider = gui.selector_provider.auxiliary_data__[
-        gui.selector_provider.value ]
+    provider = gui.selector_provider.auxdata__[ gui.selector_provider.value ]
     return provider.run_chat( messages, special_data, controls, callbacks )
 
 
@@ -551,7 +548,7 @@ def run_search( gui ):
     add_message( gui, 'Human', prompt )
     documents_count = gui.slider_documents_count.value
     if not documents_count: return
-    vectorstore = gui.selector_vectorstore.auxiliary_data__[
+    vectorstore = gui.auxdata__[ 'vectorstores' ][
         gui.selector_vectorstore.value ][ 'instance' ]
     documents = vectorstore.similarity_search( prompt, k = documents_count )
     for document in documents:
@@ -567,7 +564,7 @@ def run_tool( gui ):
     #       Then we can remove the checks here.
     if 0 == len( gui.column_conversation_history ): raise RuntimeError
     rehtml_message = gui.column_conversation_history[ -1 ]
-    role = rehtml_message.auxiliary_data__[ 'role' ]
+    role = rehtml_message.auxdata__[ 'role' ]
     if 'AI' != role: raise RuntimeError
     message = rehtml_message.gui__.text_message.object
     # TODO: Handle multipart MIME.
@@ -578,7 +575,7 @@ def run_tool( gui ):
     if 'name' not in data: raise ValueError
     name = data[ 'name' ]
     arguments = data.get( 'arguments', { } )
-    ai_functions = gui.auxiliary_data__[ 'ai-functions' ]
+    ai_functions = gui.auxdata__[ 'ai-functions' ]
     # TODO: Check against multichoice values instead.
     if name not in ai_functions: raise ValueError
     result = ai_functions[ name ]( **arguments )
@@ -621,7 +618,7 @@ def save_conversation( gui ):
 def save_conversation_messages( gui, column_name ):
     state = [ ]
     for row in getattr( gui, column_name ):
-        message_gui = row.auxiliary_data__[ 'gui' ]
+        message_gui = row.auxdata__[ 'gui' ]
         behaviors = [ ]
         for behavior in ( 'active', 'pinned' ):
             if getattr( message_gui, f"toggle_{behavior}" ).value:
@@ -631,7 +628,7 @@ def save_conversation_messages( gui, column_name ):
             'content': message_gui.text_message.object,
         }
         substate.update( {
-            key: value for key, value in row.auxiliary_data__.items( )
+            key: value for key, value in row.auxdata__.items( )
             if key in ( 'actor-name', 'mime-type', 'role' )
         } )
         state.append( substate )
@@ -729,7 +726,7 @@ def toggle_user_prompt_active( gui ):
 
 
 def update_active_functions( gui ):
-    available_functions = gui.auxiliary_data__[ 'ai-functions' ]
+    available_functions = gui.auxdata__[ 'ai-functions' ]
     # TODO: Construct components from layout.
     from panel.pane import JSON
     from .layouts import _message_column_width_attributes, sizes
@@ -793,9 +790,9 @@ def update_conversation_timestamp( gui ):
 
 def update_functions_prompt( gui ):
     gui.multichoice_functions.value = [ ]
-    sprompt_data = gui.selector_system_prompt.auxiliary_data__[
+    sprompt_data = gui.selector_system_prompt.auxdata__[
         gui.selector_system_prompt.value ]
-    available_functions = gui.auxiliary_data__[ 'ai-functions' ]
+    available_functions = gui.auxdata__[ 'ai-functions' ]
     associated_functions = sprompt_data.get( 'associated-functions', { } )
     gui.multichoice_functions.options = [
         function_name for function_name in available_functions.keys( )
@@ -813,7 +810,7 @@ def update_message( message_row, behaviors = ( 'active', ) ):
             behavior in behaviors )
     content = message_gui.text_message.object
     from ..messages import count_tokens
-    message_row.auxiliary_data__[ 'token_count' ] = count_tokens( content )
+    message_row.auxdata__[ 'token_count' ] = count_tokens( content )
 
 
 def update_system_prompt_text( gui ):
@@ -831,7 +828,7 @@ def update_token_count( gui ):
     tokens_total = 0
     if gui.toggle_system_prompt_active.value:
         tokens_total += count_tokens( gui.text_system_prompt.object )
-    supports_functions = gui.selector_model.auxiliary_data__[
+    supports_functions = gui.selector_model.auxdata__[
         gui.selector_model.value ][ 'supports-functions' ]
     if supports_functions and gui.toggle_functions_prompt_active.value:
         for pane in gui.column_functions_json:
@@ -840,12 +837,12 @@ def update_token_count( gui ):
     for row in gui.column_conversation_history:
         message_gui = row.gui__
         if message_gui.toggle_active.value:
-            tokens_total += row.auxiliary_data__[ 'token_count' ]
+            tokens_total += row.auxdata__[ 'token_count' ]
     if gui.toggle_canned_prompt_active.value:
         tokens_total += count_tokens( gui.text_canned_prompt.object )
     if gui.toggle_user_prompt_active.value:
         tokens_total += count_tokens( gui.text_input_user.value )
-    tokens_limit = gui.selector_model.auxiliary_data__[
+    tokens_limit = gui.selector_model.auxdata__[
         gui.selector_model.value ][ 'tokens-limit' ]
     # TODO: Change color of text, depending on percentage of tokens limit.
     gui.text_tokens_total.value = f"{tokens_total} / {tokens_limit}"
@@ -856,8 +853,7 @@ def _populate_prompt_variables( gui, row_name, selector_name, callback ):
     row = getattr( gui, row_name )
     selector = getattr( gui, selector_name )
     row.clear( )
-    variables = selector.auxiliary_data__[
-        selector.value ].get( 'variables', ( ) )
+    variables = selector.auxdata__[ selector.value ].get( 'variables', ( ) )
     for variable in variables:
         # TODO: Validation of template variables.
         species = variable.get( 'species', 'text' )
@@ -877,23 +873,23 @@ def _populate_prompt_variables( gui, row_name, selector_name, callback ):
                 f"Invalid component species, '{species}', "
                 f"for prompt variable '{name}'." )
         component.param.watch( lambda event: callback( gui ), 'value' )
-        component.auxiliary_data__ = variable
+        component.auxdata__ = variable
         row.append( component )
     callback( gui )
 
 
 def _populate_prompts_selector( gui_selector, prompts_directory ):
     from yaml import safe_load
-    auxiliary_data = { }; prompt_names = [ ]
+    auxdata = { }; prompt_names = [ ]
     for prompt_path in (
         prompts_directory.resolve( strict = True ).glob( '*.yaml' )
     ):
         with prompt_path.open( ) as file:
             contents = safe_load( file )
             id_ = contents[ 'id' ]
-            auxiliary_data[ id_ ] = contents
+            auxdata[ id_ ] = contents
             prompt_names.append( id_ )
-    gui_selector.auxiliary_data__ = auxiliary_data
+    gui_selector.auxdata__ = auxdata
     gui_selector.options = prompt_names
 
 
@@ -906,7 +902,7 @@ def _provide_active_ai_functions( gui ):
     if not gui.multichoice_functions.value: return [ ]
     return [
         loads( function.__doc__ )
-        for name, function in gui.auxiliary_data__[ 'ai-functions' ].items( )
+        for name, function in gui.auxdata__[ 'ai-functions' ].items( )
         if name in gui.multichoice_functions.value ]
 
 
@@ -914,8 +910,7 @@ def _update_messages_post_summarization( gui ):
     ''' Exclude conversation items above summarization request. '''
     # TODO: Account for documents.
     for i in range( len( gui.column_conversation_history ) - 2 ):
-        message_gui = (
-            gui.column_conversation_history[ i ].auxiliary_data__[ 'gui' ] )
+        message_gui = gui.column_conversation_history[ i ].auxdata__[ 'gui' ]
         if not message_gui.toggle_active.value: continue # already inactive
         if message_gui.toggle_pinned.value: continue # skip pinned messages
         message_gui.toggle_active.value = False
@@ -925,9 +920,7 @@ def _update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
     row = getattr( gui, row_name )
     selector = getattr( gui, selector_name )
     text_prompt = getattr( gui, text_prompt_name )
-    template = selector.auxiliary_data__[ selector.value ][ 'template' ]
-    variables = {
-        element.auxiliary_data__[ 'id' ]: element.value for element in row
-    }
+    template = selector.auxdata__[ selector.value ][ 'template' ]
+    variables = { element.auxdata__[ 'id' ]: element.value for element in row }
     from mako.template import Template
     text_prompt.object = Template( template ).render( **variables )

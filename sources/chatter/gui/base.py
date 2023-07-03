@@ -75,8 +75,8 @@ roles_styles = {
 
 
 def calculate_conversations_path( gui ):
-    configuration = gui.auxiliary_data__[ 'configuration' ]
-    directories = gui.auxiliary_data__[ 'directories' ]
+    configuration = gui.auxdata__[ 'configuration' ]
+    directories = gui.auxdata__[ 'directories' ]
     state_path = Path( configuration[ 'locations' ][ 'state' ].format(
         user_state_path = directories.user_state_path ) )
     return state_path / 'conversations'

@@ -32,7 +32,7 @@ def prepare( configuration, directories, ai_functions, vectorstores ):
     components = { }
     generate_component( components, layout, 'dashboard' )
     gui = SimpleNamespace( **components )
-    gui.auxiliary_data__ = {
+    gui.auxdata__ = {
         'ai-functions': ai_functions,
         'configuration': configuration,
         'directories': directories,
