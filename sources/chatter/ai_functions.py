@@ -27,7 +27,55 @@
 import json
 
 
-def roll_dice( dice ):
+def roll_dice( specs ):
+    results = [ ]
+    for spec in specs:
+        results.append( { spec[ 'name' ]: _roll_dice( spec[ 'dice' ] ) } )
+    return results
+
+roll_dice.__doc__ = json.dumps( {
+    'name': 'roll_dice',
+    'description': '''
+Given a list of name and specification pairs for dice rolls,
+returns a list with the results of each roll, associated with its name. ''',
+    'parameters': {
+        'type': 'object',
+        'properties': {
+            'specs': {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'name': {
+                            'type': 'string',
+                            'description': '''
+Name of the dice roll. Note that this may be duplicate across list items. This
+allows for scenarios, like D&D ability scores, where more than one independent
+roll may be used to determine the same score. '''
+                        },
+                        'dice': {
+                            'type': 'string',
+                            'description': '''
+A dice specification, such as '1d10' or '3d6+2'. The pattern comprises the
+number of dice, the type of dice (i.e., the number of sides, which must be even
+and greater than 3), and an optional offset which can be positive or negative.
+The offset is added to the total roll of the dice and does not have an upper
+limit, but a negative offset must not reduce the total roll to less than 1. For
+instance, '1d4-1' is illegal because a roll of 1 would result in a total value
+of 0. '''
+                        },
+                    },
+                    'required': [ 'name', 'dice' ],
+                },
+                'minItems': 1,
+            }
+        },
+        'required': [ 'rolls' ]
+    }
+}, indent = 2 )
+
+
+def _roll_dice( dice ):
     import re
     from random import randint
     regex = re.compile(
@@ -41,30 +89,6 @@ def roll_dice( dice ):
     if number < 1 or sides < 4 or sides % 2 == 1 or number + offset < 1:
         raise ValueError( f"Invalid dice spec, '{dice}'." )
     return sum( randint( 1, sides ) for _ in range( number ) ) + offset
-
-roll_dice.__doc__ = json.dumps( {
-    'name': 'roll_dice',
-    'description':
-        'Given a dice specification, '
-        'returns a roll of the dice, plus any offset, as an integer.',
-    'parameters': {
-        'type': 'object',
-        'properties': {
-            'dice': {
-                'type': 'string',
-                'description': '''
-Dice specification, such as '1d10' or '3d6+2'. The pattern comprises the
-number of dice, the type of dice (i.e., the number of sides, which must be even
-and greater than 3), and an optional offset which can be positive or negative.
-The offset is added to the total roll of the dice and does not have an upper
-limit, but a negative offset must not reduce the total roll to less than 1. For
-instance, '1d4-1' is illegal because a roll of 1 would result in a total value
-of 0. '''
-            },
-        },
-        'required': [ 'dice' ]
-    }
-}, indent = 2 )
 
 
 registry = {
