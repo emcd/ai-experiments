@@ -710,7 +710,6 @@ conversation_message_common_layout = {
         ),
         contains = [
             'label_role',
-            #'spacer_role',
             'toggle_active',
             'toggle_pinned',
         ],
@@ -721,7 +720,6 @@ conversation_message_common_layout = {
             align = 'center', width = sizes.icon_button_width,
         ),
     ),
-    'spacer_role': dict( component_class = HSpacer ),
     'toggle_active': dict(
         component_class = Toggle,
         component_arguments = dict(

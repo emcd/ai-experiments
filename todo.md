@@ -1,7 +1,7 @@
 ## LLM Chatter
 
-* Pinning a message should also activate it. Deactivating a message should
-  also unpin it.
+* Support flag for determining if canned prompt is a summarizer or not. And,
+  support in GUI accordingly.
 
 * Switch to 'FlexBox' or 'GridBox' for action button and toggle layout to
   support sparse fills with proper alignment.
@@ -23,10 +23,6 @@
   components.
 
 * Add support for system/dark/light mode selection.
-
-* Add support for functions with OpenAI 0613 and later models.
-
-* Add `Run Tools` button. Add support for tools messages.
 
 * Disable `Chat` button if tokens limit plus tokens count exceeds context
   window size.

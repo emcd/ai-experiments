@@ -55,6 +55,7 @@ class ConversationIndicator( __.ReactiveHTML ):
         components = { }
         row = generate_component( components, layout, 'column_indicator' )
         row_gui = __.SimpleNamespace( **components )
+        row_gui.rehtml_indicator = self
         row_gui.text_title.object = title
         self.gui__ = row_gui
         self.row__ = row
@@ -68,10 +69,6 @@ class ConversationIndicator( __.ReactiveHTML ):
         #       an unresolved reference after deletion.
         # Cannot run callback directly. Trigger via Event parameter.
         self.clicked = True
-        #ic( event.event_name )
-        #ic( event.node )
-        #ic( event.model )
-        #ic( event.data )
 
     def _div_mouseenter( self, event ):
         self.gui__.row_actions.visible = True
@@ -103,6 +100,7 @@ class ConversationMessage( __.ReactiveHTML ):
         row = generate_component( components, layout, 'row_message' )
         row.styles.update( styles )
         row_gui = __.SimpleNamespace( **components )
+        row_gui.rehtml_message = self
         self.auxdata__ = {
             'gui': row_gui,
             'mime-type': mime_type,
@@ -180,6 +178,7 @@ def add_message(
         role, mime_type, actor_name = actor_name,
         height_policy = 'auto', margin = 0, width_policy = 'max' )
     message_gui = rehtml_message.gui__
+    message_gui.parent__ = gui
     # TODO: Less intrusive supplementation.
     #       Consider multi-part MIME attachment encoding from SMTP.
     if 'Document' == role:
@@ -190,8 +189,9 @@ def add_message(
     from ..messages import count_tokens
     rehtml_message.auxdata__[ 'token_count' ] = count_tokens( content )
     message_gui.toggle_active.param.watch(
-        lambda event: update_and_save_conversation( gui ), 'value' )
-    # TODO: Register callback for 'toggle_pinned'.
+        lambda event: on_toggle_message_active( message_gui, event ), 'value' )
+    message_gui.toggle_pinned.param.watch(
+        lambda event: on_toggle_message_pinned( message_gui, event ), 'value' )
     gui.column_conversation_history.append( rehtml_message )
     return rehtml_message
 
@@ -398,6 +398,17 @@ def on_toggle_functions_display( gui, event ):
     gui.column_functions_json.visible = gui.toggle_functions_display.value
 
 
+def on_toggle_message_active( message_gui, event ):
+    if not message_gui.toggle_active.value:
+        message_gui.toggle_pinned.value = False
+    update_and_save_conversation( message_gui.parent__ )
+
+
+def on_toggle_message_pinned( message_gui, event ):
+    if message_gui.toggle_pinned.value:
+        message_gui.toggle_active.value = True
+
+
 def on_toggle_system_prompt_active( gui, event ):
     update_and_save_conversation( gui )
 
@@ -581,26 +592,6 @@ def restore_prompt_variables( gui, row_name, state ):
         widget.value = widget_state[ 'value' ]
 
 
-def search( gui ):
-    # TODO: Disable button if no vectorstore available.
-    if not gui.selector_vectorstore.value: return
-    gui.text_status.value = 'OK'
-    prompt = gui.text_input_user.value
-    gui.text_input_user.value = ''
-    if not prompt: return
-    add_message( gui, 'Human', prompt )
-    documents_count = gui.slider_documents_count.value
-    if not documents_count: return
-    vectorstore = gui.auxdata__[ 'vectorstores' ][
-        gui.selector_vectorstore.value ][ 'instance' ]
-    documents = vectorstore.similarity_search( prompt, k = documents_count )
-    for document in documents:
-        # TODO: Determine MIME type from document metadata, if available.
-        add_message(
-            gui, 'Document', document.page_content, mime_type = 'text/plain' )
-    update_and_save_conversation( gui )
-
-
 # TODO: Report and display proper errors.
 def run_tool( gui ):
     # TODO: Disable button when it should not be able to be run.
@@ -703,6 +694,26 @@ def save_prompt_variables( gui, row_name ):
     for widget in getattr( gui, row_name ):
         state.append( { 'name': widget.name, 'value': widget.value } )
     return { row_name: state }
+
+
+def search( gui ):
+    # TODO: Disable button if no vectorstore available.
+    if not gui.selector_vectorstore.value: return
+    gui.text_status.value = 'OK'
+    prompt = gui.text_input_user.value
+    gui.text_input_user.value = ''
+    if not prompt: return
+    add_message( gui, 'Human', prompt )
+    documents_count = gui.slider_documents_count.value
+    if not documents_count: return
+    vectorstore = gui.auxdata__[ 'vectorstores' ][
+        gui.selector_vectorstore.value ][ 'instance' ]
+    documents = vectorstore.similarity_search( prompt, k = documents_count )
+    for document in documents:
+        # TODO: Determine MIME type from document metadata, if available.
+        add_message(
+            gui, 'Document', document.page_content, mime_type = 'text/plain' )
+    update_and_save_conversation( gui )
 
 
 def select_conversation( gui, event ):
