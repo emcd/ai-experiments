@@ -152,15 +152,14 @@ def add_conversation_indicator_if_necessary( gui ):
         model = gui.selector_model.value,
         temperature = gui.slider_temperature.value,
     )
-    chat_runner = provider.run_chat
+    chat_runner = provider.chat
     from json import loads
     from chatter.ai import ChatCallbacks, ChatCompletionError
     callbacks = ChatCallbacks(
         allocator = ( lambda mime_type: [ ] ),
         updater = ( lambda handle, content: handle.append( content ) ),
     )
-    try:
-        handle = provider.run_chat( messages, { }, controls, callbacks )
+    try: handle = provider.chat( messages, { }, controls, callbacks )
     # TODO: Use callbacks to signal that the title could not be generated.
     except ChatCompletionError as exc: return
     response = loads( ''.join( handle ) )
@@ -197,8 +196,56 @@ def add_message(
     return rehtml_message
 
 
-def copy_canned_prompt_to_user( gui ):
-    gui.text_input_user.value = gui.text_canned_prompt.object
+def chat( gui ):
+    gui.text_status.value = 'OK'
+    if gui.toggle_canned_prompt_active.value:
+        prompt = gui.text_canned_prompt.object
+    else:
+        prompt = gui.text_input_user.value
+        gui.text_input_user.value = ''
+    if prompt: add_message( gui, 'Human', prompt )
+    from chatter.ai import ChatCompletionError
+    try: message_component = _chat( gui )
+    except ChatCompletionError as exc: pass
+    else:
+        update_message( message_component )
+        add_conversation_indicator_if_necessary( gui )
+        update_and_save_conversations_index( gui )
+        if gui.toggle_canned_prompt_active.value:
+            gui.toggle_canned_prompt_active.value = False
+            _update_messages_post_summarization( gui )
+    update_and_save_conversation( gui )
+
+
+def _chat( gui ):
+    messages = generate_messages( gui )
+    controls = dict(
+        model = gui.selector_model.value,
+        temperature = gui.slider_temperature.value,
+    )
+    special_data = { }
+    supports_functions = gui.selector_model.auxdata__[
+        gui.selector_model.value ][ 'supports-functions' ]
+    if supports_functions:
+        special_data[ 'ai-functions' ] = _provide_active_ai_functions( gui )
+    from chatter.ai import ChatCallbacks
+    callbacks = ChatCallbacks(
+        allocator = (
+            lambda mime_type:
+            add_message(
+                gui, 'AI', '', behaviors = ( ), mime_type = mime_type ) ),
+        deallocator = (
+            lambda handle: gui.column_conversation_history.pop( -1 ) ),
+        failure_notifier = (
+            lambda status: setattr( gui.text_status, 'value', status ) ),
+        updater = (
+            lambda handle, content:
+            setattr(
+                handle.gui__.text_message, 'object',
+                getattr( handle.gui__.text_message, 'object' ) + content ) ),
+    )
+    provider = gui.selector_provider.auxdata__[ gui.selector_provider.value ]
+    return provider.chat( messages, special_data, controls, callbacks )
 
 
 def create_and_display_conversation( gui ):
@@ -218,7 +265,6 @@ def create_conversation( gui, descriptor ):
     pane_gui.identity__ = descriptor.identity
     descriptor.gui = pane_gui
     populate_conversation( pane_gui )
-    register_conversation_callbacks( pane_gui )
     return pane_gui
 
 
@@ -293,8 +339,22 @@ def generate_messages( gui ):
     return messages
 
 
-def on_functions_selection( gui, event ):
-    update_active_functions( gui )
+def on_canned_prompt_selection( gui, event ):
+    populate_canned_prompt_variables( gui )
+
+
+def on_chat_click( gui, event ): chat( gui )
+
+
+def on_create_conversation( gui, event ):
+    create_and_display_conversation( gui )
+
+
+def on_customize_canned_prompt( gui, event ):
+    gui.text_input_user.value = str( gui.text_canned_prompt.object )
+
+
+def on_functions_selection( gui, event ): update_active_functions( gui )
 
 
 def on_model_selection( gui, event ):
@@ -307,9 +367,54 @@ def on_model_selection( gui, event ):
     update_functions_prompt( gui )
 
 
+def on_run_tool_click( gui, event ): run_tool( gui )
+
+
 def on_system_prompt_selection( gui, event ):
     populate_system_prompt_variables( gui )
     update_functions_prompt( gui )
+
+
+def on_search_click( gui, event ): search( gui )
+
+
+def on_toggle_canned_prompt_active( gui, event ):
+    canned_state = gui.toggle_canned_prompt_active.value
+    user_state = gui.toggle_user_prompt_active.value
+    if canned_state == user_state:
+        gui.toggle_user_prompt_active.value = not canned_state
+        update_and_save_conversation( gui, event )
+
+
+def on_toggle_canned_prompt_display( gui, event ):
+    gui.text_canned_prompt.visible = gui.toggle_canned_prompt_display.value
+
+
+def on_toggle_functions_active( gui, event ):
+    update_and_save_conversation( gui )
+
+
+def on_toggle_functions_display( gui, event ):
+    gui.column_functions_json.visible = gui.toggle_functions_display.value
+
+
+def on_toggle_system_prompt_active( gui, event ):
+    update_and_save_conversation( gui )
+
+
+def on_toggle_system_prompt_display( gui, event ):
+    gui.text_system_prompt.visible = gui.toggle_system_prompt_display.value
+
+
+def on_toggle_user_prompt_active( gui, event ):
+    canned_state = gui.toggle_canned_prompt_active.value
+    user_state = gui.toggle_user_prompt_active.value
+    if canned_state == user_state:
+        gui.toggle_canned_prompt_active.value = not user_state
+        update_and_save_conversation( gui )
+
+
+def on_user_prompt_input( gui, event ): update_and_save_conversation( gui )
 
 
 def populate_conversation( gui ):
@@ -318,6 +423,11 @@ def populate_conversation( gui ):
     populate_system_prompts_selector( gui )
     populate_canned_prompts_selector( gui )
     populate_vectorstores_selector( gui )
+    from .layouts import conversation_layout, conversation_control_layout
+    register_event_callbacks(
+        gui, conversation_layout, 'column_conversation' )
+    register_event_callbacks(
+        gui, conversation_control_layout, 'column_conversation_control' )
 
 
 def populate_dashboard( gui ):
@@ -325,6 +435,9 @@ def populate_dashboard( gui ):
     conversations.descriptors__ = { }
     conversations.current_descriptor__ = ConversationDescriptor( )
     restore_conversations_index( gui )
+    from .layouts import conversations_manager_layout
+    register_event_callbacks(
+        gui, conversations_manager_layout, 'column_conversations_manager' )
     create_and_display_conversation( gui )
 
 
@@ -390,41 +503,21 @@ def populate_vectorstores_selector( gui ):
     gui.selector_vectorstore.options = list( vectorstores.keys( ) )
 
 
-def register_conversation_callbacks( gui ):
-    gui.button_call.on_click( lambda event: run_tool( gui ) )
-    gui.button_chat.on_click( lambda event: run_chat( gui ) )
-    gui.button_search.on_click( lambda event: run_search( gui ) )
-    gui.button_refine_canned_prompt.on_click(
-        lambda event: copy_canned_prompt_to_user( gui ) )
-    gui.multichoice_functions.param.watch(
-        lambda event: on_functions_selection( gui, event ), 'value' )
-    gui.selector_canned_prompt.param.watch(
-        lambda event: populate_canned_prompt_variables( gui ), 'value' )
-    gui.selector_model.param.watch(
-        lambda event: on_model_selection( gui, event ), 'value' )
-    gui.selector_system_prompt.param.watch(
-        lambda event: on_system_prompt_selection( gui, event ), 'value' )
-    gui.text_input_user.param.watch(
-        lambda event: update_and_save_conversation( gui ), 'value' )
-    gui.toggle_canned_prompt_active.param.watch(
-        lambda event: toggle_canned_prompt_active( gui ), 'value' )
-    gui.toggle_canned_prompt_display.param.watch(
-        lambda event: toggle_canned_prompt_display( gui ), 'value' )
-    gui.toggle_functions_prompt_active.param.watch(
-        lambda event: toggle_functions_prompt_active( gui ), 'value' )
-    gui.toggle_functions_prompt_display.param.watch(
-        lambda event: toggle_functions_prompt_display( gui ), 'value' )
-    gui.toggle_system_prompt_active.param.watch(
-        lambda event: toggle_system_prompt_active( gui ), 'value' )
-    gui.toggle_system_prompt_display.param.watch(
-        lambda event: toggle_system_prompt_display( gui ), 'value' )
-    gui.toggle_user_prompt_active.param.watch(
-        lambda event: toggle_user_prompt_active( gui ), 'value' )
-
-
-def register_dashboard_callbacks( gui ):
-    gui.button_new_conversation.on_click(
-        lambda event: create_and_display_conversation( gui ) )
+def register_event_callbacks( gui, layout, component_name ):
+    entry = layout[ component_name ]
+    elements = [ ]
+    for element_name in entry.get( 'contains', ( ) ):
+        register_event_callbacks( gui, layout, element_name )
+    component = getattr( gui, component_name )
+    functions = entry.get( 'event_functions', { } )
+    for event_name, function_name in functions.items( ):
+        # TODO: Use passed registry rather than current module attributes.
+        function = globals( )[ function_name ]
+        if 'on_click' == event_name:
+            component.on_click( lambda event: function( gui, event ) )
+            continue
+        component.param.watch(
+            lambda event: function( gui, event ), event_name )
 
 
 def restore_conversation( gui ):
@@ -488,59 +581,9 @@ def restore_prompt_variables( gui, row_name, state ):
         widget.value = widget_state[ 'value' ]
 
 
-def run_chat( gui ):
-    gui.text_status.value = 'OK'
-    if gui.toggle_canned_prompt_active.value:
-        prompt = gui.text_canned_prompt.object
-    else:
-        prompt = gui.text_input_user.value
-        gui.text_input_user.value = ''
-    if prompt: add_message( gui, 'Human', prompt )
-    from chatter.ai import ChatCompletionError
-    try: message_component = _run_chat( gui )
-    except ChatCompletionError as exc: pass
-    else:
-        update_message( message_component )
-        add_conversation_indicator_if_necessary( gui )
-        update_and_save_conversations_index( gui )
-        if gui.toggle_canned_prompt_active.value:
-            gui.toggle_canned_prompt_active.value = False
-            _update_messages_post_summarization( gui )
-    update_and_save_conversation( gui )
-
-
-def _run_chat( gui ):
-    messages = generate_messages( gui )
-    controls = dict(
-        model = gui.selector_model.value,
-        temperature = gui.slider_temperature.value,
-    )
-    special_data = { }
-    supports_functions = gui.selector_model.auxdata__[
-        gui.selector_model.value ][ 'supports-functions' ]
-    if supports_functions:
-        special_data[ 'ai-functions' ] = _provide_active_ai_functions( gui )
-    from chatter.ai import ChatCallbacks
-    callbacks = ChatCallbacks(
-        allocator = (
-            lambda mime_type:
-            add_message(
-                gui, 'AI', '', behaviors = ( ), mime_type = mime_type ) ),
-        deallocator = (
-            lambda handle: gui.column_conversation_history.pop( -1 ) ),
-        failure_notifier = (
-            lambda status: setattr( gui.text_status, 'value', status ) ),
-        updater = (
-            lambda handle, content:
-            setattr(
-                handle.gui__.text_message, 'object',
-                getattr( handle.gui__.text_message, 'object' ) + content ) ),
-    )
-    provider = gui.selector_provider.auxdata__[ gui.selector_provider.value ]
-    return provider.run_chat( messages, special_data, controls, callbacks )
-
-
-def run_search( gui ):
+def search( gui ):
+    # TODO: Disable button if no vectorstore available.
+    if not gui.selector_vectorstore.value: return
     gui.text_status.value = 'OK'
     prompt = gui.text_input_user.value
     gui.text_input_user.value = ''
@@ -583,7 +626,7 @@ def run_tool( gui ):
         gui, 'Function', dumps( result ),
         actor_name = name,
         mime_type = 'application/json' )
-    run_chat( gui )
+    chat( gui )
 
 
 def save_conversation( gui ):
@@ -686,43 +729,6 @@ def sort_conversations_index( gui ):
     conversations.extend( (
         desc.indicator for desc in conversations.descriptors__.values( )
         if None is not desc.indicator ) )
-
-
-def toggle_canned_prompt_active( gui ):
-    canned_state = gui.toggle_canned_prompt_active.value
-    user_state = gui.toggle_user_prompt_active.value
-    if canned_state == user_state:
-        gui.toggle_user_prompt_active.value = not canned_state
-        update_and_save_conversation( gui )
-
-
-def toggle_canned_prompt_display( gui ):
-    gui.text_canned_prompt.visible = gui.toggle_canned_prompt_display.value
-
-
-def toggle_functions_prompt_active( gui ):
-    update_and_save_conversation( gui )
-
-
-def toggle_functions_prompt_display( gui ):
-    gui.column_functions_json.visible = (
-        gui.toggle_functions_prompt_display.value )
-
-
-def toggle_system_prompt_active( gui ):
-    update_and_save_conversation( gui )
-
-
-def toggle_system_prompt_display( gui ):
-    gui.text_system_prompt.visible = gui.toggle_system_prompt_display.value
-
-
-def toggle_user_prompt_active( gui ):
-    canned_state = gui.toggle_canned_prompt_active.value
-    user_state = gui.toggle_user_prompt_active.value
-    if canned_state == user_state:
-        gui.toggle_canned_prompt_active.value = not user_state
-        update_and_save_conversation( gui )
 
 
 def update_active_functions( gui ):
@@ -830,7 +836,7 @@ def update_token_count( gui ):
         tokens_total += count_tokens( gui.text_system_prompt.object )
     supports_functions = gui.selector_model.auxdata__[
         gui.selector_model.value ][ 'supports-functions' ]
-    if supports_functions and gui.toggle_functions_prompt_active.value:
+    if supports_functions and gui.toggle_functions_active.value:
         for pane in gui.column_functions_json:
             tokens_total += count_tokens( pane.object )
     # else, included as part of system prompt
@@ -898,7 +904,7 @@ def _provide_active_ai_functions( gui ):
     # TODO: Remove visibility restriction once fill of system prompt
     #       is implemented for non-functions-supporting models.
     if not gui.row_functions_prompt.visible: return [ ]
-    if not gui.toggle_functions_prompt_active.value: return [ ]
+    if not gui.toggle_functions_active.value: return [ ]
     if not gui.multichoice_functions.value: return [ ]
     return [
         loads( function.__doc__ )

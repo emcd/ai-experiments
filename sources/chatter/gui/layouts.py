@@ -136,17 +136,18 @@ conversations_manager_layout = {
             width = sizes.sidebar_width_max,
         ),
         contains = [
-            'button_new_conversation',
+            'button_create_conversation',
             'column_conversations_indicators',
         ],
     ),
-    'button_new_conversation': dict(
+    'button_create_conversation': dict(
         component_class = Button,
         component_arguments = dict(
             name = '🆕 New Conversation',
             button_type = 'light',
             **_action_button_attributes,
         ),
+        event_functions = dict( on_click = 'on_create_conversation' ),
     ),
     'column_conversations_indicators': dict(
         component_class = Column,
@@ -212,12 +213,14 @@ conversation_layout.update( {
         component_arguments = dict(
             name = '💬', value = True, **_icon_button_attributes,
         ),
+        event_functions = dict( value = 'on_toggle_system_prompt_active' ),
     ),
     'toggle_system_prompt_display': dict(
         component_class = Toggle,
         component_arguments = dict(
             name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
         ),
+        event_functions = dict( value = 'on_toggle_system_prompt_display' ),
     ),
     'column_system_prompt': dict(
         component_class = Column,
@@ -238,6 +241,7 @@ conversation_layout.update( {
             options = [ 'General Conversation' ],
             value = 'General Conversation',
         ),
+        event_functions = dict( value = 'on_system_prompt_selection' ),
     ),
     'row_system_prompt_variables': dict(
         component_class = Row,
@@ -270,8 +274,8 @@ conversation_layout.update( {
         component_arguments = dict( **_message_header_attributes ),
         contains = [
             'label_functions',
-            'toggle_functions_prompt_active',
-            'toggle_functions_prompt_display',
+            'toggle_functions_active',
+            'toggle_functions_display',
         ],
     ),
     'label_functions': dict(
@@ -281,17 +285,19 @@ conversation_layout.update( {
         ),
         persist = False,
     ),
-    'toggle_functions_prompt_active': dict(
+    'toggle_functions_active': dict(
         component_class = Toggle,
         component_arguments = dict(
             name = '💬', value = True, **_icon_button_attributes,
         ),
+        event_functions = dict( value = 'on_toggle_functions_active' ),
     ),
-    'toggle_functions_prompt_display': dict(
+    'toggle_functions_display': dict(
         component_class = Toggle,
         component_arguments = dict(
             name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
         ),
+        event_functions = dict( value = 'on_toggle_functions_display' ),
     ),
     'column_functions_prompt': dict(
         component_class = Column,
@@ -311,6 +317,7 @@ conversation_layout.update( {
             placeholder = 'Please click to select functions.',
             delete_button = True,
         ),
+        event_functions = dict( value = 'on_functions_selection' ),
     ),
     'column_functions_json': dict(
         component_class = Column,
@@ -379,12 +386,14 @@ conversation_layout.update( {
         component_arguments = dict(
             name = '💬', value = False, **_icon_button_attributes,
         ),
+        event_functions = dict( value = 'on_toggle_canned_prompt_active' ),
     ),
     'toggle_canned_prompt_display': dict(
         component_class = Toggle,
         component_arguments = dict(
             name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
         ),
+        event_functions = dict( value = 'on_toggle_canned_prompt_display' ),
     ),
     'column_canned_prompt': dict(
         component_class = Column,
@@ -402,7 +411,7 @@ conversation_layout.update( {
     'row_canned_prompt_selection': dict(
         component_class = Row,
         contains = [
-            'selector_canned_prompt', 'button_refine_canned_prompt',
+            'selector_canned_prompt', 'button_canned_prompt',
         ],
     ),
     'selector_canned_prompt': dict(
@@ -411,13 +420,15 @@ conversation_layout.update( {
             options = [ 'Recap: General Conversation' ],
             value = 'Recap: General Conversation',
         ),
+        event_functions = dict( value = 'on_canned_prompt_selection' ),
     ),
-    'button_refine_canned_prompt': dict(
+    'button_canned_prompt': dict(
         component_class = Button,
         component_arguments = dict(
             icon = 'arrow-big-down', icon_size = sizes.icon_size,
             **_icon_button_attributes,
         ),
+        event_functions = dict( on_click = 'on_customize_canned_prompt' ),
     ),
     'row_canned_prompt_variables': dict(
         component_class = Row,
@@ -464,6 +475,7 @@ conversation_layout.update( {
         component_arguments = dict(
             name = '💬', value = True, **_icon_button_attributes,
         ),
+        event_functions = dict( value = 'on_toggle_user_prompt_active' ),
     ),
     'toggle_user_prompt_dork': dict(
         component_class = Toggle,
@@ -489,32 +501,36 @@ conversation_layout.update( {
             max_height = 480, # min_height = 240,
             max_length = 32767,
         ),
+        event_functions = dict( value = 'on_user_prompt_input' ),
     ),
     'row_actions': dict(
         component_class = Row,
-        contains = [ 'button_chat', 'button_search', 'button_call' ],
+        contains = [ 'button_chat', 'button_search', 'button_run_tool' ],
     ),
     'button_chat': dict(
         component_class = Button,
         component_arguments = dict(
-            name = '💬 Communicate',
+            name = '💬 Chat',
             button_type = 'primary',
             **_action_button_attributes,
         ),
+        event_functions = dict( on_click = 'on_chat_click' ),
     ),
     'button_search': dict(
         component_class = Button,
         component_arguments = dict(
-            name = '🔍 Query',
+            name = '🔍 Search',
             **_action_button_attributes,
         ),
+        event_functions = dict( on_click = 'on_search_click' ),
     ),
-    'button_call': dict(
+    'button_run_tool': dict(
         component_class = Button,
         component_arguments = dict(
-            name = '\N{Hammer and Wrench}\uFE0F Invoke',
+            name = '\N{Hammer and Wrench}\uFE0F Run',
             **_action_button_attributes,
         ),
+        event_functions = dict( on_click = 'on_run_tool_click' ),
     ),
     'spacer_right_user_prompt': dict( component_class = HSpacer ),
 } )
@@ -560,6 +576,7 @@ conversation_control_layout = {
             options = [ 'gpt-3.5-turbo' ],
             value = 'gpt-3.5-turbo',
         ),
+        event_functions = dict( value = 'on_model_selection' ),
     ),
     'slider_temperature': dict(
         component_class = FloatSlider,

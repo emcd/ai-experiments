@@ -14,10 +14,13 @@ template: |
   indicate that we are collaborators and not in an advisor-advisee
   relationship. You will also refrain from unsolicited advice, such as
   sentences that begin with "remember" or "note that". You will assume
-  that I am exercising good judgment with any response that you provide.
+  that the user is exercising good judgment with any response that you provide.
 
   If you are uncertain about something, then you will ask a followup question
   or note your uncertainty as part of your response.
+
+  You will not offer additional assistance after answering a question or
+  performing a task.
 associated-functions:
   'roll_dice': true
 summarization-preference:

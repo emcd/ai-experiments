@@ -68,7 +68,7 @@ def provide_models( ):
     }
 
 
-def run_chat( messages, special_data, controls, callbacks ):
+def chat( messages, special_data, controls, callbacks ):
     special_data = _canonicalize_special_data( special_data )
     controls = _canonicalize_controls( controls )
     from openai import ChatCompletion, OpenAIError
