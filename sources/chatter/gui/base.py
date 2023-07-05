@@ -80,3 +80,16 @@ def calculate_conversations_path( gui ):
     state_path = Path( configuration[ 'locations' ][ 'state' ].format(
         user_state_path = directories.user_state_path ) )
     return state_path / 'conversations'
+
+
+def generate_component( components, layout, component_name ):
+    entry = layout[ component_name ]
+    elements = [ ]
+    for element_name in entry.get( 'contains', ( ) ):
+        elements.append( generate_component(
+            components, layout, element_name ) )
+    component_class = entry[ 'component_class' ]
+    component_arguments = entry.get( 'component_arguments', { } )
+    component = component_class( *elements, **component_arguments )
+    components[ component_name ] = component
+    return component

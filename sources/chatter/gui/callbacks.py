@@ -53,7 +53,7 @@ class ConversationIndicator( __.ReactiveHTML ):
     def __init__( self, title, identity, **params ):
         from .layouts import conversation_indicator_layout as layout
         components = { }
-        row = generate_component( components, layout, 'column_indicator' )
+        row = __.generate_component( components, layout, 'column_indicator' )
         row_gui = __.SimpleNamespace( **components )
         row_gui.rehtml_indicator = self
         row_gui.text_title.object = title
@@ -97,7 +97,7 @@ class ConversationMessage( __.ReactiveHTML ):
         else:
             from .layouts import rich_conversation_message_layout as layout
         components = { }
-        row = generate_component( components, layout, 'row_message' )
+        row = __.generate_component( components, layout, 'row_message' )
         row.styles.update( styles )
         row_gui = __.SimpleNamespace( **components )
         row_gui.rehtml_message = self
@@ -213,7 +213,8 @@ def chat( gui ):
         update_and_save_conversations_index( gui )
         if gui.toggle_canned_prompt_active.value:
             gui.toggle_canned_prompt_active.value = False
-            _update_messages_post_summarization( gui )
+            if gui.checkbox_summarize.value:
+                _update_messages_post_summarization( gui )
     update_and_save_conversation( gui )
 
 
@@ -258,8 +259,8 @@ def create_and_display_conversation( gui ):
 def create_conversation( gui, descriptor ):
     from .layouts import dashboard_layout as layout
     components = gui.__dict__.copy( )
-    generate_component( components, layout, 'column_conversation' )
-    generate_component( components, layout, 'column_conversation_control' )
+    __.generate_component( components, layout, 'column_conversation' )
+    __.generate_component( components, layout, 'column_conversation_control' )
     pane_gui = __.SimpleNamespace( **components )
     pane_gui.auxdata__ = gui.auxdata__
     pane_gui.identity__ = descriptor.identity
@@ -296,19 +297,6 @@ def display_conversation( gui, descriptor ):
         gui.column_conversations_manager,
         gui.column_conversation,
         gui.column_conversation_control ) )
-
-
-def generate_component( components, layout, component_name ):
-    entry = layout[ component_name ]
-    elements = [ ]
-    for element_name in entry.get( 'contains', ( ) ):
-        elements.append( generate_component(
-            components, layout, element_name ) )
-    component_class = entry[ 'component_class' ]
-    component_arguments = entry.get( 'component_arguments', { } )
-    component = component_class( *elements, **component_arguments )
-    components[ component_name ] = component
-    return component
 
 
 # TODO: Provide as callback to provider-specific chat implementation.
@@ -383,7 +371,7 @@ def on_toggle_canned_prompt_active( gui, event ):
     user_state = gui.toggle_user_prompt_active.value
     if canned_state == user_state:
         gui.toggle_user_prompt_active.value = not canned_state
-        update_and_save_conversation( gui, event )
+        update_and_save_conversation( gui )
 
 
 def on_toggle_canned_prompt_display( gui, event ):
@@ -501,6 +489,7 @@ def populate_canned_prompt_variables( gui ):
         'row_canned_prompt_variables',
         'selector_canned_prompt',
         update_canned_prompt_text )
+    update_summarization_toggle( gui )
 
 
 def populate_canned_prompts_selector( gui ):
@@ -818,6 +807,11 @@ def update_functions_prompt( gui ):
         function_name for function_name in available_functions.keys( )
         if associated_functions.get( function_name, False ) ]
     update_active_functions( gui )
+
+
+def update_summarization_toggle( gui ):
+    gui.checkbox_summarize.value = gui.selector_canned_prompt.auxdata__[
+        gui.selector_canned_prompt.value ].get( 'summarizes', False )
 
 
 def update_message( message_row, behaviors = ( 'active', ) ):

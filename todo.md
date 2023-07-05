@@ -1,10 +1,9 @@
 ## LLM Chatter
 
-* Support flag for determining if canned prompt is a summarizer or not. And,
-  support in GUI accordingly.
-
 * Switch to 'FlexBox' or 'GridBox' for action button and toggle layout to
   support sparse fills with proper alignment.
+
+* Genericize populators so that they can be referenced from layouts.
 
 * Theme components with font families used in blog.
 
@@ -42,7 +41,8 @@
 
     - `<SPACE>` to activate/deactivate current message
     - `<SHIFT>`+`<SPACE>` to pin/unpin current message
-    - `<SHIFT>`+`<ENTER>` to run chat
+    - `<SHIFT>`+`<ENTER>` to chat
+    - `<UP ARROW>` and `<DOWN ARROW>` to navigate messages
 
 * Rewrite in Vue.js and Python FastAPI?
 

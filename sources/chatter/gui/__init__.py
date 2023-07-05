@@ -23,7 +23,8 @@
 
 def prepare( configuration, directories, ai_functions, vectorstores ):
     from types import SimpleNamespace
-    from .callbacks import generate_component, populate_dashboard
+    from .base import generate_component
+    from .callbacks import populate_dashboard
     from .layouts import dashboard_layout as layout
     components = { }
     generate_component( components, layout, 'dashboard' )

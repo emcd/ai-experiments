@@ -44,6 +44,7 @@ from panel.pane import JSON, Markdown
 from panel.reactive import ReactiveHTML
 from panel.widgets import (
     Button,
+    Checkbox,
     FloatSlider,
     IntSlider,
     MultiChoice,
@@ -411,7 +412,9 @@ conversation_layout.update( {
     'row_canned_prompt_selection': dict(
         component_class = Row,
         contains = [
-            'selector_canned_prompt', 'button_canned_prompt',
+            'selector_canned_prompt',
+            'button_canned_prompt',
+            'checkbox_summarize',
         ],
     ),
     'selector_canned_prompt': dict(
@@ -429,6 +432,13 @@ conversation_layout.update( {
             **_icon_button_attributes,
         ),
         event_functions = dict( on_click = 'on_customize_canned_prompt' ),
+    ),
+    'checkbox_summarize': dict(
+        component_class = Checkbox,
+        component_arguments = dict(
+            name = 'Summarize?', value = False,
+            align = 'center',
+        ),
     ),
     'row_canned_prompt_variables': dict(
         component_class = Row,
