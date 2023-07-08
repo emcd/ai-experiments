@@ -35,6 +35,7 @@ from datetime import (
     datetime as DateTime,
     timezone as TimeZone,
 )
+from functools import partial as partial_function
 from pathlib import Path
 from time import time_ns
 from types import SimpleNamespace

@@ -518,6 +518,7 @@ conversation_layout.update( {
         component_class = Button,
         component_arguments = dict(
             name = '💬 Chat',
+            disabled = True,
             button_type = 'primary',
             **_action_button_attributes,
         ),
@@ -534,6 +535,7 @@ conversation_layout.update( {
         component_class = Button,
         component_arguments = dict(
             name = '🔍 Search',
+            disabled = True,
             **_action_button_attributes,
         ),
         event_functions = dict( on_click = 'on_search_click' ),
@@ -542,6 +544,7 @@ conversation_layout.update( {
         component_class = Button,
         component_arguments = dict(
             name = '\N{Hammer and Wrench}\uFE0F Run',
+            disabled = True,
             **_action_button_attributes,
         ),
         event_functions = dict( on_click = 'on_run_tool_click' ),
@@ -611,6 +614,7 @@ conversation_control_layout = {
             name = 'Number of Documents',
             start = 0, end = 5, step = 1, value = 3,
         ),
+        event_functions = dict( value = 'on_documents_count_adjustment' ),
     ),
     'text_tokens_total': dict(
         component_class = StaticText,

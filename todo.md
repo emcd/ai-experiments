@@ -1,8 +1,5 @@
 ## LLM Chatter
 
-* Switch to 'FlexBox' or 'GridBox' for action button and toggle layout to
-  support sparse fills with proper alignment.
-
 * Genericize populators so that they can be referenced from layouts.
 
 * Theme components with font families used in blog.
@@ -14,7 +11,7 @@
 * Change conversation indicator background on mouse enter/leave.
 
 * Find way to add stickiness to side panels. (Maybe use Panel template
-  or wait until rewrite in Vue.js.
+  or wait until rewrite in Vue.js.)
 
 * Find way to add stickiness to system and user prompt rows.
 
@@ -22,11 +19,6 @@
   components.
 
 * Add support for system/dark/light mode selection.
-
-* Disable `Chat` button if tokens limit plus tokens count exceeds context
-  window size.
-
-* Disable `Query` button if no vectorstore selected.
 
 * Vim key bindings:
 

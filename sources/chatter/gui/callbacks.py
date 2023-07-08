@@ -187,7 +187,7 @@ def add_message(
     for behavior in behaviors:
         getattr( message_gui, f"toggle_{behavior}" ).value = True
     from ..messages import count_tokens
-    rehtml_message.auxdata__[ 'token_count' ] = count_tokens( content )
+    rehtml_message.auxdata__[ 'tokens-count' ] = count_tokens( content )
     message_gui.toggle_active.param.watch(
         lambda event: on_toggle_message_active( message_gui, event ), 'value' )
     message_gui.toggle_pinned.param.watch(
@@ -217,6 +217,7 @@ def chat( gui ):
             _update_messages_post_summarization( gui )
             gui.toggle_summarize.value = False
     update_and_save_conversation( gui )
+    update_run_tool_button( gui )
 
 
 def _chat( gui ):
@@ -343,6 +344,10 @@ def on_customize_canned_prompt( gui, event ):
     gui.text_input_user.value = str( gui.text_canned_prompt.object )
 
 
+def on_documents_count_adjustment( gui, event ):
+    update_search_button( gui )
+
+
 def on_functions_selection( gui, event ): update_active_functions( gui )
 
 
@@ -373,6 +378,7 @@ def on_toggle_canned_prompt_active( gui, event ):
     if canned_state == user_state:
         gui.toggle_user_prompt_active.value = not canned_state
         update_and_save_conversation( gui )
+    update_chat_button( gui )
     update_summarization_toggle( gui )
 
 
@@ -415,7 +421,9 @@ def on_toggle_user_prompt_active( gui, event ):
         update_and_save_conversation( gui )
 
 
-def on_user_prompt_input( gui, event ): update_and_save_conversation( gui )
+def on_user_prompt_input( gui, event ):
+    update_and_save_conversation( gui )
+    update_search_button( gui )
 
 
 def populate_conversation( gui ):
@@ -503,6 +511,7 @@ def populate_canned_prompts_selector( gui ):
 def populate_vectorstores_selector( gui ):
     vectorstores = gui.auxdata__[ 'vectorstores' ]
     gui.selector_vectorstore.options = list( vectorstores.keys( ) )
+    update_search_button( gui )
 
 
 def register_event_callbacks( gui, layout, component_name ):
@@ -544,6 +553,7 @@ def restore_conversation( gui ):
             component.object = state[ name ][ 'value' ]
         else: continue
     update_token_count( gui )
+    update_run_tool_button( gui )
 
 
 def restore_conversation_messages( gui, column_name, state ):
@@ -583,27 +593,16 @@ def restore_prompt_variables( gui, row_name, state ):
         widget.value = widget_state[ 'value' ]
 
 
-# TODO: Report and display proper errors.
 def run_tool( gui ):
-    # TODO: Disable button when it should not be able to be run.
-    #       Then we can remove the checks here.
-    if 0 == len( gui.column_conversation_history ): raise RuntimeError
-    rehtml_message = gui.column_conversation_history[ -1 ]
-    role = rehtml_message.auxdata__[ 'role' ]
-    if 'AI' != role: raise RuntimeError
-    message = rehtml_message.gui__.text_message.object
-    # TODO: Handle multipart MIME.
-    from json import dumps, loads
-    try: data = loads( message )
-    except: raise ValueError
-    if not isinstance( data, __.AbstractDictionary ): raise ValueError
-    if 'name' not in data: raise ValueError
-    name = data[ 'name' ]
-    arguments = data.get( 'arguments', { } )
-    ai_functions = gui.auxdata__[ 'ai-functions' ]
-    # TODO: Check against multichoice values instead.
-    if name not in ai_functions: raise ValueError
-    result = ai_functions[ name ]( **arguments )
+    try: name, function = _extract_function_invocation_request( gui )
+    except ValueError as exc:
+        gui.text_status.value = str( exc )
+        return
+    try: result = function( )
+    except ValueError as exc:
+        gui.text_status.value = str( exc )
+        return
+    from json import dumps
     add_message(
         gui, 'Function', dumps( result ),
         actor_name = name,
@@ -688,15 +687,11 @@ def save_prompt_variables( gui, row_name ):
 
 
 def search( gui ):
-    # TODO: Disable button if no vectorstore available.
-    if not gui.selector_vectorstore.value: return
     gui.text_status.value = 'OK'
     prompt = gui.text_input_user.value
     gui.text_input_user.value = ''
-    if not prompt: return
     add_message( gui, 'Human', prompt )
     documents_count = gui.slider_documents_count.value
-    if not documents_count: return
     vectorstore = gui.auxdata__[ 'vectorstores' ][
         gui.selector_vectorstore.value ][ 'instance' ]
     documents = vectorstore.similarity_search( prompt, k = documents_count )
@@ -773,6 +768,13 @@ def update_canned_prompt_text( gui ):
         update_and_save_conversation( gui )
 
 
+def update_chat_button( gui ):
+    gui.button_chat.disabled = not (
+            not gui.text_tokens_total.value.endswith( '🚫' )
+        and (   gui.toggle_canned_prompt_active.value
+             or gui.text_input_user.value ) )
+
+
 def update_conversation_hilite( gui, new_descriptor = None ):
     conversations = gui.column_conversations_indicators
     old_descriptor = conversations.current_descriptor__
@@ -811,13 +813,6 @@ def update_functions_prompt( gui ):
     update_active_functions( gui )
 
 
-def update_summarization_toggle( gui ):
-    summarizes = gui.selector_canned_prompt.auxdata__[
-        gui.selector_canned_prompt.value ].get( 'summarizes', False )
-    gui.toggle_summarize.value = (
-        gui.toggle_canned_prompt_active.value and summarizes )
-
-
 def update_message( message_row, behaviors = ( 'active', ) ):
     message_gui = message_row.gui__
     for behavior in ( 'active', 'pinned' ):
@@ -825,7 +820,35 @@ def update_message( message_row, behaviors = ( 'active', ) ):
             behavior in behaviors )
     content = message_gui.text_message.object
     from ..messages import count_tokens
-    message_row.auxdata__[ 'token_count' ] = count_tokens( content )
+    message_row.auxdata__[ 'tokens-count' ] = count_tokens( content )
+
+
+def update_run_tool_button( gui ):
+    disabled = 0 == len( gui.column_conversation_history )
+    if not disabled:
+        rehtml_message = gui.column_conversation_history[ -1 ]
+        disabled = 'AI' != rehtml_message.auxdata__[ 'role' ]
+    if not disabled:
+        message_gui = rehtml_message.gui__
+        disabled = not message_gui.toggle_active.value
+    if not disabled:
+        try: _extract_function_invocation_request( gui )
+        except ValueError: disabled = True
+    gui.button_run_tool.disabled = disabled
+
+
+def update_search_button( gui ):
+    gui.button_search.disabled = not (
+            gui.selector_vectorstore.value
+        and gui.slider_documents_count.value
+        and gui.text_input_user.value )
+
+
+def update_summarization_toggle( gui ):
+    summarizes = gui.selector_canned_prompt.auxdata__[
+        gui.selector_canned_prompt.value ].get( 'summarizes', False )
+    gui.toggle_summarize.value = (
+        gui.toggle_canned_prompt_active.value and summarizes )
 
 
 def update_system_prompt_text( gui ):
@@ -840,27 +863,54 @@ def update_system_prompt_text( gui ):
 
 def update_token_count( gui ):
     from ..messages import count_tokens
-    tokens_total = 0
+    tokens_count = 0
     if gui.toggle_system_prompt_active.value:
-        tokens_total += count_tokens( gui.text_system_prompt.object )
+        tokens_count += count_tokens( gui.text_system_prompt.object )
     supports_functions = gui.selector_model.auxdata__[
         gui.selector_model.value ][ 'supports-functions' ]
     if supports_functions and gui.toggle_functions_active.value:
         for pane in gui.column_functions_json:
-            tokens_total += count_tokens( pane.object )
+            tokens_count += count_tokens( pane.object )
     # else, included as part of system prompt
     for row in gui.column_conversation_history:
         message_gui = row.gui__
         if message_gui.toggle_active.value:
-            tokens_total += row.auxdata__[ 'token_count' ]
+            tokens_count += row.auxdata__[ 'tokens-count' ]
     if gui.toggle_canned_prompt_active.value:
-        tokens_total += count_tokens( gui.text_canned_prompt.object )
+        tokens_count += count_tokens( gui.text_canned_prompt.object )
     if gui.toggle_user_prompt_active.value:
-        tokens_total += count_tokens( gui.text_input_user.value )
+        tokens_count += count_tokens( gui.text_input_user.value )
     tokens_limit = gui.selector_model.auxdata__[
         gui.selector_model.value ][ 'tokens-limit' ]
-    # TODO: Change color of text, depending on percentage of tokens limit.
-    gui.text_tokens_total.value = f"{tokens_total} / {tokens_limit}"
+    tokens_report = f"{tokens_count} / {tokens_limit}"
+    tokens_usage = tokens_count / tokens_limit
+    if tokens_usage >= 1:
+        tokens_report = f"{tokens_report} 🚫"
+    elif tokens_usage >= 0.75:
+        tokens_report = f"{tokens_report} \N{Warning Sign}\uFE0F"
+    else: tokens_report = f"{tokens_report} 👌"
+    gui.text_tokens_total.value = tokens_report
+    update_chat_button( gui )
+
+
+def _extract_function_invocation_request( gui ):
+    rehtml_message = gui.column_conversation_history[ -1 ]
+    message = rehtml_message.gui__.text_message.object
+    # TODO: Handle multipart MIME.
+    from json import loads
+    try: data = loads( message )
+    except: raise ValueError( 'Malformed JSON payload in message.' )
+    if not isinstance( data, __.AbstractDictionary ):
+        raise ValueError( 'Function invocation request is not dictionary.' )
+    if 'name' not in data:
+        raise ValueError( 'Function name is absent from invocation request.' )
+    name = data[ 'name' ]
+    arguments = data.get( 'arguments', { } )
+    ai_functions = gui.auxdata__[ 'ai-functions' ]
+    # TODO: Check against multichoice values instead.
+    if name not in ai_functions:
+        raise ValueError( 'Function name in request is not available.' )
+    return name, __.partial_function( ai_functions[ name ], **arguments )
 
 
 def _populate_prompt_variables( gui, row_name, selector_name, callback ):
