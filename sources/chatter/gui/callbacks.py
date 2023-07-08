@@ -198,8 +198,10 @@ def add_message(
 
 def chat( gui ):
     gui.text_status.value = 'OK'
+    summarization = gui.toggle_summarize.value
     if gui.toggle_canned_prompt_active.value:
         prompt = gui.text_canned_prompt.object
+        gui.toggle_canned_prompt_active.value = False
     else:
         prompt = gui.text_input_user.value
         gui.text_input_user.value = ''
@@ -211,10 +213,9 @@ def chat( gui ):
         update_message( message_component )
         add_conversation_indicator_if_necessary( gui )
         update_and_save_conversations_index( gui )
-        if gui.toggle_canned_prompt_active.value:
-            gui.toggle_canned_prompt_active.value = False
-            if gui.checkbox_summarize.value:
-                _update_messages_post_summarization( gui )
+        if summarization:
+            _update_messages_post_summarization( gui )
+            gui.toggle_summarize.value = False
     update_and_save_conversation( gui )
 
 
@@ -372,6 +373,7 @@ def on_toggle_canned_prompt_active( gui, event ):
     if canned_state == user_state:
         gui.toggle_user_prompt_active.value = not canned_state
         update_and_save_conversation( gui )
+    update_summarization_toggle( gui )
 
 
 def on_toggle_canned_prompt_display( gui, event ):
@@ -810,8 +812,10 @@ def update_functions_prompt( gui ):
 
 
 def update_summarization_toggle( gui ):
-    gui.checkbox_summarize.value = gui.selector_canned_prompt.auxdata__[
+    summarizes = gui.selector_canned_prompt.auxdata__[
         gui.selector_canned_prompt.value ].get( 'summarizes', False )
+    gui.toggle_summarize.value = (
+        gui.toggle_canned_prompt_active.value and summarizes )
 
 
 def update_message( message_row, behaviors = ( 'active', ) ):

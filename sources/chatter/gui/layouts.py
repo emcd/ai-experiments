@@ -39,7 +39,7 @@ from types import SimpleNamespace
 
 import param
 
-from panel.layout import Column, FlexBox, GridBox, HSpacer, Row
+from panel.layout import Column, HSpacer, Row
 from panel.pane import JSON, Markdown
 from panel.reactive import ReactiveHTML
 from panel.widgets import (
@@ -57,6 +57,7 @@ from panel.widgets import (
 
 
 sizes = SimpleNamespace( **dict(
+    action_button_height = 40,
     action_button_width = 120,
     element_margin = 2,
     icon_button_height = 40, # distortion if smaller, Bokeh/Panel limitation
@@ -85,6 +86,7 @@ div[class="codehilite"] {
 _action_button_attributes = dict(
     #align = 'center',
     button_style = 'solid', # button_type = 'light',
+    height = sizes.action_button_height, height_policy = 'fixed',
     width = sizes.action_button_width, width_policy = 'fixed',
 )
 
@@ -411,11 +413,7 @@ conversation_layout.update( {
     ),
     'row_canned_prompt_selection': dict(
         component_class = Row,
-        contains = [
-            'selector_canned_prompt',
-            'button_canned_prompt',
-            'checkbox_summarize',
-        ],
+        contains = [ 'selector_canned_prompt', 'button_canned_prompt' ],
     ),
     'selector_canned_prompt': dict(
         component_class = Select,
@@ -432,13 +430,6 @@ conversation_layout.update( {
             **_icon_button_attributes,
         ),
         event_functions = dict( on_click = 'on_customize_canned_prompt' ),
-    ),
-    'checkbox_summarize': dict(
-        component_class = Checkbox,
-        component_arguments = dict(
-            name = 'Summarize?', value = False,
-            align = 'center',
-        ),
     ),
     'row_canned_prompt_variables': dict(
         component_class = Row,
@@ -470,7 +461,7 @@ conversation_layout.update( {
         contains = [
             'label_user',
             'toggle_user_prompt_active',
-            'toggle_user_prompt_dork',
+            'label_user_blank',
         ],
     ),
     'label_user': dict(
@@ -487,11 +478,12 @@ conversation_layout.update( {
         ),
         event_functions = dict( value = 'on_toggle_user_prompt_active' ),
     ),
-    'toggle_user_prompt_dork': dict(
-        component_class = Toggle,
+    'label_user_blank': dict(
+        component_class = StaticText,
         component_arguments = dict(
-            name = '💍', value = False, **_icon_button_attributes,
+            value = ' ', align = 'center', width = sizes.icon_button_width,
         ),
+        persist = False,
     ),
     'column_user_prompt': dict(
         component_class = Column,
@@ -515,7 +507,12 @@ conversation_layout.update( {
     ),
     'row_actions': dict(
         component_class = Row,
-        contains = [ 'button_chat', 'button_search', 'button_run_tool' ],
+        contains = [
+            'button_chat',
+            'toggle_summarize',
+            'button_search',
+            'button_run_tool',
+        ],
     ),
     'button_chat': dict(
         component_class = Button,
@@ -525,6 +522,13 @@ conversation_layout.update( {
             **_action_button_attributes,
         ),
         event_functions = dict( on_click = 'on_chat_click' ),
+    ),
+    'toggle_summarize': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '\N{Compression}\uFE0F', value = False,
+            **_icon_button_attributes,
+        ),
     ),
     'button_search': dict(
         component_class = Button,
