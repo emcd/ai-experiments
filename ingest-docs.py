@@ -2,13 +2,13 @@
 
 
 def provide_openai_credentials( ):
-    import tomli as tomllib
-    with open(
-        '.local/configuration/credentials.toml', 'rb'
-    ) as credentials_file: credentials = tomllib.load(credentials_file)
+    from pathlib import Path
+    from dotenv import dotenv_values
+    environment = dotenv_values( str(
+        ( Path.home( ) / '.config/llm-chatter/environment' ).resolve( ) ) )
     return dict(
-        openai_api_key = credentials['openai']['token'],
-        openai_organization = credentials['openai']['organization'] )
+        openai_api_key = environment[ 'OPENAI_API_KEY' ],
+        openai_organization = environment[ 'OPENAI_ORGANIZATION' ] )
 
 
 def _provide_delegate_loaders( ):
@@ -46,10 +46,13 @@ DELEGATE_LOADERS = _provide_delegate_loaders( )
 def store_embeddings( documents ):
     from pathlib import Path
     from pickle import dump, load
-    from langchain.embeddings import OpenAIEmbeddings
+    from langchain.embeddings.openai import OpenAIEmbeddings
     from langchain.vectorstores.faiss import FAISS
     vectorstore_path = Path( 'vectorstore.pypickle' )
     embeddings = OpenAIEmbeddings( **provide_openai_credentials( ) )
+    #text_embeddings = embeddings.embed_documents( documents )
+    #text_embedding_pairs = list( zip( texts, text_embeddings ) )
+    #vectorstore = FAISS.from_embeddings( text_embedding_pairs, embeddings )
     vectorstore = FAISS.from_documents( documents, embeddings )
     if vectorstore_path.exists( ):
         with vectorstore_path.open( 'rb' ) as file:
