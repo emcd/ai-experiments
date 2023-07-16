@@ -1,10 +1,25 @@
 ''' Load documentation from sources. '''
 
 
+from dataclasses import dataclass
+from functools import partial as partial_function
+from sys import stderr
+
+
+@dataclass
+class EmbeddingData:
+    doc_id: str
+    document: object
+    embedding: list = None
+
+
 def count_tokens( content ):
     from tiktoken import get_encoding
     encoding = get_encoding( 'cl100k_base' )
     return len( encoding.encode( content ) )
+
+
+eprint = partial_function( print, file = stderr )
 
 
 def provide_openai_credentials( ):
@@ -53,65 +68,88 @@ DELEGATE_LOADERS = _provide_delegate_loaders( )
 
 
 def generate_and_store_embeddings( embedder, vectorstore, documents ):
-    from time import sleep
     tokens_total = 0
     interval_i = interval_f = 0
-    # TODO: Set maxima from model capabilities.
     tokens_max = 1_000_000
     documents_max = 2048
-    # Batch according to rate limit.
-    for i, document in enumerate( documents ):
-        tokens_count = count_tokens( document.page_content )
+    timeout = 60
+    embeddings_data = [
+        EmbeddingData( doc_id = str(i), document = document, embedding = None )
+        for i, document in enumerate( documents ) ]
+    faulty_embeddings_data = [ ]
+    for i, data in enumerate( embeddings_data ):
+        tokens_count = count_tokens( data.document.page_content )
         if tokens_count >= 8191: raise ValueError( 'Document too large!' )
-        if (     tokens_max > tokens_total + tokens_count
-             and documents_max > i - interval_i
+        if (
+                tokens_max > tokens_total + tokens_count
+            and documents_max > i - interval_i
         ):
             tokens_total += tokens_count
             continue
         interval_f = i
-        documents_portion = documents[ interval_i : interval_f ]
-        print( f"Embbedding {tokens_total} tokens." )
-        print( "Documents in batch: {}".format( interval_f - interval_i ) )
-        embeddings = generate_embeddings( embedder, documents_portion )
-        store_embeddings(
-            vectorstore,
-            documents_portion,
-            embeddings,
-            ( interval_i, interval_f ) )
-        print( 'Sleeping...' )
-        # TODO: Sleep for rate limit duration.
-        sleep( 60 )
+        batch = embeddings_data[ interval_i : interval_f ]
+        faulty_embeddings_data.extend( _generate_and_store_embeddings(
+            embedder, vectorstore, batch, timeout, tokens_total ) )
         interval_i = i
         tokens_total = 0
+    # process the last batch if it does not reach the max thresholds
+    interval_f = len( embeddings_data )
+    if interval_i != interval_f:
+        batch = embeddings_data[ interval_i : ]
+        faulty_embeddings_data.extend(
+            _generate_and_store_embeddings(
+                embedder, vectorstore, batch, timeout, tokens_total ) )
+    # Retry for failed embeddings
+    while faulty_embeddings_data:
+        eprint( 'Retrying for failed embeddings...' )
+        faulty_embeddings_data_remainder = _generate_and_store_embeddings(
+            embedder, vectorstore, faulty_embeddings_data, timeout, -1 )
+        faulty_embeddings_data = faulty_embeddings_data_remainder
 
 
-def generate_embeddings( embedder, documents ):
-    # TODO: Error handling.
-    # TODO: Use generic interface.
+def _generate_and_store_embeddings(
+        embedder, vectorstore, data, timeout, tokens_total
+):
+    from time import sleep
+    eprint(
+        "Embedding {tokens_total} tokens "
+        "from {documents_total} documents.".format(
+            tokens_total = tokens_total,
+            documents_total = len( data ) ) )
+    faulty_data = generate_embeddings( embedder, data )
+    store_embeddings( vectorstore, data )
+    eprint( f"Sleeping {timeout} seconds." )
+    sleep( timeout )
+    return faulty_data
+
+
+def generate_embeddings( embedder, embeddings_data ):
+    import numpy as np
     from openai import Embedding
+    docs_to_embed = [
+        data for data in embeddings_data if data.embedding is None ]
+    if not docs_to_embed: return [ ]
     response = Embedding.create(
-        input = [ document.page_content for document in documents ],
+        input = [ data.document.page_content for data in docs_to_embed ],
         model = 'text-embedding-ada-002' )
-    return [ data.embedding for data in response.data ]
+    faulty_embeddings_data = [ ]
+    for i, data in enumerate( response.data ):
+        embedding = data.embedding
+        if len( embedding ) == 1536 and not np.isnan( embedding ).any( ):
+            docs_to_embed[ i ].embedding = embedding
+        else: faulty_embeddings_data.append( docs_to_embed[ i ] )
+    return faulty_embeddings_data
 
 
-def store_embeddings( vectorstore, documents, embeddings, interval ):
-    # TODO: Error handling.
-    # TODO: Use generic interface.
-    shit = False
-    from pprint import pprint
-    for i, embedding in enumerate( embeddings ):
-        elen = len( embedding )
-        if 1536 != elen:
-            print( f"Embedding {i} has length {elen}." )
-            pprint( embedding )
-            shit = True
-    if shit: raise SystemExit( 1 )
+def store_embeddings( vectorstore, embeddings_data ):
+    docs_to_store = [
+        data for data in embeddings_data if data.embedding is not None ]
+    if not docs_to_store: return
     vectorstore.add(
-        documents = [ document.page_content for document in documents ],
-        embeddings = embeddings,
-        ids = list( map( str, range( *interval ) ) ),
-        metadatas = [ document.metadata for document in documents ] )
+        documents = [ data.document.page_content for data in docs_to_store ],
+        embeddings = [ data.embedding for data in docs_to_store ],
+        ids = [ data.doc_id for data in docs_to_store ],
+        metadatas = [ data.document.metadata for data in docs_to_store ] )
 
 
 def load_manifest_file( manifest_path ):
@@ -179,8 +217,12 @@ def prepare_vectorstore( ):
         chroma_db_impl = 'duckdb+parquet',
         persist_directory =
             '/mnt/d/Dropbox/common/data/llm-chatter/vectorstores/chromadb' ) )
-    return client.create_collection( 'sphinx-documentation' )
-
+    collection_name = 'sphinx-documentation'
+    collection_names = set(
+        collection.name for collection in client.list_collections( ) )
+    if collection_name in collection_names:
+        client.delete_collection( collection_name )
+    return client.create_collection( collection_name )
 
 
 def _get_loader_class( class_name ):
