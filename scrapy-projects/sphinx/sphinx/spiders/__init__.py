@@ -13,19 +13,23 @@ class SphinxSpider( CrawlSpider ):
 
     name = 'sphinx'
     allowed_domains = (
+        'api.python.langchain.com',
         'docs.scrapy.org',
         'panel.holoviz.org',
-        'python.langchain.com',
+        'tenacity.readthedocs.io',
     )
     start_urls = (
+        'https://api.python.langchain.com/en/latest/api_reference.html',
         'https://docs.scrapy.org/en/latest',
         'https://panel.holoviz.org/api/index.html',
-        'https://python.langchain.com/en/latest/',
+        'https://tenacity.readthedocs.io/en/latest',
     )
     rules = (
         Rule( LinkExtractor(
             restrict_css = [
-                '.toctree-l1', '.toctree-l2', '.toctree-l3', '.body a'
+                '.body a',
+                '.reference.internal',
+                '.toctree-l1', '.toctree-l2', '.toctree-l3',
             ]), callback = 'parse_item', follow = True ),
     )
 
@@ -38,6 +42,7 @@ class SphinxSpider( CrawlSpider ):
         for unwanted_tag in soup( ( 'canvas', 'nav', 'script', ) ):
             unwanted_tag.decompose( )
         for toctree_class in (
+            'reference.internal',
             'toctree-wrapper', 'toctree-l1', 'toctree-l2', 'toctree-l3'
         ):
             for toctree_element in soup.select( f'.{toctree_class}' ):
