@@ -1,14 +1,23 @@
 ''' Load documentation from sources. '''
 
 
+def count_tokens( content ):
+    from tiktoken import get_encoding
+    encoding = get_encoding( 'cl100k_base' )
+    return len( encoding.encode( content ) )
+
+
 def provide_openai_credentials( ):
     from pathlib import Path
     from dotenv import dotenv_values
     environment = dotenv_values( str(
         ( Path.home( ) / '.config/llm-chatter/environment' ).resolve( ) ) )
+    import openai
+    openai.api_key = environment[ 'OPENAI_API_KEY' ]
+    openai.organization = environment[ 'OPENAI_ORGANIZATION_ID' ]
     return dict(
         openai_api_key = environment[ 'OPENAI_API_KEY' ],
-        openai_organization = environment[ 'OPENAI_ORGANIZATION' ] )
+        openai_organization = environment[ 'OPENAI_ORGANIZATION_ID' ] )
 
 
 def _provide_delegate_loaders( ):
@@ -43,22 +52,66 @@ def _provide_delegate_loaders( ):
 DELEGATE_LOADERS = _provide_delegate_loaders( )
 
 
-def store_embeddings( documents ):
-    from pathlib import Path
-    from pickle import dump, load
-    from langchain.embeddings.openai import OpenAIEmbeddings
-    from langchain.vectorstores.faiss import FAISS
-    vectorstore_path = Path( 'vectorstore.pypickle' )
-    embeddings = OpenAIEmbeddings( **provide_openai_credentials( ) )
-    #text_embeddings = embeddings.embed_documents( documents )
-    #text_embedding_pairs = list( zip( texts, text_embeddings ) )
-    #vectorstore = FAISS.from_embeddings( text_embedding_pairs, embeddings )
-    vectorstore = FAISS.from_documents( documents, embeddings )
-    if vectorstore_path.exists( ):
-        with vectorstore_path.open( 'rb' ) as file:
-            vectorstore.merge_from( load( file ) )
-    with vectorstore_path.open( 'wb' ) as file:
-        dump( vectorstore, file )
+def generate_and_store_embeddings( embedder, vectorstore, documents ):
+    from time import sleep
+    tokens_total = 0
+    interval_i = interval_f = 0
+    # TODO: Set maxima from model capabilities.
+    tokens_max = 1_000_000
+    documents_max = 2048
+    # Batch according to rate limit.
+    for i, document in enumerate( documents ):
+        tokens_count = count_tokens( document.page_content )
+        if tokens_count >= 8191: raise ValueError( 'Document too large!' )
+        if (     tokens_max > tokens_total + tokens_count
+             and documents_max > i - interval_i
+        ):
+            tokens_total += tokens_count
+            continue
+        interval_f = i
+        documents_portion = documents[ interval_i : interval_f ]
+        print( f"Embbedding {tokens_total} tokens." )
+        print( "Documents in batch: {}".format( interval_f - interval_i ) )
+        embeddings = generate_embeddings( embedder, documents_portion )
+        store_embeddings(
+            vectorstore,
+            documents_portion,
+            embeddings,
+            ( interval_i, interval_f ) )
+        print( 'Sleeping...' )
+        # TODO: Sleep for rate limit duration.
+        sleep( 60 )
+        interval_i = i
+        tokens_total = 0
+
+
+def generate_embeddings( embedder, documents ):
+    # TODO: Error handling.
+    # TODO: Use generic interface.
+    from openai import Embedding
+    response = Embedding.create(
+        input = [ document.page_content for document in documents ],
+        model = 'text-embedding-ada-002' )
+    return [ data.embedding for data in response.data ]
+
+
+def store_embeddings( vectorstore, documents, embeddings, interval ):
+    # TODO: Error handling.
+    # TODO: Use generic interface.
+    shit = False
+    from pprint import pprint
+    for i, embedding in enumerate( embeddings ):
+        elen = len( embedding )
+        if 1536 != elen:
+            print( f"Embedding {i} has length {elen}." )
+            pprint( embedding )
+            shit = True
+    if shit: raise SystemExit( 1 )
+    vectorstore.add(
+        documents = [ document.page_content for document in documents ],
+        embeddings = embeddings,
+        ids = list( map( str, range( *interval ) ) ),
+        metadatas = [ document.metadata for document in documents ] )
 
 
 def load_manifest_file( manifest_path ):
@@ -118,6 +171,18 @@ def ingest_websites( file_path ):
     return documents
 
 
+def prepare_vectorstore( ):
+    from chromadb import Client
+    from chromadb.config import Settings
+    # TODO: Pull configuration from file.
+    client = Client( Settings(
+        chroma_db_impl = 'duckdb+parquet',
+        persist_directory =
+            '/mnt/d/Dropbox/common/data/llm-chatter/vectorstores/chromadb' ) )
+    return client.create_collection( 'sphinx-documentation' )
+
+
+
 def _get_loader_class( class_name ):
     from importlib import import_module
     module = import_module( 'langchain.document_loaders' )
@@ -136,6 +201,8 @@ def main( ):
     openai_credentials = provide_openai_credentials( )
     manifest_path = 'data-sources/manifest.toml'
     repositories = load_manifest_file( manifest_path )
+    # TODO: One vectorstore per repo.
+    vectorstore = prepare_vectorstore( )
     from tiktoken import get_encoding
     encoding = get_encoding( 'cl100k_base' )
     for repo_config in repositories:
@@ -146,7 +213,8 @@ def main( ):
         cost = ( total_tokens / 1000 ) * COST_PER_THOUSAND_TOKENS
         print( f"Total Tokens: {total_tokens}; Cost to Embed: ${cost:.4f}" )
         confirmation = input( "Proceed with embedding? (y/n): " ).lower( )
-        if 'y' == confirmation: store_embeddings( documents )
+        if 'y' == confirmation:
+            generate_and_store_embeddings( None, vectorstore, documents )
         else: print( "Embedding skipped." )
 
 
