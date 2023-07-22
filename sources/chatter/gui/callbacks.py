@@ -230,7 +230,8 @@ def _chat( gui ):
     supports_functions = gui.selector_model.auxdata__[
         gui.selector_model.value ][ 'supports-functions' ]
     if supports_functions:
-        special_data[ 'ai-functions' ] = _provide_active_ai_functions( gui )
+        ai_functions = _provide_active_ai_functions( gui )
+        if ai_functions: special_data[ 'ai-functions' ] = ai_functions
     from chatter.ai import ChatCallbacks
     callbacks = ChatCallbacks(
         allocator = (
