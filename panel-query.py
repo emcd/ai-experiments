@@ -37,6 +37,7 @@ def prepare( ):
     prepare_inscribers( configuration, directories )
     prepare_api_clients( )
     ai_functions = prepare_ai_functions( configuration, directories )
+    from chatter.vectorstores import prepare as prepare_vectorstores
     vectorstores = prepare_vectorstores( configuration, directories )
     from chatter.gui import prepare as prepare_gui
     gui = prepare_gui(
@@ -72,32 +73,6 @@ def prepare_environment( configuration, directories, project_path ):
 def prepare_inscribers( configuration, directories ):
     from icecream import install
     install( )
-
-
-def prepare_vectorstores( configuration, directories ):
-    from pathlib import Path
-    from pickle import load as unpickle
-    from tomli import load as load_toml
-    registry_path = directories.user_config_path / 'vectorstores.toml'
-    data_path = Path( configuration[ 'locations' ][ 'data' ] ) / 'vectorstores'
-    stores = { }
-    if not registry_path.exists( ): return stores
-    with registry_path.open( 'rb' ) as registry_file:
-        registry = load_toml( registry_file )
-    for data in registry.get( 'stores', ( ) ):
-        name = data[ 'name' ]
-        stores[ name ] = data.copy( )
-        provider = data[ 'provider' ]
-        if provider.startswith( 'file:' ):
-            format_ = data[ 'format' ]
-            location = Path( data[ 'location' ].format(
-                data_path = data_path ) )
-            if 'python-pickle' == format_:
-                with location.open( 'rb' ) as store_file:
-                    stores[ name ][ 'instance' ] = unpickle( store_file )
-        # TODO: Run local server containers, where relevant.
-        # TODO: Setup clients for server connections, where relevant.
-    return stores
 
 
 def provide_configuration( project_path, directories ):

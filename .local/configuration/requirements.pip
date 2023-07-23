@@ -1,5 +1,5 @@
 beautifulsoup4
-chromadb
+chromadb ~= 0.3.29
 faiss-cpu
 icecream
 langchain

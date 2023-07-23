@@ -237,7 +237,7 @@ def _instantiate_splitter( info ):
     return getattr( module, info[ 'class' ] )( **info[ 'args' ] )
 
 
-COST_PER_THOUSAND_TOKENS = 0.0004
+COST_PER_THOUSAND_TOKENS = 0.0001
 
 def main( ):
     openai_credentials = provide_openai_credentials( )
