@@ -183,7 +183,9 @@ def add_message(
     #       Consider multi-part MIME attachment encoding from SMTP.
     if 'Document' == role:
         content = f'''## Supplement ##\n\n{content}'''
-    message_gui.text_message.object = content
+    if hasattr( message_gui.text_message, 'value' ):
+        message_gui.text_message.value = content
+    else: message_gui.text_message.object = content
     for behavior in behaviors:
         getattr( message_gui, f"toggle_{behavior}" ).value = True
     from ..messages import count_tokens
@@ -697,9 +699,9 @@ def search( gui ):
         gui.selector_vectorstore.value ][ 'instance' ]
     documents = vectorstore.similarity_search( prompt, k = documents_count )
     for document in documents:
-        # TODO: Determine MIME type from document metadata, if available.
+        mime_type = document.metadata.get( 'mime_type', 'text/plain' )
         add_message(
-            gui, 'Document', document.page_content, mime_type = 'text/plain' )
+            gui, 'Document', document.page_content, mime_type = mime_type )
     update_and_save_conversation( gui )
 
 

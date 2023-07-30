@@ -18,30 +18,23 @@
 #============================================================================#
 
 
-''' Functionality for various vectorstores. '''
+''' Implementation of interface to FAISS. '''
 
 
-from . import chroma
-from . import faiss
+from . import base as __
 
 
-def prepare( configuration, directories ):
-    from tomli import load as load_toml
-    manifest_path = directories.user_config_path / 'vectorstores.toml'
-    stores = { }
-    if not manifest_path.exists( ): return stores
-    with manifest_path.open( 'rb' ) as manifest_stream:
-        manifest = load_toml( manifest_stream )
-    for data in manifest.get( 'stores', ( ) ):
-        store_name = data[ 'name' ]
-        stores[ store_name ] = data.copy( )
-        provider_name = data[ 'provider' ]
-        if provider_name not in globals( ):
-            # TODO: Improve error signaling.
-            raise ValueError(
-                f"Unknown vectorstore provider, '{provider_name}', "
-                f"for vectorstore '{store_name}'." )
-        instance = globals( )[ provider_name ].restore(
-            configuration, directories, data )
-        stores[ store_name ][ 'instance' ] = instance
-    return stores
+def restore( configuration, directories, data ):
+    # TODO: Configurable embedding function.
+    from langchain.embeddings.openai import OpenAIEmbeddings
+    from langchain.vectorstores import FAISS
+    embedder = OpenAIEmbeddings( )
+    arguments = data.get( 'arguments', { } )
+    location_info = __.urlparse( data[ 'location' ] )
+    if 'file' == location_info.scheme:
+        location = __.Path( location_info.path.format(
+            **__.derive_standard_file_paths( configuration, directories ) ) )
+        return FAISS.load_local(
+            folder_path = str( location ),
+            embeddings = embedder,
+            index_name = arguments[ 'index' ] )
