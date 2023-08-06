@@ -245,6 +245,7 @@ conversation_layout.update( {
             value = 'General Conversation',
         ),
         event_functions = dict( value = 'on_system_prompt_selection' ),
+        populator_function = 'populate_system_prompts_selector',
     ),
     'row_system_prompt_variables': dict(
         component_class = Row,
@@ -422,6 +423,7 @@ conversation_layout.update( {
             value = 'Recap: General Conversation',
         ),
         event_functions = dict( value = 'on_canned_prompt_selection' ),
+        populator_function = 'populate_canned_prompts_selector',
     ),
     'button_canned_prompt': dict(
         component_class = Button,
@@ -585,6 +587,7 @@ conversation_control_layout = {
             options = [ 'OpenAI' ],
             value = 'OpenAI',
         ),
+        populator_function = 'populate_providers_selector',
     ),
     'selector_model': dict(
         component_class = Select,
@@ -594,6 +597,7 @@ conversation_control_layout = {
             value = 'gpt-3.5-turbo',
         ),
         event_functions = dict( value = 'on_model_selection' ),
+        populator_function = 'populate_models_selector',
     ),
     'slider_temperature': dict(
         component_class = FloatSlider,
@@ -607,6 +611,7 @@ conversation_control_layout = {
         component_arguments = dict(
             name = 'Vector Store',
         ),
+        populator_function = 'populate_vectorstores_selector',
     ),
     'slider_documents_count': dict(
         component_class = IntSlider,

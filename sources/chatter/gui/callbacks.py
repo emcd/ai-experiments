@@ -150,7 +150,6 @@ def add_conversation_indicator_if_necessary( gui ):
         model = gui.selector_model.value,
         temperature = gui.slider_temperature.value,
     )
-    chat_runner = provider.chat
     from json import loads
     from chatter.ai import ChatCallbacks, ChatCompletionError
     callbacks = ChatCallbacks(
@@ -429,13 +428,23 @@ def on_user_prompt_input( gui, event ):
     update_search_button( gui )
 
 
+def populate_component( gui, layout, component_name ):
+    entry = layout[ component_name ]
+    elements = [ ]
+    for element_name in entry.get( 'contains', ( ) ):
+        populate_component( gui, layout, element_name )
+    function_name = entry.get( 'populator_function' )
+    if None is function_name: return
+    function = globals( )[ function_name ]
+    function( gui )
+
+
 def populate_conversation( gui ):
-    populate_providers_selector( gui )
-    populate_models_selector( gui )
-    populate_system_prompts_selector( gui )
-    populate_canned_prompts_selector( gui )
-    populate_vectorstores_selector( gui )
     from .layouts import conversation_layout, conversation_control_layout
+    populate_component(
+        gui, conversation_control_layout, 'column_conversation_control' )
+    populate_component(
+        gui, conversation_layout, 'column_conversation' )
     register_event_callbacks(
         gui, conversation_layout, 'column_conversation' )
     register_event_callbacks(
