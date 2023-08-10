@@ -140,8 +140,7 @@ def add_conversation_indicator_if_necessary( gui ):
     canned_prompt = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
     messages = [
-        # TODO? Regen title from more mature conversation.
-        generate_messages( gui )[ 1 ],
+        *generate_messages( gui )[ 1 : ],
         { 'role': 'user', 'content': canned_prompt }
     ]
     provider_name = gui.selector_provider.value

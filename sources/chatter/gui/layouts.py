@@ -593,8 +593,8 @@ conversation_control_layout = {
         component_class = Select,
         component_arguments = dict(
             name = 'Model',
-            options = [ 'gpt-3.5-turbo' ],
-            value = 'gpt-3.5-turbo',
+            options = [ 'gpt-4' ],
+            value = 'gpt-4',
         ),
         event_functions = dict( value = 'on_model_selection' ),
         populator_function = 'populate_models_selector',
