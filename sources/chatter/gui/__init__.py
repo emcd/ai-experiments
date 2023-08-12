@@ -24,8 +24,8 @@
 def prepare( configuration, directories, ai_functions, vectorstores ):
     from types import SimpleNamespace
     from .base import generate_component
-    from .callbacks import populate_dashboard
     from .layouts import dashboard_layout as layout
+    from .updaters import populate_dashboard
     components = { }
     generate_component( components, layout, 'dashboard' )
     gui = SimpleNamespace( **components )

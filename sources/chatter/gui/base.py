@@ -83,6 +83,26 @@ def calculate_conversations_path( gui ):
     return state_path / 'conversations'
 
 
+def extract_function_invocation_request( gui ):
+    rehtml_message = gui.column_conversation_history[ -1 ]
+    message = rehtml_message.gui__.text_message.object
+    # TODO: Handle multipart MIME.
+    from json import loads
+    try: data = loads( message )
+    except: raise ValueError( 'Malformed JSON payload in message.' )
+    if not isinstance( data, __.AbstractDictionary ):
+        raise ValueError( 'Function invocation request is not dictionary.' )
+    if 'name' not in data:
+        raise ValueError( 'Function name is absent from invocation request.' )
+    name = data[ 'name' ]
+    arguments = data.get( 'arguments', { } )
+    ai_functions = gui.auxdata__[ 'ai-functions' ]
+    # TODO: Check against multichoice values instead.
+    if name not in ai_functions:
+        raise ValueError( 'Function name in request is not available.' )
+    return name, __.partial_function( ai_functions[ name ], **arguments )
+
+
 def generate_component( components, layout, component_name ):
     entry = layout[ component_name ]
     elements = [ ]
@@ -94,3 +114,60 @@ def generate_component( components, layout, component_name ):
     component = component_class( *elements, **component_arguments )
     components[ component_name ] = component
     return component
+
+
+# TODO: Provide as callback to provider-specific chat implementation.
+def generate_messages( gui ):
+    messages = [ ]
+    model_data = gui.selector_model.auxdata__[ gui.selector_model.value ]
+    if gui.toggle_system_prompt_active.value:
+        system_message = gui.text_system_prompt.object
+        sysprompt_honor = model_data[ 'honors-system-prompt' ]
+        role = 'system' if sysprompt_honor else 'user'
+        messages.append( { 'role': role, 'content': system_message } )
+    supports_functions = model_data[ 'supports-functions' ]
+    for row in gui.column_conversation_history:
+        message_gui = row.auxdata__[ 'gui' ]
+        if not message_gui.toggle_active.value: continue
+        role = row.auxdata__[ 'role' ]
+        # TODO? Map to provider-specific role names.
+        if supports_functions and 'Function' == role: role = 'function'
+        elif role in ( 'Human', 'Document', 'Function' ): role = 'user'
+        else: role = 'assistant'
+        message = dict(
+            content = message_gui.text_message.object,
+            role = role,
+        )
+        if 'actor-name' in row.auxdata__:
+            message[ 'name' ] = row.auxdata__[ 'actor-name' ]
+        messages.append( message )
+    return messages
+
+
+def populate_component( gui, layout, component_name ):
+    from . import updaters as registry
+    entry = layout[ component_name ]
+    elements = [ ]
+    for element_name in entry.get( 'contains', ( ) ):
+        populate_component( gui, layout, element_name )
+    function_name = entry.get( 'populator_function' )
+    if None is function_name: return
+    function = getattr( registry, function_name )
+    function( gui )
+
+
+def register_event_callbacks( gui, layout, component_name ):
+    from . import events as registry
+    entry = layout[ component_name ]
+    elements = [ ]
+    for element_name in entry.get( 'contains', ( ) ):
+        register_event_callbacks( gui, layout, element_name )
+    component = getattr( gui, component_name )
+    functions = entry.get( 'event_functions', { } )
+    for event_name, function_name in functions.items( ):
+        function = getattr( registry, function_name )
+        if 'on_click' == event_name:
+            component.on_click( lambda event: function( gui, event ) )
+            continue
+        component.param.watch(
+            lambda event: function( gui, event ), event_name )
