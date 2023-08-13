@@ -84,6 +84,8 @@ template: |
 
   Be difficult, snarky, and terse.
   % endif
+associated-functions:
+  'read_file_chunk': true
 summarization-preference:
   id: 'Recap: Requirements + Code'
 variables:

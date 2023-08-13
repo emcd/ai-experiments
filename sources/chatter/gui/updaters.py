@@ -40,6 +40,8 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
 
 
 def add_conversation_indicator_if_necessary( gui ):
+    # TODO: Do not proceed if we are in a function invocation.
+    #       GPT-4 summarization chokes on that.
     conversations = gui.column_conversations_indicators
     descriptor = conversations.current_descriptor__
     if descriptor.identity in conversations.descriptors__: return
@@ -56,7 +58,7 @@ def add_conversation_indicator_if_necessary( gui ):
         model = gui.selector_model.value,
         temperature = gui.slider_temperature.value,
     )
-    from json import loads
+    from json import JSONDecodeError, loads
     from chatter.ai import ChatCallbacks, ChatCompletionError
     callbacks = ChatCallbacks(
         allocator = ( lambda mime_type: [ ] ),
@@ -65,7 +67,9 @@ def add_conversation_indicator_if_necessary( gui ):
     try: handle = provider.chat( messages, { }, controls, callbacks )
     # TODO: Use callbacks to signal that the title could not be generated.
     except ChatCompletionError as exc: return
-    response = loads( ''.join( handle ) )
+    try: response = loads( ''.join( handle ) )
+    # TODO: Use callbacks to signal that the title could not be generated.
+    except JSONDecodeError as exc: return
     descriptor.title = response[ 'title' ]
     descriptor.labels = response[ 'labels' ]
     add_conversation_indicator( gui, descriptor  )

@@ -1,7 +1,5 @@
 ## LLM Chatter
 
-* AI functions for file system access.
-
 * Theme components with font families used in blog.
 
 * Theme components with color scheme used in blog.

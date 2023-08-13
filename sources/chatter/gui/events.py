@@ -35,7 +35,7 @@ def on_chat_click( gui, event ):
 
 
 def on_create_conversation( gui, event ):
-    from .actions import create_and_display_conversation
+    from .updaters import create_and_display_conversation
     create_and_display_conversation( gui )
 
 

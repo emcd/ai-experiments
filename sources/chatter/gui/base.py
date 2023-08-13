@@ -90,7 +90,7 @@ def extract_function_invocation_request( gui ):
     from json import loads
     try: data = loads( message )
     except: raise ValueError( 'Malformed JSON payload in message.' )
-    if not isinstance( data, __.AbstractDictionary ):
+    if not isinstance( data, AbstractDictionary ):
         raise ValueError( 'Function invocation request is not dictionary.' )
     if 'name' not in data:
         raise ValueError( 'Function name is absent from invocation request.' )
@@ -100,7 +100,7 @@ def extract_function_invocation_request( gui ):
     # TODO: Check against multichoice values instead.
     if name not in ai_functions:
         raise ValueError( 'Function name in request is not available.' )
-    return name, __.partial_function( ai_functions[ name ], **arguments )
+    return name, partial_function( ai_functions[ name ], **arguments )
 
 
 def generate_component( components, layout, component_name ):

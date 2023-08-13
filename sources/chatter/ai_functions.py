@@ -70,7 +70,7 @@ of 0. '''
                 'minItems': 1,
             }
         },
-        'required': [ 'rolls' ]
+        'required': [ 'specs' ],
     }
 }, indent = 2 )
 
@@ -91,7 +91,59 @@ def _roll_dice( dice ):
     return sum( randint( 1, sides ) for _ in range( number ) ) + offset
 
 
+def read_file_chunk( path, offset = 0, line_number = 1, tokens_max = 1024 ):
+    from itertools import count
+    from .messages import count_tokens
+    lines = { }
+    tokens_total = 0
+    with open( path ) as file:
+        file.seek( offset )
+        for line_number in count( line_number ):
+            line = file.readline( )
+            if not line: return dict( lines = lines )
+            tokens_count = count_tokens( line )
+            if tokens_max < tokens_total + tokens_count: break
+            tokens_total += tokens_count
+            offset = file.tell( )
+            lines[ line_number ] = line
+    return dict(
+        lines = lines, line_number = line_number + 1, offset = offset )
+
+read_file_chunk.__doc__ = json.dumps( {
+    'name': 'read_file_chunk',
+    'description': '''
+Reads a chunk of a file starting from a given line number and position,
+and reads no more than the specified number of tokens. If a line would be
+truncated by the tokens limit, then it is not included in the results. ''',
+    'parameters': {
+        'type': 'object',
+        'properties': {
+            'path': {
+                'type': 'string',
+                'description': 'Path to the file to be read.'
+            },
+            'offset': {
+                'type': 'integer',
+                'description': 'File position to start reading from.',
+                'default': 0
+            },
+            'line_number': {
+                'type': 'integer',
+                'description': 'Line number to start reading from.',
+                'default': 1
+            },
+            'tokens_max': {
+                'type': 'integer',
+                'description': 'Maximum number of tokens to read.',
+                'default': 1024
+            },
+        },
+        'required': [ 'path' ],
+    },
+}, indent = 2 )
+
+
 registry = {
     json.loads( function.__doc__ )[ 'name' ]: function
-    for function in ( roll_dice, )
+    for function in ( read_file_chunk, roll_dice, )
 }
