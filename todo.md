@@ -1,6 +1,6 @@
 ## LLM Chatter
 
-* Genericize populators so that they can be referenced from layouts.
+* AI functions for file system access.
 
 * Theme components with font families used in blog.
 
