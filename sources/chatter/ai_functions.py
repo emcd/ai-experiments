@@ -96,10 +96,10 @@ def read_file_chunk( path, offset = 0, line_number = 1, tokens_max = 1024 ):
     from .messages import count_tokens
     lines = { }
     tokens_total = 0
-    with open( path ) as file:
+    with open( path, 'rb' ) as file:
         file.seek( offset )
         for line_number in count( line_number ):
-            line = file.readline( )
+            line = file.readline( ).decode( )
             if not line: return dict( lines = lines )
             tokens_count = count_tokens( line )
             if tokens_max < tokens_total + tokens_count: break
