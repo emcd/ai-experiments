@@ -101,6 +101,7 @@ class ConversationMessage( __.ReactiveHTML ):
         row.styles.update( styles )
         row_gui = __.SimpleNamespace( **components )
         row_gui.rehtml_message = self
+        row_gui.layout__ = layout
         self.auxdata__ = {
             'gui': row_gui,
             'mime-type': mime_type,

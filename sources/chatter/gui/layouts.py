@@ -505,7 +505,10 @@ conversation_layout.update( {
             max_height = 480, # min_height = 240,
             max_length = 32767,
         ),
-        event_functions = dict( value = 'on_user_prompt_input' ),
+        event_functions = dict(
+            value = 'on_user_prompt_input_finish',
+            value_input = 'on_user_prompt_input',
+        ),
     ),
     'row_actions': dict(
         component_class = Row,
@@ -750,6 +753,7 @@ conversation_message_common_layout = {
             value = False,
             **_icon_button_attributes,
         ),
+        event_functions = dict( value = 'on_toggle_message_active' ),
     ),
     'toggle_pinned': dict(
         component_class = Toggle,
@@ -758,6 +762,7 @@ conversation_message_common_layout = {
             value = False,
             **_icon_button_attributes,
         ),
+        event_functions = dict( value = 'on_toggle_message_pinned' ),
     ),
     'row_actions_structure': dict(
         component_class = Row,
@@ -773,7 +778,13 @@ conversation_message_common_layout = {
             align = ( 'center', 'end' ),
             visible = False,
         ),
-        contains = [ 'button_copy', 'button_delete', 'button_edit' ],
+        contains = [
+            'button_copy',
+            'button_delete',
+            'button_edit',
+            'button_fork',
+            # TODO: button_regenerate
+        ],
     ),
     'button_copy': dict(
         component_class = Button,
@@ -786,6 +797,7 @@ conversation_message_common_layout = {
         component_class = Button,
         component_arguments = dict(
             icon = 'trash',
+            visible = False,
             **_icon_button_attributes,
         ),
     ),
@@ -793,8 +805,18 @@ conversation_message_common_layout = {
         component_class = Button,
         component_arguments = dict(
             icon = 'edit',
+            visible = False,
             **_icon_button_attributes,
         ),
+    ),
+    'button_fork': dict(
+        component_class = Button,
+        component_arguments = dict(
+            icon = 'git-fork',
+            visible = False,
+            **_icon_button_attributes,
+        ),
+        event_functions = dict( value = 'on_conversation_fork_click' ),
     ),
     'spacer_right': dict( component_class = HSpacer ),
 }
@@ -804,7 +826,7 @@ json_conversation_message_layout.update( {
     'text_message': dict(
         component_class = JSON,
         component_arguments = dict(
-            depth = -1, theme = 'light',
+            depth = 1, theme = 'light',
             height_policy = 'auto', width_policy = 'max',
             margin = sizes.standard_margin,
             styles = { 'overflow': 'auto' },

@@ -34,6 +34,11 @@ def on_chat_click( gui, event ):
     chat( gui )
 
 
+def on_conversation_fork_click( gui, event ):
+    from .updaters import fork_conversation
+    fork_conversation( gui.parent__, gui.index__ )
+
+
 def on_create_conversation( gui, event ):
     from .updaters import create_and_display_conversation
     create_and_display_conversation( gui )
@@ -141,7 +146,20 @@ def on_toggle_user_prompt_active( gui, event ):
         update_and_save_conversation( gui )
 
 
+# TODO: Ensure that this handler is triggered.
+#       According to https://github.com/holoviz/panel/issues/1882,
+#       this should work. But, it does not.
+#       Possible workaround: https://discourse.holoviz.org/t/catching-textinput-value-while-the-user-is-typing/1652/2
 def on_user_prompt_input( gui, event ):
+    from .updaters import (
+        update_search_button,
+        update_token_count,
+    )
+    update_token_count( gui )
+    update_search_button( gui )
+
+
+def on_user_prompt_input_finish( gui, event ):
     from .updaters import (
         update_and_save_conversation,
         update_search_button,

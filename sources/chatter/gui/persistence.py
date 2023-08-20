@@ -24,13 +24,31 @@
 from . import base as __
 
 
-def restore_conversation( gui ):
-    from json import load
+def collect_conversation( gui ):
+    from .layouts import conversation_layout, conversation_control_layout
+    layout = dict( **conversation_layout, **conversation_control_layout )
+    state = { }
+    for name, data in layout.items( ):
+        if not data.get( 'persist', True ): continue
+        component = getattr( gui, name )
+        if hasattr( component, 'on_click' ): continue
+        elif hasattr( component, 'objects' ):
+            if 'persistence_functions' not in data: continue
+            saver_name = data[ 'persistence_functions' ][ 'save' ]
+            saver = globals( )[ saver_name ]
+            state.update( saver( gui, name ) )
+        elif hasattr( component, 'value' ):
+            state[ name ] = dict( value = component.value )
+        elif hasattr( component, 'object' ):
+            state[ name ] = dict( value = component.object )
+        else: continue
+    return state
+
+
+def inject_conversation( gui, state ):
     from .layouts import conversation_layout, conversation_control_layout
     from .updaters import update_token_count, update_run_tool_button
     layout = dict( **conversation_layout, **conversation_control_layout )
-    path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
-    with path.open( ) as file: state = load( file )
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
         if name not in state: continue # allows new UI features
@@ -48,6 +66,13 @@ def restore_conversation( gui ):
         else: continue
     update_token_count( gui )
     update_run_tool_button( gui )
+
+
+def restore_conversation( gui ):
+    from json import load
+    path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
+    with path.open( ) as file: state = load( file )
+    inject_conversation( gui, state )
 
 
 def restore_conversation_messages( gui, column_name, state ):
@@ -100,24 +125,8 @@ def save_conversation( gui ):
     if descriptor.identity not in conversations.descriptors__: return
     # Do not save conversation while populating it.
     if descriptor.identity != gui.identity__: return
-    from .layouts import conversation_layout, conversation_control_layout
-    layout = dict( **conversation_layout, **conversation_control_layout )
-    state = { }
-    for name, data in layout.items( ):
-        if not data.get( 'persist', True ): continue
-        component = getattr( gui, name )
-        if hasattr( component, 'on_click' ): continue
-        elif hasattr( component, 'objects' ):
-            if 'persistence_functions' not in data: continue
-            saver_name = data[ 'persistence_functions' ][ 'save' ]
-            saver = globals( )[ saver_name ]
-            state.update( saver( gui, name ) )
-        elif hasattr( component, 'value' ):
-            state[ name ] = dict( value = component.value )
-        elif hasattr( component, 'object' ):
-            state[ name ] = dict( value = component.object )
-        else: continue
     from json import dump
+    state = collect_conversation( gui )
     path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
     with path.open( 'w' ) as file: dump( state, file, indent = 2 )
 

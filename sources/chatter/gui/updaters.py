@@ -76,7 +76,8 @@ def add_conversation_indicator_if_necessary( gui ):
     update_conversation_hilite( gui, new_descriptor = descriptor )
 
 
-# TODO: Fold into initializer for ConversationMessage.
+# TODO: Mostly fold into initializer for ConversationMessage.
+#       Leave append operation on the conversation history.
 def add_message(
     gui, role, content,
     actor_name = None,
@@ -85,40 +86,45 @@ def add_message(
 ):
     from ..messages import count_tokens
     from .classes import ConversationMessage
-    from .events import on_toggle_message_active, on_toggle_message_pinned
     rehtml_message = ConversationMessage(
         role, mime_type, actor_name = actor_name,
         height_policy = 'auto', margin = 0, width_policy = 'max' )
     message_gui = rehtml_message.gui__
     message_gui.parent__ = gui
+    message_gui.index__ = len( gui.column_conversation_history )
     # TODO: Less intrusive supplementation.
     #       Consider multi-part MIME attachment encoding from SMTP.
-    if 'Document' == role:
+    #       May need this as GPT-4 does not like consecutive user messages.
+    if 'AI' == role:
+        message_gui.button_fork.visible = True
+    elif 'Document' == role:
         content = f'''## Supplement ##\n\n{content}'''
-    if hasattr( message_gui.text_message, 'value' ):
-        message_gui.text_message.value = content
-    else: message_gui.text_message.object = content
+        message_gui.button_delete.visible = True
+    elif 'Human' == role:
+        message_gui.button_edit.visible = True
+    text_message = message_gui.text_message
+    if hasattr( text_message, 'value' ): text_message.value = content
+    else: text_message.object = content
     for behavior in behaviors:
         getattr( message_gui, f"toggle_{behavior}" ).value = True
     rehtml_message.auxdata__[ 'tokens-count' ] = count_tokens( content )
-    message_gui.toggle_active.param.watch(
-        lambda event: on_toggle_message_active( message_gui, event ), 'value' )
-    message_gui.toggle_pinned.param.watch(
-        lambda event: on_toggle_message_pinned( message_gui, event ), 'value' )
+    __.register_event_callbacks(
+        message_gui, message_gui.layout__, 'row_message' )
     gui.column_conversation_history.append( rehtml_message )
     return rehtml_message
 
 
-def create_and_display_conversation( gui ):
+def create_and_display_conversation( gui, state = None ):
     from .classes import ConversationDescriptor
     descriptor = ConversationDescriptor( )
-    create_conversation( gui, descriptor )
+    create_conversation( gui, descriptor, state = state )
     update_conversation_hilite( gui, new_descriptor = descriptor )
     display_conversation( gui, descriptor )
 
 
-def create_conversation( gui, descriptor ):
+def create_conversation( gui, descriptor, state = None ):
     from .layouts import dashboard_layout as layout
+    from .persistence import inject_conversation
     components = gui.__dict__.copy( )
     __.generate_component( components, layout, 'column_conversation' )
     __.generate_component( components, layout, 'column_conversation_control' )
@@ -127,6 +133,7 @@ def create_conversation( gui, descriptor ):
     pane_gui.identity__ = descriptor.identity
     descriptor.gui = pane_gui
     populate_conversation( pane_gui )
+    if state: inject_conversation( pane_gui, state )
     return pane_gui
 
 
@@ -159,6 +166,14 @@ def display_conversation( gui, descriptor ):
         gui.column_conversations_manager,
         gui.column_conversation,
         gui.column_conversation_control ) )
+
+
+def fork_conversation( gui, index ):
+    from .persistence import collect_conversation
+    state = collect_conversation( gui )
+    state[ 'column_conversation_history' ] = (
+        state[ 'column_conversation_history' ][ 0 : index + 1 ] )
+    create_and_display_conversation( gui, state = state )
 
 
 def populate_conversation( gui ):
