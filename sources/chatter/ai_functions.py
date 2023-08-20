@@ -112,9 +112,13 @@ def read_file_chunk( path, offset = 0, line_number = 1, tokens_max = 1024 ):
 read_file_chunk.__doc__ = json.dumps( {
     'name': 'read_file_chunk',
     'description': '''
-Reads a chunk of a file starting from a given line number and position,
-and reads no more than the specified number of tokens. If a line would be
-truncated by the tokens limit, then it is not included in the results. ''',
+Reads no more than the specified number of tokens from a file, starting from
+an optional line number and byte offset. Returns an ordered mapping of line
+numbers to lines. If a line would be truncated by the tokens limit, then it is
+not included in the results and its number and byte offset are also returned.
+This allows for paginated iteration over a file with subsequent function
+calls. If no line number and offset are returned, then end of file has been
+reached. ''',
     'parameters': {
         'type': 'object',
         'properties': {
@@ -124,12 +128,12 @@ truncated by the tokens limit, then it is not included in the results. ''',
             },
             'offset': {
                 'type': 'integer',
-                'description': 'File position to start reading from.',
+                'description': 'File position from which to start reading.',
                 'default': 0
             },
             'line_number': {
                 'type': 'integer',
-                'description': 'Line number to start reading from.',
+                'description': 'Line number corresponding to offset.',
                 'default': 1
             },
             'tokens_max': {
@@ -143,7 +147,37 @@ truncated by the tokens limit, then it is not included in the results. ''',
 }, indent = 2 )
 
 
+def write_file( path, contents, mode = 'truncate' ):
+    with open( path, { 'append': 'a', 'truncate': 'w' }[ mode] ) as file:
+        return file.write( contents )
+
+write_file.__doc__ = json.dumps( {
+    'name': 'write_file',
+    'description': '''
+Writes provided contents to the given file. Returns the number of characters
+written. ''',
+    'parameters': {
+        'type': 'object',
+        'properties': {
+            'path': {
+                'type': 'string',
+                'description': 'Path to the file to be written.'
+            },
+            'contents': {
+                'type': 'string',
+            },
+            'mode': {
+                'type': 'string',
+                'enum': [ 'append', 'truncate' ],
+                'default': 'truncate',
+            },
+        },
+        'required': [ 'path', 'contents' ],
+    },
+}, indent = 2 )
+
+
 registry = {
     json.loads( function.__doc__ )[ 'name' ]: function
-    for function in ( read_file_chunk, roll_dice, )
+    for function in ( read_file_chunk, roll_dice, write_file, )
 }

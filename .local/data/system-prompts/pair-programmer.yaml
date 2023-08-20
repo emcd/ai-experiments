@@ -86,6 +86,7 @@ template: |
   % endif
 associated-functions:
   'read_file_chunk': true
+  'write_file': true
 summarization-preference:
   id: 'Recap: Requirements + Code'
 variables:
