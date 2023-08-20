@@ -312,6 +312,7 @@ conversation_layout.update( {
         ),
         contains = [
             'multichoice_functions',
+            'checkbox_auto_functions',
             'column_functions_json',
         ],
     ),
@@ -320,8 +321,16 @@ conversation_layout.update( {
         component_arguments = dict(
             placeholder = 'Please click to select functions.',
             delete_button = True,
+            width_policy = 'max',
         ),
         event_functions = dict( value = 'on_functions_selection' ),
+    ),
+    'checkbox_auto_functions': dict(
+        component_class = Checkbox,
+        component_arguments = dict(
+            name = 'Automatic Function Execution',
+            value = True,
+        ),
     ),
     'column_functions_json': dict(
         component_class = Column,

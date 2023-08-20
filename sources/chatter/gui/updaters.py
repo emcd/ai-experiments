@@ -410,7 +410,11 @@ def update_run_tool_button( gui ):
     if not disabled:
         try: __.extract_function_invocation_request( gui )
         except ValueError: disabled = True
-    gui.button_run_tool.disabled = disabled
+    from .actions import run_tool
+    if not disabled and gui.checkbox_auto_functions.value:
+        gui.button_run_tool.disabled = True
+        run_tool( gui )
+    else: gui.button_run_tool.disabled = disabled
 
 
 def update_search_button( gui ):
