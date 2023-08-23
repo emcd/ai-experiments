@@ -26,12 +26,12 @@ from . import base as __
 
 def add_conversation_indicator( gui, descriptor, position = 0 ):
     from .classes import ConversationIndicator
+    from .events import on_select_conversation
+    from .layouts import conversation_indicator_layout as layout
     indicator = ConversationIndicator( descriptor.title, descriptor.identity )
-    # TODO: Interpose proper event handlers in front of updaters.
     indicator.param.watch(
-        lambda event: select_conversation( gui, event ), 'clicked' )
-    indicator.gui__.button_delete.on_click(
-        lambda event: delete_conversation( gui, descriptor ) )
+        lambda event: on_select_conversation( gui, event ), 'clicked' )
+    __.register_event_callbacks( indicator.gui__, layout, 'column_indicator' )
     conversations = gui.column_conversations_indicators
     if 'END' == position: conversations.append( indicator )
     else: conversations.insert( position, indicator )
@@ -131,6 +131,7 @@ def create_conversation( gui, descriptor, state = None ):
     pane_gui = __.SimpleNamespace( **components )
     pane_gui.auxdata__ = gui.auxdata__
     pane_gui.identity__ = descriptor.identity
+    pane_gui.parent__ = gui
     descriptor.gui = pane_gui
     populate_conversation( pane_gui )
     if state: inject_conversation( pane_gui, state )
@@ -265,12 +266,11 @@ def populate_vectorstores_selector( gui ):
     update_search_button( gui )
 
 
-def select_conversation( gui, event ):
+def select_conversation( gui, identity ):
     conversations = gui.column_conversations_indicators
     old_descriptor = conversations.current_descriptor__
-    new_id = event.obj.identity__
-    new_descriptor = conversations.descriptors__[ new_id ]
-    if old_descriptor.identity == new_id: return
+    new_descriptor = conversations.descriptors__[ identity ]
+    if old_descriptor.identity == identity: return
     from .persistence import restore_conversation
     if None is new_descriptor.gui:
         new_pane_gui = create_conversation( gui, new_descriptor )
@@ -399,7 +399,7 @@ def update_messages_post_summarization( gui ):
         message_gui.toggle_active.value = False
 
 
-def update_run_tool_button( gui ):
+def update_run_tool_button( gui, allow_autorun = False ):
     disabled = 0 == len( gui.column_conversation_history )
     if not disabled:
         rehtml_message = gui.column_conversation_history[ -1 ]
@@ -411,7 +411,8 @@ def update_run_tool_button( gui ):
         try: __.extract_function_invocation_request( gui )
         except ValueError: disabled = True
     from .actions import run_tool
-    if not disabled and gui.checkbox_auto_functions.value:
+    allow_autorun = allow_autorun and gui.checkbox_auto_functions.value
+    if not disabled and allow_autorun:
         gui.button_run_tool.disabled = True
         run_tool( gui )
     else: gui.button_run_tool.disabled = disabled

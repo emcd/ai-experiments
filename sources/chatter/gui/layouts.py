@@ -150,7 +150,7 @@ conversations_manager_layout = {
             button_type = 'light',
             **_action_button_attributes,
         ),
-        event_functions = dict( on_click = 'on_create_conversation' ),
+        event_functions = dict( on_click = 'on_click_create_conversation' ),
     ),
     'column_conversations_indicators': dict(
         component_class = Column,
@@ -713,6 +713,7 @@ conversation_indicator_layout = {
             icon = 'trash', icon_size = sizes.icon_size,
             **_icon_button_attributes,
         ),
+        event_functions = dict( on_click = 'on_click_delete_conversation' ),
     ),
 }
 
@@ -825,7 +826,7 @@ conversation_message_common_layout = {
             visible = False,
             **_icon_button_attributes,
         ),
-        event_functions = dict( value = 'on_conversation_fork_click' ),
+        event_functions = dict( on_click = 'on_click_fork_conversation' ),
     ),
     'spacer_right': dict( component_class = HSpacer ),
 }

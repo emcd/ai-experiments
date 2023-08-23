@@ -54,7 +54,7 @@ def chat( gui ):
             update_messages_post_summarization( gui )
             gui.toggle_summarize.value = False
     update_and_save_conversation( gui )
-    update_run_tool_button( gui )
+    update_run_tool_button( gui, allow_autorun = True )
 
 
 def _chat( gui ):

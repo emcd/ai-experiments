@@ -65,7 +65,7 @@ def inject_conversation( gui, state ):
             component.object = state[ name ][ 'value' ]
         else: continue
     update_token_count( gui )
-    update_run_tool_button( gui )
+    update_run_tool_button( gui ) # No autorun here; can lead to bad state.
 
 
 def restore_conversation( gui ):
@@ -105,9 +105,14 @@ def restore_conversations_index( gui ):
     with index_path.open( 'rb' ) as file:
         descriptors = load( file )[ 'descriptors' ]
     for descriptor in descriptors:
+        identity = descriptor[ 'identity' ]
+        conversation_path = conversations_path / f"{identity}.json"
+        # Conversation may have disappeared for some reason.
+        if not conversation_path.exists( ): continue
         add_conversation_indicator(
             gui, ConversationDescriptor( **descriptor ), position = 'END' )
     sort_conversations_index( gui ) # extra sanity
+    save_conversations_index( gui )
 
 
 def restore_prompt_variables( gui, row_name, state ):

@@ -20,6 +20,8 @@
 
 ''' Event handlers for Holoviz Panel GUI. '''
 
+# TODO: Consistent nomenclature.
+
 
 from . import base as __
 
@@ -34,14 +36,22 @@ def on_chat_click( gui, event ):
     chat( gui )
 
 
-def on_conversation_fork_click( gui, event ):
-    from .updaters import fork_conversation
-    fork_conversation( gui.parent__, gui.index__ )
-
-
-def on_create_conversation( gui, event ):
+def on_click_create_conversation( gui, event ):
     from .updaters import create_and_display_conversation
     create_and_display_conversation( gui )
+
+
+def on_click_delete_conversation( gui, event ):
+    from .updaters import delete_conversation
+    conversations = gui.parent__.column_conversations_indicators
+    identity = gui.rehtml_indicator.identity__
+    descriptor = conversations.descriptors__[ identity ]
+    delete_conversation( gui.parent__, descriptor )
+
+
+def on_click_fork_conversation( gui, event ):
+    from .updaters import fork_conversation
+    fork_conversation( gui.parent__, gui.index__ )
 
 
 def on_customize_canned_prompt( gui, event ):
@@ -72,6 +82,11 @@ def on_model_selection( gui, event ):
 def on_run_tool_click( gui, event ):
     from .actions import run_tool
     run_tool( gui )
+
+
+def on_select_conversation( gui, event ):
+    from .updaters import select_conversation
+    select_conversation( gui, event.obj.identity__ )
 
 
 def on_system_prompt_selection( gui, event ):
