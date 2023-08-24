@@ -244,7 +244,7 @@ conversation_layout.update( {
             options = [ 'General Conversation' ],
             value = 'General Conversation',
         ),
-        event_functions = dict( value = 'on_system_prompt_selection' ),
+        event_functions = dict( value = 'on_select_system_prompt' ),
         populator_function = 'populate_system_prompts_selector',
     ),
     'row_system_prompt_variables': dict(
@@ -323,7 +323,7 @@ conversation_layout.update( {
             delete_button = True,
             width_policy = 'max',
         ),
-        event_functions = dict( value = 'on_functions_selection' ),
+        event_functions = dict( value = 'on_select_functions' ),
     ),
     'checkbox_auto_functions': dict(
         component_class = Checkbox,
@@ -431,7 +431,7 @@ conversation_layout.update( {
             options = [ 'Recap: General Conversation' ],
             value = 'Recap: General Conversation',
         ),
-        event_functions = dict( value = 'on_canned_prompt_selection' ),
+        event_functions = dict( value = 'on_select_canned_prompt' ),
         populator_function = 'populate_canned_prompts_selector',
     ),
     'button_canned_prompt': dict(
@@ -440,7 +440,7 @@ conversation_layout.update( {
             icon = 'arrow-big-down', icon_size = sizes.icon_size,
             **_icon_button_attributes,
         ),
-        event_functions = dict( on_click = 'on_customize_canned_prompt' ),
+        event_functions = dict( on_click = 'on_click_uncan_prompt' ),
     ),
     'row_canned_prompt_variables': dict(
         component_class = Row,
@@ -515,8 +515,8 @@ conversation_layout.update( {
             max_length = 32767,
         ),
         event_functions = dict(
-            value = 'on_user_prompt_input_finish',
-            value_input = 'on_user_prompt_input',
+            value = 'on_input_finish_user_prompt',
+            value_input = 'on_input_user_prompt',
         ),
     ),
     'row_actions': dict(
@@ -536,7 +536,7 @@ conversation_layout.update( {
             button_type = 'primary',
             **_action_button_attributes,
         ),
-        event_functions = dict( on_click = 'on_chat_click' ),
+        event_functions = dict( on_click = 'on_click_chat' ),
     ),
     'toggle_summarize': dict(
         component_class = Toggle,
@@ -552,7 +552,7 @@ conversation_layout.update( {
             disabled = True,
             **_action_button_attributes,
         ),
-        event_functions = dict( on_click = 'on_search_click' ),
+        event_functions = dict( on_click = 'on_click_search' ),
     ),
     'button_run_tool': dict(
         component_class = Button,
@@ -561,7 +561,7 @@ conversation_layout.update( {
             disabled = True,
             **_action_button_attributes,
         ),
-        event_functions = dict( on_click = 'on_run_tool_click' ),
+        event_functions = dict( on_click = 'on_click_run_tool' ),
     ),
     'spacer_right_user_prompt': dict( component_class = HSpacer ),
 } )
@@ -608,7 +608,7 @@ conversation_control_layout = {
             options = [ 'gpt-4' ],
             value = 'gpt-4',
         ),
-        event_functions = dict( value = 'on_model_selection' ),
+        event_functions = dict( value = 'on_select_model' ),
         populator_function = 'populate_models_selector',
     ),
     'slider_temperature': dict(
@@ -631,7 +631,7 @@ conversation_control_layout = {
             name = 'Number of Documents',
             start = 0, end = 5, step = 1, value = 3,
         ),
-        event_functions = dict( value = 'on_documents_count_adjustment' ),
+        event_functions = dict( value = 'on_adjust_documents_count' ),
     ),
     'text_tokens_total': dict(
         component_class = StaticText,

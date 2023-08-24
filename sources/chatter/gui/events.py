@@ -20,18 +20,16 @@
 
 ''' Event handlers for Holoviz Panel GUI. '''
 
-# TODO: Consistent nomenclature.
-
 
 from . import base as __
 
 
-def on_canned_prompt_selection( gui, event ):
-    from .updaters import populate_canned_prompt_variables
-    populate_canned_prompt_variables( gui )
+def on_adjust_documents_count( gui, event ):
+    from .updaters import update_search_button
+    update_search_button( gui )
 
 
-def on_chat_click( gui, event ):
+def on_click_chat( gui, event ):
     from .actions import chat
     chat( gui )
 
@@ -54,21 +52,58 @@ def on_click_fork_conversation( gui, event ):
     fork_conversation( gui.parent__, gui.index__ )
 
 
-def on_customize_canned_prompt( gui, event ):
+def on_click_run_tool( gui, event ):
+    from .actions import run_tool
+    run_tool( gui )
+
+
+def on_click_search( gui, event ):
+    from .actions import search
+    search( gui )
+
+
+def on_click_uncan_prompt( gui, event ):
     gui.text_input_user.value = str( gui.text_canned_prompt.object )
 
 
-def on_documents_count_adjustment( gui, event ):
-    from .updaters import update_search_button
+# TODO: Ensure that this handler is triggered.
+#       According to https://github.com/holoviz/panel/issues/1882,
+#       this should work. But, it does not.
+#       Possible workaround: https://discourse.holoviz.org/t/catching-textinput-value-while-the-user-is-typing/1652/2
+def on_input_user_prompt( gui, event ):
+    from .updaters import (
+        update_search_button,
+        update_token_count,
+    )
+    update_token_count( gui )
     update_search_button( gui )
 
 
-def on_functions_selection( gui, event ):
+def on_input_finish_user_prompt( gui, event ):
+    from .updaters import (
+        update_and_save_conversation,
+        update_search_button,
+    )
+    update_and_save_conversation( gui )
+    update_search_button( gui )
+
+
+def on_select_canned_prompt( gui, event ):
+    from .updaters import populate_canned_prompt_variables
+    populate_canned_prompt_variables( gui )
+
+
+def on_select_conversation( gui, event ):
+    from .updaters import select_conversation
+    select_conversation( gui, event.obj.identity__ )
+
+
+def on_select_functions( gui, event ):
     from .updaters import update_active_functions
     update_active_functions( gui )
 
 
-def on_model_selection( gui, event ):
+def on_select_model( gui, event ):
     from .updaters import update_functions_prompt
     # TODO: For models which do not explicitly support functions,
     #       weave selected functions into system prompt.
@@ -79,28 +114,13 @@ def on_model_selection( gui, event ):
     update_functions_prompt( gui )
 
 
-def on_run_tool_click( gui, event ):
-    from .actions import run_tool
-    run_tool( gui )
-
-
-def on_select_conversation( gui, event ):
-    from .updaters import select_conversation
-    select_conversation( gui, event.obj.identity__ )
-
-
-def on_system_prompt_selection( gui, event ):
+def on_select_system_prompt( gui, event ):
     from .updaters import (
         populate_system_prompt_variables,
         update_functions_prompt,
     )
     populate_system_prompt_variables( gui )
     update_functions_prompt( gui )
-
-
-def on_search_click( gui, event ):
-    from .actions import search
-    search( gui )
 
 
 def on_toggle_canned_prompt_active( gui, event ):
@@ -159,25 +179,3 @@ def on_toggle_user_prompt_active( gui, event ):
     if canned_state == user_state:
         gui.toggle_canned_prompt_active.value = not user_state
         update_and_save_conversation( gui )
-
-
-# TODO: Ensure that this handler is triggered.
-#       According to https://github.com/holoviz/panel/issues/1882,
-#       this should work. But, it does not.
-#       Possible workaround: https://discourse.holoviz.org/t/catching-textinput-value-while-the-user-is-typing/1652/2
-def on_user_prompt_input( gui, event ):
-    from .updaters import (
-        update_search_button,
-        update_token_count,
-    )
-    update_token_count( gui )
-    update_search_button( gui )
-
-
-def on_user_prompt_input_finish( gui, event ):
-    from .updaters import (
-        update_and_save_conversation,
-        update_search_button,
-    )
-    update_and_save_conversation( gui )
-    update_search_button( gui )
