@@ -203,11 +203,12 @@ def populate_dashboard( gui ):
 
 
 def populate_models_selector( gui ):
-    provider = gui.selector_provider.auxdata__[
-        gui.selector_provider.value ].provide_models
-    models = provider( )
-    gui.selector_model.options = list( models.keys( ) )
+    provider = gui.selector_provider.auxdata__[ gui.selector_provider.value ]
+    models = provider.provide_models( )
     gui.selector_model.auxdata__ = models
+    gui.selector_model.value = None
+    gui.selector_model.options = list( models.keys( ) )
+    gui.selector_model.value = provider.select_default_model( models )
 
 
 def populate_providers_selector( gui ):

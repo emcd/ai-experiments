@@ -603,11 +603,7 @@ conversation_control_layout = {
     ),
     'selector_model': dict(
         component_class = Select,
-        component_arguments = dict(
-            name = 'Model',
-            options = [ 'gpt-4' ],
-            value = 'gpt-4',
-        ),
+        component_arguments = dict( name = 'Model' ),
         event_functions = dict( value = 'on_select_model' ),
         populator_function = 'populate_models_selector',
     ),

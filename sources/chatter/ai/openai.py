@@ -68,6 +68,12 @@ def provide_models( ):
     }
 
 
+def select_default_model( models ):
+    for model_name in ( 'gpt-4', 'gpt-3.5.-turbo-16k', 'gpt-3.5-turbo', ):
+        if model_name in models: return model_name
+    return next( iter( models ) )
+
+
 def chat( messages, special_data, controls, callbacks ):
     special_data = _canonicalize_special_data( special_data )
     controls = _canonicalize_controls( controls )
