@@ -31,6 +31,7 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     indicator = ConversationIndicator( descriptor.title, descriptor.identity )
     indicator.param.watch(
         lambda event: on_select_conversation( gui, event ), 'clicked' )
+    indicator.gui__.parent__ = gui
     __.register_event_callbacks( indicator.gui__, layout, 'column_indicator' )
     conversations = gui.column_conversations_indicators
     if 'END' == position: conversations.append( indicator )
@@ -354,6 +355,10 @@ def update_conversation_hilite( gui, new_descriptor = None ):
         # TODO: Use style variable rather than hard-coded value.
         new_descriptor.indicator.styles.update(
             { 'background': 'LightGray' } )
+    # Hack: Reload indicators to force repaint.
+    indicators = [ indicator for indicator in conversations ]
+    conversations.clear( )
+    conversations.extend( indicators )
 
 
 def update_conversation_timestamp( gui ):
