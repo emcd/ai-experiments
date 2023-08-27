@@ -25,7 +25,7 @@ from . import base as __
 
 
 def chat( gui ):
-    from ..ai import ChatCompletionError
+    from ..ai.providers import ChatCompletionError
     from .updaters import (
         add_conversation_indicator_if_necessary,
         add_message,
@@ -58,7 +58,7 @@ def chat( gui ):
 
 
 def _chat( gui ):
-    from ..ai import ChatCallbacks
+    from ..ai.providers import ChatCallbacks
     from .updaters import add_message
     messages = __.generate_messages( gui )
     controls = dict(

@@ -46,8 +46,8 @@ def prepare( ):
 
 
 def prepare_ai_functions( configuration, directories ):
-    from chatter.ai_functions import registry
-    return registry
+    from chatter.ai.functions import survey_functions
+    return survey_functions( )
 
 
 def prepare_api_clients( ):

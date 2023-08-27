@@ -24,16 +24,11 @@
     directories in the longer term.) '''
 
 
-import json
+from . import base as __
+from .base import survey_functions
 
 
-def roll_dice( specs ):
-    results = [ ]
-    for spec in specs:
-        results.append( { spec[ 'name' ]: _roll_dice( spec[ 'dice' ] ) } )
-    return results
-
-roll_dice.__doc__ = json.dumps( {
+@__.register_function( {
     'name': 'roll_dice',
     'description': '''
 Given a list of name and specification pairs for dice rolls,
@@ -72,7 +67,12 @@ of 0. '''
         },
         'required': [ 'specs' ],
     }
-}, indent = 2 )
+} )
+def roll_dice( specs ):
+    results = [ ]
+    for spec in specs:
+        results.append( { spec[ 'name' ]: _roll_dice( spec[ 'dice' ] ) } )
+    return results
 
 
 def _roll_dice( dice ):
@@ -91,25 +91,7 @@ def _roll_dice( dice ):
     return sum( randint( 1, sides ) for _ in range( number ) ) + offset
 
 
-def read_file_chunk( path, offset = 0, line_number = 1, tokens_max = 1024 ):
-    from itertools import count
-    from .messages import count_tokens
-    lines = { }
-    tokens_total = 0
-    with open( path, 'rb' ) as file:
-        file.seek( offset )
-        for line_number in count( line_number ):
-            line = file.readline( ).decode( )
-            if not line: return dict( lines = lines )
-            tokens_count = count_tokens( line )
-            if tokens_max < tokens_total + tokens_count: break
-            tokens_total += tokens_count
-            offset = file.tell( )
-            lines[ line_number ] = line
-    return dict(
-        lines = lines, line_number = line_number + 1, offset = offset )
-
-read_file_chunk.__doc__ = json.dumps( {
+@__.register_function( {
     'name': 'read_file_chunk',
     'description': '''
 Reads no more than the specified number of tokens from a file, starting from
@@ -144,14 +126,27 @@ reached. ''',
         },
         'required': [ 'path' ],
     },
-}, indent = 2 )
+} )
+def read_file_chunk( path, offset = 0, line_number = 1, tokens_max = 1024 ):
+    from itertools import count
+    from ...messages import count_tokens
+    lines = { }
+    tokens_total = 0
+    with open( path, 'rb' ) as file:
+        file.seek( offset )
+        for line_number in count( line_number ):
+            line = file.readline( ).decode( )
+            if not line: return dict( lines = lines )
+            tokens_count = count_tokens( line )
+            if tokens_max < tokens_total + tokens_count: break
+            tokens_total += tokens_count
+            offset = file.tell( )
+            lines[ line_number ] = line
+    return dict(
+        lines = lines, line_number = line_number + 1, offset = offset )
 
 
-def write_file( path, contents, mode = 'truncate' ):
-    with open( path, { 'append': 'a', 'truncate': 'w' }[ mode] ) as file:
-        return file.write( contents )
-
-write_file.__doc__ = json.dumps( {
+@__.register_function( {
     'name': 'write_file',
     'description': '''
 Writes provided contents to the given file. Returns the number of characters
@@ -174,10 +169,7 @@ written. ''',
         },
         'required': [ 'path', 'contents' ],
     },
-}, indent = 2 )
-
-
-registry = {
-    json.loads( function.__doc__ )[ 'name' ]: function
-    for function in ( read_file_chunk, roll_dice, write_file, )
-}
+})
+def write_file( path, contents, mode = 'truncate' ):
+    with open( path, { 'append': 'a', 'truncate': 'w' }[ mode] ) as file:
+        return file.write( contents )

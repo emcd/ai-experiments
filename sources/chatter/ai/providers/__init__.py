@@ -18,8 +18,13 @@
 #============================================================================#
 
 
-''' AI-related functionality. '''
+''' Functionality for various AI providers. '''
 
 
-from . import functions
-from . import providers
+from .base import ChatCallbacks, ChatCompletionError
+from . import openai
+
+
+registry = {
+    openai.name: openai,
+}

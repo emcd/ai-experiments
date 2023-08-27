@@ -2,6 +2,7 @@ beautifulsoup4
 chromadb ~= 0.3.29
 faiss-cpu
 icecream
+jsonschema
 langchain
 mako
 notebook

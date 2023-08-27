@@ -60,7 +60,7 @@ def add_conversation_indicator_if_necessary( gui ):
         temperature = gui.slider_temperature.value,
     )
     from json import JSONDecodeError, loads
-    from chatter.ai import ChatCallbacks, ChatCompletionError
+    from ..ai.providers import ChatCallbacks, ChatCompletionError
     callbacks = ChatCallbacks(
         allocator = ( lambda mime_type: [ ] ),
         updater = ( lambda handle, content: handle.append( content ) ),
@@ -213,7 +213,7 @@ def populate_models_selector( gui ):
 
 
 def populate_providers_selector( gui ):
-    from ..ai import registry
+    from ..ai.providers import registry
     gui.selector_provider.options = list( registry.keys( ) )
     gui.selector_provider.auxdata__ = registry
 
