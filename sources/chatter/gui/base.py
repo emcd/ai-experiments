@@ -116,30 +116,21 @@ def generate_component( components, layout, component_name ):
     return component
 
 
-# TODO: Provide as callback to provider-specific chat implementation.
 def generate_messages( gui ):
     messages = [ ]
-    model_data = gui.selector_model.auxdata__[ gui.selector_model.value ]
     if gui.toggle_system_prompt_active.value:
-        system_message = gui.text_system_prompt.object
-        sysprompt_honor = model_data[ 'honors-system-prompt' ]
-        role = 'system' if sysprompt_honor else 'user'
-        messages.append( { 'role': role, 'content': system_message } )
-    supports_functions = model_data[ 'supports-functions' ]
+        messages.append( dict(
+            content = gui.text_system_prompt.object, role = 'Supervisor' ) )
     for row in gui.column_conversation_history:
         message_gui = row.auxdata__[ 'gui' ]
         if not message_gui.toggle_active.value: continue
         role = row.auxdata__[ 'role' ]
-        # TODO? Map to provider-specific role names.
-        if supports_functions and 'Function' == role: role = 'function'
-        elif role in ( 'Human', 'Document', 'Function' ): role = 'user'
-        else: role = 'assistant'
         message = dict(
             content = message_gui.text_message.object,
             role = role,
         )
         if 'actor-name' in row.auxdata__:
-            message[ 'name' ] = row.auxdata__[ 'actor-name' ]
+            message[ 'actor-name' ] = row.auxdata__[ 'actor-name' ]
         messages.append( message )
     return messages
 

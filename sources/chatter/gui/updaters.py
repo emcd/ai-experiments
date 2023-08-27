@@ -51,7 +51,7 @@ def add_conversation_indicator_if_necessary( gui ):
         'JSON: Title + Labels' ][ 'template' ]
     messages = [
         *__.generate_messages( gui )[ 1 : ],
-        { 'role': 'user', 'content': canned_prompt }
+        { 'role': 'Human', 'content': canned_prompt }
     ]
     provider_name = gui.selector_provider.value
     provider = gui.selector_provider.auxdata__[ provider_name ]

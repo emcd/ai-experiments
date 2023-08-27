@@ -24,7 +24,11 @@ from . import base as __
 name = 'OpenAI'
 
 
+_models = { }
+
+
 def provide_models( ):
+    if _models: return _models.copy( )
     from collections import defaultdict
     from operator import itemgetter
     import openai
@@ -58,14 +62,16 @@ def provide_models( ):
         'gpt-4-0613': 8192,
         'gpt-4-32k-0613': 32768,
     } )
-    return {
+    _models.clear( )
+    _models.update( {
         model_name: {
             'honors-system-prompt': sysprompt_honor[ model_name ],
             'supports-functions': function_support[ model_name ],
             'tokens-limit': tokens_limits[ model_name ],
         }
         for model_name in model_names
-    }
+    } )
+    return _models.copy( )
 
 
 def select_default_model( models ):
@@ -75,6 +81,7 @@ def select_default_model( models ):
 
 
 def chat( messages, special_data, controls, callbacks ):
+    messages = _canonicalize_messages( messages, controls[ 'model' ] )
     special_data = _canonicalize_special_data( special_data )
     controls = _canonicalize_controls( controls )
     from openai import ChatCompletion, OpenAIError
@@ -110,6 +117,9 @@ def chat( messages, special_data, controls, callbacks ):
     return handle
 
 
+# TODO: Implement 'count_tokens'.
+
+
 def _canonicalize_controls( controls ):
     nomargs = {
         name: value for name, value in controls.items( )
@@ -117,6 +127,48 @@ def _canonicalize_controls( controls ):
     }
     nomargs[ 'stream' ] = True
     return nomargs
+
+
+def _canonicalize_messages( ix_messages, model_name ):
+    honors_sysprompt = _models[ model_name ][ 'honors-system-prompt' ]
+    supports_functions = _models[ model_name ][ 'supports-functions' ]
+    messages = [ ]
+    for ix_message in ix_messages:
+        ix_role = ix_message[ 'role' ]
+        if 'Supervisor' == ix_role:
+            role = 'system' if honors_sysprompt else 'user'
+        elif supports_functions and 'Function' == ix_role:
+            role = 'function'
+        elif ix_role in ( 'Human', 'Document', 'Function' ):
+            role = 'user'
+        else: role = 'assistant'
+        name = ix_message.get( 'actor-name' )
+        # Merge messages if role and name are the same.
+        if (    messages
+            and role == messages[ -1 ][ 'role' ]
+            and name == messages[ -1 ].get( 'name' )
+        ):
+            message = messages[ -1 ]
+            message[ 'content' ] = '\n\n'.join( (
+                message[ 'content' ], ix_message[ 'content' ] ) )
+        # Merge document into previous user message.
+        # TODO: Convert to MIME-like format and update sysprompt accordingly.
+        elif (    messages
+              and 'user' == messages[ -1 ][ 'role' ]
+              and 'Document' == ix_role
+        ):
+            message = messages[ -1 ]
+            message[ 'content' ] = '\n\n'.join( (
+                message[ 'content' ],
+                '## Supplemental Information ##',
+                ix_message[ 'content' ] ) )
+        # Else, create and append new message.
+        else:
+            message = dict( content = ix_message[ 'content' ], role = role )
+            if 'actor-name' in ix_message:
+                message[ 'name' ] = ix_message[ 'actor-name' ]
+            messages.append( message )
+    return messages
 
 
 def _canonicalize_special_data( data ):
