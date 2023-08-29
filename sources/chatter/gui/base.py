@@ -116,7 +116,14 @@ def generate_component( components, layout, component_name ):
     return component
 
 
-def generate_messages( gui ):
+def package_controls( gui ):
+    return dict(
+        model = gui.selector_model.value,
+        temperature = gui.slider_temperature.value,
+    )
+
+
+def package_messages( gui ):
     messages = [ ]
     if gui.toggle_system_prompt_active.value:
         messages.append( dict(
@@ -133,6 +140,16 @@ def generate_messages( gui ):
             message[ 'actor-name' ] = row.auxdata__[ 'actor-name' ]
         messages.append( message )
     return messages
+
+
+def package_special_data( gui ):
+    special_data = { }
+    supports_functions = gui.selector_model.auxdata__[
+        gui.selector_model.value ][ 'supports-functions' ]
+    if supports_functions:
+        ai_functions = _provide_active_ai_functions( gui )
+        if ai_functions: special_data[ 'ai-functions' ] = ai_functions
+    return special_data
 
 
 def populate_component( gui, layout, component_name ):
@@ -162,3 +179,16 @@ def register_event_callbacks( gui, layout, component_name ):
             continue
         component.param.watch(
             lambda event: function( gui, event ), event_name )
+
+
+def _provide_active_ai_functions( gui ):
+    from json import loads
+    # TODO: Remove visibility restriction once fill of system prompt
+    #       is implemented for non-functions-supporting models.
+    if not gui.row_functions_prompt.visible: return [ ]
+    if not gui.toggle_functions_active.value: return [ ]
+    if not gui.multichoice_functions.value: return [ ]
+    return [
+        loads( function.__doc__ )
+        for name, function in gui.auxdata__[ 'ai-functions' ].items( )
+        if name in gui.multichoice_functions.value ]

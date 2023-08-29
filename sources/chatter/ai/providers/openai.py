@@ -117,7 +117,39 @@ def chat( messages, special_data, controls, callbacks ):
     return handle
 
 
-# TODO: Implement 'count_tokens'.
+def count_conversation_tokens( messages, special_data, controls ):
+    from json import dumps
+    model_name = controls[ 'model' ]
+    # Adapted from https://github.com/openai/openai-cookbook/blob/2e9704b3b34302c30174e7d8e7211cb8da603ca9/examples/How_to_count_tokens_with_tiktoken.ipynb
+    if 'gpt-3.5-turbo-0301' == model_name:
+        tokens_per_message, tokens_per_name = 4, -1
+    elif model_name in (
+        'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-16k-0613',
+        'gpt-4-0314', 'gpt-4-32k-0314',
+        'gpt-4-0613', 'gpt-4-32k-0613',
+    ):
+        tokens_per_message, tokens_per_name = 3, 1
+    elif model_name.startswith( ( 'gpt-3.5-turbo', 'gpt-4', ) ):
+        # TODO: Use callback to warn about unknown model.
+        tokens_per_message, tokens_per_name = 3, 1
+    else: raise NotImplementedError( f"Unsupported model: {model_name}" )
+    tokens_count = 0
+    for message in _canonicalize_messages( messages, model_name ):
+        tokens_count += tokens_per_message
+        for index, value in message.items( ):
+            tokens_count += count_text_tokens( value, model_name )
+            if 'name' == index: tokens_count += tokens_per_name
+    for function in special_data.get( 'ai-functions', [ ] ):
+        tokens_count += count_text_tokens( dumps( function ), model_name )
+    return tokens_count
+
+
+def count_text_tokens( text, model_name ):
+    from tiktoken import encoding_for_model, get_encoding
+    try: encoding = encoding_for_model( model_name )
+    # TODO: Warn about unknown model via callback.
+    except KeyError: encoding = get_encoding( 'cl100k_base' )
+    return len( encoding.encode( text ) )
 
 
 def _canonicalize_controls( controls ):

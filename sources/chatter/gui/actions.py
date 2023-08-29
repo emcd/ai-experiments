@@ -60,17 +60,9 @@ def chat( gui ):
 def _chat( gui ):
     from ..ai.providers import ChatCallbacks
     from .updaters import add_message
-    messages = __.generate_messages( gui )
-    controls = dict(
-        model = gui.selector_model.value,
-        temperature = gui.slider_temperature.value,
-    )
-    special_data = { }
-    supports_functions = gui.selector_model.auxdata__[
-        gui.selector_model.value ][ 'supports-functions' ]
-    if supports_functions:
-        ai_functions = _provide_active_ai_functions( gui )
-        if ai_functions: special_data[ 'ai-functions' ] = ai_functions
+    messages = __.package_messages( gui )
+    controls = __.package_controls( gui )
+    special_data = __.package_special_data( gui )
     callbacks = ChatCallbacks(
         allocator = (
             lambda mime_type:
@@ -123,16 +115,3 @@ def search( gui ):
         add_message(
             gui, 'Document', document.page_content, mime_type = mime_type )
     update_and_save_conversation( gui )
-
-
-def _provide_active_ai_functions( gui ):
-    from json import loads
-    # TODO: Remove visibility restriction once fill of system prompt
-    #       is implemented for non-functions-supporting models.
-    if not gui.row_functions_prompt.visible: return [ ]
-    if not gui.toggle_functions_active.value: return [ ]
-    if not gui.multichoice_functions.value: return [ ]
-    return [
-        loads( function.__doc__ )
-        for name, function in gui.auxdata__[ 'ai-functions' ].items( )
-        if name in gui.multichoice_functions.value ]

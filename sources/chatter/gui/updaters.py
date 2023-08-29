@@ -50,7 +50,7 @@ def add_conversation_indicator_if_necessary( gui ):
     canned_prompt = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
     messages = [
-        *__.generate_messages( gui )[ 1 : ],
+        *__.package_messages( gui )[ 1 : ],
         { 'role': 'Human', 'content': canned_prompt }
     ]
     provider_name = gui.selector_provider.value
@@ -85,7 +85,6 @@ def add_message(
     behaviors = ( 'active', ),
     mime_type = 'text/markdown',
 ):
-    from ..messages import count_tokens
     from .classes import ConversationMessage
     rehtml_message = ConversationMessage(
         role, mime_type, actor_name = actor_name,
@@ -108,7 +107,6 @@ def add_message(
     else: text_message.object = content
     for behavior in behaviors:
         getattr( message_gui, f"toggle_{behavior}" ).value = True
-    rehtml_message.auxdata__[ 'tokens-count' ] = count_tokens( content )
     __.register_event_callbacks(
         message_gui, message_gui.layout__, 'row_message' )
     gui.column_conversation_history.append( rehtml_message )
@@ -391,8 +389,6 @@ def update_message( message_row, behaviors = ( 'active', ) ):
         getattr( message_gui, f"toggle_{behavior}" ).value = (
             behavior in behaviors )
     content = message_gui.text_message.object
-    from ..messages import count_tokens
-    message_row.auxdata__[ 'tokens-count' ] = count_tokens( content )
 
 
 def update_messages_post_summarization( gui ):
@@ -449,24 +445,20 @@ def update_system_prompt_text( gui ):
 
 
 def update_token_count( gui ):
-    from ..messages import count_tokens
-    tokens_count = 0
-    if gui.toggle_system_prompt_active.value:
-        tokens_count += count_tokens( gui.text_system_prompt.object )
-    supports_functions = gui.selector_model.auxdata__[
-        gui.selector_model.value ][ 'supports-functions' ]
-    if supports_functions and gui.toggle_functions_active.value:
-        for pane in gui.column_functions_json:
-            tokens_count += count_tokens( pane.object )
-    # else, included as part of system prompt
-    for row in gui.column_conversation_history:
-        message_gui = row.gui__
-        if message_gui.toggle_active.value:
-            tokens_count += row.auxdata__[ 'tokens-count' ]
+    messages = __.package_messages( gui )
     if gui.toggle_canned_prompt_active.value:
-        tokens_count += count_tokens( gui.text_canned_prompt.object )
-    if gui.toggle_user_prompt_active.value:
-        tokens_count += count_tokens( gui.text_input_user.value )
+        messages.append( dict(
+            content = gui.text_canned_prompt.object, role = 'Human',
+        ) )
+    elif gui.toggle_user_prompt_active.value:
+        messages.append( dict(
+            content = gui.text_input_user.value, role = 'Human',
+        ) )
+    controls = __.package_controls( gui )
+    special_data = __.package_special_data( gui )
+    provider = gui.selector_provider.auxdata__[ gui.selector_provider.value ]
+    tokens_count = provider.count_conversation_tokens(
+        messages, special_data, controls )
     tokens_limit = gui.selector_model.auxdata__[
         gui.selector_model.value ][ 'tokens-limit' ]
     tokens_report = f"{tokens_count} / {tokens_limit}"
