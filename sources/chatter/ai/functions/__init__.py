@@ -68,7 +68,7 @@ of 0. '''
         'required': [ 'specs' ],
     }
 } )
-def roll_dice( specs ):
+def roll_dice( context__, /, specs ):
     results = [ ]
     for spec in specs:
         results.append( { spec[ 'name' ]: _roll_dice( spec[ 'dice' ] ) } )
@@ -127,9 +127,13 @@ reached. ''',
         'required': [ 'path' ],
     },
 } )
-def read_file_chunk( path, offset = 0, line_number = 1, tokens_max = 1024 ):
+def read_file_chunk(
+    context__, /, path, offset = 0, line_number = 1, tokens_max = 1024
+):
+    from ..providers import registry as providers
+    provider = providers[ context__[ 'provider' ] ]
+    model_name = context__[ 'model' ]
     from itertools import count
-    from ...messages import count_tokens
     lines = { }
     tokens_total = 0
     with open( path, 'rb' ) as file:
@@ -137,7 +141,7 @@ def read_file_chunk( path, offset = 0, line_number = 1, tokens_max = 1024 ):
         for line_number in count( line_number ):
             line = file.readline( ).decode( )
             if not line: return dict( lines = lines )
-            tokens_count = count_tokens( line )
+            tokens_count = provider.count_text_tokens( line, model_name )
             if tokens_max < tokens_total + tokens_count: break
             tokens_total += tokens_count
             offset = file.tell( )
@@ -170,6 +174,6 @@ written. ''',
         'required': [ 'path', 'contents' ],
     },
 })
-def write_file( path, contents, mode = 'truncate' ):
+def write_file( context__, /, path, contents, mode = 'truncate' ):
     with open( path, { 'append': 'a', 'truncate': 'w' }[ mode] ) as file:
         return file.write( contents )

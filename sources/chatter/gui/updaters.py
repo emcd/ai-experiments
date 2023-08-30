@@ -46,19 +46,17 @@ def add_conversation_indicator_if_necessary( gui ):
     conversations = gui.column_conversations_indicators
     descriptor = conversations.current_descriptor__
     if descriptor.identity in conversations.descriptors__: return
-    # TODO: Encapsulate in provider as response format may vary by provider.
-    canned_prompt = gui.selector_canned_prompt.auxdata__[
+    from ..messages import render_prompt_template
+    template = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
+    controls = __.package_controls( gui )
+    prompt = render_prompt_template( template, controls, variables = { } )
     messages = [
         *__.package_messages( gui )[ 1 : ],
-        { 'role': 'Human', 'content': canned_prompt }
+        { 'role': 'Human', 'content': prompt }
     ]
-    provider_name = gui.selector_provider.value
-    provider = gui.selector_provider.auxdata__[ provider_name ]
-    controls = dict(
-        model = gui.selector_model.value,
-        temperature = gui.slider_temperature.value,
-    )
+    provider = gui.selector_provider.auxdata__[
+        gui.selector_provider.value ]
     from json import JSONDecodeError, loads
     from ..ai.providers import ChatCallbacks, ChatCompletionError
     callbacks = ChatCallbacks(
@@ -522,6 +520,8 @@ def _update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
     selector = getattr( gui, selector_name )
     text_prompt = getattr( gui, text_prompt_name )
     template = selector.auxdata__[ selector.value ][ 'template' ]
+    controls = __.package_controls( gui )
     variables = { element.auxdata__[ 'id' ]: element.value for element in row }
-    from mako.template import Template
-    text_prompt.object = Template( template ).render( **variables )
+    from ..messages import render_prompt_template
+    text_prompt.object = render_prompt_template(
+        template, controls, variables )

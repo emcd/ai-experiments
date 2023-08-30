@@ -100,7 +100,8 @@ def extract_function_invocation_request( gui ):
     # TODO: Check against multichoice values instead.
     if name not in ai_functions:
         raise ValueError( 'Function name in request is not available.' )
-    return name, partial_function( ai_functions[ name ], **arguments )
+    context = package_controls( gui )
+    return name, partial_function( ai_functions[ name ], context, **arguments )
 
 
 def generate_component( components, layout, component_name ):
@@ -118,6 +119,7 @@ def generate_component( components, layout, component_name ):
 
 def package_controls( gui ):
     return dict(
+        provider = gui.selector_provider.value,
         model = gui.selector_model.value,
         temperature = gui.slider_temperature.value,
     )

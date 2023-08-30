@@ -21,7 +21,13 @@
 ''' Message processing utilities. '''
 
 
-def count_tokens( content ):
-    from tiktoken import get_encoding
-    encoding = get_encoding( 'cl100k_base' )
-    return len( encoding.encode( content ) )
+def render_prompt_template( template, controls, variables ):
+    from collections.abc import Mapping as AbstractDictionary
+    from types import SimpleNamespace # TODO: Make immutable.
+    if isinstance( controls, AbstractDictionary ):
+        controls = SimpleNamespace( **controls )
+    if isinstance( variables, AbstractDictionary ):
+        variables = SimpleNamespace( **variables )
+    from mako.template import Template
+    return Template( template ).render(
+        controls = controls, variables = variables )
