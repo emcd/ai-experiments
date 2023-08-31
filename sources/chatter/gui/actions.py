@@ -98,6 +98,12 @@ def run_tool( gui ):
         actor_name = name,
         mime_type = 'application/json' )
     chat( gui )
+    if gui.checkbox_elide_function_history.value:
+        message_rows = gui.column_conversation_history
+        message_rows[ -3 ].gui__.toggle_active.value = (
+            message_rows[ -3 ].gui__.toggle_pinned.value )
+        message_rows[ -2 ].gui__.toggle_active.value = (
+            message_rows[ -2 ].gui__.toggle_pinned.value )
 
 
 def search( gui ):

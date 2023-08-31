@@ -312,7 +312,7 @@ conversation_layout.update( {
         ),
         contains = [
             'multichoice_functions',
-            'checkbox_auto_functions',
+            'row_function_options',
             'column_functions_json',
         ],
     ),
@@ -325,10 +325,24 @@ conversation_layout.update( {
         ),
         event_functions = dict( value = 'on_select_functions' ),
     ),
+    'row_function_options': dict(
+        component_class = Row,
+        contains = [
+            'checkbox_auto_functions',
+            'checkbox_elide_function_history',
+        ],
+    ),
     'checkbox_auto_functions': dict(
         component_class = Checkbox,
         component_arguments = dict(
             name = 'Automatic Function Execution',
+            value = True,
+        ),
+    ),
+    'checkbox_elide_function_history': dict(
+        component_class = Checkbox,
+        component_arguments = dict(
+            name = 'Elide Function History',
             value = True,
         ),
     ),
