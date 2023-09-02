@@ -21,60 +21,25 @@
 from . import base as __
 
 
-name = 'OpenAI'
+NAME = 'OpenAI'
 
 
 _models = { }
 
 
-def provide_models( ):
-    if _models: return _models.copy( )
-    from collections import defaultdict
-    from operator import itemgetter
-    import openai
-    # TODO: Only call API when explicitly desired. Should persist to disk.
-    model_names = sorted( map(
-        itemgetter( 'id' ),
-        openai.Model.list( ).to_dict_recursive( )[ 'data' ] ) )
-    sysprompt_honor = defaultdict( lambda: False )
-    sysprompt_honor.update( {
-        #'gpt-3.5-turbo-0613': True,
-        #'gpt-3.5-turbo-16k-0613': True,
-        'gpt-4': True,
-        'gpt-4-32k': True,
-        'gpt-4-0613': True,
-        'gpt-4-32k-0613': True,
-    } )
-    function_support = defaultdict( lambda: False )
-    function_support.update( {
-        'gpt-3.5-turbo-0613': True,
-        'gpt-3.5-turbo-16k-0613': True,
-        'gpt-4-0613': True,
-        'gpt-4-32k-0613': True,
-    } )
-    tokens_limits = defaultdict( lambda: 4096 ) # Some are 4097... _shrug_.
-    tokens_limits.update( {
-        'code-davinci-002': 8000,
-        'gpt-3.5-turbo-16k': 16384,
-        'gpt-3.5-turbo-16k-0613': 16384,
-        'gpt-4': 8192,
-        'gpt-4-32k': 32768,
-        'gpt-4-0613': 8192,
-        'gpt-4-32k-0613': 32768,
-    } )
-    _models.clear( )
-    _models.update( {
-        model_name: {
-            'honors-system-prompt': sysprompt_honor[ model_name ],
-            'supports-functions': function_support[ model_name ],
-            'tokens-limit': tokens_limits[ model_name ],
-        }
-        for model_name in model_names
-    } )
-    return _models.copy( )
+def provide_chat_models( ):
+    models = _provide_models( )
+    return {
+        name: attributes for name, attributes in models.items( )
+        if name.startswith( ( 'gpt-3.5-turbo', 'gpt-4', ) )
+    }
 
 
-def select_default_model( models ):
+def select_default_model( models, auxdata ):
+    configuration = auxdata[ 'configuration' ]
+    try:
+        return configuration[ 'providers' ][ NAME.lower( ) ][ 'default-model' ]
+    except KeyError: pass
     for model_name in ( 'gpt-4', 'gpt-3.5.-turbo-16k', 'gpt-3.5-turbo', ):
         if model_name in models: return model_name
     return next( iter( models ) )
@@ -222,6 +187,53 @@ def _gather_function_chunks( chunk0, response, handle, callbacks ):
         if 'arguments' in delta.function_call:
             function_call[ 'arguments' ] += delta.function_call[ 'arguments' ]
     callbacks.updater( handle, _reconstitute_function_call( function_call ) )
+
+
+def _provide_models( ):
+    if _models: return _models.copy( )
+    from collections import defaultdict
+    from operator import itemgetter
+    import openai
+    # TODO: Only call API when explicitly desired. Should persist to disk.
+    model_names = sorted( map(
+        itemgetter( 'id' ),
+        openai.Model.list( ).to_dict_recursive( )[ 'data' ] ) )
+    sysprompt_honor = defaultdict( lambda: False )
+    sysprompt_honor.update( {
+        #'gpt-3.5-turbo-0613': True,
+        #'gpt-3.5-turbo-16k-0613': True,
+        'gpt-4': True,
+        'gpt-4-32k': True,
+        'gpt-4-0613': True,
+        'gpt-4-32k-0613': True,
+    } )
+    function_support = defaultdict( lambda: False )
+    function_support.update( {
+        'gpt-3.5-turbo-0613': True,
+        'gpt-3.5-turbo-16k-0613': True,
+        'gpt-4-0613': True,
+        'gpt-4-32k-0613': True,
+    } )
+    tokens_limits = defaultdict( lambda: 4096 ) # Some are 4097... _shrug_.
+    tokens_limits.update( {
+        'code-davinci-002': 8000,
+        'gpt-3.5-turbo-16k': 16384,
+        'gpt-3.5-turbo-16k-0613': 16384,
+        'gpt-4': 8192,
+        'gpt-4-32k': 32768,
+        'gpt-4-0613': 8192,
+        'gpt-4-32k-0613': 32768,
+    } )
+    _models.clear( )
+    _models.update( {
+        model_name: {
+            'honors-system-prompt': sysprompt_honor[ model_name ],
+            'supports-functions': function_support[ model_name ],
+            'tokens-limit': tokens_limits[ model_name ],
+        }
+        for model_name in model_names
+    } )
+    return _models.copy( )
 
 
 def _reconstitute_function_call( function_call ):

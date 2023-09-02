@@ -105,12 +105,6 @@ def on_select_functions( gui, event ):
 
 def on_select_model( gui, event ):
     from .updaters import update_functions_prompt
-    # TODO: For models which do not explicitly support functions,
-    #       weave selected functions into system prompt.
-    #       Then, functions prompt row should always be visible.
-    supports_functions = gui.selector_model.auxdata__[
-        gui.selector_model.value ][ 'supports-functions' ]
-    gui.row_functions_prompt.visible = supports_functions
     update_functions_prompt( gui )
 
 

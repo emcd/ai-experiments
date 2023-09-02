@@ -184,6 +184,7 @@ def populate_conversation( gui ):
         gui, conversation_layout, 'column_conversation' )
     __.register_event_callbacks(
         gui, conversation_control_layout, 'column_conversation_control' )
+    update_conversation_postpopulate( gui )
 
 
 def populate_dashboard( gui ):
@@ -201,11 +202,13 @@ def populate_dashboard( gui ):
 
 def populate_models_selector( gui ):
     provider = gui.selector_provider.auxdata__[ gui.selector_provider.value ]
-    models = provider.provide_models( )
+    models = provider.provide_chat_models( )
+    # TODO: Provide image-to-text, and text-to-image, text-to-speech models.
     gui.selector_model.auxdata__ = models
     gui.selector_model.value = None
     gui.selector_model.options = list( models.keys( ) )
-    gui.selector_model.value = provider.select_default_model( models )
+    gui.selector_model.value = provider.select_default_model(
+        models, gui.auxdata__ )
 
 
 def populate_providers_selector( gui ):
@@ -357,6 +360,10 @@ def update_conversation_hilite( gui, new_descriptor = None ):
     conversations.extend( indicators )
 
 
+def update_conversation_postpopulate( gui ):
+    update_functions_prompt( gui )
+
+
 def update_conversation_timestamp( gui ):
     conversations = gui.column_conversations_indicators
     descriptor = conversations.current_descriptor__
@@ -367,11 +374,19 @@ def update_conversation_timestamp( gui ):
 
 
 def update_functions_prompt( gui ):
-    gui.multichoice_functions.value = [ ]
-    sprompt_data = gui.selector_system_prompt.auxdata__[
-        gui.selector_system_prompt.value ]
+    # TODO: For models which do not explicitly support functions,
+    #       weave selected functions into system prompt.
+    #       Then, functions prompt row should always be visible.
+    supports_functions = gui.selector_model.auxdata__[
+        gui.selector_model.value ][ 'supports-functions' ]
+    gui.row_functions_prompt.visible = supports_functions
+    if supports_functions:
+        associated_functions = gui.selector_system_prompt.auxdata__[
+            gui.selector_system_prompt.value ].get(
+                'associated-functions', { } )
+    else: associated_functions = { }
     available_functions = gui.auxdata__[ 'ai-functions' ]
-    associated_functions = sprompt_data.get( 'associated-functions', { } )
+    gui.multichoice_functions.value = [ ]
     gui.multichoice_functions.options = [
         function_name for function_name in available_functions.keys( )
         if function_name in associated_functions ]

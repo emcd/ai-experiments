@@ -25,6 +25,5 @@ from .base import ChatCallbacks, ChatCompletionError
 from . import openai
 
 
-registry = {
-    openai.name: openai,
-}
+# TODO: Use accretive dictionary for providers registry.
+registry = { provider.NAME: provider for provider in ( openai, ) }
