@@ -1,0 +1,7 @@
+id: 'Instructions + Content'
+template: |
+  {
+    "instructions": "${variables.instructions}"
+    "content": ${variables.content}
+  }
+conceal: true

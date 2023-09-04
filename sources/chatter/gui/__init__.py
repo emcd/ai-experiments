@@ -21,19 +21,32 @@
 ''' GUI with Panel widgets. '''
 
 
-def prepare( configuration, directories, ai_functions, vectorstores ):
+def prepare( configuration, directories ):
     from types import SimpleNamespace
+    from ..ai.providers import prepare as prepare_ai_providers
+    from ..ai.functions import prepare as prepare_ai_functions
+    from ..messages import prepare_prompt_templates
+    from ..vectorstores import prepare as prepare_vectorstores
     from .base import generate_component
     from .layouts import dashboard_layout as layout
     from .updaters import populate_dashboard
     components = { }
     generate_component( components, layout, 'dashboard' )
     gui = SimpleNamespace( **components )
-    gui.auxdata__ = {
-        'ai-functions': ai_functions,
-        'configuration': configuration,
-        'directories': directories,
-        'vectorstores': vectorstores,
-    }
+    gui.auxdata__ = SimpleNamespace(
+        ai_functions = prepare_ai_functions( configuration, directories ),
+        # TODO: Asynchronously prepare AI providers.
+        #       Use callback to notify on completion.
+        ai_providers = prepare_ai_providers( configuration, directories ),
+        configuration = configuration,
+        directories = directories,
+        # TODO: Asynchronously prepare prompt templates.
+        #       Use callback to notify on completion.
+        prompt_templates = prepare_prompt_templates(
+            configuration, directories ),
+        # TODO: Asynchronously prepare vectorstores.
+        #       Use callback to notify on completion.
+        vectorstores = prepare_vectorstores( configuration, directories ),
+    )
     populate_dashboard( gui )
     return gui

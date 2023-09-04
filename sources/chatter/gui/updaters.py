@@ -50,7 +50,7 @@ def add_conversation_indicator_if_necessary( gui ):
     template = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
     controls = __.package_controls( gui )
-    prompt = render_prompt_template( template, controls, variables = { } )
+    prompt = render_prompt_template( template, controls )
     messages = [
         *__.package_messages( gui )[ 1 : ],
         { 'role': 'Human', 'content': prompt }
@@ -212,9 +212,10 @@ def populate_models_selector( gui ):
 
 
 def populate_providers_selector( gui ):
-    from ..ai.providers import registry
-    gui.selector_provider.options = list( registry.keys( ) )
-    gui.selector_provider.auxdata__ = registry
+    providers = gui.auxdata__.ai_providers
+    gui.selector_provider.options = list( providers.keys( ) )
+    # TODO: Drop this auxdata and rely on main GUI auxdata instead.
+    gui.selector_provider.auxdata__ = providers
 
 
 def populate_system_prompt_variables( gui ):
@@ -262,7 +263,7 @@ def populate_canned_prompts_selector( gui ):
 
 
 def populate_vectorstores_selector( gui ):
-    vectorstores = gui.auxdata__[ 'vectorstores' ]
+    vectorstores = gui.auxdata__.vectorstores
     gui.selector_vectorstore.options = list( vectorstores.keys( ) )
     update_search_button( gui )
 
@@ -294,7 +295,7 @@ def sort_conversations_index( gui ):
 
 
 def update_active_functions( gui ):
-    available_functions = gui.auxdata__[ 'ai-functions' ]
+    available_functions = gui.auxdata__.ai_functions
     # TODO: Construct components from layout.
     from panel.pane import JSON
     from .layouts import _message_column_width_attributes, sizes
@@ -385,7 +386,7 @@ def update_functions_prompt( gui ):
             gui.selector_system_prompt.value ].get(
                 'associated-functions', { } )
     else: associated_functions = { }
-    available_functions = gui.auxdata__[ 'ai-functions' ]
+    available_functions = gui.auxdata__.ai_functions
     gui.multichoice_functions.value = [ ]
     gui.multichoice_functions.options = [
         function_name for function_name in available_functions.keys( )
@@ -458,6 +459,8 @@ def update_system_prompt_text( gui ):
 
 
 def update_token_count( gui ):
+    if not gui.selector_provider.options: return
+    if not gui.selector_model.options: return
     messages = __.package_messages( gui )
     if gui.toggle_canned_prompt_active.value:
         messages.append( dict(
@@ -469,7 +472,7 @@ def update_token_count( gui ):
         ) )
     controls = __.package_controls( gui )
     special_data = __.package_special_data( gui )
-    provider = gui.selector_provider.auxdata__[ gui.selector_provider.value ]
+    provider = gui.auxdata__.ai_providers[ gui.selector_provider.value ]
     tokens_count = provider.count_conversation_tokens(
         messages, special_data, controls )
     tokens_limit = gui.selector_model.auxdata__[

@@ -56,7 +56,7 @@ from panel.widgets import (
 )
 
 
-sizes = SimpleNamespace( **dict(
+sizes = SimpleNamespace(
     action_button_height = 40,
     action_button_width = 120,
     element_margin = 2,
@@ -66,7 +66,7 @@ sizes = SimpleNamespace( **dict(
     message_width_min = 480,
     sidebar_width_max = 336,
     standard_margin = 5,
-) )
+)
 sizes.icon_button_width = sizes.icon_button_height
 sizes.actions_height = sizes.icon_button_height + 2 * sizes.element_margin
 sizes.actions_width = (
@@ -342,7 +342,7 @@ conversation_layout.update( {
     'checkbox_elide_function_history': dict(
         component_class = Checkbox,
         component_arguments = dict(
-            name = 'Elide Function History',
+            name = 'Function History Elision',
             value = True,
         ),
     ),

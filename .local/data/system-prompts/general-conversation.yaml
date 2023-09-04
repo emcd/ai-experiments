@@ -22,6 +22,7 @@ template: |
   You will not offer additional assistance after answering a question or
   performing a task.
 associated-functions:
+  'read_file': true
   'roll_dice': false
   'write_file': true
 summarization-preference:

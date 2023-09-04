@@ -113,7 +113,7 @@ def search( gui ):
     gui.text_input_user.value = ''
     add_message( gui, 'Human', prompt )
     documents_count = gui.slider_documents_count.value
-    vectorstore = gui.auxdata__[ 'vectorstores' ][
+    vectorstore = gui.auxdata__.vectorstores[
         gui.selector_vectorstore.value ][ 'instance' ]
     documents = vectorstore.similarity_search( prompt, k = documents_count )
     for document in documents:

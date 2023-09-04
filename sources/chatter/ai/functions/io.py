@@ -25,6 +25,80 @@ from . import base as __
 
 
 @__.register_function( {
+    'name': 'read_file',
+    'description': '''
+Reads a file and passes its contents to an AI to analyze according to a given
+set of instructions. Returns the analysis of the file. ''',
+    'parameters': {
+        'type': 'object',
+        'properties': {
+            'path': {
+                'type': 'string',
+                'description': 'Path to the file to be read.'
+            },
+            'instructions': {
+                'type': 'string',
+                'description': 'Analysis instructions for AI.'
+            },
+        },
+        'required': [ 'path', 'instructions' ],
+    },
+} )
+def read_file( auxdata, /, path, instructions ):
+    from ...messages import render_prompt_template
+    ai_messages = [ ]
+    summarization_prompt = render_prompt_template(
+        auxdata.prompt_templates.canned[
+            'Concatenate: AI Responses' ][ 'template' ],
+        controls = auxdata.controls )
+    supervisor_prompt = render_prompt_template(
+        auxdata.prompt_templates.system[
+            'Automation: File Analysis' ][ 'template' ],
+        controls = auxdata.controls )
+    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    cursor = dict( line_number = 1, offset = 0 )
+    while cursor:
+        chunk_info = read_file_chunk( auxdata, path, **cursor )
+        messages = [ dict( content = supervisor_prompt, role = 'Supervisor' ) ]
+        # TODO: Check if above high water mark for tokens count.
+        #       Drop earliest messages from history, if so.
+        if ai_messages:
+            messages.append( dict(
+                content = summarization_prompt, role = 'User' ) )
+            messages.append( dict(
+                content = '\n\n'.join( ai_messages ), role ='AI' ) )
+        messages.append( dict(
+            content = _render_read_file_prompt(
+                auxdata, instructions, chunk_info[ 'lines' ] ),
+            role = 'User' ) )
+        from ..providers import ChatCallbacks
+        callbacks = ChatCallbacks(
+            allocator = ( lambda mime_type: [ ] ),
+            updater = ( lambda handle, content: handle.append( content ) ),
+        )
+        handle = provider.chat( messages, { }, auxdata.controls, callbacks )
+        ai_messages.append( ''.join( handle ) )
+        cursor = {
+            key: chunk_info[ key ] for key in ( 'line_number', 'offset', )
+            if key in chunk_info
+        }
+    return ai_messages
+
+
+def _render_read_file_prompt( auxdata, instructions, content ):
+    from ...messages import render_prompt_template
+    instructions_prompt_template = auxdata.prompt_templates.canned[
+        'Instructions + Content' ][ 'template' ]
+    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    content = provider.render_as_preferred_structure(
+        content, auxdata.controls )
+    return render_prompt_template(
+        instructions_prompt_template,
+        controls = auxdata.controls,
+        variables = dict( content = content, instructions = instructions ) )
+
+
+@__.register_function( {
     'name': 'read_file_chunk',
     'description': '''
 Reads no more than the specified number of tokens from a file, starting from
@@ -61,11 +135,10 @@ reached. ''',
     },
 } )
 def read_file_chunk(
-    context__, /, path, offset = 0, line_number = 1, tokens_max = 1024
+    auxdata, /, path, offset = 0, line_number = 1, tokens_max = 1024
 ):
-    from ..providers import registry as providers
-    provider = providers[ context__[ 'provider' ] ]
-    model_name = context__[ 'model' ]
+    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    model_name = auxdata.controls[ 'model' ]
     from itertools import count
     lines = { }
     tokens_total = 0
@@ -107,6 +180,6 @@ written. ''',
         'required': [ 'path', 'contents' ],
     },
 })
-def write_file( context__, /, path, contents, mode = 'truncate' ):
+def write_file( auxdata, /, path, contents, mode = 'truncate' ):
     with open( path, { 'append': 'a', 'truncate': 'w' }[ mode] ) as file:
         return file.write( contents )

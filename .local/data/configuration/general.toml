@@ -3,7 +3,7 @@ format-version = 1
 [locations]
 data = '{user_data_path}'
 state = '{user_state_path}'
-environment-file = '{project_path}/.env'
+environment-file = '{main_path}/.env'
 
-[providers]
-use = [ 'openai' ]
+[providers.'openai']
+enable = true

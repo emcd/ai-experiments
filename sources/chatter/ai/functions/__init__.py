@@ -21,6 +21,8 @@
 ''' Collection of AI functions. '''
 
 
-from . import io
-from . import probability
-from .base import survey_functions
+def prepare( configuration, directories ):
+    from . import io, probability
+    # TODO: Prepare functions: check for dependencies, environment, etc....
+    from .base import survey_functions
+    return survey_functions( )

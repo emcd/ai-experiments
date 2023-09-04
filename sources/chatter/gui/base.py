@@ -76,8 +76,8 @@ roles_styles = {
 
 
 def calculate_conversations_path( gui ):
-    configuration = gui.auxdata__[ 'configuration' ]
-    directories = gui.auxdata__[ 'directories' ]
+    configuration = gui.auxdata__.configuration
+    directories = gui.auxdata__.directories
     state_path = Path( configuration[ 'locations' ][ 'state' ].format(
         user_state_path = directories.user_state_path ) )
     return state_path / 'conversations'
@@ -96,12 +96,13 @@ def extract_function_invocation_request( gui ):
         raise ValueError( 'Function name is absent from invocation request.' )
     name = data[ 'name' ]
     arguments = data.get( 'arguments', { } )
-    ai_functions = gui.auxdata__[ 'ai-functions' ]
+    ai_functions = gui.auxdata__.ai_functions
     # TODO: Check against multichoice values instead.
     if name not in ai_functions:
         raise ValueError( 'Function name in request is not available.' )
-    context = package_controls( gui )
-    return name, partial_function( ai_functions[ name ], context, **arguments )
+    auxdata = SimpleNamespace(
+        controls = package_controls( gui ), **gui.auxdata__.__dict__ )
+    return name, partial_function( ai_functions[ name ], auxdata, **arguments )
 
 
 def generate_component( components, layout, component_name ):
@@ -192,5 +193,5 @@ def _provide_active_ai_functions( gui ):
     if not gui.multichoice_functions.value: return [ ]
     return [
         loads( function.__doc__ )
-        for name, function in gui.auxdata__[ 'ai-functions' ].items( )
+        for name, function in gui.auxdata__.ai_functions.items( )
         if name in gui.multichoice_functions.value ]

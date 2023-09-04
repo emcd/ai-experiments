@@ -21,24 +21,41 @@
 from . import base as __
 
 
-NAME = 'OpenAI'
+_NAME = 'OpenAI'
 
 
-_models = { }
+_models = { } # TODO: Hide models cache in closure cell.
+
+
+def prepare( configuration, directories ):
+    from os import environ as cpe  # current process environment
+    if 'OPENAI_API_KEY' in cpe:
+        import openai
+        openai.api_key = cpe[ 'OPENAI_API_KEY' ]
+        if 'OPENAI_ORGANIZATION_ID' in cpe:
+            openai.organization = cpe[ 'OPENAI_ORGANIZATION_ID' ]
+    else: raise LookupError( f"Missing 'OPENAI_API_KEY'." )
+    _models.update( _provide_models( ) )
+    return _NAME
 
 
 def provide_chat_models( ):
-    models = _provide_models( )
     return {
-        name: attributes for name, attributes in models.items( )
+        name: attributes for name, attributes in _models.items( )
         if name.startswith( ( 'gpt-3.5-turbo', 'gpt-4', ) )
     }
 
 
+def render_as_preferred_structure( content, controls ):
+    from json import dumps
+    return dumps( content )
+
+
 def select_default_model( models, auxdata ):
-    configuration = auxdata[ 'configuration' ]
+    configuration = auxdata.configuration
     try:
-        return configuration[ 'providers' ][ NAME.lower( ) ][ 'default-model' ]
+        return configuration[
+            'providers' ][ _NAME.lower( ) ][ 'default-model' ]
     except KeyError: pass
     for model_name in ( 'gpt-4', 'gpt-3.5.-turbo-16k', 'gpt-3.5-turbo', ):
         if model_name in models: return model_name
@@ -224,16 +241,14 @@ def _provide_models( ):
         'gpt-4-0613': 8192,
         'gpt-4-32k-0613': 32768,
     } )
-    _models.clear( )
-    _models.update( {
+    return {
         model_name: {
             'honors-system-prompt': sysprompt_honor[ model_name ],
             'supports-functions': function_support[ model_name ],
             'tokens-limit': tokens_limits[ model_name ],
         }
         for model_name in model_names
-    } )
-    return _models.copy( )
+    }
 
 
 def _reconstitute_function_call( function_call ):

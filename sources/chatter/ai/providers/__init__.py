@@ -22,8 +22,15 @@
 
 
 from .base import ChatCallbacks, ChatCompletionError
-from . import openai
 
 
-# TODO: Use accretive dictionary for providers registry.
-registry = { provider.NAME: provider for provider in ( openai, ) }
+def prepare( configuration, directories ):
+    from . import openai
+    # TODO: Use accretive dictionary for providers registry.
+    providers = { }
+    # TODO: Prepare asynchronously.
+    for provider in ( openai, ):
+        try: provider_name = provider.prepare( configuration, directories )
+        except Exception: continue
+        providers[ provider_name ] = provider
+    return providers
