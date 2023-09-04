@@ -13,10 +13,13 @@ template: |
   for the current file chunk. The content of each line is the actual content
   of the file. The line numbers are provided as metadata.
 
-  Be aware that constructs, such as sentences or functions, may span more than
-  one chunk. You may need to assume continuation of a construct until you
-  encounter syntactic evidence, such as a delimiter or change of indentation
-  level, to indicate that it is complete.
+  Be aware that constructs, such as paragraphs or functions, may span more than
+  one file chunk. When at the end of a chunk, please indicate whether a
+  construct may be continued in the next chunk. When at the beginning of a
+  chunk, please consider whether the content is a continuation from the
+  previous chunk, if there was one. Look for indicators, such as a terminating
+  delimiter or change of indentation level, to find the boundary of a construct
+  which spans chunks.
 conceal: true
 examples:
   - id: 'Request: Code'
