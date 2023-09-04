@@ -5,3 +5,8 @@ template: |
     "content": ${variables.content}
   }
 conceal: true
+variables:
+  - id: 'content'
+    label: 'Content'
+  - id: 'instructions'
+    label: 'Instructions'

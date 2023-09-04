@@ -1,0 +1,21 @@
+id: 'Read Code File'
+template: |
+  Please invoke an AI to analyze the file at `${variables.path}`. The AI should
+  carry out the following instructions:
+
+  % if 'Python' == variables.language:
+  * Summarize classes, functions, and module attributes.
+  % else:
+  * Summarize file/module-level entities, including constructs, functions, and
+    global variables. Do likewise for the members of constructs.
+  % endif
+  * Note any documentation which contradicts the mechanics of its
+    corresponding code.
+  * Note any comments which contain important mechanical information.
+  * Note any TODO comments.
+  * Note any potential bugs, missing cases, or insufficient error handling.
+variables:
+  - id: 'language'
+    label: 'Language'
+  - id: 'path'
+    label: 'Path'

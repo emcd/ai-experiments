@@ -242,8 +242,7 @@ def populate_system_prompt_variables( gui ):
 
 
 def populate_system_prompts_selector( gui ):
-    _populate_prompts_selector(
-        gui.selector_system_prompt, __.Path( '.local/data/system-prompts' ) )
+    _populate_prompts_selector( gui, 'system' )
     populate_system_prompt_variables( gui )
 
 
@@ -257,8 +256,7 @@ def populate_canned_prompt_variables( gui ):
 
 
 def populate_canned_prompts_selector( gui ):
-    _populate_prompts_selector(
-        gui.selector_canned_prompt, __.Path( '.local/data/canned-prompts' ) )
+    _populate_prompts_selector( gui, 'canned' )
     populate_canned_prompt_variables( gui )
 
 
@@ -498,12 +496,14 @@ def _populate_prompt_variables( gui, row_name, selector_name, callback ):
         # TODO: Validation of template variables.
         species = variable.get( 'species', 'text' )
         label = variable[ 'label' ]
-        default = variable[ 'default' ]
         if 'text' == species:
+            default = variable.get( 'default', '' )
             component = TextInput( name = label, value = default )
         elif 'boolean' == species:
+            default = variable.get( 'default', False )
             component = Checkbox( name = label, value = default )
         elif 'options' == species:
+            default = variable.get( 'default', variable[ 'options' ][ 0 ] )
             component = Select(
                 name = label,
                 options = variable[ 'options' ],
@@ -518,19 +518,16 @@ def _populate_prompt_variables( gui, row_name, selector_name, callback ):
     callback( gui )
 
 
-def _populate_prompts_selector( gui_selector, prompts_directory ):
-    from yaml import safe_load
-    auxdata = { }; prompt_names = [ ]
-    for prompt_path in (
-        prompts_directory.resolve( strict = True ).glob( '*.yaml' )
-    ):
-        with prompt_path.open( ) as file:
-            contents = safe_load( file )
-            id_ = contents[ 'id' ]
-            auxdata[ id_ ] = contents
-            prompt_names.append( id_ )
-    gui_selector.auxdata__ = auxdata
-    gui_selector.options = prompt_names
+def _populate_prompts_selector( gui, template_class ):
+    selector = getattr( gui, f"selector_{template_class}_prompt" )
+    templates = getattr( gui.auxdata__.prompt_templates, template_class )
+    selector.auxdata__ = templates # TODO: Remove this reference.
+    prompt_names = [ ]
+    for name, data in templates.items( ):
+        if data.get( 'conceal', False ): continue
+        prompt_names.append( name )
+    prompt_names.sort( )
+    selector.options = prompt_names
 
 
 def _update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
