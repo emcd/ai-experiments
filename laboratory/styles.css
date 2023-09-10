@@ -3,8 +3,7 @@
     justify-content: space-between;
 }
 
-.main,
-.panel {
+.main, .panel {
     border: 1px solid black;
     padding: 15px;
 }
@@ -17,8 +16,17 @@
 .panel {
     background-color: #333;
     color: #fff;
+    overflow-y: auto;
     position: sticky;
     z-index: 10;
+}
+
+body, .panel {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+body::-webkit-scrollbar, .panel::-webkit-scrollbar {
+    display: none;
 }
 
 .left, .right {
@@ -46,59 +54,9 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    /* padding: 10px; */
 }
 
 /*
-body, html {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
-}
-
-.panel {
-    position: sticky;
-    background-color: #333;
-    color: #fff;
-    z-index: 10;
-}
-
-.center {
-    top: 0;
-    bottom: 0;
-    left: calc(min(20%, 360px));
-    right: calc(min(20%, 360px));
-}
-
-.left, .right {
-    top: 0;
-    bottom: 0;
-    width: calc(min(20%, 360px));
-    overflow-y: auto;
-}
-
-.left {
-    left: 0;
-}
-
-.right {
-    right: 0;
-}
-
-.top, .bottom {
-    height: calc(10% * var(--vh));
-}
-
-.top {
-    top: 0;
-}
-
-.bottom {
-    bottom: 0;
-}
-
 .main-content {
     position: relative;
     margin-left: calc(min(20%, 360px));
