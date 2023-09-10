@@ -1,0 +1,122 @@
+.wrapper {
+    display: flex;
+    justify-content: space-between;
+}
+
+.main,
+.panel {
+    border: 1px solid black;
+    padding: 15px;
+}
+
+.main {
+    background-color: #fff;
+    width: 100%;
+}
+
+.panel {
+    background-color: #333;
+    color: #fff;
+    position: sticky;
+    z-index: 10;
+}
+
+.left, .right {
+    height: 100vh;
+    width: calc(min(20%, 288px));
+    top: 0;
+}
+
+.bottom, .top {
+    height: 10vh;
+    width: 100%;
+}
+
+.bottom {
+    bottom: 0;
+}
+
+.top {
+    top: 0;
+}
+
+
+body {
+    background-color: #ccc;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    /* padding: 10px; */
+}
+
+/*
+body, html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+}
+
+.panel {
+    position: sticky;
+    background-color: #333;
+    color: #fff;
+    z-index: 10;
+}
+
+.center {
+    top: 0;
+    bottom: 0;
+    left: calc(min(20%, 360px));
+    right: calc(min(20%, 360px));
+}
+
+.left, .right {
+    top: 0;
+    bottom: 0;
+    width: calc(min(20%, 360px));
+    overflow-y: auto;
+}
+
+.left {
+    left: 0;
+}
+
+.right {
+    right: 0;
+}
+
+.top, .bottom {
+    height: calc(10% * var(--vh));
+}
+
+.top {
+    top: 0;
+}
+
+.bottom {
+    bottom: 0;
+}
+
+.main-content {
+    position: relative;
+    margin-left: calc(min(20%, 360px));
+    margin-right: calc(min(20%, 360px));
+    overflow: auto;
+    height: 100%;
+    background-color: #f5f5f5;
+    padding-left: calc((100% - 640px) / 2);
+    padding-right: calc((100% - 640px) / 2);
+}
+
+:root {
+    --vh: 1vh;
+}
+
+@media screen and (orientation: landscape) {
+    :root {
+        --vh: calc(1vh + (1vh - (var(--vh) * 100)));
+    }
+}
+*/
