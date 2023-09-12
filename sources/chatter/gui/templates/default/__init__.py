@@ -29,12 +29,14 @@ from typing import ClassVar, Dict
 
 import param
 
-from panel.template.base import BasicTemplate
+from panel.config import config
+from panel.template.base import Template
 from panel.theme import Design
+from panel.theme.base import THEMES
 from panel.theme.native import Native
 
 
-class DefaultTemplate( BasicTemplate ):
+class DefaultTemplate( Template ):
     ''' Template for standard chatter layout. '''
 
     design = param.ClassSelector(
@@ -54,3 +56,8 @@ class DefaultTemplate( BasicTemplate ):
     }
 
     _template = pathlib.Path( __file__ ).parent / 'default.html'
+
+    def __init__(self, **params):
+        template = self._template.read_text( encoding = 'utf-8' )
+        super().__init__( template = template, **params )
+        self._render_variables['theme'] = self._design.theme

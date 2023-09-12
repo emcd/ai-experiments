@@ -43,11 +43,15 @@ def prepare( ):
 
 
 def prepare_gui( configuration, directories ):
+    from panel.layout import Column, Row
     from panel.widgets import Button
     from chatter.gui.templates.default import DefaultTemplate
-    template = DefaultTemplate( busy_indicator = None )
-    # template.sidebar.append( Button( name = 'Foo' ) )
-    template.main.append( 'Test content' )
+    template = DefaultTemplate( )
+    template.add_panel( 'left', Column( Button( name = 'Left' ) ) )
+    template.add_panel( 'top', Column( Button( name = 'Top' ) ) )
+    template.add_panel( 'main', Column( Button( name = 'Main' ) ) )
+    template.add_panel( 'bottom', Column( Button( name = 'Bottom' ) ) )
+    template.add_panel( 'right', Column( Button( name = 'Right' ) ) )
     return template
 
 
