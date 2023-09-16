@@ -8,11 +8,6 @@
 
 * Change conversation indicator background on mouse enter/leave.
 
-* Find way to add stickiness to side panels. (Maybe use Panel template
-  or wait until rewrite in Vue.js.)
-
-* Find way to add stickiness to system and user prompt rows.
-
 * Find way for boxes of toggles or action buttons to float on top of other
   components.
 

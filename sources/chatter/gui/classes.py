@@ -52,9 +52,8 @@ class ConversationIndicator( __.ReactiveHTML ):
 
     def __init__( self, title, identity, **params ):
         from .layouts import conversation_indicator_layout as layout
-        components = { }
-        row = __.generate_component( components, layout, 'column_indicator' )
-        row_gui = __.SimpleNamespace( **components )
+        row_gui = __.SimpleNamespace( )
+        row = __.generate_component( row_gui, layout, 'column_indicator' )
         row_gui.rehtml_indicator = self
         row_gui.text_title.object = title
         self.gui__ = row_gui
@@ -96,10 +95,9 @@ class ConversationMessage( __.ReactiveHTML ):
             from .layouts import json_conversation_message_layout as layout
         else:
             from .layouts import rich_conversation_message_layout as layout
-        components = { }
-        row = __.generate_component( components, layout, 'row_message' )
+        row_gui = __.SimpleNamespace( )
+        row = __.generate_component( row_gui, layout, 'row_message' )
         row.styles.update( styles )
-        row_gui = __.SimpleNamespace( **components )
         row_gui.rehtml_message = self
         row_gui.layout__ = layout
         self.auxdata__ = {

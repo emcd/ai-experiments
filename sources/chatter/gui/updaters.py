@@ -120,12 +120,14 @@ def create_and_display_conversation( gui, state = None ):
 
 
 def create_conversation( gui, descriptor, state = None ):
-    from .layouts import dashboard_layout as layout
+    from . import layouts
+    from .layouts import conversation_container_names
     from .persistence import inject_conversation
-    components = gui.__dict__.copy( )
-    __.generate_component( components, layout, 'column_conversation' )
-    __.generate_component( components, layout, 'column_conversation_control' )
-    pane_gui = __.SimpleNamespace( **components )
+    # TODO: Restrict GUI namespace to conversation components.
+    pane_gui = __.SimpleNamespace( **gui.__dict__ )
+    for component_name in conversation_container_names:
+        layout = getattr( layouts, f"{component_name}_layout" )
+        __.generate_component( pane_gui, layout, f"column_{component_name}" )
     pane_gui.auxdata__ = gui.auxdata__
     pane_gui.identity__ = descriptor.identity
     pane_gui.parent__ = gui
@@ -136,8 +138,7 @@ def create_conversation( gui, descriptor, state = None ):
 
 
 def delete_conversation( gui, descriptor ):
-    # TODO: Confirmation modal dialog:
-    #   https://discourse.holoviz.org/t/can-i-use-create-a-modal-dialog-in-panel/1207/4
+    # TODO: Confirmation modal dialog.
     from .persistence import save_conversations_index
     conversations = gui.column_conversations_indicators
     if descriptor is conversations.current_descriptor__:
@@ -156,14 +157,13 @@ def delete_conversation( gui, descriptor ):
 
 
 def display_conversation( gui, descriptor ):
+    from .layouts import conversation_container_names
     conversations = gui.column_conversations_indicators
     conversations.current_descriptor__ = descriptor
-    gui.__dict__.update( descriptor.gui.__dict__ )
-    gui.dashboard.clear( )
-    gui.dashboard.extend( (
-        gui.column_conversations_manager,
-        gui.column_conversation,
-        gui.column_conversation_control ) )
+    for component_name in conversation_container_names:
+        getattr( gui, f"interpolant_{component_name}" ).objects = [
+            getattr( descriptor.gui, f"column_{component_name}" ) ]
+    gui.identity__ = descriptor.gui.identity__
 
 
 def fork_conversation( gui, index ):
@@ -175,15 +175,14 @@ def fork_conversation( gui, index ):
 
 
 def populate_conversation( gui ):
-    from .layouts import conversation_layout, conversation_control_layout
-    __.populate_component(
-        gui, conversation_control_layout, 'column_conversation_control' )
-    __.populate_component(
-        gui, conversation_layout, 'column_conversation' )
-    __.register_event_callbacks(
-        gui, conversation_layout, 'column_conversation' )
-    __.register_event_callbacks(
-        gui, conversation_control_layout, 'column_conversation_control' )
+    from . import layouts
+    from .layouts import conversation_container_names
+    for component_name in conversation_container_names:
+        layout = getattr( layouts, f"{component_name}_layout" )
+        __.populate_component( gui, layout, f"column_{component_name}" )
+    for component_name in conversation_container_names:
+        layout = getattr( layouts, f"{component_name}_layout" )
+        __.register_event_callbacks( gui, layout, f"column_{component_name}" )
     update_conversation_postpopulate( gui )
 
 

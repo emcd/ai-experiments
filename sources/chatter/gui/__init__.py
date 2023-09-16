@@ -23,17 +23,25 @@
 
 def prepare( configuration, directories ):
     from types import SimpleNamespace
+    from .base import generate_component
+    from .layouts import dashboard_layout as layout
+    from .templates.default import DefaultTemplate
+    from .updaters import populate_dashboard
+    gui = SimpleNamespace( )
+    gui.auxdata__ = prepare_auxdata( configuration, directories )
+    gui.template__ = DefaultTemplate( )
+    generate_component( gui, layout, 'dashboard' )
+    populate_dashboard( gui )
+    return gui
+
+
+def prepare_auxdata( configuration, directories ):
+    from types import SimpleNamespace
     from ..ai.providers import prepare as prepare_ai_providers
     from ..ai.functions import prepare as prepare_ai_functions
     from ..messages import prepare_prompt_templates
     from ..vectorstores import prepare as prepare_vectorstores
-    from .base import generate_component
-    from .layouts import dashboard_layout as layout
-    from .updaters import populate_dashboard
-    components = { }
-    generate_component( components, layout, 'dashboard' )
-    gui = SimpleNamespace( **components )
-    gui.auxdata__ = SimpleNamespace(
+    return SimpleNamespace(
         ai_functions = prepare_ai_functions( configuration, directories ),
         # TODO: Asynchronously prepare AI providers.
         #       Use callback to notify on completion.
@@ -48,5 +56,3 @@ def prepare( configuration, directories ):
         #       Use callback to notify on completion.
         vectorstores = prepare_vectorstores( configuration, directories ),
     )
-    populate_dashboard( gui )
-    return gui

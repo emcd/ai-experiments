@@ -20,8 +20,7 @@
 
 def main( ):
     configuration, gui = prepare( )
-    import panel
-    panel.serve( gui.dashboard, start = True )
+    gui.template__.show( )
 
 
 def prepare( ):

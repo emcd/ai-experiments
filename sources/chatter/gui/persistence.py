@@ -25,11 +25,15 @@ from . import base as __
 
 
 def collect_conversation( gui ):
-    from .layouts import conversation_layout, conversation_control_layout
-    layout = dict( **conversation_layout, **conversation_control_layout )
+    from . import layouts
+    from .layouts import conversation_container_names
+    layout = { }
+    for container_name in conversation_container_names:
+        layout.update( getattr( layouts, f"{container_name}_layout" ) )
     state = { }
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
+        if not hasattr( gui, name ): continue
         component = getattr( gui, name )
         if hasattr( component, 'on_click' ): continue
         elif hasattr( component, 'objects' ):
@@ -46,12 +50,16 @@ def collect_conversation( gui ):
 
 
 def inject_conversation( gui, state ):
-    from .layouts import conversation_layout, conversation_control_layout
+    from . import layouts
+    from .layouts import conversation_container_names
     from .updaters import update_token_count, update_run_tool_button
-    layout = dict( **conversation_layout, **conversation_control_layout )
+    layout = { }
+    for container_name in conversation_container_names:
+        layout.update( getattr( layouts, f"{container_name}_layout" ) )
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
         if name not in state: continue # allows new UI features
+        if not hasattr( gui, name ): continue
         component = getattr( gui, name )
         if hasattr( component, 'on_click' ): continue
         elif hasattr( component, 'objects' ):
