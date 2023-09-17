@@ -110,18 +110,47 @@ _message_header_attributes = dict(
 )
 
 
+conversation_container_names = (
+    'conversation_control',
+    'conversation_history',
+    'system_prompts',
+    'user_prompts',
+)
+
+
 dashboard_layout = {
     'dashboard': dict(
         component_class = Row,
-        component_arguments = dict(
-            height_policy = 'max', width_policy = 'max',
-            min_width = 1024,
-        ),
         contains = [
             'column_conversations_manager',
-            'column_conversation',
-            'column_conversation_control',
-        ]
+            'interpolant_conversation_control',
+            'interpolant_conversation_history',
+            'interpolant_system_prompts',
+            'interpolant_user_prompts',
+        ],
+        virtual = True,
+    ),
+    # Need indirection to assign containers rather than copy component arrays
+    # to prevent shared ownership visibility issues.
+    'interpolant_conversation_control': dict(
+        component_class = Row,
+        component_arguments = dict( width_policy = 'max' ),
+        interpolant_id = 'right',
+    ),
+    'interpolant_conversation_history': dict(
+        component_class = Row,
+        component_arguments = dict( width_policy = 'max' ),
+        interpolant_id = 'main',
+    ),
+    'interpolant_system_prompts': dict(
+        component_class = Row,
+        component_arguments = dict( width_policy = 'max' ),
+        interpolant_id = 'top',
+    ),
+    'interpolant_user_prompts': dict(
+        component_class = Row,
+        component_arguments = dict( width_policy = 'max' ),
+        interpolant_id = 'bottom',
     ),
 }
 
@@ -130,18 +159,15 @@ conversations_manager_layout = {
         component_class = Column,
         component_arguments = dict(
             height_policy = 'max', width_policy = 'max',
-            max_width = sizes.sidebar_width_max, # min_width = 192,
-            # TODO: Use style variable instead for theming.
-            styles = {
-                'background': '#e8e8e8',
-                'border-right': '1px solid black',
-            },
+            # TODO: Use width of container.
+            max_width = sizes.sidebar_width_max,
             width = sizes.sidebar_width_max,
         ),
         contains = [
             'button_create_conversation',
             'column_conversations_indicators',
         ],
+        interpolant_id = 'left',
     ),
     'button_create_conversation': dict(
         component_class = Button,
@@ -161,18 +187,7 @@ conversations_manager_layout = {
 }
 dashboard_layout.update( conversations_manager_layout )
 
-conversation_layout = {
-    'column_conversation': dict(
-        component_class = Column,
-        contains = [
-            'column_system_prompts',
-            'column_conversation_history',
-            'column_user_prompts',
-        ],
-    ),
-}
-
-conversation_layout.update( {
+system_prompts_layout = {
     'column_system_prompts': dict(
         component_class = Column,
         component_arguments = dict(
@@ -183,7 +198,7 @@ conversation_layout.update( {
         contains = [
             'row_system_prompt',
             'row_functions_prompt',
-        ]
+        ],
     ),
     'row_system_prompt': dict(
         component_class = Row,
@@ -351,9 +366,9 @@ conversation_layout.update( {
         component_arguments = dict( visible = False ),
     ),
     'spacer_right_functions_prompt': dict( component_class = HSpacer ),
-} )
+}
 
-conversation_layout.update( {
+conversation_history_layout = {
     'column_conversation_history': dict(
         component_class = Column,
         component_arguments = dict(
@@ -364,9 +379,9 @@ conversation_layout.update( {
             restore = 'restore_conversation_messages',
         ),
     ),
-} )
+}
 
-conversation_layout.update( {
+user_prompts_layout = {
     'column_user_prompts': dict(
         component_class = Column,
         component_arguments = dict(
@@ -377,7 +392,7 @@ conversation_layout.update( {
         contains = [
             'row_canned_prompt',
             'row_user_prompt',
-        ]
+        ],
     ),
     'row_canned_prompt': dict(
         component_class = Row,
@@ -578,22 +593,16 @@ conversation_layout.update( {
         event_functions = dict( on_click = 'on_click_run_tool' ),
     ),
     'spacer_right_user_prompt': dict( component_class = HSpacer ),
-} )
-
-dashboard_layout.update( conversation_layout )
+}
 
 conversation_control_layout = {
     'column_conversation_control': dict(
         component_class = Column,
         component_arguments = dict(
             height_policy = 'max', width_policy = 'max',
+            styles = { 'padding': f"{sizes.standard_margin}px" },
+            # TODO: Use width of container.
             max_width = sizes.sidebar_width_max, # min_width = 192,
-            # TODO: Use style variable instead for theming.
-            styles = {
-                'background': '#e8e8e8',
-                'border-left': '1px solid black',
-                'padding': f"{sizes.standard_margin}px",
-            },
             width = sizes.sidebar_width_max,
         ),
         contains = [
@@ -654,7 +663,6 @@ conversation_control_layout = {
         persist = False,
     ),
 }
-dashboard_layout.update( conversation_control_layout )
 
 conversation_indicator_layout = {
     'column_indicator': dict(

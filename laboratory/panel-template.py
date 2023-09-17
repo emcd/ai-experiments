@@ -20,8 +20,6 @@
 
 def main( ):
     configuration, template = prepare( )
-    #import panel
-    #panel.serve( gui.dashboard, start = True )
     template.show( )
 
 
@@ -37,7 +35,6 @@ def prepare( ):
     configuration[ 'main-path' ] = main_path
     #prepare_environment( configuration, directories )
     prepare_inscribers( configuration, directories )
-    #from chatter.gui import prepare as prepare_gui
     template = prepare_gui( configuration, directories )
     return configuration, template
 

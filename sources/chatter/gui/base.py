@@ -105,16 +105,18 @@ def extract_function_invocation_request( gui ):
     return name, partial_function( ai_functions[ name ], auxdata, **arguments )
 
 
-def generate_component( components, layout, component_name ):
+def generate_component( gui, layout, component_name ):
     entry = layout[ component_name ]
     elements = [ ]
     for element_name in entry.get( 'contains', ( ) ):
-        elements.append( generate_component(
-            components, layout, element_name ) )
+        elements.append( generate_component( gui, layout, element_name ) )
+    if entry.get( 'virtual', False ): return None
     component_class = entry[ 'component_class' ]
     component_arguments = entry.get( 'component_arguments', { } )
     component = component_class( *elements, **component_arguments )
-    components[ component_name ] = component
+    setattr( gui, component_name, component )
+    interpolant_id = entry.get( 'interpolant_id' )
+    if interpolant_id: gui.template__.add_panel( interpolant_id, component )
     return component
 
 
@@ -158,7 +160,6 @@ def package_special_data( gui ):
 def populate_component( gui, layout, component_name ):
     from . import updaters as registry
     entry = layout[ component_name ]
-    elements = [ ]
     for element_name in entry.get( 'contains', ( ) ):
         populate_component( gui, layout, element_name )
     function_name = entry.get( 'populator_function' )
@@ -170,9 +171,9 @@ def populate_component( gui, layout, component_name ):
 def register_event_callbacks( gui, layout, component_name ):
     from . import events as registry
     entry = layout[ component_name ]
-    elements = [ ]
     for element_name in entry.get( 'contains', ( ) ):
         register_event_callbacks( gui, layout, element_name )
+    if not hasattr( gui, component_name ): return
     component = getattr( gui, component_name )
     functions = entry.get( 'event_functions', { } )
     for event_name, function_name in functions.items( ):

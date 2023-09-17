@@ -56,22 +56,14 @@
 {% block contents %}
 <div id="container">
 
-  <div class="sticky-panel left-panel">
-    {{ embed(roots.left) }}
-    <div style="height: 110vh"></div>
-    Still left...
-  </div>
+  <div class="sticky-panel left-panel">{{ embed(roots.left) }}</div>
 
   <div id="content">
 
-    <div class="sticky-panel top-panel">
-    {{ embed(roots.top) }}
-    </div>
+    <div class="sticky-panel top-panel">{{ embed(roots.top) }}</div>
 
     <div class="main" id="main">
       {{ embed(roots.main) }}
-      <div style="height: 150vh"></div>
-      Straggler...
 
       <div id="pn-Modal" class="pn-modal header-adjust">
         <div class="pn-modal-content">
@@ -87,15 +79,11 @@
       </div>
     </div>
 
-    <div class="sticky-panel bottom-panel">
-    {{ embed(roots.bottom) }}
-    </div>
+    <div class="sticky-panel bottom-panel">{{ embed(roots.bottom) }}</div>
 
   </div>
 
-  <div class="sticky-panel right-panel">
-    {{ embed(roots.right) }}
-  </div>
+  <div class="sticky-panel right-panel">{{ embed(roots.right) }}</div>
 
 </div>
 
