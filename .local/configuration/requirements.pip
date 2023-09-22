@@ -7,10 +7,11 @@ langchain
 mako
 notebook
 openai
-panel ~= 1.1
+panel ~= 1.2
 platformdirs
 pytesseract
 python-dotenv
+python-magic
 scrapy
 tiktoken
 tomli
