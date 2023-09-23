@@ -1,8 +1,26 @@
-To install on POSIX systems::
+## Installation
 
-   git clone --recurse-submodules --shallow-submodules https://github.com/emcd/langchain-experiments.git
+1. Clone this repository.
+1. Ensure that you have Python 3.8 or newer installed with the complete
+   standard library.
+1. Run:
+   ```
+   python3 create-venv.py
+   ```
+1. Activate the virtual environment. In Bash, this would be done by:
+   ```
+   . .local/environments/langchain/bin/activate
+   ```
 
-To update on POSIX systems::
+## Update
 
-   git pull --no-recurse-submodules
-   git submodule update --init --recursive --depth 1
+1. Run:
+   ```
+   git pull
+   ```
+1. Activate the virtual environment, if not already active.
+1. Run:
+   ```
+   python3 -m pip install --upgrade pip
+   python3 -m pip install --upgrade --requirement .local/configuration/requirements.pip
+   ```

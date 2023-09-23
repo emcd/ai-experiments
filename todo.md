@@ -1,19 +1,25 @@
 ## LLM Chatter
 
-* Theme components with font families used in blog.
+* Theme components.
 
-* Theme components with color scheme used in blog.
+    - Font families from blog.
+    - Color scheme from blog.
+    - Support for system/dark/light mode selection.
+    - Probably use template themes, but also see:
+      https://discourse.holoviz.org/t/how-do-i-use-css-to-modify-panel-widgets-style-like-fontsize-and-color/1534
 
-* Change message border on mouse enter/leave.
+* GUI Enhancements
 
-* Change conversation indicator background on mouse enter/leave.
+    - Change message border on mouse enter/leave.
+    - Change conversation indicator background on mouse enter/leave.
+    - Float boxes of toggles and action buttons on top of other components.
+    - Implement modal dialog for vector store addition, etc....
+    - Fade transition for conversation indicators.
+      See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
+    - Set application title and favicon.
+    - Mathematica/Jupyter-style In/Out cell groups.
 
-* Find way for boxes of toggles or action buttons to float on top of other
-  components.
-
-* Add support for system/dark/light mode selection.
-
-* Vim key bindings:
+* Key Bindings
 
     - `dd` to delete selected message
     - `a` to append to user prompt
@@ -21,9 +27,6 @@
     - `G` to switch focus to user prompt
     - `:<n>` to select message `n`
     - `:e #<n>` to switch to conversation `n`
-
-* Other key bindings:
-
     - `<SPACE>` to activate/deactivate current message
     - `<SHIFT>`+`<SPACE>` to pin/unpin current message
     - `<SHIFT>`+`<ENTER>` to chat
