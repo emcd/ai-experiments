@@ -27,6 +27,10 @@ _NAME = 'OpenAI'
 _models = { } # TODO: Hide models cache in closure cell.
 
 
+def access_model_data( model_name, data_name ):
+    return _models[ model_name ][ data_name ]
+
+
 def prepare( configuration, directories ):
     from os import environ as cpe  # current process environment
     if 'OPENAI_API_KEY' in cpe:

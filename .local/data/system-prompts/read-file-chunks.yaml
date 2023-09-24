@@ -5,21 +5,20 @@ template: |
   The conversation focuses on a particular file, which is read from the
   beginning in consecutive chunks. A user message will either be plain text
   instructions, which pertain to the conversation history, or it will be a JSON
-  object consisting of an `instructions` field and a `content` field. The
-  conversation history contains your analysis of previously read chunks. If you
-  encounter a user message with the JSON object, then analyze the content
-  according to the instructions, using your previous analyses for context. The
-  `content` field will be a dictionary of line number and line content pairs
-  for the current file chunk. The content of each line is the actual content
-  of the file. The line numbers are provided as metadata.
+  object consisting of an `instructions` field and a `content` field,
+  pertaining to the chunk to analyze. The conversation history contains your
+  analysis of previously read chunks. If you encounter a user message with the
+  JSON object, then analyze the content according to the instructions, using
+  your previous analyses as context.
 
-  Be aware that constructs, such as paragraphs or functions, may span more than
-  one file chunk. When at the end of a chunk, please indicate whether a
-  construct may be continued in the next chunk. When at the beginning of a
-  chunk, please consider whether the content is a continuation from the
-  previous chunk, if there was one. Look for indicators, such as a terminating
-  delimiter or change of indentation level, to find the boundary of a construct
-  which spans chunks.
+  Structural entities, such as paragraphs or function definitions, may span
+  more than one file chunk. At the end of a chunk, please declare whether the
+  last structural entity might be continued into the next chunk. At the
+  beginning of a chunk, consider whether the initial content might be a
+  continuation from the previous chunk, if there was one. Look for indicators,
+  such as a terminating delimiter, multiple newlines, or change of indentation
+  level, to find the boundary of a structural entity. Also, consider any hint
+  provided with the chunk.
 conceal: true
 examples:
   - id: 'Request: Code'
