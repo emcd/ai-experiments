@@ -27,8 +27,8 @@ from . import base as __
 @__.register_function( {
     'name': 'read_file',
     'description': '''
-Reads a file and passes its contents to an AI to analyze according to a given
-set of instructions. Returns the analysis of the file. ''',
+Reads a file and passes its contents to an AI agent to analyze according to a
+given set of instructions. Returns the analysis of the file. ''',
     'parameters': {
         'type': 'object',
         'properties': {
@@ -36,16 +36,34 @@ set of instructions. Returns the analysis of the file. ''',
                 'type': 'string',
                 'description': 'Path to the file to be read.'
             },
-            'instructions': {
-                'type': 'string',
-                'description': 'Analysis instructions for AI.'
+            'control': {
+                'type': 'object',
+                'description': '''
+Special instructions to AI agent to replace or supplement its default
+instructions. If not supplied, the agent will use only its default
+instructions. ''',
+                'properties': {
+                    'mode': {
+                        'type': 'string',
+                        'description': '''
+Replace or supplement default instructions of AI agent with given
+instructions? ''',
+                        'enum': [ 'replace', 'supplement' ],
+                        'default': 'supplement',
+                    },
+                    'instructions': {
+                        'type': 'string',
+                        'description': '''
+Analysis instructions for AI. Should not be empty in replace mode. '''
+                    },
+                },
             },
         },
-        'required': [ 'path', 'instructions' ],
+        'required': [ 'path' ],
     },
 } )
 # TODO: Process URI rather than just path.
-def read_file( auxdata, /, path, instructions ):
+def read_file( auxdata, /, path, control = None ):
     from ...messages import render_prompt_template
     ai_messages = [ ]
     summarization_prompt = render_prompt_template(
@@ -68,7 +86,7 @@ def read_file( auxdata, /, path, instructions ):
             messages.append( dict(
                 content = '\n\n'.join( ai_messages ), role ='AI' ) )
         messages.append( dict(
-            content = _render_prompt( auxdata, instructions, chunk ),
+            content = _render_prompt( auxdata, control, chunk, mime_type ),
             role = 'User' ) )
         from ..providers import ChatCallbacks
         callbacks = ChatCallbacks(
@@ -166,14 +184,45 @@ def _read_chunks_naively( auxdata, path ):
     yield dict( content = ''.join( lines ), hint = 'last chunk' )
 
 
-def _render_prompt( auxdata, instructions, content ):
-    from ...messages import render_prompt_template
-    instructions_prompt_template = auxdata.prompt_templates.canned[
-        'Instructions + Content' ][ 'template' ]
+def _render_prompt( auxdata, control, content, mime_type ):
+    control = control or { }
     provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
-    content = provider.render_as_preferred_structure(
-        content, auxdata.controls )
-    return render_prompt_template(
-        instructions_prompt_template,
-        controls = auxdata.controls,
-        variables = dict( content = content, instructions = instructions ) )
+    instructions = control.get( 'instructions', '' )
+    if control.get( 'mode', 'supplement' ):
+        instructions = ' '.join( filter( None, (
+            _select_default_instructions( mime_type ), instructions ) ) )
+    return provider.render_as_preferred_structure(
+        dict( content = content, instructions = instructions ),
+        auxdata.controls )
+
+
+def _select_default_instructions( mime_type ):
+    if 'text/x-script.python' == mime_type:
+        instructions = [
+            'Summarize classes, functions, and module attributes.',
+            'Note any contradictions between documentations (docstrings, '
+            'inline comments) and the actual mechanics of their corresponding'
+            'entities.',
+            'As part of each summary, note any potential bugs, missing cases, '
+            'or insufficient error handling. Likewise, note todo, hack, and '
+            'fixme comments.',
+        ]
+    elif mime_type.startswith( 'text/x-script' ):
+        instructions = [
+            'Summarize file/module-level entities, including constructs, '
+            'functions, and global variables. Do likewise for the members of '
+            'constructs.',
+            'Note any contradictions between comments and the actual '
+            'mechanics of their corresponding entities.',
+            'As part of each summary, note any potential bugs, missing cases, '
+            'or insufficient error handling. Likewise, note todo, hack, and '
+            'fixme comments.',
+        ]
+    else:
+        instructions = [
+            'List each topic, chapter title, or heading and summarize its '
+            'content.',
+            'Note any content which may be counterfactual within the context '
+            'of the discourse or which may contradict other content.',
+        ]
+    return ' '.join( instructions )
