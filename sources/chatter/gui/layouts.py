@@ -889,24 +889,3 @@ rich_conversation_message_layout.update( {
         ),
     ),
 } )
-
-
-#_sticky_css = '''
-#div.sticky {
-#    position: sticky;
-#    top: 0;
-#}
-#'''
-#class StickyContainer( ReactiveHTML ):
-#
-#    containee = param.Parameter( )
-#
-#    _template = (
-#        '''<div id="StickyContainer" class="sticky">${containee}</div>''' )
-#
-#    def __init__( self, containee, **params ):
-#        self.containee = containee
-#        stylesheets = params.get( 'stylesheets', [ ] ).copy( )
-#        stylesheets.append( _sticky_css )
-#        params[ 'stylesheets' ] = stylesheets
-#        super( ).__init__( **params )
