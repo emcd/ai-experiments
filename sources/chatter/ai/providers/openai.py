@@ -70,13 +70,7 @@ def chat( messages, special_data, controls, callbacks ):
     messages = _canonicalize_messages( messages, controls[ 'model' ] )
     special_data = _canonicalize_special_data( special_data )
     controls = _canonicalize_controls( controls )
-    from openai import ChatCompletion, OpenAIError
-    try:
-        response = ChatCompletion.create(
-            messages = messages, **special_data, **controls )
-    except OpenAIError as exc:
-        callbacks.failure_notifier( f"Error: {exc}" )
-        raise __.ChatCompletionError( f"Error: {exc}" ) from exc
+    response = _chat( messages, special_data, controls, callbacks )
     if not controls.get( 'stream', True ):
         message = response.choices[ 0 ].message
         if 'content' in message:
@@ -87,6 +81,7 @@ def chat( messages, special_data, controls, callbacks ):
             callbacks.updater(
                 handle, _reconstitute_function_call( message.function_call ) )
         return handle
+    from openai import OpenAIError
     try: # streaming mode
         chunk0 = next( response )
         delta = chunk0.choices[ 0 ].delta
@@ -101,6 +96,7 @@ def chat( messages, special_data, controls, callbacks ):
         callbacks.failure_notifier( f"Error: {exc}" )
         raise __.ChatCompletionError( f"Error: {exc}" ) from exc
     return handle
+
 
 
 def count_conversation_tokens( messages, special_data, controls ):
@@ -194,6 +190,28 @@ def _canonicalize_special_data( data ):
     if 'ai-functions' in data:
         nomargs[ 'functions' ] = data[ 'ai-functions' ]
     return nomargs
+
+
+def _chat( messages, special_data, controls, callbacks ):
+    from time import sleep
+    from openai import ChatCompletion, OpenAIError
+    from openai.error import RateLimitError
+    attempts_limit = 3
+    for attempts_count in range( attempts_limit ):
+        try:
+            return ChatCompletion.create(
+                messages = messages, **special_data, **controls )
+        except RateLimitError as exc:
+            ic( exc )
+            ic( dir( exc ) )
+            sleep( 30 ) # TODO: Use retry value from exception.
+            continue
+        except OpenAIError as exc:
+            callbacks.failure_notifier( f"Error: {exc}" )
+            raise __.ChatCompletionError( f"Error: {exc}" ) from exc
+    error = f"Exhausted {attempts_limit} retries with OpenAI API."
+    callbacks.failure_notifier( error )
+    raise __.ChatCompletionError( error )
 
 
 def _gather_function_chunks( chunk0, response, handle, callbacks ):

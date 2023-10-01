@@ -64,7 +64,7 @@ Analysis instructions for AI. Should not be empty in replace mode. '''
 } )
 # TODO: Process URI rather than just path.
 def read_file( auxdata, /, path, control = None ):
-    from ...messages import render_prompt_template
+    from chatter.messages import render_prompt_template
     ai_messages = [ ]
     summarization_prompt = render_prompt_template(
         auxdata.prompt_templates.canned[
@@ -88,7 +88,7 @@ def read_file( auxdata, /, path, control = None ):
         messages.append( dict(
             content = _render_prompt( auxdata, control, chunk, mime_type ),
             role = 'User' ) )
-        from ..providers import ChatCallbacks
+        from chatter.ai.providers import ChatCallbacks
         callbacks = ChatCallbacks(
             allocator = ( lambda mime_type: [ ] ),
             updater = ( lambda handle, content: handle.append( content ) ),
@@ -133,7 +133,9 @@ def _determine_chunk_reader( path, mime_type = None ):
     # TODO? Consider encoding.
     if not mime_type: mime_type = from_file( path, mime = True )
     if mime_type.startswith( 'text/x-script' ): reader = _read_chunks_naively
+    elif mime_type in ( 'text/x-python', ): reader = _read_chunks_naively
     else: reader = _read_chunks_destructured
+    ic( path, mime_type )
     return reader, mime_type
 
 
@@ -185,44 +187,13 @@ def _read_chunks_naively( auxdata, path ):
 
 
 def _render_prompt( auxdata, control, content, mime_type ):
+    from .prompts import select_default_instructions
     control = control or { }
     provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
     instructions = control.get( 'instructions', '' )
     if control.get( 'mode', 'supplement' ):
         instructions = ' '.join( filter( None, (
-            _select_default_instructions( mime_type ), instructions ) ) )
+            select_default_instructions( mime_type ), instructions ) ) )
     return provider.render_as_preferred_structure(
         dict( content = content, instructions = instructions ),
         auxdata.controls )
-
-
-def _select_default_instructions( mime_type ):
-    if 'text/x-script.python' == mime_type:
-        instructions = [
-            'Summarize classes, functions, and module attributes.',
-            'Note any contradictions between documentations (docstrings, '
-            'inline comments) and the actual mechanics of their corresponding'
-            'entities.',
-            'As part of each summary, note any potential bugs, missing cases, '
-            'or insufficient error handling. Likewise, note todo, hack, and '
-            'fixme comments.',
-        ]
-    elif mime_type.startswith( 'text/x-script' ):
-        instructions = [
-            'Summarize file/module-level entities, including constructs, '
-            'functions, and global variables. Do likewise for the members of '
-            'constructs.',
-            'Note any contradictions between comments and the actual '
-            'mechanics of their corresponding entities.',
-            'As part of each summary, note any potential bugs, missing cases, '
-            'or insufficient error handling. Likewise, note todo, hack, and '
-            'fixme comments.',
-        ]
-    else:
-        instructions = [
-            'List each topic, chapter title, or heading and summarize its '
-            'content.',
-            'Note any content which may be counterfactual within the context '
-            'of the discourse or which may contradict other content.',
-        ]
-    return ' '.join( instructions )
