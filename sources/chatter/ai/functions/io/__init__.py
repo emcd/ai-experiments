@@ -25,16 +25,17 @@ from . import base as __
 
 
 @__.register_function( {
-    'name': 'read_file',
+    'name': 'read',
     'description': '''
-Reads a file and passes its contents to an AI agent to analyze according to a
-given set of instructions. Returns the analysis of the file. ''',
+Reads a URL or local file and passes its contents to an AI agent to analyze
+according to a given set of instructions. Returns an analysis of the contents.
+''',
     'parameters': {
         'type': 'object',
         'properties': {
-            'path': {
+            'url': {
                 'type': 'string',
-                'description': 'Path to the file to be read.'
+                'description': 'URL or local file path to be read.'
             },
             'control': {
                 'type': 'object',
@@ -59,43 +60,22 @@ Analysis instructions for AI. Should not be empty in replace mode. '''
                 },
             },
         },
-        'required': [ 'path' ],
+        'required': [ 'url' ],
     },
 } )
-# TODO: Process URI rather than just path.
-def read_file( auxdata, /, path, control = None ):
-    from chatter.messages import render_prompt_template
-    ai_messages = [ ]
-    summarization_prompt = render_prompt_template(
-        auxdata.prompt_templates.canned[
-            'Concatenate: AI Responses' ][ 'template' ],
-        controls = auxdata.controls )
-    supervisor_prompt = render_prompt_template(
-        auxdata.prompt_templates.system[
-            'Automation: File Analysis' ][ 'template' ],
-        controls = auxdata.controls )
-    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
-    chunk_reader, mime_type = _determine_chunk_reader( path )
-    for chunk in chunk_reader( auxdata, path ):
-        messages = [ dict( content = supervisor_prompt, role = 'Supervisor' ) ]
-        # TODO: Check if above high water mark for tokens count.
-        #       Drop earliest messages from history, if so.
-        if ai_messages:
-            messages.append( dict(
-                content = summarization_prompt, role = 'User' ) )
-            messages.append( dict(
-                content = '\n\n'.join( ai_messages ), role ='AI' ) )
-        messages.append( dict(
-            content = _render_prompt( auxdata, control, chunk, mime_type ),
-            role = 'User' ) )
-        from chatter.ai.providers import ChatCallbacks
-        callbacks = ChatCallbacks(
-            allocator = ( lambda mime_type: [ ] ),
-            updater = ( lambda handle, content: handle.append( content ) ),
-        )
-        handle = provider.chat( messages, { }, auxdata.controls, callbacks )
-        ai_messages.append( ''.join( handle ) )
-    return ai_messages
+def read( auxdata, /, url, control = None ):
+    from urllib.parse import urlparse
+    components = urlparse( url )
+    if (
+            ( not components.scheme or 'file' == components.scheme )
+        and components.path
+    ):
+        # TODO: Check if file, directory, or other.
+        return _read_file( auxdata, url, control = control )
+    elif components.scheme in ( 'http', 'https', ):
+        return _read_http( auxdata, url, control = control )
+    raise NotImplementedError(
+        f"URL scheme, '{components.scheme}', not supported." )
 
 
 @__.register_function( {
@@ -184,6 +164,55 @@ def _read_chunks_naively( auxdata, path ):
             tokens_total += tokens_count
     ic( path, hint, tokens_total )
     yield dict( content = ''.join( lines ), hint = 'last chunk' )
+
+
+def _read_file( auxdata, /, path, control = None ):
+    from chatter.messages import render_prompt_template
+    ai_messages = [ ]
+    summarization_prompt = render_prompt_template(
+        auxdata.prompt_templates.canned[
+            'Concatenate: AI Responses' ][ 'template' ],
+        controls = auxdata.controls )
+    supervisor_prompt = render_prompt_template(
+        auxdata.prompt_templates.system[
+            'Automation: File Analysis' ][ 'template' ],
+        controls = auxdata.controls )
+    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    chunk_reader, mime_type = _determine_chunk_reader( path )
+    for chunk in chunk_reader( auxdata, path ):
+        messages = [ dict( content = supervisor_prompt, role = 'Supervisor' ) ]
+        # TODO: Check if above high water mark for tokens count.
+        #       Drop earliest messages from history, if so.
+        if ai_messages:
+            messages.append( dict(
+                content = summarization_prompt, role = 'User' ) )
+            messages.append( dict(
+                content = '\n\n'.join( ai_messages ), role ='AI' ) )
+        messages.append( dict(
+            content = _render_prompt( auxdata, control, chunk, mime_type ),
+            role = 'User' ) )
+        from chatter.ai.providers import ChatCallbacks
+        callbacks = ChatCallbacks(
+            allocator = ( lambda mime_type: [ ] ),
+            updater = ( lambda handle, content: handle.append( content ) ),
+        )
+        handle = provider.chat( messages, { }, auxdata.controls, callbacks )
+        ai_messages.append( ''.join( handle ) )
+    return ai_messages
+
+
+def _read_http( auxdata, /, url, control = None ):
+    from shutil import copyfileobj
+    from tempfile import NamedTemporaryFile
+    from urllib.request import Request, urlopen
+    request = Request( url )
+    # TODO: Write to conversation cache with file name.
+    # TODO: Pass stream to reader function rather than re-open tempfile.
+    with NamedTemporaryFile( delete = False ) as file:
+        # TODO: Retry on rate limits and timeouts.
+        with urlopen( request ) as response:
+            copyfileobj( response, file )
+    return _read_file( auxdata, file.name, control = control )
 
 
 def _render_prompt( auxdata, control, content, mime_type ):

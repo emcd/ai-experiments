@@ -1,15 +1,16 @@
 id: 'Read + Analyze'
 # TODO: Support replacement or supplemental instructions.
 template: |
-  Please analyze the file at `${variables.path}` via a function that employs an
-  AI agent.
+  Please analyze the contents of the file at `${variables.url}` via a function
+  that employs an AI agent.
 
-  After the analysis is complete, please recapitulate it, merging the summaries
-  of any structural entities which crossed chunk boundaries and accounting for
-  any entities which were referenced before they were defined. Also, please
-  provide a high-level summary of the file, including its purpose and a list of
-  potential improvements.
+  After the analysis is complete, please recapitulate it, merging the
+  descriptions of any structural entities which crossed chunk boundaries and
+  accounting for any entities which were referenced before they were defined.
+  Also, please provide a high-level summary of the file, including its purpose
+  and a list of potential improvements, based on what surfaced by the analysis.
+  And, state anything that might be missing from the analysis.
 # TODO: requires-functions: [ 'read' ]
 variables:
-  - id: 'path'
-    label: 'Path'
+  - id: 'url'
+    label: 'Local Path or URL'
