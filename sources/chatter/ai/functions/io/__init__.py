@@ -169,6 +169,7 @@ def _read_chunks_naively( auxdata, path ):
 def _read_file( auxdata, /, path, control = None ):
     from chatter.messages import render_prompt_template
     ai_messages = [ ]
+    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
     summarization_prompt = render_prompt_template(
         auxdata.prompt_templates.canned[
             'Concatenate: AI Responses' ][ 'template' ],
@@ -176,8 +177,10 @@ def _read_file( auxdata, /, path, control = None ):
     supervisor_prompt = render_prompt_template(
         auxdata.prompt_templates.system[
             'Automation: File Analysis' ][ 'template' ],
-        controls = auxdata.controls )
-    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+        controls = auxdata.controls,
+        variables = dict(
+            format_name = provider.provide_format_name( auxdata.controls ),
+        ) )
     chunk_reader, mime_type = _determine_chunk_reader( path )
     for chunk in chunk_reader( auxdata, path ):
         messages = [ dict( content = supervisor_prompt, role = 'Supervisor' ) ]
@@ -223,6 +226,6 @@ def _render_prompt( auxdata, control, content, mime_type ):
     if control.get( 'mode', 'supplement' ):
         instructions = ' '.join( filter( None, (
             select_default_instructions( mime_type ), instructions ) ) )
-    return provider.render_as_preferred_structure(
+    return provider.render_data(
         dict( content = content, instructions = instructions ),
         auxdata.controls )

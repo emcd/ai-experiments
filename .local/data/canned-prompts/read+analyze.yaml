@@ -5,8 +5,13 @@ template: |
   that employs an AI agent.
 
   After the analysis is complete, please recapitulate it, merging the
-  descriptions of any structural entities which crossed chunk boundaries and
+  descriptions for any structural entities which crossed chunk boundaries and
   accounting for any entities which were referenced before they were defined.
+  Specifically, recapitulate any lists or tables in their entirety, merging
+  them across chunks, as necessary. If you provided the AI agent with any
+  special instructions to find instances of something, then be sure to
+  faithfully reproduce those instances in the recapitulation.
+
   Also, please provide a high-level summary of the file, including its purpose
   and a list of potential improvements, based on what surfaced by the analysis.
   And, state anything that might be missing from the analysis.

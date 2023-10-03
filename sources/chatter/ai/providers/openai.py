@@ -31,41 +31,6 @@ def access_model_data( model_name, data_name ):
     return _models[ model_name ][ data_name ]
 
 
-def prepare( configuration, directories ):
-    from os import environ as cpe  # current process environment
-    if 'OPENAI_API_KEY' in cpe:
-        import openai
-        openai.api_key = cpe[ 'OPENAI_API_KEY' ]
-        if 'OPENAI_ORGANIZATION_ID' in cpe:
-            openai.organization = cpe[ 'OPENAI_ORGANIZATION_ID' ]
-    else: raise LookupError( f"Missing 'OPENAI_API_KEY'." )
-    _models.update( _provide_models( ) )
-    return _NAME
-
-
-def provide_chat_models( ):
-    return {
-        name: attributes for name, attributes in _models.items( )
-        if name.startswith( ( 'gpt-3.5-turbo', 'gpt-4', ) )
-    }
-
-
-def render_as_preferred_structure( content, controls ):
-    from json import dumps
-    return dumps( content )
-
-
-def select_default_model( models, auxdata ):
-    configuration = auxdata.configuration
-    try:
-        return configuration[
-            'providers' ][ _NAME.lower( ) ][ 'default-model' ]
-    except KeyError: pass
-    for model_name in ( 'gpt-4', 'gpt-3.5.-turbo-16k', 'gpt-3.5-turbo', ):
-        if model_name in models: return model_name
-    return next( iter( models ) )
-
-
 def chat( messages, special_data, controls, callbacks ):
     messages = _canonicalize_messages( messages, controls[ 'model' ] )
     special_data = _canonicalize_special_data( special_data )
@@ -132,6 +97,45 @@ def count_text_tokens( text, model_name ):
     # TODO: Warn about unknown model via callback.
     except KeyError: encoding = get_encoding( 'cl100k_base' )
     return len( encoding.encode( text ) )
+
+
+def prepare( configuration, directories ):
+    from os import environ as cpe  # current process environment
+    if 'OPENAI_API_KEY' in cpe:
+        import openai
+        openai.api_key = cpe[ 'OPENAI_API_KEY' ]
+        if 'OPENAI_ORGANIZATION_ID' in cpe:
+            openai.organization = cpe[ 'OPENAI_ORGANIZATION_ID' ]
+    else: raise LookupError( f"Missing 'OPENAI_API_KEY'." )
+    _models.update( _provide_models( ) )
+    return _NAME
+
+
+def provide_chat_models( ):
+    return {
+        name: attributes for name, attributes in _models.items( )
+        if name.startswith( ( 'gpt-3.5-turbo', 'gpt-4', ) )
+    }
+
+
+def provide_format_name( controls ):
+    return 'JSON'
+
+
+def render_data( content, controls ):
+    from json import dumps
+    return dumps( content )
+
+
+def select_default_model( models, auxdata ):
+    configuration = auxdata.configuration
+    try:
+        return configuration[
+            'providers' ][ _NAME.lower( ) ][ 'default-model' ]
+    except KeyError: pass
+    for model_name in ( 'gpt-4', 'gpt-3.5.-turbo-16k', 'gpt-3.5-turbo', ):
+        if model_name in models: return model_name
+    return next( iter( models ) )
 
 
 def _canonicalize_controls( controls ):
