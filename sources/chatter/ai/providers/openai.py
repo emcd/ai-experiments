@@ -58,7 +58,6 @@ def chat( messages, special_data, controls, callbacks ):
             _stream_content_chunks( chunk0, response, handle, callbacks )
     except OpenAIError as exc:
         callbacks.deallocator( handle )
-        callbacks.failure_notifier( f"Error: {exc}" )
         raise __.ChatCompletionError( f"Error: {exc}" ) from exc
     return handle
 
@@ -211,11 +210,9 @@ def _chat( messages, special_data, controls, callbacks ):
             sleep( 30 ) # TODO: Use retry value from exception.
             continue
         except OpenAIError as exc:
-            callbacks.failure_notifier( f"Error: {exc}" )
             raise __.ChatCompletionError( f"Error: {exc}" ) from exc
-    error = f"Exhausted {attempts_limit} retries with OpenAI API."
-    callbacks.failure_notifier( error )
-    raise __.ChatCompletionError( error )
+    raise __.ChatCompletionError(
+        f"Exhausted {attempts_limit} retries with OpenAI API." )
 
 
 def _gather_function_chunks( chunk0, response, handle, callbacks ):

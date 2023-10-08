@@ -47,6 +47,7 @@ from panel.widgets import (
     Checkbox,
     FloatSlider,
     IntSlider,
+    LoadingSpinner,
     MultiChoice,
     Select,
     StaticText,
@@ -390,10 +391,39 @@ user_prompts_layout = {
             styles = { 'background': 'White' },
         ),
         contains = [
+            'row_conversation_status',
             'row_canned_prompt',
             'row_user_prompt',
         ],
     ),
+    'row_conversation_status': dict(
+        component_class = Row,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+        ),
+        contains = [
+            'spacer_left_conversation_status',
+            'spinner_ai_progress',
+            'text_conversation_status',
+            'spacer_right_conversation_status',
+        ],
+    ),
+    'spacer_left_conversation_status': dict( component_class = HSpacer ),
+    'spinner_ai_progress': dict(
+        component_class = LoadingSpinner,
+        component_arguments = dict(
+            size = 40,
+            value = False,
+            visible = False,
+        ),
+        persist = False,
+    ),
+    'text_conversation_status': dict(
+        component_class = StaticText,
+        component_arguments = dict( name = 'Status', visible = False ),
+        persist = False,
+    ),
+    'spacer_right_conversation_status': dict( component_class = HSpacer ),
     'row_canned_prompt': dict(
         component_class = Row,
         component_arguments = dict(
@@ -612,7 +642,6 @@ conversation_control_layout = {
             'selector_vectorstore',
             'slider_documents_count',
             'text_tokens_total',
-            'text_status',
         ],
     ),
     'selector_provider': dict(
@@ -655,11 +684,6 @@ conversation_control_layout = {
     'text_tokens_total': dict(
         component_class = StaticText,
         component_arguments = dict( name = 'Token Counter', value = '0', ),
-        persist = False,
-    ),
-    'text_status': dict(
-        component_class = StaticText,
-        component_arguments = dict( name = 'Status', value = 'OK', ),
         persist = False,
     ),
 }

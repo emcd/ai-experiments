@@ -362,6 +362,24 @@ def update_conversation_postpopulate( gui ):
     update_functions_prompt( gui )
 
 
+def update_conversation_status( gui, text = None, progress = False ):
+    gui.spinner_ai_progress.value = False
+    gui.spinner_ai_progress.visible = False
+    gui.text_conversation_status.visible = False
+    # TODO: Hide retry and stack trace inspection buttons.
+    if progress:
+        gui.spinner_ai_progress.name = text
+        gui.spinner_ai_progress.visible = True
+        gui.spinner_ai_progress.value = True
+    elif None is not text:
+        if isinstance( text, Exception ):
+            # TODO: Add stack trace inspection button.
+            # TODO: If retryable exception, add a retry button.
+            text = str( text )
+        gui.text_conversation_status.value = text
+        gui.text_conversation_status.visible = True
+
+
 def update_conversation_timestamp( gui ):
     conversations = gui.column_conversations_indicators
     descriptor = conversations.current_descriptor__

@@ -31,11 +31,12 @@ def chat( gui ):
         add_message,
         update_and_save_conversation,
         update_and_save_conversations_index,
+        update_conversation_status,
         update_message,
         update_messages_post_summarization,
         update_run_tool_button,
     )
-    gui.text_status.value = 'OK'
+    update_conversation_status( gui )
     summarization = gui.toggle_summarize.value
     if gui.toggle_canned_prompt_active.value:
         prompt = gui.text_canned_prompt.object
@@ -44,9 +45,13 @@ def chat( gui ):
         prompt = gui.text_input_user.value
         gui.text_input_user.value = ''
     if prompt: add_message( gui, 'Human', prompt )
+    update_conversation_status(
+        gui, 'Generating AI response...', progress = True )
     try: message_component = _chat( gui )
-    except ChatCompletionError as exc: pass
+    except ChatCompletionError as exc:
+        update_conversation_status( gui, text = exc )
     else:
+        update_conversation_status( gui )
         update_message( message_component )
         add_conversation_indicator_if_necessary( gui )
         update_and_save_conversations_index( gui )
@@ -70,8 +75,6 @@ def _chat( gui ):
                 gui, 'AI', '', behaviors = ( ), mime_type = mime_type ) ),
         deallocator = (
             lambda handle: gui.column_conversation_history.pop( -1 ) ),
-        failure_notifier = (
-            lambda status: setattr( gui.text_status, 'value', status ) ),
         updater = (
             lambda handle, content:
             setattr(
@@ -83,16 +86,20 @@ def _chat( gui ):
 
 
 def run_tool( gui ):
+    from json import dumps
+    from .updaters import add_message, update_conversation_status
+    update_conversation_status( gui )
     try: name, function = __.extract_function_invocation_request( gui )
     except ValueError as exc:
-        gui.text_status.value = str( exc )
+        update_conversation_status( gui, text = exc )
         return
+    update_conversation_status(
+        gui, text = 'Executing AI function...', progress = True )
     try: result = function( )
     except ValueError as exc:
-        gui.text_status.value = str( exc )
+        update_conversation_status( gui, text = exc )
         return
-    from json import dumps
-    from .updaters import add_message
+    update_conversation_status( gui )
     add_message(
         gui, 'Function', dumps( result ),
         actor_name = name,
@@ -107,15 +114,24 @@ def run_tool( gui ):
 
 
 def search( gui ):
-    from .updaters import add_message, update_and_save_conversation
-    gui.text_status.value = 'OK'
+    from .updaters import (
+        add_message,
+        update_and_save_conversation,
+        update_conversation_status,
+    )
+    update_conversation_status( gui )
     prompt = gui.text_input_user.value
     gui.text_input_user.value = ''
     add_message( gui, 'Human', prompt )
     documents_count = gui.slider_documents_count.value
     vectorstore = gui.auxdata__.vectorstores[
         gui.selector_vectorstore.value ][ 'instance' ]
+    update_conversation_status(
+        gui, text = 'Querying vector database...', progress = True )
+    # TODO: Error handling on vector database query failure.
+    # TODO: Configurable query method.
     documents = vectorstore.similarity_search( prompt, k = documents_count )
+    update_conversation_status( gui )
     for document in documents:
         mime_type = document.metadata.get( 'mime_type', 'text/plain' )
         add_message(

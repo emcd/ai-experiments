@@ -43,15 +43,15 @@
 * GUI: Miscellaneous
 
     - Automatic scrolling to bottom of page during new content generation.
-    - Activity indicator during chat completion and function execution.
-    - Change message border on mouse enter/leave.
-    - Change conversation indicator background on mouse enter/leave.
-    - Float boxes of toggles and action buttons on top of other components.
+    - Ensure central column content always fits on screen.
     - Implement modal dialog for vector store addition, etc....
-    - Fade transition for conversation indicators.
-      See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
+    - Float boxes of toggles and action buttons on top of other components.
     - Set application title and favicon.
     - Mathematica/Jupyter-style In/Out cell groups.
+    - Change message border on mouse enter/leave.
+    - Change conversation indicator background on mouse enter/leave.
+    - Fade transition for conversation indicators.
+      See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
 
 * GUI: Page Header
 
