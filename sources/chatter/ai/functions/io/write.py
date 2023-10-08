@@ -18,8 +18,36 @@
 #============================================================================#
 
 
-''' Collection of AI functions for I/O. '''
+''' AI functionality for writing files. '''
 
 
-from .read import read
-from .write import write_file
+from . import base as __
+
+
+@__.register_function( {
+    'name': 'write_file',
+    'description': '''
+Writes provided contents to the given file. Returns the number of characters
+written. ''',
+    'parameters': {
+        'type': 'object',
+        'properties': {
+            'path': {
+                'type': 'string',
+                'description': 'Path to the file to be written.'
+            },
+            'contents': {
+                'type': 'string',
+            },
+            'mode': {
+                'type': 'string',
+                'enum': [ 'append', 'truncate' ],
+                'default': 'truncate',
+            },
+        },
+        'required': [ 'path', 'contents' ],
+    },
+} )
+def write_file( auxdata, /, path, contents, mode = 'truncate' ):
+    with open( path, { 'append': 'a', 'truncate': 'w' }[ mode] ) as file:
+        return file.write( contents )

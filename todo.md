@@ -2,9 +2,9 @@
 
 * AI: Functions
 
-    - Refactor init module of `io` subpackage.
     - Support directory listing with `read` function.
-    - Library detection for supported functionality.
+    - Environment, executables, and libraries detection for supported
+      functionality.
     - Improve callbacks to record intermediate AI assistant outputs.
     - Use `ctags` to help with code navigation.
     - Use Beautiful Soup to help with web page analysis.
