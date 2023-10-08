@@ -1,25 +1,29 @@
 ## LLM Chatter
 
-* Theme components.
+* AI: Functions
 
-    - Font families from blog.
-    - Color scheme from blog.
-    - Support for system/dark/light mode selection.
-    - Probably use template themes, but also see:
-      https://discourse.holoviz.org/t/how-do-i-use-css-to-modify-panel-widgets-style-like-fontsize-and-color/1534
+    - Refactor init module of `io` subpackage.
+    - Support directory listing with `read` function.
+    - Library detection for supported functionality.
+    - Improve callbacks to record intermediate AI assistant outputs.
+    - Use `ctags` to help with code navigation.
+    - Use Beautiful Soup to help with web page analysis.
+      Replace large JS data blobs, canvas elements, etc... with comments.
+    - Role-playing Game Agents: orchestrator, master, player, character
 
-* GUI Enhancements
+* AI: Models and Providers
 
-    - Change message border on mouse enter/leave.
-    - Change conversation indicator background on mouse enter/leave.
-    - Float boxes of toggles and action buttons on top of other components.
-    - Implement modal dialog for vector store addition, etc....
-    - Fade transition for conversation indicators.
-      See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
-    - Set application title and favicon.
-    - Mathematica/Jupyter-style In/Out cell groups.
+    - Environment and executables detection for supported providers.
+    - Support Llama 2 models via Llama.cpp, Ollama, or Vllm.
 
-* Key Bindings
+* General
+
+    - Logging.
+    - Rewrite in Vue.js and Python FastAPI?
+    - Support for image generation chats with OpenAI Dall-E and Leonardo.ai.
+    - Option to record conversations to vector databases.
+
+* GUI: Key Bindings
 
     - `dd` to delete selected message
     - `a` to append to user prompt
@@ -29,12 +33,45 @@
     - `:e #<n>` to switch to conversation `n`
     - `<SPACE>` to activate/deactivate current message
     - `<SHIFT>`+`<SPACE>` to pin/unpin current message
-    - `<SHIFT>`+`<ENTER>` to chat
+    - Customizable chat completion activation:
+      ChatGPT mode: `<ENTER>`
+      Mathematica/Jupyter mode: `<SHIFT>`+`<ENTER>`
+      Slack alternative mode: `<CONTROL>`+`<ENTER>`
     - `<UP ARROW>` and `<DOWN ARROW>` to navigate messages
+    - `{` and `}` to navigate code blocks in message
 
-* Rewrite in Vue.js and Python FastAPI?
+* GUI: Miscellaneous
 
-* Support for image generation chats with OpenAI Dall-E and Leonardo.ai API.
+    - Automatic scrolling to bottom of page during new content generation.
+    - Activity indicator during chat completion and function execution.
+    - Change message border on mouse enter/leave.
+    - Change conversation indicator background on mouse enter/leave.
+    - Float boxes of toggles and action buttons on top of other components.
+    - Implement modal dialog for vector store addition, etc....
+    - Fade transition for conversation indicators.
+      See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
+    - Set application title and favicon.
+    - Mathematica/Jupyter-style In/Out cell groups.
+
+* GUI: Page Header
+
+    - Hamburgers/rotated arrows to collapse left and right sidebars.
+    - Activity indicator with dropdown list of all current activities.
+    - Warning indicator with dropdown list of all current warnings.
+    - Error indicator with dropdown list of all current errors.
+
+* GUI: Theme components.
+
+    - Font families from blog.
+    - Color scheme from blog.
+    - Support for system/dark/light mode selection.
+    - Probably use template themes, but also see:
+      https://discourse.holoviz.org/t/how-do-i-use-css-to-modify-panel-widgets-style-like-fontsize-and-color/1534
+
+* Prompts
+
+    - Ensure Markdown constructs are used to structure human-facing output.
+    - Ensure lists and tables from AI agents are recapitulated.
 
 
 ## Github Actions Workflows
@@ -51,6 +88,3 @@
 
 * Define agent to use these tools and a command supplied via argument to a
   workflow.
-
-* Start small: generate code locally first. Can use tool to interact with local
-  files and respond to comments in chat.
