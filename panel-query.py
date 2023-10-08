@@ -54,6 +54,14 @@ def prepare_environment( configuration, directories ):
 def prepare_inscribers( configuration, directories ):
     from icecream import install
     install( )
+    import logging
+    # TODO: Get log level from environment.
+    logging.basicConfig(
+        format = '%(levelname)s %(name)s: %(message)s', level = logging.INFO )
+    logging.captureWarnings( True )
+    logging.debug( 'Logging initialized.' )
+    # TODO? Configure OpenTelemetry emitter.
+    #       Can use flame graph of locally-collected traces for profiling.
 
 
 def provide_configuration( main_path, directories ):

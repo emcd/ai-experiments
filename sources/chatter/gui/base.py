@@ -36,6 +36,7 @@ from datetime import (
     timezone as TimeZone,
 )
 from functools import partial as partial_function
+from logging import getLogger as acquire_scribe
 from pathlib import Path
 from time import time_ns
 from types import SimpleNamespace
@@ -45,6 +46,9 @@ import param
 
 from panel.layout import Column, Row
 from panel.reactive import ReactiveHTML
+
+
+scribe = acquire_scribe( __package__ )
 
 
 roles_emoji = {

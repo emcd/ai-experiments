@@ -18,7 +18,6 @@
 
 * General
 
-    - Logging.
     - Rewrite in Vue.js and Python FastAPI?
     - Support for image generation chats with OpenAI Dall-E and Leonardo.ai.
     - Option to record conversations to vector databases.
