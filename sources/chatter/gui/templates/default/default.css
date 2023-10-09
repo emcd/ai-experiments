@@ -74,11 +74,12 @@ body {
 }
 
 .modal-area {
+  background-color: rgba(0, 0, 0, 0.5);
   display: none;
+  height: 100%; width: 100%;
   left: 0; top: 0;
   overflow-y: scroll;
   position: absolute;
-  width: 100%;
   z-index: 100;
 }
 

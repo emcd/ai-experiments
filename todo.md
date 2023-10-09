@@ -19,6 +19,8 @@
 * General
 
     - Support async loading of vector databases, prompt templates, etc....
+    - Support hosting conversation-related resources as relative URLs.
+      Allows abstraction from local file system.
     - Rewrite in Vue.js and Python FastAPI?
     - Support for image generation chats with OpenAI Dall-E and Leonardo.ai.
     - Option to record conversations to vector databases.
