@@ -147,13 +147,15 @@ def _read_chunks_naively( auxdata, path ):
 
 
 def _read_directory( auxdata, /, path, control = None ):
+    # TODO: Chunk the directory analysis.
     from magic import from_file
     dirents = { }
     for dirent in path.iterdir( ):
         dirent_ = str( dirent )
+        # TODO: Include number of dirents in directories.
         if dirent.is_dir( ): dirents[ dirent_ ] = 'directory'
         else: dirents[ dirent_ ] = from_file( dirent_ )
-    return dirents
+    return [ dirents ]
 
 
 def _read_file( auxdata, /, path, control = None ):

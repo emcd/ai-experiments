@@ -2,7 +2,6 @@
 
 * AI: Functions
 
-    - Support directory listing with `read` function.
     - Environment, executables, and libraries detection for supported
       functionality.
     - Improve callbacks to record intermediate AI assistant outputs.
@@ -13,11 +12,13 @@
 
 * AI: Models and Providers
 
+    - Standardized set of text capture callbacks.
     - Environment and executables detection for supported providers.
     - Support Llama 2 models via Llama.cpp, Ollama, or Vllm.
 
 * General
 
+    - Support async loading of vector databases, prompt templates, etc....
     - Rewrite in Vue.js and Python FastAPI?
     - Support for image generation chats with OpenAI Dall-E and Leonardo.ai.
     - Option to record conversations to vector databases.
