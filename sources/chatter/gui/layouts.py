@@ -126,6 +126,7 @@ dashboard_layout = {
             'column_conversations_manager',
             'interpolant_conversation_control',
             'interpolant_conversation_history',
+            'interpolant_modal_area',
             'interpolant_system_prompts',
             'interpolant_user_prompts',
         ],
@@ -142,6 +143,11 @@ dashboard_layout = {
         component_class = Row,
         component_arguments = dict( width_policy = 'max' ),
         interpolant_id = 'main',
+    ),
+    'interpolant_modal_area': dict(
+        component_class = Row,
+        component_arguments = dict( width_policy = 'max' ),
+        interpolant_id = 'modal',
     ),
     'interpolant_system_prompts': dict(
         component_class = Row,

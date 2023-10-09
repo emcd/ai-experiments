@@ -60,6 +60,7 @@ def prepare_inscribers( configuration, directories ):
         format = '%(levelname)s %(name)s: %(message)s', level = logging.INFO )
     logging.captureWarnings( True )
     logging.debug( 'Logging initialized.' )
+    # TODO: Add Rich logging.
     # TODO? Configure OpenTelemetry emitter.
     #       Can use flame graph of locally-collected traces for profiling.
 

@@ -52,44 +52,28 @@
 {% endfor %}
 {% endblock %}
 
-<!-- goes in body -->
+<!-- body -->
 {% block contents %}
 <div id="container">
-
   <div class="sticky-panel left-panel">{{ embed(roots.left) }}</div>
-
   <div id="content">
-
     <div class="sticky-panel top-panel">{{ embed(roots.top) }}</div>
-
-    <div class="main" id="main">
-      {{ embed(roots.main) }}
-
-      <div id="pn-Modal" class="pn-modal header-adjust">
-        <div class="pn-modal-content">
-          <span class="pn-modalclose" id="pn-closeModal">&times;</span>
-          {% for doc in docs %}
-          {% for root in doc.roots %}
-          {% if "modal" in root.tags %}
-          {{ embed(root) | indent(10) }}
-          {% endif %}
-          {% endfor %}
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
+    <div class="main" id="main">{{ embed(roots.main) }}</div>
     <div class="sticky-panel bottom-panel">{{ embed(roots.bottom) }}</div>
-
   </div>
-
   <div class="sticky-panel right-panel">{{ embed(roots.right) }}</div>
 
+  <div id="modal" class="modal-area header-adjust">
+    <div class="modal-content">
+      <span id="modal-close" class="modal-close">&times;</span>
+      {{ embed(roots.modal) }}
+    </div>
+  </div>
 </div>
 
 <script>
-  var modal = document.getElementById("pn-Modal");
-  var span = document.getElementById("pn-closeModal");
+  var modal = document.getElementById("modal");
+  var span = document.getElementById("modal-close");
 
   span.onclick = function() {
     modal.style.display = "none";
@@ -101,5 +85,4 @@
     }
   }
 </script>
-
 {% endblock %}
