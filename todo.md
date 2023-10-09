@@ -48,7 +48,6 @@
     - Ensure central column content always fits on screen.
     - Implement modal dialog for vector store addition, etc....
     - Float boxes of toggles and action buttons on top of other components.
-    - Set application title and favicon.
     - Mathematica/Jupyter-style In/Out cell groups.
     - Change message border on mouse enter/leave.
     - Change conversation indicator background on mouse enter/leave.

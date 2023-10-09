@@ -29,7 +29,8 @@ def prepare( configuration, directories ):
     from .updaters import populate_dashboard
     gui = SimpleNamespace( )
     gui.auxdata__ = prepare_auxdata( configuration, directories )
-    gui.template__ = DefaultTemplate( )
+    gui.template__ = template = DefaultTemplate( )
+    prepare_favicon( gui )
     generate_component( gui, layout, 'dashboard' )
     populate_dashboard( gui )
     return gui
@@ -56,3 +57,18 @@ def prepare_auxdata( configuration, directories ):
         #       Use callback to notify on completion.
         vectorstores = prepare_vectorstores( configuration, directories ),
     )
+
+
+def prepare_favicon( gui ):
+    from panel.pane import panel
+    from panel.pane.image import ImageBase
+    template = gui.template__
+    path = gui.auxdata__.configuration[ 'main-path' ].joinpath(
+        '.local/data/favicon-32.png' )
+    image = panel( path )
+    if not isinstance( image, ImageBase ):
+        # TODO: Log warning.
+        return
+    favicon = image._b64( image._data( image.object ) )
+    template.add_variable( 'app_favicon', favicon )
+    template.add_variable( 'favicon_type', 'image/png' )

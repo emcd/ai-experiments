@@ -20,7 +20,7 @@
 
 def main( ):
     configuration, gui = prepare( )
-    gui.template__.show( )
+    gui.template__.show( title = 'AI Chatter' )
 
 
 def prepare( ):
