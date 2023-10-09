@@ -12,6 +12,7 @@ platformdirs
 pytesseract
 python-dotenv
 python-magic
+rich
 scrapy
 tiktoken
 tomli

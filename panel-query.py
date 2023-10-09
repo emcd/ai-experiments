@@ -52,15 +52,27 @@ def prepare_environment( configuration, directories ):
 
 
 def prepare_inscribers( configuration, directories ):
-    from icecream import install
+    from icecream import ic, install
+    from rich.pretty import pretty_repr
+    ic.configureOutput(
+        argToStringFunction = pretty_repr,
+        includeContext = True,
+        prefix = 'DEBUG    ', )
     install( )
     import logging
+    from rich.console import Console
+    from rich.logging import RichHandler
     # TODO: Get log level from environment.
+    rich_handler = RichHandler(
+        console = Console( stderr = True ),
+        rich_tracebacks = True,
+        show_time = False )
     logging.basicConfig(
-        format = '%(levelname)s %(name)s: %(message)s', level = logging.INFO )
+        format = '%(name)s: %(message)s',
+        handlers = [ rich_handler ],
+        level = logging.INFO )
     logging.captureWarnings( True )
     logging.debug( 'Logging initialized.' )
-    # TODO: Add Rich logging.
     # TODO? Configure OpenTelemetry emitter.
     #       Can use flame graph of locally-collected traces for profiling.
 
