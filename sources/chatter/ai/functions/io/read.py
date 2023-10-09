@@ -27,15 +27,16 @@ from . import base as __
 @__.register_function( {
     'name': 'read',
     'description': '''
-Reads a URL or local file and passes its contents to an AI agent to analyze
-according to a given set of instructions. Returns an analysis of the contents.
+Reads a URL or local filesystem path and passes its contents to an AI agent to
+analyze according to a given set of instructions. Returns an analysis of the
+contents.
 ''',
     'parameters': {
         'type': 'object',
         'properties': {
             'url': {
                 'type': 'string',
-                'description': 'URL or local file path to be read.'
+                'description': 'URL or local filesystem path to be read.'
             },
             'control': {
                 'type': 'object',
@@ -64,27 +65,35 @@ Analysis instructions for AI. Should not be empty in replace mode. '''
     },
 } )
 def read( auxdata, /, url, control = None ):
+    # TODO: Support wildcards.
     from urllib.parse import urlparse
     components = urlparse( url )
-    if (
-            ( not components.scheme or 'file' == components.scheme )
-        and components.path
-    ):
-        # TODO: Check if file, directory, or other.
-        return _read_file( auxdata, url, control = control )
+    has_file_scheme = not components.scheme or 'file' == components.scheme
+    if has_file_scheme and components.path:
+        path = __.Path( components.path )
+        if not path.exists( ): return f"Error: Nothing exists at '{path}'."
+        if path.is_file( ):
+            # TODO: Work with 'pathlib.Path'.
+            return _read_file( auxdata, components.path, control = control )
+        if path.is_dir( ):
+            return _read_directory( auxdata, path, control = control )
+        return f"Error: Type of entity at '{path}' not supported."
+        # TODO: Handle symlinks, named pipes, etc....
     elif components.scheme in ( 'http', 'https', ):
         return _read_http( auxdata, url, control = control )
-    raise NotImplementedError(
-        f"URL scheme, '{components.scheme}', not supported." )
+    return f"URL scheme, '{components.scheme}', not supported."
 
 
-# TODO: Process path, URL, or bytes buffer.
+# TODO: Process path or bytes buffer.
 def _determine_chunk_reader( path, mime_type = None ):
     from magic import from_file
     # TODO? Consider encoding.
     if not mime_type: mime_type = from_file( path, mime = True )
-    if mime_type.startswith( 'text/x-script' ): reader = _read_chunks_naively
+    # TODO: Smarter reading of code chunks.
+    if mime_type.startswith( 'text/x-script.' ): reader = _read_chunks_naively
     elif mime_type in ( 'text/x-python', ): reader = _read_chunks_naively
+    # TODO: Smarter reading of HTML and Markdown chunks.
+    elif mime_type.startswith( 'text/' ): reader = _read_chunks_naively
     else: reader = _read_chunks_destructured
     ic( path, mime_type )
     return reader, mime_type
@@ -137,6 +146,16 @@ def _read_chunks_naively( auxdata, path ):
     yield dict( content = ''.join( lines ), hint = 'last chunk' )
 
 
+def _read_directory( auxdata, /, path, control = None ):
+    from magic import from_file
+    dirents = { }
+    for dirent in path.iterdir( ):
+        dirent_ = str( dirent )
+        if dirent.is_dir( ): dirents[ dirent_ ] = 'directory'
+        else: dirents[ dirent_ ] = from_file( dirent_ )
+    return dirents
+
+
 def _read_file( auxdata, /, path, control = None ):
     from chatter.messages import render_prompt_template
     ai_messages = [ ]
@@ -171,6 +190,7 @@ def _read_file( auxdata, /, path, control = None ):
             updater = ( lambda handle, content: handle.append( content ) ),
         )
         handle = provider.chat( messages, { }, auxdata.controls, callbacks )
+        # TODO: Handle combination of analysis and metadata.
         ai_messages.append( ''.join( handle ) )
     return ai_messages
 
@@ -181,7 +201,7 @@ def _read_http( auxdata, /, url, control = None ):
     from urllib.request import Request, urlopen
     request = Request( url )
     # TODO: Write to conversation cache with file name.
-    # TODO: Pass stream to reader function rather than re-open tempfile.
+    # TODO? Pass stream to reader function rather than re-open tempfile.
     with NamedTemporaryFile( delete = False ) as file:
         # TODO: Retry on rate limits and timeouts.
         with urlopen( request ) as response:

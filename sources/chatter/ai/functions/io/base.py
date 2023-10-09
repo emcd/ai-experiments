@@ -21,6 +21,7 @@
 ''' Foundation for AI functions for I/O. '''
 
 
+from pathlib import Path
 from ..base import register_function
 
 
