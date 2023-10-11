@@ -40,23 +40,6 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     descriptor.indicator = indicator
 
 
-def add_conversation_indicator_if_necessary( gui ):
-    conversations = gui.column_conversations_indicators
-    descriptor = conversations.current_descriptor__
-    if descriptor.identity in conversations.descriptors__: return
-    # Do not proceed if we are in a function invocation. Wait for result.
-    # Also, some models (e.g., GPT-4) are confused by the invocation.
-    try: __.extract_function_invocation_request( gui )
-    except Exception as exc: pass
-    else: return
-    try: title, labels = _generate_conversation_title( gui )
-    except Exception as exc: return
-    descriptor.title = title
-    descriptor.labels = labels
-    add_conversation_indicator( gui, descriptor  )
-    update_conversation_hilite( gui, new_descriptor = descriptor )
-
-
 # TODO: Mostly fold into initializer for ConversationMessage.
 #       Leave append operation on the conversation history.
 def add_message(
@@ -357,7 +340,8 @@ def update_conversation_status( gui, text = None, progress = False ):
         if isinstance( text, Exception ):
             # TODO: Add stack trace inspection button.
             # TODO: If retryable exception, add a retry button.
-            text = str( text )
+            text = "{exc_class}: {exc}".format(
+                exc_class = type( exc ), exc = exc )
         gui.text_conversation_status.value = text
         gui.text_conversation_status.visible = True
 
@@ -483,40 +467,6 @@ def update_token_count( gui ):
     else: tokens_report = f"{tokens_report} 👌"
     gui.text_tokens_total.value = tokens_report
     update_chat_button( gui )
-
-
-def _generate_conversation_title( gui ):
-    # TODO: Use model-preferred serialization format for title and labels.
-    from json import JSONDecodeError, loads
-    from ..ai.providers import ChatCallbacks, ChatCompletionError
-    from ..messages import render_prompt_template
-    template = gui.selector_canned_prompt.auxdata__[
-        'JSON: Title + Labels' ][ 'template' ]
-    controls = __.package_controls( gui )
-    prompt = render_prompt_template( template, controls )
-    messages = [
-        *__.package_messages( gui )[ 1 : ],
-        { 'role': 'Human', 'content': prompt }
-    ]
-    provider = gui.selector_provider.auxdata__[
-        gui.selector_provider.value ]
-    # TODO: Use standard set of text capture callbacks.
-    callbacks = ChatCallbacks(
-        allocator = ( lambda mime_type: [ ] ),
-        updater = ( lambda handle, content: handle.append( content ) ),
-    )
-    update_conversation_status(
-        gui, text = 'Generating conversation title...', progress = True )
-    try: handle = provider.chat( messages, { }, controls, callbacks )
-    except ChatCompletionError as exc:
-        update_conversation_status( gui, text = exc )
-        raise
-    try: response = loads( ''.join( handle ) )
-    except JSONDecodeError as exc:
-        update_conversation_status( gui, text = exc )
-        raise
-    update_conversation_status( gui )
-    return response[ 'title' ], response[ 'labels' ]
 
 
 def _populate_prompt_variables( gui, row_name, selector_name, callback ):

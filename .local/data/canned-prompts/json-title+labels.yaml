@@ -5,7 +5,7 @@ template: |
   if it is presented as a selectable option in a GUI. You may use emoji in
   the blurb as you deem appropriate.
 
-  Please also generate up to five labels for this conversation, such as denote
+  Please also generate up to five labels for this conversation, which denote
   the primary semantic elements of it and could be used for searching the
   conversation by topic. For example, if you are helping to construct the
   grammatical rules for a conlang, you might generate `conlang` and `grammar`
@@ -17,12 +17,17 @@ template: |
   art generator, then you might generate `AI art`, `Midjourney`, `nature`, and
   `landscape` as labels. Etc....
 
-  The summary and labels should be presented as a JSON object like
+  The summary and labels should be presented as a valid JSON object. E.g.,
   ```
-  {{
+  {
     "title": "Midjouney Prompt: Natural Landscape",
     "labels": [ "AI art", "Midjourney", "nature", "landscape", "prompt" ]
-  }}
+  }
   ```
-  which is raw and not wrapped in Markdown code fences.
+  Present only the raw JSON object. Do not wrap it in any formatting
+  directives, such as Markdown code fences, or include other text with it.
+  Ignore the Markdown code fences around the example above; they are used to
+  denote the boundaries of the example and are not part of it. Your output
+  is intended for consumption by a JSON parser and must therefore be valid
+  JSON.
 conceal: true
