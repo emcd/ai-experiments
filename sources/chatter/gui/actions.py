@@ -151,12 +151,18 @@ def _chat( gui ):
             lambda handle: gui.column_conversation_history.pop( -1 ) ),
         updater = (
             lambda handle, content:
-            setattr(
-                handle.gui__.text_message, 'object',
-                getattr( handle.gui__.text_message, 'object' ) + content ) ),
+            _update_gui_on_chat( gui, handle, content ) ),
     )
     provider = gui.selector_provider.auxdata__[ gui.selector_provider.value ]
     return provider.chat( messages, special_data, controls, callbacks )
+
+
+def _update_gui_on_chat( gui, handle, content ):
+    from .updaters import autoscroll_document
+    setattr(
+        handle.gui__.text_message, 'object',
+        getattr( handle.gui__.text_message, 'object' ) + content )
+    autoscroll_document( gui )
 
 
 def _generate_conversation_title( gui ):

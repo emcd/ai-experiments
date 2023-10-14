@@ -187,6 +187,10 @@ def register_event_callbacks( gui, layout, component_name ):
             continue
         component.param.watch(
             lambda event: function( gui, event ), event_name )
+    function_name = entry.get( 'javascript_cb_generator' )
+    if function_name:
+        cb_generator = getattr( registry, function_name )
+        component.jscallback( **cb_generator( gui, layout, component_name ) )
 
 
 def _provide_active_ai_functions( gui ):

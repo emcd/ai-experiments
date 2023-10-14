@@ -24,6 +24,18 @@
 from . import base as __
 
 
+_document_autoscroller_code = '''
+if (component.value == 'scrolling')
+    window.scrollTo(0, document.body.scrollHeight) '''
+def generate_document_autoscroller( gui, layout, component_name ):
+    entry = layout[ component_name ]
+    if not hasattr( gui, component_name ): return
+    component = getattr( gui, component_name )
+    return dict(
+        value = _document_autoscroller_code,
+        args = dict( component = component ) )
+
+
 def on_adjust_documents_count( gui, event ):
     from .updaters import update_search_button
     update_search_button( gui )

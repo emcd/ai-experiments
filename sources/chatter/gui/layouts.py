@@ -63,7 +63,7 @@ sizes = SimpleNamespace(
     element_margin = 2,
     icon_button_height = 40, # distortion if smaller, Bokeh/Panel limitation
     icon_size = '1em',
-    message_width_max = 1024,
+    message_width_max = 800,
     message_width_min = 480,
     sidebar_width_max = 336,
     standard_margin = 5,
@@ -648,6 +648,7 @@ conversation_control_layout = {
             'selector_vectorstore',
             'slider_documents_count',
             'text_tokens_total',
+            'text_autoscroll_status',
         ],
     ),
     'selector_provider': dict(
@@ -690,6 +691,12 @@ conversation_control_layout = {
     'text_tokens_total': dict(
         component_class = StaticText,
         component_arguments = dict( name = 'Token Counter', value = '0', ),
+        persist = False,
+    ),
+    'text_autoscroll_status': dict(
+        component_class = TextInput,
+        component_arguments = dict( value = 'automatic', visible = False ),
+        javascript_cb_generator = 'generate_document_autoscroller',
         persist = False,
     ),
 }

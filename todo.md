@@ -44,10 +44,10 @@
 
 * GUI: Miscellaneous
 
-    - Automatic scrolling to bottom of page during new content generation.
     - Ensure central column content always fits on screen.
     - Implement modal dialog for vector store addition, etc....
     - Float boxes of toggles and action buttons on top of other components.
+    - Ensure that internal exceptions display as visible errors.
     - Mathematica/Jupyter-style In/Out cell groups.
     - Change message border on mouse enter/leave.
     - Change conversation indicator background on mouse enter/leave.

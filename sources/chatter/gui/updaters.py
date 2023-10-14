@@ -76,6 +76,13 @@ def add_message(
     return rehtml_message
 
 
+def autoscroll_document( gui ):
+    if 'manual' == gui.text_autoscroll_status.value: return
+    # Trigger JS callback to scroll and then reset state.
+    gui.text_autoscroll_status.value = 'scrolling'
+    gui.text_autoscroll_status.value = 'automatic'
+
+
 def create_and_display_conversation( gui, state = None ):
     from .classes import ConversationDescriptor
     descriptor = ConversationDescriptor( )
@@ -129,6 +136,7 @@ def display_conversation( gui, descriptor ):
         getattr( gui, f"interpolant_{component_name}" ).objects = [
             getattr( descriptor.gui, f"column_{component_name}" ) ]
     gui.identity__ = descriptor.gui.identity__
+    autoscroll_document( descriptor.gui )
 
 
 def fork_conversation( gui, index ):
