@@ -704,12 +704,12 @@ conversation_control_layout = {
 conversation_indicator_layout = {
     'column_indicator': dict(
         component_class = Column,
-        #contains = [ 'row_indicator', 'flexbox_labels' ],
+        # TODO: Add row for labels.
         contains = [ 'row_indicator' ],
     ),
     'row_indicator': dict(
         component_class = Row,
-        contains = [ 'text_title', 'row_actions_structure' ],
+        contains = [ 'text_title', 'row_actions' ],
     ),
     'text_title': dict(
         component_class = Markdown,
@@ -717,29 +717,16 @@ conversation_indicator_layout = {
             align = ( 'center', 'start' ),
             height_policy = 'auto', width_policy = 'max',
             margin = sizes.standard_margin,
-            max_width = (
-                sizes.sidebar_width_max
-                - sizes.actions_width
-                - sizes.standard_margin * 2 ),
-            width = (
-                sizes.sidebar_width_max
-                - sizes.actions_width
-                - sizes.standard_margin * 2 ),
+            max_width = sizes.sidebar_width_max,
+            width = sizes.sidebar_width_max,
         ),
-    ),
-    'row_actions_structure': dict(
-        component_class = Row,
-        component_arguments = dict(
-            height = sizes.actions_height, width = sizes.actions_width,
-            height_policy = 'fixed', width_policy = 'fixed',
-            margin = sizes.standard_margin,
-        ),
-        contains = [ 'row_actions' ]
     ),
     'row_actions': dict(
         component_class = Row,
         component_arguments = dict(
-            align = ( 'center', 'end' ),
+            styles = {
+                'position': 'absolute', 'right': '0px', 'z-order': '25',
+            },
             visible = False,
         ),
         contains = [
@@ -782,6 +769,7 @@ conversation_message_common_layout = {
             'spacer_left',
             'column_header',
             'text_message',
+            'row_actions', # TODO: Float over right side of message text.
             'spacer_right',
         ],
     ),
@@ -791,7 +779,6 @@ conversation_message_common_layout = {
         component_arguments = dict( **_message_header_attributes ),
         contains = [
             'row_behaviors',
-            'row_actions_structure',
         ],
     ),
     'row_behaviors': dict(
@@ -801,6 +788,7 @@ conversation_message_common_layout = {
         ),
         contains = [
             'label_role',
+            # TODO: Float labels over left side of message text.
             'toggle_active',
             'toggle_pinned',
         ],
@@ -829,18 +817,12 @@ conversation_message_common_layout = {
         ),
         event_functions = dict( value = 'on_toggle_message_pinned' ),
     ),
-    'row_actions_structure': dict(
-        component_class = Row,
-        component_arguments = dict(
-            height = sizes.actions_height, width = sizes.actions_width,
-            height_policy = 'fixed', width_policy = 'fixed',
-        ),
-        contains = [ 'row_actions' ]
-    ),
     'row_actions': dict(
         component_class = Row,
         component_arguments = dict(
-            align = ( 'center', 'end' ),
+            styles = {
+                'position': 'absolute', 'right': '0px', 'z-order': '5',
+            },
             visible = False,
         ),
         contains = [

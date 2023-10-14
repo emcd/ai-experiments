@@ -80,11 +80,13 @@ class ConversationMessage( __.ReactiveHTML ):
 
     row__ = __.param.Parameter( )
 
-    _template = (
-        '''<div id="ConversationMessage" '''
-        '''onmouseenter="${_div_mouseenter}" '''
-        '''onmouseleave="${_div_mouseleave}" '''
-        '''>${row__}</div>''' )
+    _template = '''
+        <div id="ConversationMessage"
+            onmouseenter="${_div_mouseenter}"
+            onmouseleave="${_div_mouseleave}"
+        >
+            ${row__}
+        </div>'''.strip( )
 
     def __init__( self, role, mime_type, actor_name = None, **params ):
         emoji = __.roles_emoji[ role ]
