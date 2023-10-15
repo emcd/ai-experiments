@@ -616,6 +616,7 @@ conversation_control_layout = {
             'slider_documents_count',
             'text_tokens_total',
             'text_autoscroll_status',
+            'text_clipboard_export',
         ],
     ),
     'selector_provider': dict(
@@ -664,6 +665,12 @@ conversation_control_layout = {
         component_class = TextInput,
         component_arguments = dict( value = 'automatic', visible = False ),
         javascript_cb_generator = 'generate_document_autoscroller',
+        persist = False,
+    ),
+    'text_clipboard_export': dict(
+        component_class = TextInput,
+        component_arguments = dict( visible = False ),
+        javascript_cb_generator = 'generate_message_copier',
         persist = False,
     ),
 }
@@ -799,6 +806,7 @@ conversation_message_common_layout = {
             icon = 'copy',
             **_icon_button_attributes,
         ),
+        event_functions = dict( on_click = 'on_click_copy_message' ),
     ),
     'button_delete': dict(
         component_class = Button,

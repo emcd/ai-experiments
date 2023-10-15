@@ -26,13 +26,32 @@ from . import base as __
 
 _document_autoscroller_code = '''
 if (component.value == 'scrolling')
-    window.scrollTo(0, document.body.scrollHeight) '''
+    window.scrollTo(0, document.body.scrollHeight);'''
 def generate_document_autoscroller( gui, layout, component_name ):
-    entry = layout[ component_name ]
     if not hasattr( gui, component_name ): return
     component = getattr( gui, component_name )
     return dict(
         value = _document_autoscroller_code,
+        args = dict( component = component ) )
+
+
+# TODO: Handle non-text data.
+_message_copier_code = '''
+navigator.clipboard.writeText(component.value).then(function() {
+    console.log('Text copied to clipboard');
+}, function(err) {
+    console.error('Error in copying text: ', err);
+});'''
+def generate_message_copier( gui, layout, component_name ):
+    # Note: We use a Javascript callback rather than Python library,
+    #       because we want to use the clipboard of the browser's host OS
+    #       and not the clipboard of the OS under which the Python code
+    #       is running. E.g., consider the Windows Subsystem for Linux case:
+    #       no X server and no direct access to Windows API.
+    if not hasattr( gui, component_name ): return
+    component = getattr( gui, component_name )
+    return dict(
+        value = _message_copier_code,
         args = dict( component = component ) )
 
 
@@ -44,6 +63,13 @@ def on_adjust_documents_count( gui, event ):
 def on_click_chat( gui, event ):
     from .actions import chat
     chat( gui )
+
+
+def on_click_copy_message( gui, event ):
+    # TODO: Handle non-text data.
+    # Layer of convolution because not all panes have a value parameter
+    # that is registered as a JS-serializable Parameter object.
+    gui.parent__.text_clipboard_export.value = str( gui.text_message.object )
 
 
 def on_click_create_conversation( gui, event ):
