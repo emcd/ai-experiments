@@ -45,7 +45,6 @@
 
 * GUI: Miscellaneous
 
-    - Float boxes for toggles.
     - Copy button implementation.
     - Dynamic text area for prompt input.
     - Ensure that internal exceptions display as visible errors.

@@ -108,7 +108,8 @@ class ConversationMessage( __.ReactiveHTML ):
             'role': role,
         }
         if actor_name: self.auxdata__[ 'actor-name' ] = actor_name
-        row_gui.label_role.value = emoji
+        # TODO: Use user-supplied logos, when available.
+        row_gui.toggle_active.name = emoji
         self.gui__ = row_gui
         self.row__ = row
         super( ).__init__( **params )

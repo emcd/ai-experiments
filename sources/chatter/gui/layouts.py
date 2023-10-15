@@ -71,8 +71,8 @@ sizes = SimpleNamespace(
 sizes.icon_button_width = sizes.icon_button_height
 sizes.actions_height = sizes.icon_button_height + 2 * sizes.element_margin
 sizes.actions_width = (
-      3 * sizes.icon_button_width
-    + 6 * sizes.element_margin
+      1 * sizes.icon_button_width
+    + 2 * sizes.element_margin
     + 10 # border widths + extra fudge
 )
 
@@ -219,32 +219,15 @@ system_prompts_layout = {
     'row_system_prompt_header': dict(
         component_class = Row,
         component_arguments = dict( **_message_header_attributes ),
-        contains = [
-            'label_system',
-            'toggle_system_prompt_active',
-            'toggle_system_prompt_display',
-        ],
-    ),
-    'label_system': dict(
-        component_class = StaticText,
-        component_arguments = dict(
-            value = '📏', align = 'center', width = sizes.icon_button_width,
-        ),
-        persist = False,
+        contains = [ 'toggle_system_prompt_active', ],
     ),
     'toggle_system_prompt_active': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💬', value = True, **_icon_button_attributes,
+            # TODO: Set icon instead of name.
+            name = '📏', value = True, **_icon_button_attributes,
         ),
         event_functions = dict( value = 'on_toggle_system_prompt_active' ),
-    ),
-    'toggle_system_prompt_display': dict(
-        component_class = Toggle,
-        component_arguments = dict(
-            name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
-        ),
-        event_functions = dict( value = 'on_toggle_system_prompt_display' ),
     ),
     'column_system_prompt': dict(
         component_class = Column,
@@ -254,9 +237,16 @@ system_prompts_layout = {
             **_message_column_width_attributes,
         ),
         contains = [
-            'selector_system_prompt',
+            'row_system_prompt_selection',
             'row_system_prompt_variables',
             'text_system_prompt',
+        ],
+    ),
+    'row_system_prompt_selection': dict(
+        component_class = Row,
+        contains = [
+            'selector_system_prompt',
+            'toggle_system_prompt_display',
         ],
     ),
     'selector_system_prompt': dict(
@@ -264,9 +254,17 @@ system_prompts_layout = {
         component_arguments = dict(
             options = [ 'General Conversation' ],
             value = 'General Conversation',
+            align = 'center',
         ),
         event_functions = dict( value = 'on_select_system_prompt' ),
         populator_function = 'populate_system_prompts_selector',
+    ),
+    'toggle_system_prompt_display': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
+        ),
+        event_functions = dict( value = 'on_toggle_system_prompt_display' ),
     ),
     'row_system_prompt_variables': dict(
         component_class = Row,
@@ -297,32 +295,15 @@ system_prompts_layout = {
     'row_functions_prompt_header': dict(
         component_class = Row,
         component_arguments = dict( **_message_header_attributes ),
-        contains = [
-            'label_functions',
-            'toggle_functions_active',
-            'toggle_functions_display',
-        ],
-    ),
-    'label_functions': dict(
-        component_class = StaticText,
-        component_arguments = dict(
-            value = '🧰', align = 'center', width = sizes.icon_button_width,
-        ),
-        persist = False,
+        contains = [ 'toggle_functions_active', ],
     ),
     'toggle_functions_active': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💬', value = True, **_icon_button_attributes,
+            # TODO: Set icon instead of name.
+            name = '🧰', value = True, **_icon_button_attributes,
         ),
         event_functions = dict( value = 'on_toggle_functions_active' ),
-    ),
-    'toggle_functions_display': dict(
-        component_class = Toggle,
-        component_arguments = dict(
-            name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
-        ),
-        event_functions = dict( value = 'on_toggle_functions_display' ),
     ),
     'column_functions_prompt': dict(
         component_class = Column,
@@ -349,15 +330,24 @@ system_prompts_layout = {
     'row_function_options': dict(
         component_class = Row,
         contains = [
+            'toggle_functions_display',
             'checkbox_auto_functions',
             'checkbox_elide_function_history',
         ],
+    ),
+    'toggle_functions_display': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
+        ),
+        event_functions = dict( value = 'on_toggle_functions_display' ),
     ),
     'checkbox_auto_functions': dict(
         component_class = Checkbox,
         component_arguments = dict(
             name = 'Automatic Function Execution',
             value = True,
+            align = 'center',
         ),
     ),
     'checkbox_elide_function_history': dict(
@@ -365,6 +355,7 @@ system_prompts_layout = {
         component_arguments = dict(
             name = 'Function History Elision',
             value = True,
+            align = 'center',
         ),
     ),
     'column_functions_json': dict(
@@ -445,32 +436,15 @@ user_prompts_layout = {
     'row_canned_prompt_header': dict(
         component_class = Row,
         component_arguments = dict( **_message_header_attributes ),
-        contains = [
-            'label_canned',
-            'toggle_canned_prompt_active',
-            'toggle_canned_prompt_display',
-        ],
-    ),
-    'label_canned': dict(
-        component_class = StaticText,
-        component_arguments = dict(
-            value = '🥫', align = 'center', width = sizes.icon_button_width,
-        ),
-        persist = False,
+        contains = [ 'toggle_canned_prompt_active', ],
     ),
     'toggle_canned_prompt_active': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💬', value = False, **_icon_button_attributes,
+            # TODO: Use icon instead of name.
+            name = '🥫', value = False, **_icon_button_attributes,
         ),
         event_functions = dict( value = 'on_toggle_canned_prompt_active' ),
-    ),
-    'toggle_canned_prompt_display': dict(
-        component_class = Toggle,
-        component_arguments = dict(
-            name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
-        ),
-        event_functions = dict( value = 'on_toggle_canned_prompt_display' ),
     ),
     'column_canned_prompt': dict(
         component_class = Column,
@@ -487,16 +461,28 @@ user_prompts_layout = {
     ),
     'row_canned_prompt_selection': dict(
         component_class = Row,
-        contains = [ 'selector_canned_prompt', 'button_canned_prompt' ],
+        contains = [
+            'selector_canned_prompt',
+            'toggle_canned_prompt_display',
+            'button_canned_prompt',
+        ],
     ),
     'selector_canned_prompt': dict(
         component_class = Select,
         component_arguments = dict(
             options = [ 'Recap: General Conversation' ],
             value = 'Recap: General Conversation',
+            align = 'center',
         ),
         event_functions = dict( value = 'on_select_canned_prompt' ),
         populator_function = 'populate_canned_prompts_selector',
+    ),
+    'toggle_canned_prompt_display': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '\N{Eye}\uFE0F', value = False, **_icon_button_attributes,
+        ),
+        event_functions = dict( value = 'on_toggle_canned_prompt_display' ),
     ),
     'button_canned_prompt': dict(
         component_class = Button,
@@ -533,32 +519,14 @@ user_prompts_layout = {
     'row_user_prompt_header': dict(
         component_class = Row,
         component_arguments = dict( **_message_header_attributes ),
-        contains = [
-            'label_user',
-            'toggle_user_prompt_active',
-            'label_user_blank',
-        ],
-    ),
-    'label_user': dict(
-        component_class = StaticText,
-        component_arguments = dict(
-            value = '🧑', align = 'center', width = sizes.icon_button_width,
-        ),
-        persist = False,
+        contains = [ 'toggle_user_prompt_active', ],
     ),
     'toggle_user_prompt_active': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💬', value = True, **_icon_button_attributes,
+            name = '🧑', value = True, **_icon_button_attributes,
         ),
         event_functions = dict( value = 'on_toggle_user_prompt_active' ),
-    ),
-    'label_user_blank': dict(
-        component_class = StaticText,
-        component_arguments = dict(
-            value = ' ', align = 'center', width = sizes.icon_button_width,
-        ),
-        persist = False,
     ),
     'column_user_prompt': dict(
         component_class = Column,
@@ -779,45 +747,21 @@ conversation_message_common_layout = {
     'column_header': dict(
         component_class = Column,
         component_arguments = dict( **_message_header_attributes ),
-        contains = [
-            'row_behaviors',
-        ],
+        contains = [ 'row_behaviors', ],
     ),
     'row_behaviors': dict(
         component_class = Row,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
         ),
-        contains = [
-            'label_role',
-            # TODO: Float labels over left side of message text.
-            'toggle_active',
-            'toggle_pinned',
-        ],
-    ),
-    'label_role': dict(
-        component_class = StaticText,
-        component_arguments = dict(
-            align = 'center', width = sizes.icon_button_width,
-        ),
+        contains = [ 'toggle_active', ],
     ),
     'toggle_active': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '💬', #icon = 'message-dots',
-            value = False,
-            **_icon_button_attributes,
+            value = False, **_icon_button_attributes,
         ),
         event_functions = dict( value = 'on_toggle_message_active' ),
-    ),
-    'toggle_pinned': dict(
-        component_class = Toggle,
-        component_arguments = dict(
-            name = '📌', #icon = 'pin',
-            value = False,
-            **_icon_button_attributes,
-        ),
-        event_functions = dict( value = 'on_toggle_message_pinned' ),
     ),
     'row_actions': dict(
         component_class = Row,
@@ -832,12 +776,22 @@ conversation_message_common_layout = {
             visible = False,
         ),
         contains = [
+            'toggle_pinned',
             'button_copy',
             'button_delete',
             'button_edit',
             'button_fork',
             # TODO: button_regenerate
         ],
+    ),
+    'toggle_pinned': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            name = '📌', #icon = 'pin',
+            value = False,
+            **_icon_button_attributes,
+        ),
+        event_functions = dict( value = 'on_toggle_message_pinned' ),
     ),
     'button_copy': dict(
         component_class = Button,
