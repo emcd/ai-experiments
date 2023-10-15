@@ -85,7 +85,6 @@ div[class="codehilite"] {
 
 
 _action_button_attributes = dict(
-    #align = 'center',
     button_style = 'solid', # button_type = 'light',
     height = sizes.action_button_height, height_policy = 'fixed',
     width = sizes.action_button_width, width_policy = 'fixed',
@@ -714,7 +713,6 @@ conversation_indicator_layout = {
     'text_title': dict(
         component_class = Markdown,
         component_arguments = dict(
-            align = ( 'center', 'start' ),
             height_policy = 'auto', width_policy = 'max',
             margin = sizes.standard_margin,
             max_width = sizes.sidebar_width_max,
@@ -725,7 +723,11 @@ conversation_indicator_layout = {
         component_class = Row,
         component_arguments = dict(
             styles = {
-                'position': 'absolute', 'right': '0px', 'z-order': '25',
+                # TODO: Use theme colors.
+                'background-color': 'rgba(127, 127, 127, 0.8)',
+                'position': 'absolute',
+                'right': f"{sizes.standard_margin}px",
+                'z-order': '25',
             },
             visible = False,
         ),
@@ -821,7 +823,11 @@ conversation_message_common_layout = {
         component_class = Row,
         component_arguments = dict(
             styles = {
-                'position': 'absolute', 'right': '0px', 'z-order': '5',
+                'background-color': 'rgba(127, 127, 127, 0.8)',
+                'position': 'absolute',
+                'right': f"{sizes.standard_margin}px",
+                'top': f"{sizes.standard_margin}px",
+                'z-order': '5',
             },
             visible = False,
         ),

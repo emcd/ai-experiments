@@ -24,6 +24,7 @@
     - Rewrite in Vue.js and Python FastAPI?
     - Support for image generation chats with OpenAI Dall-E and Leonardo.ai.
     - Option to record conversations to vector databases.
+    - Import conversations from OpenAI shares.
 
 * GUI: Key Bindings
 
@@ -45,16 +46,22 @@
 * GUI: Miscellaneous
 
     - Float boxes for toggles.
-    - Alpha channel for float boxes.
+    - Copy button implementation.
     - Dynamic text area for prompt input.
-    - Ensure central column content always fits on screen.
-    - Implement modal dialog for vector store addition, etc....
     - Ensure that internal exceptions display as visible errors.
-    - Mathematica/Jupyter-style In/Out cell groups.
+    - Ensure central column content always fits on screen.
+    - Export conversations to static HTML.
+    - Implement modal dialog for vector store addition, etc....
+    - Toggle for conversation indicator labels display.
+    - Search for conversations by title or label.
+    - Mathematica/Jupyter-style In/Out cell groups?
+      Maybe does not lend itself to selective message activation.
     - Change message border on mouse enter/leave.
-    - Change conversation indicator background on mouse enter/leave.
-    - Fade transition for conversation indicators.
+    - Change conversation indicator background on mouse enter/leave?
+    - Fade transition for conversation indicators?
       See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
+    - Custom logo for human user in chat history.
+    - Gravatar integration for human user logo in chat history?
 
 * GUI: Page Header
 
