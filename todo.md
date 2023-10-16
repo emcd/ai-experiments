@@ -45,7 +45,6 @@
 
 * GUI: Miscellaneous
 
-    - Copy button implementation.
     - Dynamic text area for prompt input.
     - Ensure that internal exceptions display as visible errors.
     - Ensure central column content always fits on screen.

@@ -43,12 +43,14 @@ class ConversationIndicator( __.ReactiveHTML ):
     clicked = __.param.Event( default = False )
     row__ = __.param.Parameter( )
 
-    _template = (
-        '''<div id="ConversationIndicator" '''
-        '''onclick="${_div_click}" '''
-        '''onmouseenter="${_div_mouseenter}" '''
-        '''onmouseleave="${_div_mouseleave}" '''
-        '''>${row__}</div>''' )
+    _template = '''
+        <div id="ConversationIndicator"
+            onclick="${_div_click}"
+            onmouseenter="${_div_mouseenter}"
+            onmouseleave="${_div_mouseleave}"
+        >
+            ${row__}
+        </div>'''.strip( )
 
     def __init__( self, title, identity, **params ):
         from .layouts import conversation_indicator_layout as layout
@@ -119,3 +121,8 @@ class ConversationMessage( __.ReactiveHTML ):
 
     def _div_mouseleave( self, event ):
         self.gui__.row_actions.visible = False
+
+
+# TODO: Implement UserMessagePrompt with 'onkeyup' callback,
+#       if https://github.com/holoviz/panel/pull/5592 is delayed.
+#       https://developer.mozilla.org/en-US/docs/Web/API/HTMLTextAreaElement#autogrowing_textarea_example

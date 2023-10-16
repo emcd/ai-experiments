@@ -541,10 +541,14 @@ user_prompts_layout = {
         component_class = TextAreaInput,
         component_arguments = dict(
             value = '',
-            placeholder = 'Enter user message here...',
+            placeholder = 'Enter message here...',
+            # TODO: Uncomment once https://github.com/holoviz/panel/pull/5592
+            #       is part of a Panel release.
+            # auto_grow = True, max_rows = 40,
             height_policy = 'auto', width_policy = 'max',
             max_height = 480, # min_height = 240,
             max_length = 32767,
+            styles = { 'resize': 'none' },
         ),
         event_functions = dict(
             value = 'on_input_finish_user_prompt',
@@ -554,10 +558,10 @@ user_prompts_layout = {
     'row_actions': dict(
         component_class = Row,
         contains = [
-            'button_chat',
-            'toggle_summarize',
-            'button_search',
-            'button_run_tool',
+            'button_chat', # TODO: Move to same row as prompt.
+            'toggle_summarize', # TODO: Rename to 'toggle_compactify'.
+            'button_search', # TODO: Move to same row as prompt.
+            'button_run_tool', # TODO: Move to function invocation messages.
         ],
     ),
     'button_chat': dict(
