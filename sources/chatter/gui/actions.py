@@ -24,18 +24,31 @@
 from . import base as __
 
 
+def _update_conversation_status_on_error( invocable ):
+    from functools import wraps
+    from .updaters import update_conversation_status
+
+    @wraps( invocable )
+    def invoker( gui, *posargs, **nomargs ):
+        update_conversation_status( gui ) # Clear any extant status.
+        try: return invocable( gui, *posargs, **nomargs )
+        except BaseException as exc:
+            update_conversation_status( gui, exc )
+            raise # TODO: Remove after traceback display is implemented.
+
+    return invoker
+
+
+@_update_conversation_status_on_error
 def chat( gui ):
-    from ..ai.providers import ChatCompletionError
     from .updaters import (
         add_message,
         update_and_save_conversation,
         update_and_save_conversations_index,
-        update_conversation_status,
         update_message,
         update_messages_post_summarization,
         update_run_tool_button,
     )
-    update_conversation_status( gui )
     summarization = gui.toggle_summarize.value
     if gui.toggle_canned_prompt_active.value:
         prompt = gui.text_canned_prompt.object
@@ -44,38 +57,25 @@ def chat( gui ):
         prompt = gui.text_input_user.value
         gui.text_input_user.value = ''
     if prompt: add_message( gui, 'Human', prompt )
-    update_conversation_status(
-        gui, 'Generating AI response...', progress = True )
-    try: message_component = _chat( gui )
-    except ChatCompletionError as exc:
-        update_conversation_status( gui, text = exc )
-    else:
-        update_conversation_status( gui )
-        update_message( message_component )
-        _add_conversation_indicator_if_necessary( gui )
-        update_and_save_conversations_index( gui )
-        if summarization:
-            update_messages_post_summarization( gui )
-            gui.toggle_summarize.value = False
+    with _update_conversation_progress( gui, 'Generating AI response...' ):
+        message_component = _chat( gui )
+    update_message( message_component )
+    _add_conversation_indicator_if_necessary( gui )
+    update_and_save_conversations_index( gui )
+    if summarization:
+        update_messages_post_summarization( gui )
+        gui.toggle_summarize.value = False
     update_and_save_conversation( gui )
     update_run_tool_button( gui, allow_autorun = True )
 
 
+@_update_conversation_status_on_error
 def run_tool( gui ):
     from json import dumps
-    from .updaters import add_message, update_conversation_status
-    update_conversation_status( gui )
-    try: name, function = __.extract_function_invocation_request( gui )
-    except ValueError as exc:
-        update_conversation_status( gui, text = exc )
-        return
-    update_conversation_status(
-        gui, text = 'Executing AI function...', progress = True )
-    try: result = function( )
-    except ValueError as exc:
-        update_conversation_status( gui, text = exc )
-        return
-    update_conversation_status( gui )
+    from .updaters import add_message
+    name, function = __.extract_function_invocation_request( gui )
+    with _update_conversation_progress( gui, 'Executing AI function...' ):
+        result = function( )
     add_message(
         gui, 'Function', dumps( result ),
         actor_name = name,
@@ -89,25 +89,20 @@ def run_tool( gui ):
             message_rows[ -2 ].gui__.toggle_pinned.value )
 
 
+@_update_conversation_status_on_error
 def search( gui ):
-    from .updaters import (
-        add_message,
-        update_and_save_conversation,
-        update_conversation_status,
-    )
-    update_conversation_status( gui )
+    from .updaters import add_message, update_and_save_conversation
     prompt = gui.text_input_user.value
     gui.text_input_user.value = ''
     add_message( gui, 'Human', prompt )
     documents_count = gui.slider_documents_count.value
     vectorstore = gui.auxdata__.vectorstores[
         gui.selector_vectorstore.value ][ 'instance' ]
-    update_conversation_status(
-        gui, text = 'Querying vector database...', progress = True )
     # TODO: Error handling on vector database query failure.
     # TODO: Configurable query method.
-    documents = vectorstore.similarity_search( prompt, k = documents_count )
-    update_conversation_status( gui )
+    with _update_conversation_progress( gui, 'Querying vector database...' ):
+        documents = vectorstore.similarity_search(
+            prompt, k = documents_count )
     for document in documents:
         mime_type = document.metadata.get( 'mime_type', 'text/plain' )
         add_message(
@@ -157,20 +152,11 @@ def _chat( gui ):
     return provider.chat( messages, special_data, controls, callbacks )
 
 
-def _update_gui_on_chat( gui, handle, content ):
-    from .updaters import autoscroll_document
-    setattr(
-        handle.gui__.text_message, 'object',
-        getattr( handle.gui__.text_message, 'object' ) + content )
-    autoscroll_document( gui )
-
-
 def _generate_conversation_title( gui ):
     # TODO: Use model-preferred serialization format for title and labels.
     from json import JSONDecodeError, loads
     from ..ai.providers import ChatCallbacks, ChatCompletionError
     from ..messages import render_prompt_template
-    from .updaters import update_conversation_status
     template = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
     controls = __.package_controls( gui )
@@ -186,17 +172,25 @@ def _generate_conversation_title( gui ):
         allocator = ( lambda mime_type: [ ] ),
         updater = ( lambda handle, content: handle.append( content ) ),
     )
-    update_conversation_status(
-        gui, text = 'Generating conversation title...', progress = True )
-    try: handle = provider.chat( messages, { }, controls, callbacks )
-    except ChatCompletionError as exc:
-        update_conversation_status( gui, text = exc )
-        raise
+    with _update_conversation_progress(
+        gui, 'Generating conversation title...'
+    ): handle = provider.chat( messages, { }, controls, callbacks )
     response = ''.join( handle )
     __.scribe.info( f"New conversation title: {response}" )
-    try: response = loads( response )
-    except JSONDecodeError as exc:
-        update_conversation_status( gui, text = exc )
-        raise
-    update_conversation_status( gui )
+    response = loads( response )
     return response[ 'title' ], response[ 'labels' ]
+
+
+@__.produce_context_manager
+def _update_conversation_progress( gui, message ):
+    from .updaters import update_conversation_status
+    yield update_conversation_status( gui, message, progress = True )
+    update_conversation_status( gui )
+
+
+def _update_gui_on_chat( gui, handle, content ):
+    from .updaters import autoscroll_document
+    setattr(
+        handle.gui__.text_message, 'object',
+        getattr( handle.gui__.text_message, 'object' ) + content )
+    autoscroll_document( gui )

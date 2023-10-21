@@ -46,7 +46,6 @@
 * GUI: Miscellaneous
 
     - Dynamic text area for prompt input.
-    - Ensure that internal exceptions display as visible errors.
     - Ensure central column content always fits on screen.
     - Export conversations to static HTML.
     - Implement modal dialog for vector store addition, etc....
