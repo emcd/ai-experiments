@@ -349,7 +349,7 @@ def update_conversation_status( gui, text = None, progress = False ):
             # TODO: Add stack trace inspection button.
             # TODO: If retryable exception, add a retry button.
             text = "{exc_class}: {exc}".format(
-                exc_class = type( exc ), exc = exc )
+                exc_class = type( text ), exc = text )
         gui.text_conversation_status.value = text
         gui.text_conversation_status.visible = True
 
