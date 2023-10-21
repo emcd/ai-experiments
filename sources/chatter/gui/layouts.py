@@ -561,7 +561,6 @@ user_prompts_layout = {
             'button_chat', # TODO: Move to same row as prompt.
             'toggle_summarize', # TODO: Rename to 'toggle_compactify'.
             'button_search', # TODO: Move to same row as prompt.
-            'button_run_tool', # TODO: Move to function invocation messages.
         ],
     ),
     'button_chat': dict(
@@ -589,15 +588,6 @@ user_prompts_layout = {
             **_action_button_attributes,
         ),
         event_functions = dict( on_click = 'on_click_search' ),
-    ),
-    'button_run_tool': dict(
-        component_class = Button,
-        component_arguments = dict(
-            name = '\N{Hammer and Wrench}\uFE0F Run',
-            disabled = True,
-            **_action_button_attributes,
-        ),
-        event_functions = dict( on_click = 'on_click_run_tool' ),
     ),
     'spacer_right_user_prompt': dict( component_class = HSpacer ),
 }
@@ -788,17 +778,20 @@ conversation_message_common_layout = {
         ),
         contains = [
             'toggle_pinned',
+            # TODO: Vertical separator.
             'button_copy',
             'button_delete',
             'button_edit',
             'button_fork',
-            # TODO: button_regenerate
+            'button_invoke',
+            'button_regenerate',
         ],
     ),
     'toggle_pinned': dict(
         component_class = Toggle,
         component_arguments = dict(
-            name = '📌', #icon = 'pin',
+            #name = '📌',
+            icon = 'pin', # TODO: Alternate with 'pinned'.
             value = False,
             **_icon_button_attributes,
         ),
@@ -836,6 +829,23 @@ conversation_message_common_layout = {
             **_icon_button_attributes,
         ),
         event_functions = dict( on_click = 'on_click_fork_conversation' ),
+    ),
+    'button_invoke': dict(
+        component_class = Button,
+        component_arguments = dict(
+            icon = 'function',
+            visible = False,
+            **_icon_button_attributes,
+        ),
+        event_functions = dict( on_click = 'on_click_invoke_function' ),
+    ),
+    'button_regenerate': dict(
+        component_class = Button,
+        component_arguments = dict(
+            icon = 'reload',
+            visible = False,
+            **_icon_button_attributes,
+        ),
     ),
     'spacer_right': dict( component_class = HSpacer ),
 }

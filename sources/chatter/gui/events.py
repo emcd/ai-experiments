@@ -90,9 +90,9 @@ def on_click_fork_conversation( gui, event ):
     fork_conversation( gui.parent__, gui.index__ )
 
 
-def on_click_run_tool( gui, event ):
-    from .actions import run_tool
-    run_tool( gui )
+def on_click_invoke_function( gui, event ):
+    from .actions import invoke_function
+    invoke_function( gui.parent__, gui.index__ )
 
 
 def on_click_search( gui, event ):

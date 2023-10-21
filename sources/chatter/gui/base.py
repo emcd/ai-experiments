@@ -80,6 +80,10 @@ roles_styles = {
 }
 
 
+def access_ai_provider_current( gui ):
+    return gui.auxdata__.ai_providers[ gui.selector_provider.value ]
+
+
 def calculate_conversations_path( gui ):
     configuration = gui.auxdata__.configuration
     directories = gui.auxdata__.directories
@@ -88,10 +92,10 @@ def calculate_conversations_path( gui ):
     return state_path / 'conversations'
 
 
-def extract_function_invocation_request( gui ):
-    rehtml_message = gui.column_conversation_history[ -1 ]
-    message = rehtml_message.gui__.text_message.object
-    # TODO: Handle multipart MIME.
+def extract_invocation_request( gui, component = None ):
+    if None is component: component = gui.column_conversation_history[ -1 ]
+    message = component.gui__.text_message.object
+    # TODO? Handle multipart MIME.
     from json import loads
     try: data = loads( message )
     except: raise ValueError( 'Malformed JSON payload in message.' )

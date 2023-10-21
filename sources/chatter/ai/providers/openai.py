@@ -117,13 +117,19 @@ def provide_chat_models( ):
     }
 
 
-def provide_format_name( controls ):
-    return 'JSON'
+def provide_format_mime_type( controls ): return 'application/json'
+
+
+def provide_format_name( controls ): return 'JSON'
 
 
 def render_data( content, controls ):
-    from json import dumps
-    return dumps( content )
+    mime_type = provide_format_mime_type( controls )
+    if 'application/json' == mime_type:
+        from json import dumps
+        text = dumps( content )
+    else: raise NotImplementedError( f"Cannot render '{mime_type}' as text." )
+    return mime_type, text
 
 
 def select_default_model( models, auxdata ):

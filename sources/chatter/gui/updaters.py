@@ -49,31 +49,30 @@ def add_message(
     mime_type = 'text/markdown',
 ):
     from .classes import ConversationMessage
-    rehtml_message = ConversationMessage(
+    component = ConversationMessage(
         role, mime_type, actor_name = actor_name,
         height_policy = 'auto', margin = 0, width_policy = 'max' )
-    message_gui = rehtml_message.gui__
+    message_gui = component.gui__
     message_gui.parent__ = gui
     message_gui.index__ = len( gui.column_conversation_history )
-    # TODO: Less intrusive supplementation.
-    #       Consider multi-part MIME attachment encoding from SMTP.
-    #       May need this as GPT-4 does not like consecutive user messages.
-    if 'AI' == role:
-        message_gui.button_fork.visible = True
-    elif 'Document' == role:
-        content = f'''## Supplement ##\n\n{content}'''
-        message_gui.button_delete.visible = True
-    elif 'Human' == role:
-        message_gui.button_edit.visible = True
     text_message = message_gui.text_message
     if hasattr( text_message, 'value' ): text_message.value = content
     else: text_message.object = content
+    if 'AI' == role:
+        message_gui.button_fork.visible = True
+        try: __.extract_invocation_request( gui, component = component )
+        except: pass
+        else: message_gui.button_invoke.visible = True
+    elif 'Document' == role:
+        message_gui.button_delete.visible = True
+    elif 'Human' == role:
+        message_gui.button_edit.visible = True
     for behavior in behaviors:
         getattr( message_gui, f"toggle_{behavior}" ).value = True
     __.register_event_callbacks(
         message_gui, message_gui.layout__, 'row_message' )
-    gui.column_conversation_history.append( rehtml_message )
-    return rehtml_message
+    gui.column_conversation_history.append( component )
+    return component
 
 
 def autoscroll_document( gui ):
@@ -264,6 +263,12 @@ def sort_conversations_index( gui ):
         if None is not desc.indicator ) )
 
 
+def truncate_conversation( gui, index ):
+    # TODO: Present warning dialog if messages past index.
+    history = gui.column_conversation_history
+    history.objects = history[ 0 : index + 1 ]
+
+
 def update_active_functions( gui ):
     available_functions = gui.auxdata__.ai_functions
     # TODO: Construct components from layout.
@@ -402,25 +407,6 @@ def update_messages_post_summarization( gui ):
         if not message_gui.toggle_active.value: continue # already inactive
         if message_gui.toggle_pinned.value: continue # skip pinned messages
         message_gui.toggle_active.value = False
-
-
-def update_run_tool_button( gui, allow_autorun = False ):
-    disabled = 0 == len( gui.column_conversation_history )
-    if not disabled:
-        rehtml_message = gui.column_conversation_history[ -1 ]
-        disabled = 'AI' != rehtml_message.auxdata__[ 'role' ]
-    if not disabled:
-        message_gui = rehtml_message.gui__
-        disabled = not message_gui.toggle_active.value
-    if not disabled:
-        try: __.extract_function_invocation_request( gui )
-        except ValueError: disabled = True
-    from .actions import run_tool
-    allow_autorun = allow_autorun and gui.checkbox_auto_functions.value
-    if not disabled and allow_autorun:
-        gui.button_run_tool.disabled = True
-        run_tool( gui )
-    else: gui.button_run_tool.disabled = disabled
 
 
 def update_search_button( gui ):

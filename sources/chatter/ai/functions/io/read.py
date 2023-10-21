@@ -183,9 +183,8 @@ def _read_file( auxdata, /, path, control = None ):
                 content = summarization_prompt, role = 'User' ) )
             messages.append( dict(
                 content = '\n\n'.join( ai_messages ), role ='AI' ) )
-        messages.append( dict(
-            content = __.render_prompt( auxdata, control, chunk, mime_type ),
-            role = 'User' ) )
+        _, content = __.render_prompt( auxdata, control, chunk, mime_type )
+        messages.append( dict( content = content, role = 'User' ) )
         from chatter.ai.providers import ChatCallbacks
         callbacks = ChatCallbacks(
             allocator = ( lambda mime_type: [ ] ),

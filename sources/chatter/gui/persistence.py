@@ -52,7 +52,7 @@ def collect_conversation( gui ):
 def inject_conversation( gui, state ):
     from . import layouts
     from .layouts import conversation_container_names
-    from .updaters import update_token_count, update_run_tool_button
+    from .updaters import update_token_count
     layout = { }
     for container_name in conversation_container_names:
         layout.update( getattr( layouts, f"{container_name}_layout" ) )
@@ -73,7 +73,6 @@ def inject_conversation( gui, state ):
             component.object = state[ name ][ 'value' ]
         else: continue
     update_token_count( gui )
-    update_run_tool_button( gui ) # No autorun here; can lead to bad state.
 
 
 def restore_conversation( gui ):

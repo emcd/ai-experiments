@@ -47,7 +47,6 @@ def chat( gui ):
         update_and_save_conversations_index,
         update_message,
         update_messages_post_summarization,
-        update_run_tool_button,
     )
     summarization = gui.toggle_summarize.value
     if gui.toggle_canned_prompt_active.value:
@@ -58,35 +57,36 @@ def chat( gui ):
         gui.text_input_user.value = ''
     if prompt: add_message( gui, 'Human', prompt )
     with _update_conversation_progress( gui, 'Generating AI response...' ):
-        message_component = _chat( gui )
-    update_message( message_component )
+        response = _chat( gui )
+    update_message( response )
     _add_conversation_indicator_if_necessary( gui )
     update_and_save_conversations_index( gui )
     if summarization:
         update_messages_post_summarization( gui )
         gui.toggle_summarize.value = False
     update_and_save_conversation( gui )
-    update_run_tool_button( gui, allow_autorun = True )
+    _invoke_function_if_desirable( gui, response )
 
 
 @_update_conversation_status_on_error
-def run_tool( gui ):
-    from json import dumps
-    from .updaters import add_message
-    name, function = __.extract_function_invocation_request( gui )
+def invoke_function( gui, index ):
+    from .updaters import add_message, truncate_conversation
+    truncate_conversation( gui, index )
+    name, function = __.extract_invocation_request( gui )
     with _update_conversation_progress( gui, 'Executing AI function...' ):
         result = function( )
+    provider = __.access_ai_provider_current( gui )
+    controls = __.package_controls( gui )
+    mime_type, message = provider.render_data( result, controls )
     add_message(
-        gui, 'Function', dumps( result ),
-        actor_name = name,
-        mime_type = 'application/json' )
+        gui, 'Function', message, actor_name = name, mime_type = mime_type )
     chat( gui )
     if gui.checkbox_elide_function_history.value:
-        message_rows = gui.column_conversation_history
-        message_rows[ -3 ].gui__.toggle_active.value = (
-            message_rows[ -3 ].gui__.toggle_pinned.value )
-        message_rows[ -2 ].gui__.toggle_active.value = (
-            message_rows[ -2 ].gui__.toggle_pinned.value )
+        history = gui.column_conversation_history
+        history[ -3 ].gui__.toggle_active.value = (
+            history[ -3 ].gui__.toggle_pinned.value )
+        history[ -2 ].gui__.toggle_active.value = (
+            history[ -2 ].gui__.toggle_pinned.value )
 
 
 @_update_conversation_status_on_error
@@ -120,8 +120,8 @@ def _add_conversation_indicator_if_necessary( gui ):
     if descriptor.identity in conversations.descriptors__: return
     # Do not proceed if we are in a function invocation. Wait for result.
     # Also, some models (e.g., GPT-4) are confused by the invocation.
-    try: __.extract_function_invocation_request( gui )
-    except Exception as exc: pass
+    try: __.extract_invocation_request( gui )
+    except: pass
     else: return
     try: title, labels = _generate_conversation_title( gui )
     except Exception as exc: return
@@ -179,6 +179,15 @@ def _generate_conversation_title( gui ):
     __.scribe.info( f"New conversation title: {response}" )
     response = loads( response )
     return response[ 'title' ], response[ 'labels' ]
+
+
+def _invoke_function_if_desirable( gui, message ):
+    if 'AI' != message.auxdata__[ 'role' ]: return
+    if not message.gui__.toggle_active.value: return
+    if not gui.checkbox_auto_functions.value: return
+    try: __.extract_invocation_request( gui )
+    except: return
+    invoke_function( gui, message.gui__.index__ )
 
 
 @__.produce_context_manager
