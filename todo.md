@@ -47,6 +47,7 @@
 
     - Dynamic text area for prompt input.
     - Ensure central column content always fits on screen.
+    - Scroll-to-top and scroll-to-bottom button.
     - Export conversations to static HTML.
     - Implement modal dialog for vector store addition, etc....
     - Toggle for conversation indicator labels display.
@@ -66,6 +67,7 @@
     - Activity indicator with dropdown list of all current activities.
     - Warning indicator with dropdown list of all current warnings.
     - Error indicator with dropdown list of all current errors.
+    - Token count versus limit?
 
 * GUI: Theme components.
 

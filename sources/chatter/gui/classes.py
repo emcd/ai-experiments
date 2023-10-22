@@ -21,6 +21,10 @@
 ''' Auxiliary classes for Holoviz Panel GUI. '''
 
 
+from panel.layout import Row
+from panel.reactive import ReactiveHTML
+from param import Boolean, Event, Parameter, depends as param_depends
+
 from . import base as __
 
 
@@ -28,28 +32,42 @@ from . import base as __
 class ConversationDescriptor:
 
     identity: str = (
-        __.dataclasses.field( default_factory = lambda: __.uuid4( ).hex ) )
+        __.dataclass_declare( default_factory = lambda: __.uuid4( ).hex ) )
     timestamp: int = (
-        __.dataclasses.field( default_factory = __.time_ns ) )
+        __.dataclass_declare( default_factory = __.time_ns ) )
     title: __.typ.Optional[ str ] = None
     labels: __.AbstractMutableSequence[ str ] = (
-        __.dataclasses.field( default_factory = list ) )
+        __.dataclass_declare( default_factory = list ) )
     gui: __.typ.Optional[ __.SimpleNamespace ] = None
-    indicator: __.typ.Optional[ __.Row ] = None
+    indicator: __.typ.Optional[ Row ] = None
 
 
-class ConversationIndicator( __.ReactiveHTML ):
+class ConversationIndicator( ReactiveHTML ):
 
-    clicked = __.param.Event( default = False )
-    row__ = __.param.Parameter( )
+    clicked = Event( default = False )
+    mouse_hover__ = Boolean( False )
+    row__ = Parameter( )
+
+    _scripts = {
+        'my_mouseenter': '''
+            if (event.target && event.target.matches(':hover')) {
+                var timeout = setTimeout(
+                    function() { data.mouse_hover__ = true; }, 400);
+                event.target.onmouseleave = function() {
+                    clearTimeout(timeout);
+                    if (data.mouse_hover__) data.mouse_hover__ = false;
+                };
+            }''',
+    }
 
     _template = '''
         <div id="ConversationIndicator"
             onclick="${_div_click}"
-            onmouseenter="${_div_mouseenter}"
-            onmouseleave="${_div_mouseleave}"
+            onmouseenter="${script('my_mouseenter')}"
         >
             ${row__}
+            <input id="ConversationIndicator_mouse_hover"
+                type="hidden" value="${mouse_hover__}"/>
         </div>'''.strip( )
 
     def __init__( self, title, identity, **params ):
@@ -71,23 +89,35 @@ class ConversationIndicator( __.ReactiveHTML ):
         # Cannot run callback directly. Trigger via Event parameter.
         self.clicked = True
 
-    def _div_mouseenter( self, event ):
-        self.gui__.row_actions.visible = True
-
-    def _div_mouseleave( self, event ):
-        self.gui__.row_actions.visible = False
+    @param_depends( 'mouse_hover__', watch = True )
+    def _handle_mouse_hover__( self ):
+        self.gui__.row_actions.visible = self.mouse_hover__
 
 
-class ConversationMessage( __.ReactiveHTML ):
+class ConversationMessage( ReactiveHTML ):
 
-    row__ = __.param.Parameter( )
+    mouse_hover__ = Boolean( False )
+    row__ = Parameter( )
+
+    _scripts = {
+        'my_mouseenter': '''
+            if (event.target && event.target.matches(':hover')) {
+                var timeout = setTimeout(
+                    function() { data.mouse_hover__ = true; }, 400);
+                event.target.onmouseleave = function() {
+                    clearTimeout(timeout);
+                    if (data.mouse_hover__) data.mouse_hover__ = false;
+                };
+            }''',
+    }
 
     _template = '''
         <div id="ConversationMessage"
-            onmouseenter="${_div_mouseenter}"
-            onmouseleave="${_div_mouseleave}"
+            onmouseenter="${script('my_mouseenter')}"
         >
             ${row__}
+            <input id="ConversationMessage_mouse_hover"
+                type="hidden" value="${mouse_hover__}"/>
         </div>'''.strip( )
 
     def __init__( self, role, mime_type, actor_name = None, **params ):
@@ -116,11 +146,9 @@ class ConversationMessage( __.ReactiveHTML ):
         self.row__ = row
         super( ).__init__( **params )
 
-    def _div_mouseenter( self, event ):
-        self.gui__.row_actions.visible = True
-
-    def _div_mouseleave( self, event ):
-        self.gui__.row_actions.visible = False
+    @param_depends( 'mouse_hover__', watch = True )
+    def _handle_mouse_hover__( self ):
+        self.gui__.row_actions.visible = self.mouse_hover__
 
 
 # TODO: Implement UserMessagePrompt with 'onkeyup' callback,

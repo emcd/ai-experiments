@@ -37,11 +37,8 @@
 
 from types import SimpleNamespace
 
-import param
-
 from panel.layout import Column, HSpacer, Row
 from panel.pane import JSON, Markdown
-from panel.reactive import ReactiveHTML
 from panel.widgets import (
     Button,
     Checkbox,
@@ -548,7 +545,6 @@ user_prompts_layout = {
             height_policy = 'auto', width_policy = 'max',
             max_height = 480, # min_height = 240,
             max_length = 32767,
-            styles = { 'resize': 'none' },
         ),
         event_functions = dict(
             value = 'on_input_finish_user_prompt',
@@ -661,6 +657,7 @@ conversation_control_layout = {
         javascript_cb_generator = 'generate_document_autoscroller',
         persist = False,
     ),
+    # Hack because of how Panel and Javascript interact.
     'text_clipboard_export': dict(
         component_class = TextInput,
         component_arguments = dict( visible = False ),
@@ -693,9 +690,13 @@ conversation_indicator_layout = {
         component_arguments = dict(
             styles = {
                 # TODO: Use theme colors.
-                'background-color': 'rgba(127, 127, 127, 0.8)',
+                'background-color': '#e8e8e8',
+                'border-radius': '5%',
+                'box-shadow': '-2px 2px 3px rgba(0, 0, 0, 0.2)',
+                'padding': f"{sizes.element_margin}px",
                 'position': 'absolute',
                 'right': f"{sizes.standard_margin}px",
+                'top': f"{sizes.standard_margin}px",
                 'z-order': '25',
             },
             visible = False,
@@ -739,8 +740,7 @@ conversation_message_common_layout = {
         contains = [
             'spacer_left',
             'column_header',
-            'text_message',
-            'row_actions', # TODO: Float over right side of message text.
+            'row_content',
             'spacer_right',
         ],
     ),
@@ -748,13 +748,6 @@ conversation_message_common_layout = {
     'column_header': dict(
         component_class = Column,
         component_arguments = dict( **_message_header_attributes ),
-        contains = [ 'row_behaviors', ],
-    ),
-    'row_behaviors': dict(
-        component_class = Row,
-        component_arguments = dict(
-            height_policy = 'auto', width_policy = 'max',
-        ),
         contains = [ 'toggle_active', ],
     ),
     'toggle_active': dict(
@@ -764,11 +757,19 @@ conversation_message_common_layout = {
         ),
         event_functions = dict( value = 'on_toggle_message_active' ),
     ),
+    'row_content': dict(
+        component_class = Row,
+        contains = [ 'text_message', 'row_actions' ],
+    ),
     'row_actions': dict(
         component_class = Row,
         component_arguments = dict(
             styles = {
-                'background-color': 'rgba(127, 127, 127, 0.8)',
+                # TODO: Use theme colors.
+                'background-color': '#e8e8e8',
+                'border-radius': '5%',
+                'box-shadow': '-2px 2px 3px rgba(0, 0, 0, 0.2)',
+                'padding': f"{sizes.element_margin}px",
                 'position': 'absolute',
                 'right': f"{sizes.standard_margin}px",
                 'top': f"{sizes.standard_margin}px",
