@@ -42,6 +42,8 @@ class ConversationDescriptor:
     indicator: __.typ.Optional[ Row ] = None
 
 
+# TODO: Reduce to simple wrapper for custom JS code.
+#       Row initialization should be elsewhere.
 class ConversationIndicator( ReactiveHTML ):
 
     clicked = Event( default = False )
@@ -70,6 +72,7 @@ class ConversationIndicator( ReactiveHTML ):
                 type="hidden" value="${mouse_hover__}"/>
         </div>'''.strip( )
 
+    # TODO: Should only need GUI namespace as argument.
     def __init__( self, title, identity, **params ):
         from .layouts import conversation_indicator_layout as layout
         row_gui = __.SimpleNamespace( )
@@ -94,6 +97,8 @@ class ConversationIndicator( ReactiveHTML ):
         self.gui__.row_actions.visible = self.mouse_hover__
 
 
+# TODO: Reduce to simple wrapper for custom JS code.
+#       Row initialization should be elsewhere.
 class ConversationMessage( ReactiveHTML ):
 
     mouse_hover__ = Boolean( False )
@@ -120,6 +125,7 @@ class ConversationMessage( ReactiveHTML ):
                 type="hidden" value="${mouse_hover__}"/>
         </div>'''.strip( )
 
+    # TODO: Should only need GUI namespace as argument.
     def __init__( self, role, mime_type, actor_name = None, **params ):
         emoji = __.roles_emoji[ role ]
         styles = __.roles_styles[ role ]

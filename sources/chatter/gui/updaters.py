@@ -40,8 +40,7 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     descriptor.indicator = indicator
 
 
-# TODO: Mostly fold into initializer for ConversationMessage.
-#       Leave append operation on the conversation history.
+# TODO: Move row initialization here from ConversationMessage.
 def add_message(
     gui, role, content,
     actor_name = None,
@@ -49,6 +48,7 @@ def add_message(
     mime_type = 'text/markdown',
 ):
     from .classes import ConversationMessage
+    # TODO: Generate row component here and then pass to custom component.
     component = ConversationMessage(
         role, mime_type, actor_name = actor_name,
         height_policy = 'auto', margin = 0, width_policy = 'max' )
@@ -330,6 +330,7 @@ def update_conversation_hilite( gui, new_descriptor = None ):
         # TODO: Use style variable rather than hard-coded value.
         new_descriptor.indicator.styles.update(
             { 'background': 'LightGray' } )
+    # TODO: Try using 'view.resize_layout()' in custom JS for proper fix.
     # Hack: Reload indicators to force repaint.
     indicators = [ indicator for indicator in conversations ]
     conversations.clear( )
