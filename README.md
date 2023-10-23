@@ -1,5 +1,6 @@
 ## Installation
 
+1. Ensure that you have installed [Git LFS](https://git-lfs.com/).
 1. Clone this repository.
 1. Ensure that you have Python 3.8 or newer installed with the complete
    standard library.
