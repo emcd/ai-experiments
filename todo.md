@@ -49,6 +49,9 @@
       area.
     - Replace toggle between canned and freeform user prompts with selector.
       Switch out display of rows accordingly to save screen real estate.
+    - Store icons as SVG files as data. Make custom `IconButton` and
+      `IconToggle` classes, which use these.
+      https://discourse.holoviz.org/t/how-to-trigger-re-render-of-template/5799/5
     - Refactor `ConversationMessage` class into `ConversationMessageContent`
       class.
     - Create `ConversationHistory` class to manage history column and status
