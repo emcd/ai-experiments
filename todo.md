@@ -45,7 +45,18 @@
 
 * GUI: Miscellaneous
 
-    - Dynamic text area for prompt input.
+    - Dynamic text area for prompt input. Also, inspect key presses from text
+      area.
+    - Replace toggle between canned and freeform user prompts with selector.
+      Switch out display of rows accordingly to save screen real estate.
+    - Refactor `ConversationMessage` class into `ConversationMessageContent`
+      class.
+    - Create `ConversationHistory` class to manage history column and status
+      row.
+    - Persist prompt variables.
+    - Persist warnings and errors with timestamps.
+    - Collapsible messages (eye icon). Automatically collapse on message
+      deactivation.
     - Ensure central column content always fits on screen.
     - Scroll-to-top and scroll-to-bottom button.
     - Export conversations to static HTML.
@@ -54,8 +65,6 @@
     - Search for conversations by title or label.
     - Mathematica/Jupyter-style In/Out cell groups?
       Maybe does not lend itself to selective message activation.
-    - Change message border on mouse enter/leave.
-    - Change conversation indicator background on mouse enter/leave?
     - Fade transition for conversation indicators?
       See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
     - Custom logo for human user in chat history.
@@ -68,6 +77,9 @@
     - Warning indicator with dropdown list of all current warnings.
     - Error indicator with dropdown list of all current errors.
     - Token count versus limit?
+    - Selector for system/dark/light mode.
+    - Selector for main theme.
+    - Selector for code theme.
 
 * GUI: Theme components.
 
