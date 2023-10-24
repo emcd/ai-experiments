@@ -387,6 +387,7 @@ user_prompts_layout = {
             'row_conversation_status',
             'row_canned_prompt',
             'row_user_prompt',
+            'row_actions',
         ],
     ),
     'row_conversation_status': dict(
@@ -532,7 +533,7 @@ user_prompts_layout = {
             margin = sizes.standard_margin,
             **_message_column_width_attributes,
         ),
-        contains = [ 'text_input_user', 'row_actions', ],
+        contains = [ 'text_input_user' ],
     ),
     'text_input_user': dict(
         component_class = TextAreaInput,
@@ -551,13 +552,19 @@ user_prompts_layout = {
             value_input = 'on_input_user_prompt',
         ),
     ),
+    # TODO? Convert to column and place to right of prompts column.
     'row_actions': dict(
         component_class = Row,
         contains = [
-            'button_chat', # TODO: Move to same row as prompt.
+            'row_actions_header',
+            'button_chat',
             'toggle_summarize', # TODO: Rename to 'toggle_compactify'.
-            'button_search', # TODO: Move to same row as prompt.
+            'button_search',
         ],
+    ),
+    'row_actions_header': dict(
+        component_class = Row,
+        component_arguments = dict( **_message_header_attributes ),
     ),
     'button_chat': dict(
         component_class = Button,
@@ -746,7 +753,7 @@ conversation_message_common_layout = {
     ),
     'spacer_left': dict( component_class = HSpacer ),
     'column_header': dict(
-        component_class = Column,
+        component_class = Row,
         component_arguments = dict( **_message_header_attributes ),
         contains = [ 'toggle_active', ],
     ),

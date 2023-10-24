@@ -74,6 +74,7 @@ class ConversationIndicator( ReactiveHTML ):
 
     # TODO: Should only need GUI namespace as argument.
     def __init__( self, title, identity, **params ):
+        super( ).__init__( **params )
         from .layouts import conversation_indicator_layout as layout
         row_gui = __.SimpleNamespace( )
         row = __.generate_component( row_gui, layout, 'column_indicator' )
@@ -82,7 +83,6 @@ class ConversationIndicator( ReactiveHTML ):
         self.gui__ = row_gui
         self.row__ = row
         self.identity__ = identity
-        super( ).__init__( **params )
 
     def _div_click( self, event ):
         # TODO: Suppress event propagation from buttons contained in this.
@@ -127,6 +127,7 @@ class ConversationMessage( ReactiveHTML ):
 
     # TODO: Should only need GUI namespace as argument.
     def __init__( self, role, mime_type, actor_name = None, **params ):
+        super( ).__init__( **params )
         emoji = __.roles_emoji[ role ]
         styles = __.roles_styles[ role ]
         if 'text/plain' == mime_type:
@@ -150,7 +151,6 @@ class ConversationMessage( ReactiveHTML ):
         row_gui.toggle_active.name = emoji
         self.gui__ = row_gui
         self.row__ = row
-        super( ).__init__( **params )
 
     @param_depends( 'mouse_hover__', watch = True )
     def _handle_mouse_hover__( self ):
