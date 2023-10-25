@@ -26,7 +26,7 @@
     * Do not use height and width policies except where necessary. Excessive
       policy use can lead to hard-to-debug display behaviors.
 
-    * Used fixed sizes only for small elements. These serve as the basis for
+    * Use constant sizes only for small elements. These serve as the basis for
       consistent sizing on a larger scale.
 
     * The 'max' height policy needs both 'height' and 'max_height' to be
@@ -540,11 +540,8 @@ user_prompts_layout = {
         component_arguments = dict(
             value = '',
             placeholder = 'Enter message here...',
-            # TODO: Uncomment once https://github.com/holoviz/panel/pull/5592
-            #       is part of a Panel release.
-            # auto_grow = True, max_rows = 40,
+            auto_grow = True, max_rows = 20,
             height_policy = 'auto', width_policy = 'max',
-            max_height = 480, # min_height = 240,
             max_length = 32767,
         ),
         event_functions = dict(
@@ -746,13 +743,13 @@ conversation_message_common_layout = {
         ),
         contains = [
             'spacer_left',
-            'column_header',
+            'row_header',
             'row_content',
             'spacer_right',
         ],
     ),
     'spacer_left': dict( component_class = HSpacer ),
-    'column_header': dict(
+    'row_header': dict(
         component_class = Row,
         component_arguments = dict( **_message_header_attributes ),
         contains = [ 'toggle_active', ],

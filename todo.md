@@ -45,8 +45,7 @@
 
 * GUI: Miscellaneous
 
-    - Dynamic text area for prompt input. Also, inspect key presses from text
-      area.
+    - Inspect key presses from text area for freeform prompt input.
     - Replace toggle between canned and freeform user prompts with selector.
       Switch out display of rows accordingly to save screen real estate.
     - Store icons as SVG files as data. Make custom `IconButton` and
