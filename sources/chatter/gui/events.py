@@ -155,19 +155,20 @@ def on_select_system_prompt( gui, event ):
     update_functions_prompt( gui )
 
 
-def on_toggle_canned_prompt_active( gui, event ):
+def on_select_user_prompt_class( gui, event ):
     from .updaters import (
         update_and_save_conversation,
         update_chat_button,
         update_summarization_toggle,
     )
-    canned_state = gui.toggle_canned_prompt_active.value
-    user_state = gui.toggle_user_prompt_active.value
-    if canned_state == user_state:
-        gui.toggle_user_prompt_active.value = not canned_state
-        update_and_save_conversation( gui )
+    freeform = 'freeform' == gui.selector_user_prompt_class.value
+    gui.column_canned_prompt.visible = False
+    gui.column_freeform_prompt.visible = False
+    gui.column_canned_prompt.visible = not freeform
+    gui.column_freeform_prompt.visible = freeform
     update_chat_button( gui )
     update_summarization_toggle( gui )
+    update_and_save_conversation( gui )
 
 
 def on_toggle_canned_prompt_display( gui, event ):
@@ -202,12 +203,3 @@ def on_toggle_system_prompt_active( gui, event ):
 
 def on_toggle_system_prompt_display( gui, event ):
     gui.text_system_prompt.visible = gui.toggle_system_prompt_display.value
-
-
-def on_toggle_user_prompt_active( gui, event ):
-    from .updaters import update_and_save_conversation
-    canned_state = gui.toggle_canned_prompt_active.value
-    user_state = gui.toggle_user_prompt_active.value
-    if canned_state == user_state:
-        gui.toggle_canned_prompt_active.value = not user_state
-        update_and_save_conversation( gui )

@@ -307,14 +307,14 @@ def update_canned_prompt_text( gui ):
         'row_canned_prompt_variables',
         'selector_canned_prompt',
         'text_canned_prompt' )
-    if gui.toggle_canned_prompt_active.value:
+    if 'canned' == gui.selector_user_prompt_class.value:
         update_and_save_conversation( gui )
 
 
 def update_chat_button( gui ):
     gui.button_chat.disabled = not (
             not gui.text_tokens_total.value.endswith( '🚫' )
-        and (   gui.toggle_canned_prompt_active.value
+        and (   'canned' == gui.selector_user_prompt_class.value
              or gui.text_input_user.value ) )
 
 
@@ -421,7 +421,7 @@ def update_summarization_toggle( gui ):
     summarizes = gui.selector_canned_prompt.auxdata__[
         gui.selector_canned_prompt.value ].get( 'summarizes', False )
     gui.toggle_summarize.value = (
-        gui.toggle_canned_prompt_active.value and summarizes )
+        'canned' == gui.selector_user_prompt_class.value and summarizes )
 
 
 def update_system_prompt_text( gui ):
@@ -438,13 +438,13 @@ def update_token_count( gui ):
     if not gui.selector_provider.options: return
     if not gui.selector_model.options: return
     messages = __.package_messages( gui )
-    if gui.toggle_canned_prompt_active.value:
-        messages.append( dict(
-            content = gui.text_canned_prompt.object, role = 'Human',
-        ) )
-    elif gui.toggle_user_prompt_active.value:
+    if 'freeform' == gui.selector_user_prompt_class.value:
         messages.append( dict(
             content = gui.text_input_user.value, role = 'Human',
+        ) )
+    else:
+        messages.append( dict(
+            content = gui.text_canned_prompt.object, role = 'Human',
         ) )
     controls = __.package_controls( gui )
     special_data = __.package_special_data( gui )

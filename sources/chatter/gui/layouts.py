@@ -53,6 +53,8 @@ from panel.widgets import (
     Toggle,
 )
 
+from .classes import CompactIconSelector
+
 
 sizes = SimpleNamespace(
     action_button_height = 40,
@@ -60,7 +62,7 @@ sizes = SimpleNamespace(
     element_margin = 2,
     icon_button_height = 40, # distortion if smaller, Bokeh/Panel limitation
     icon_size = '1em',
-    message_width_max = 800,
+    message_width_max = 640,
     message_width_min = 480,
     sidebar_width_max = 336,
     standard_margin = 5,
@@ -72,6 +74,7 @@ sizes.actions_width = (
     + 2 * sizes.element_margin
     + 10 # border widths + extra fudge
 )
+sizes.prompt_width = sizes.message_width_max # - 2 * sizes.standard_margin
 
 
 _css_code_overflow = '''
@@ -383,12 +386,7 @@ user_prompts_layout = {
             # TODO: Use style variable instead for theming.
             styles = { 'background': 'White' },
         ),
-        contains = [
-            'row_conversation_status',
-            'row_canned_prompt',
-            'row_user_prompt',
-            'row_actions',
-        ],
+        contains = [ 'row_conversation_status', 'row_user_prompts' ],
     ),
     'row_conversation_status': dict(
         component_class = Row,
@@ -418,38 +416,58 @@ user_prompts_layout = {
         persist = False,
     ),
     'spacer_right_conversation_status': dict( component_class = HSpacer ),
-    'row_canned_prompt': dict(
+    'row_user_prompts': dict(
         component_class = Row,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
         ),
         contains = [
-            'spacer_left_canned_prompt',
-            'row_canned_prompt_header',
-            'column_canned_prompt',
-            'spacer_right_canned_prompt',
+            'spacer_left_user_prompts',
+            'row_user_prompts_header',
+            'column_user_prompt',
+            'spacer_right_user_prompts',
         ],
     ),
-    'spacer_left_canned_prompt': dict( component_class = HSpacer ),
-    'row_canned_prompt_header': dict(
+    'spacer_left_user_prompts': dict( component_class = HSpacer ),
+    'row_user_prompts_header': dict(
         component_class = Row,
         component_arguments = dict( **_message_header_attributes ),
-        contains = [ 'toggle_canned_prompt_active', ],
+        contains = [ 'selector_user_prompt_class', ],
     ),
-    'toggle_canned_prompt_active': dict(
-        component_class = Toggle,
+    'selector_user_prompt_class': dict(
+        component_class = CompactIconSelector,
         component_arguments = dict(
-            # TODO: Use icon instead of name.
-            name = '🥫', value = False, **_icon_button_attributes,
+            options = {
+                'freeform': '\N{Lower Left Ballpoint Pen}\uFE0F',
+                'canned': '🥫'
+            },
+            value = 'freeform',
+            align = 'center',
+            height = sizes.icon_button_height,
+            width = sizes.icon_button_width,
+            height_policy = 'fixed', width_policy = 'fixed',
         ),
-        event_functions = dict( value = 'on_toggle_canned_prompt_active' ),
+        event_functions = dict( value = 'on_select_user_prompt_class' ),
+    ),
+    'column_user_prompt': dict(
+        component_class = Column,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+            **_message_column_width_attributes,
+        ),
+        contains = [
+            'column_canned_prompt',
+            'column_freeform_prompt',
+            'row_actions',
+        ],
     ),
     'column_canned_prompt': dict(
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
             margin = sizes.standard_margin,
-            **_message_column_width_attributes,
+            visible = False,
+            #**_message_column_width_attributes,
         ),
         contains = [
             'row_canned_prompt_selection',
@@ -500,38 +518,12 @@ user_prompts_layout = {
             visible = False,
         ),
     ),
-    'spacer_right_canned_prompt': dict( component_class = HSpacer ),
-    'row_user_prompt': dict(
-        component_class = Row,
-        component_arguments = dict(
-            height_policy = 'auto', width_policy = 'max',
-        ),
-        contains = [
-            'spacer_left_user_prompt',
-            'row_user_prompt_header',
-            'column_user_prompt',
-            'spacer_right_user_prompt',
-        ],
-    ),
-    'spacer_left_user_prompt': dict( component_class = HSpacer ),
-    'row_user_prompt_header': dict(
-        component_class = Row,
-        component_arguments = dict( **_message_header_attributes ),
-        contains = [ 'toggle_user_prompt_active', ],
-    ),
-    'toggle_user_prompt_active': dict(
-        component_class = Toggle,
-        component_arguments = dict(
-            name = '🧑', value = True, **_icon_button_attributes,
-        ),
-        event_functions = dict( value = 'on_toggle_user_prompt_active' ),
-    ),
-    'column_user_prompt': dict(
+    'column_freeform_prompt': dict(
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
-            margin = sizes.standard_margin,
-            **_message_column_width_attributes,
+            #margin = sizes.standard_margin,
+            #**_message_column_width_attributes,
         ),
         contains = [ 'text_input_user' ],
     ),
@@ -540,9 +532,10 @@ user_prompts_layout = {
         component_arguments = dict(
             value = '',
             placeholder = 'Enter message here...',
-            auto_grow = True, max_rows = 20,
+            auto_grow = True, max_rows = 20, rows = 3,
             height_policy = 'auto', width_policy = 'max',
             max_length = 32767,
+            max_width = sizes.prompt_width, width = sizes.prompt_width,
         ),
         event_functions = dict(
             value = 'on_input_finish_user_prompt',
@@ -553,15 +546,10 @@ user_prompts_layout = {
     'row_actions': dict(
         component_class = Row,
         contains = [
-            'row_actions_header',
             'button_chat',
             'toggle_summarize', # TODO: Rename to 'toggle_compactify'.
             'button_search',
         ],
-    ),
-    'row_actions_header': dict(
-        component_class = Row,
-        component_arguments = dict( **_message_header_attributes ),
     ),
     'button_chat': dict(
         component_class = Button,
@@ -589,7 +577,7 @@ user_prompts_layout = {
         ),
         event_functions = dict( on_click = 'on_click_search' ),
     ),
-    'spacer_right_user_prompt': dict( component_class = HSpacer ),
+    'spacer_right_user_prompts': dict( component_class = HSpacer ),
 }
 
 conversation_control_layout = {
