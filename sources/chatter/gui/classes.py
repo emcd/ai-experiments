@@ -21,11 +21,42 @@
 ''' Auxiliary classes for Holoviz Panel GUI. '''
 
 
+import param
+
 from panel.layout import Row
 from panel.reactive import ReactiveHTML
-from param import Boolean, Event, Parameter, depends as param_depends
 
 from . import base as __
+
+
+class CompactIconSelector( ReactiveHTML ):
+
+    options = param.Dict( )
+    value = param.String( )
+
+    _style__ = '; '.join( (
+        'appearance: none',
+        'border-radius: 10%',
+        'height: ${model.height}px', 'width: ${model.width}px',
+        # https://stackoverflow.com/a/60236111/14833542
+        'text-align: center', 'text-align-last: center',
+        '-moz-text-align-last: center',
+    ) )
+    _template = '''
+        <select id="CompactIconSelector"
+            onchange="${_select_change}" ''' + f'''style="{_style__}" ''' + '''
+            value="${value}"
+        >
+            {% for option_name, option_value in options.items( ) %}
+            <option value="{{option_name}}">{{option_value}}</option>
+            {% endfor %}
+        </select>'''
+
+    def __init__( self, **params ):
+        super( ).__init__( **params )
+
+    def _select_change( self, event ):
+        self.value = event.data[ 'target' ][ 'value' ]
 
 
 @__.dataclass
@@ -46,9 +77,9 @@ class ConversationDescriptor:
 #       Row initialization should be elsewhere.
 class ConversationIndicator( ReactiveHTML ):
 
-    clicked = Event( default = False )
-    mouse_hover__ = Boolean( False )
-    row__ = Parameter( )
+    clicked = param.Event( default = False )
+    mouse_hover__ = param.Boolean( False )
+    row__ = param.Parameter( )
 
     _scripts = {
         'my_mouseenter': '''
@@ -92,17 +123,18 @@ class ConversationIndicator( ReactiveHTML ):
         # Cannot run callback directly. Trigger via Event parameter.
         self.clicked = True
 
-    @param_depends( 'mouse_hover__', watch = True )
+    @param.depends( 'mouse_hover__', watch = True )
     def _handle_mouse_hover__( self ):
         self.gui__.row_actions.visible = self.mouse_hover__
+
 
 
 # TODO: Reduce to simple wrapper for custom JS code.
 #       Row initialization should be elsewhere.
 class ConversationMessage( ReactiveHTML ):
 
-    mouse_hover__ = Boolean( False )
-    row__ = Parameter( )
+    mouse_hover__ = param.Boolean( False )
+    row__ = param.Parameter( )
 
     _scripts = {
         'my_mouseenter': '''
@@ -152,11 +184,10 @@ class ConversationMessage( ReactiveHTML ):
         self.gui__ = row_gui
         self.row__ = row
 
-    @param_depends( 'mouse_hover__', watch = True )
+    @param.depends( 'mouse_hover__', watch = True )
     def _handle_mouse_hover__( self ):
         self.gui__.row_actions.visible = self.mouse_hover__
 
 
-# TODO: Implement UserMessagePrompt with 'onkeyup' callback,
-#       if https://github.com/holoviz/panel/pull/5592 is delayed.
+# TODO: Implement UserMessagePrompt with 'onkeyup' callback.
 #       https://developer.mozilla.org/en-US/docs/Web/API/HTMLTextAreaElement#autogrowing_textarea_example

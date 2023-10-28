@@ -49,9 +49,9 @@ def chat( gui ):
         update_messages_post_summarization,
     )
     summarization = gui.toggle_summarize.value
-    if gui.toggle_canned_prompt_active.value:
+    if 'canned' == gui.selector_user_prompt_class.value:
         prompt = gui.text_canned_prompt.object
-        gui.toggle_canned_prompt_active.value = False
+        gui.selector_user_prompt_class.value = 'freeform'
     else:
         prompt = gui.text_input_user.value
         gui.text_input_user.value = ''
