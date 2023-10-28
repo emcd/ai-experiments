@@ -60,6 +60,17 @@ def on_adjust_documents_count( gui, event ):
     update_search_button( gui )
 
 
+def on_change_freeform_prompt( gui, event ):
+    from .updaters import (
+        update_search_button,
+        update_token_count,
+    )
+    update_token_count( gui )
+    update_search_button( gui )
+    # XXX: Can apparently only have one handler per instance.
+    on_submit_freeform_prompt( gui, event )
+
+
 def on_click_chat( gui, event ):
     from .actions import chat
     chat( gui )
@@ -102,28 +113,7 @@ def on_click_search( gui, event ):
 
 def on_click_uncan_prompt( gui, event ):
     gui.text_input_user.value = str( gui.text_canned_prompt.object )
-
-
-# TODO: Ensure that this handler is triggered.
-#       According to https://github.com/holoviz/panel/issues/1882,
-#       this should work. But, it does not.
-#       Possible workaround: https://discourse.holoviz.org/t/catching-textinput-value-while-the-user-is-typing/1652/2
-def on_input_user_prompt( gui, event ):
-    from .updaters import (
-        update_search_button,
-        update_token_count,
-    )
-    update_token_count( gui )
-    update_search_button( gui )
-
-
-def on_input_finish_user_prompt( gui, event ):
-    from .updaters import (
-        update_and_save_conversation,
-        update_search_button,
-    )
-    update_and_save_conversation( gui )
-    update_search_button( gui )
+    gui.selector_user_prompt_class.value = 'freeform'
 
 
 def on_select_canned_prompt( gui, event ):
@@ -169,6 +159,23 @@ def on_select_user_prompt_class( gui, event ):
     update_chat_button( gui )
     update_summarization_toggle( gui )
     update_and_save_conversation( gui )
+
+
+def on_submit_freeform_prompt( gui, event ):
+    source = gui.text_input_user
+    if not source.value: return
+    if not source.entry_event: return
+    from .actions import chat
+    #from .updaters import update_and_save_conversation
+    modifiers = source.entry_event[ 'modifiers' ]
+    ic( modifiers )
+    source.entry_event = None # XXX: Not needed if handler fires correctly.
+    # TODO: Use function which matches behavior to policy.
+    # TODO: Insert newline if CTRL+ENTER adds newline.
+    # TODO: Truncate final newline if bare ENTER submits.
+    if 1 != len( modifiers ) or 'ctrl' not in modifiers: return
+    #update_and_save_conversation( gui )
+    chat( gui )
 
 
 def on_toggle_canned_prompt_display( gui, event ):

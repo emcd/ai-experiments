@@ -36,7 +36,7 @@ from functools import partial as partial_function
 from logging import getLogger as acquire_scribe
 from pathlib import Path
 from time import time_ns
-from types import SimpleNamespace
+from types import MappingProxyType as DictionaryProxy, SimpleNamespace
 from uuid import uuid4
 
 
@@ -176,6 +176,9 @@ def register_event_callbacks( gui, layout, component_name ):
     if not hasattr( gui, component_name ): return
     component = getattr( gui, component_name )
     functions = entry.get( 'event_functions', { } )
+    # TODO: File bug report about multiple param registrations on same object
+    #       not being honored at execution time.
+    #       The 'precedence' parameter does not help. Nor does list syntax.
     for event_name, function_name in functions.items( ):
         function = getattr( registry, function_name )
         if 'on_click' == event_name:

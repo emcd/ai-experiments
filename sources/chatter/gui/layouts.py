@@ -48,12 +48,11 @@ from panel.widgets import (
     MultiChoice,
     Select,
     StaticText,
-    TextAreaInput,
     TextInput,
     Toggle,
 )
 
-from .classes import CompactIconSelector
+from .classes import AdaptiveTextArea, CompactSelector
 
 
 sizes = SimpleNamespace(
@@ -435,7 +434,7 @@ user_prompts_layout = {
         contains = [ 'selector_user_prompt_class', ],
     ),
     'selector_user_prompt_class': dict(
-        component_class = CompactIconSelector,
+        component_class = CompactSelector,
         component_arguments = dict(
             options = {
                 'freeform': '\N{Lower Left Ballpoint Pen}\uFE0F',
@@ -467,7 +466,6 @@ user_prompts_layout = {
             height_policy = 'auto', width_policy = 'max',
             margin = sizes.standard_margin,
             visible = False,
-            #**_message_column_width_attributes,
         ),
         contains = [
             'row_canned_prompt_selection',
@@ -503,7 +501,7 @@ user_prompts_layout = {
     'button_canned_prompt': dict(
         component_class = Button,
         component_arguments = dict(
-            icon = 'arrow-big-down', icon_size = sizes.icon_size,
+            name = '\N{Lower Left Ballpoint Pen}\uFE0F',
             **_icon_button_attributes,
         ),
         event_functions = dict( on_click = 'on_click_uncan_prompt' ),
@@ -522,24 +520,21 @@ user_prompts_layout = {
         component_class = Column,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
-            #margin = sizes.standard_margin,
-            #**_message_column_width_attributes,
+            margin = sizes.standard_margin,
         ),
         contains = [ 'text_input_user' ],
     ),
     'text_input_user': dict(
-        component_class = TextAreaInput,
+        component_class = AdaptiveTextArea,
         component_arguments = dict(
-            value = '',
             placeholder = 'Enter message here...',
-            auto_grow = True, max_rows = 20, rows = 3,
+            max_rows = 20, rows = 3,
             height_policy = 'auto', width_policy = 'max',
-            max_length = 32767,
             max_width = sizes.prompt_width, width = sizes.prompt_width,
         ),
         event_functions = dict(
-            value = 'on_input_finish_user_prompt',
-            value_input = 'on_input_user_prompt',
+            #entry_event = 'on_submit_freeform_prompt',
+            latent_value = 'on_change_freeform_prompt',
         ),
     ),
     # TODO? Convert to column and place to right of prompts column.
