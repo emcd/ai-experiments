@@ -19,6 +19,14 @@
   --bokeh-base-font: 'Lato', sans-serif;
 }
 
+.my-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.my-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 html {
   scrollbar-face-color: var(--surface-color);
   scrollbar-base-color: var(--surface-color);
@@ -32,12 +40,10 @@ html {
 ::-webkit-scrollbar {
   width: 12px;
 }
-
 ::-webkit-scrollbar-track {
   background-color: var(--background-color);
   border-radius: 10px;
 }
-
 ::-webkit-scrollbar-thumb {
   background-color: var(--surface-color);
 }
@@ -106,16 +112,19 @@ body {
   cursor: pointer;
 }
 
-.sticky-panel {
+.sticky-panel
+{
   overflow-y: auto;
   position: sticky;
 }
 
-body, .sticky-panel {
+body,
+.sticky-panel {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-body::-webkit-scrollbar, .sticky-panel::-webkit-scrollbar {
+body::-webkit-scrollbar,
+.sticky-panel::-webkit-scrollbar {
   display: none;
 }
 

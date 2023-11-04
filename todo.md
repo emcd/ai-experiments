@@ -45,21 +45,19 @@
 
 * GUI: Miscellaneous
 
-    - Inspect key presses from text area for freeform prompt input.
-    - Replace toggle between canned and freeform user prompts with selector.
-      Switch out display of rows accordingly to save screen real estate.
     - Store icons as SVG files as data. Make custom `IconButton` and
       `IconToggle` classes, which use these.
       https://discourse.holoviz.org/t/how-to-trigger-re-render-of-template/5799/5
     - Refactor `ConversationMessage` class into `ConversationMessageContent`
-      class.
+      class. Show/hide action buttons row based on that.
     - Create `ConversationHistory` class to manage history column and status
-      row.
+      row. For reuse in main dashboard and for AI agent trackers.
     - Persist prompt variables.
     - Persist warnings and errors with timestamps.
     - Collapsible messages (eye icon). Automatically collapse on message
       deactivation.
-    - Ensure central column content always fits on screen.
+    - Ensure central column content always fits on screen. Hide side panels
+      to save space, if necessary.
     - Scroll-to-top and scroll-to-bottom button.
     - Export conversations to static HTML.
     - Implement modal dialog for vector store addition, etc....
