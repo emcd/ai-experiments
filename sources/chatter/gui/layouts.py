@@ -522,9 +522,9 @@ user_prompts_layout = {
             height_policy = 'auto', width_policy = 'max',
             margin = sizes.standard_margin,
         ),
-        contains = [ 'text_input_user' ],
+        contains = [ 'text_freeform_prompt' ],
     ),
-    'text_input_user': dict(
+    'text_freeform_prompt': dict(
         component_class = AdaptiveTextArea,
         component_arguments = dict(
             placeholder = 'Enter message here...',

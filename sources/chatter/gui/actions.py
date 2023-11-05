@@ -53,8 +53,8 @@ def chat( gui ):
         prompt = gui.text_canned_prompt.object
         gui.selector_user_prompt_class.value = 'freeform'
     else:
-        prompt = gui.text_input_user.value
-        gui.text_input_user.value = ''
+        prompt = gui.text_freeform_prompt.value
+        gui.text_freeform_prompt.value = ''
     if prompt: add_message( gui, 'Human', prompt )
     with _update_conversation_progress( gui, 'Generating AI response...' ):
         response = _chat( gui )
@@ -92,8 +92,8 @@ def invoke_function( gui, index ):
 @_update_conversation_status_on_error
 def search( gui ):
     from .updaters import add_message, update_and_save_conversation
-    prompt = gui.text_input_user.value
-    gui.text_input_user.value = ''
+    prompt = gui.text_freeform_prompt.value
+    gui.text_freeform_prompt.value = ''
     add_message( gui, 'Human', prompt )
     documents_count = gui.slider_documents_count.value
     vectorstore = gui.auxdata__.vectorstores[

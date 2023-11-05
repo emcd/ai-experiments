@@ -112,7 +112,7 @@ def on_click_search( gui, event ):
 
 
 def on_click_uncan_prompt( gui, event ):
-    gui.text_input_user.value = str( gui.text_canned_prompt.object )
+    gui.text_freeform_prompt.value = str( gui.text_canned_prompt.object )
     gui.selector_user_prompt_class.value = 'freeform'
 
 
@@ -162,13 +162,12 @@ def on_select_user_prompt_class( gui, event ):
 
 
 def on_submit_freeform_prompt( gui, event ):
-    source = gui.text_input_user
+    source = gui.text_freeform_prompt
     if not source.value: return
     if not source.entry_event: return
     from .actions import chat
     #from .updaters import update_and_save_conversation
     modifiers = source.entry_event[ 'modifiers' ]
-    ic( modifiers )
     source.entry_event = None # XXX: Not needed if handler fires correctly.
     # TODO: Use function which matches behavior to policy.
     # TODO: Insert newline if CTRL+ENTER adds newline.

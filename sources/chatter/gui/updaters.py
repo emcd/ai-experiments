@@ -315,7 +315,7 @@ def update_chat_button( gui ):
     gui.button_chat.disabled = not (
             not gui.text_tokens_total.value.endswith( '🚫' )
         and (   'canned' == gui.selector_user_prompt_class.value
-             or gui.text_input_user.value ) )
+             or gui.text_freeform_prompt.value ) )
 
 
 def update_conversation_hilite( gui, new_descriptor = None ):
@@ -414,7 +414,7 @@ def update_search_button( gui ):
     gui.button_search.disabled = not (
             gui.selector_vectorstore.value
         and gui.slider_documents_count.value
-        and gui.text_input_user.value )
+        and gui.text_freeform_prompt.value )
 
 
 def update_summarization_toggle( gui ):
@@ -440,7 +440,7 @@ def update_token_count( gui ):
     messages = __.package_messages( gui )
     if 'freeform' == gui.selector_user_prompt_class.value:
         messages.append( dict(
-            content = gui.text_input_user.value, role = 'Human',
+            content = gui.text_freeform_prompt.value, role = 'Human',
         ) )
     else:
         messages.append( dict(
