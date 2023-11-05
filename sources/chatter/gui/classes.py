@@ -31,15 +31,16 @@ from . import base as __
 
 class AdaptiveTextArea( ReactiveHTML ):
 
+    latent_value = param.String( default = '' )
     # TODO: 'max_length' breaks object serialization for some reason;
     #       need to find out why and fix.
-    entry_event = param.Dict( )
-    latent_value = param.String( default = '' )
     #max_length = param.Integer( default = 32767 )
     max_rows = param.Integer( default = 20 )
     min_rows = param.Integer( default = 3 )
     placeholder = param.String( default = '' )
     rows = param.Integer( default = 3 )
+    submission_behavior = param.String( default = 'slack-alt' )
+    submission_value = param.String( default = '' )
     value = param.String( default = '' )
     _style_css__ = param.String( default = '' )
 
@@ -51,11 +52,37 @@ class AdaptiveTextArea( ReactiveHTML ):
         'value': 'template',
     }
 
-    _dom_events = {
-        'textarea': [ 'keydown' ],
-    }
-
     _scripts = {
+        'my_keydown': '''
+            if ('Enter' !== event.key) return true;
+            if (!data.submission_behavior) return true;
+            const modifiers = new Set();
+            if (event.altKey) modifiers.add('alt');
+            if (event.ctrlKey) modifiers.add('ctrl');
+            if (event.metaKey) modifiers.add('meta');
+            if (event.shiftKey) modifiers.add('shift');
+            const onMac = (0 <= navigator.userAgent.indexOf("Mac"));
+            var toSubmit = false;
+            if ('chatgpt' == data.submission_behavior) {
+                toSubmit = (0 === modifiers.size);
+            }
+            else if (1 === modifiers.size) {
+                if ('slack-alt' == data.submission_behavior) {
+                    toSubmit = modifiers.has(onMac ? 'meta' : 'ctrl');
+                }
+                else if ('jupyter' == data.submission_behavior) {
+                    toSubmit = modifiers.has('shift');
+                }
+            }
+            modifiers.clear();
+            if (toSubmit) {
+                event.preventDefault();
+                data.submission_value = data.value;
+                // XXX: Hack to trigger event.
+                data.latent_value = data.value + '\\n';
+                return false;
+            }
+            return true;''',
         'my_keyup': '''data.value = textarea.value;''',
         'value': '''
             textarea.value = data.value;
@@ -77,6 +104,7 @@ class AdaptiveTextArea( ReactiveHTML ):
         <textarea id="textarea"
             class="my-no-scrollbar"
             maxlength="32767"
+            onkeydown="${script('my_keydown')}"
             onkeyup="${script('my_keyup')}"
             placeholder="${placeholder}"
             rows="${rows}"
@@ -91,14 +119,6 @@ class AdaptiveTextArea( ReactiveHTML ):
         style.update( params.get( 'style', { } ) )
         self._style_css__ = '; '.join( map(
             lambda pair: ': '.join( pair ), style.items( ) ) )
-
-    def _textarea_keydown( self, event ):
-        from time import time
-        if 'Enter' != event.data[ 'key' ]: return
-        modifiers = {
-            name for name in ( 'alt', 'ctrl', 'meta', 'shift' )
-            if event.data[ f"{name}Key" ] }
-        self.entry_event = dict( modifiers = modifiers, timestamp = time( ) )
 
 
 class CompactSelector( ReactiveHTML ):

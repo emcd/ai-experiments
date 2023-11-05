@@ -163,16 +163,10 @@ def on_select_user_prompt_class( gui, event ):
 
 def on_submit_freeform_prompt( gui, event ):
     source = gui.text_freeform_prompt
-    if not source.value: return
-    if not source.entry_event: return
+    if not source.submission_value: return
+    source.submission_value = ''
     from .actions import chat
     #from .updaters import update_and_save_conversation
-    modifiers = source.entry_event[ 'modifiers' ]
-    source.entry_event = None # XXX: Not needed if handler fires correctly.
-    # TODO: Use function which matches behavior to policy.
-    # TODO: Insert newline if CTRL+ENTER adds newline.
-    # TODO: Truncate final newline if bare ENTER submits.
-    if 1 != len( modifiers ) or 'ctrl' not in modifiers: return
     #update_and_save_conversation( gui )
     chat( gui )
 
