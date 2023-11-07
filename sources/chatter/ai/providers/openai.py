@@ -38,10 +38,10 @@ def chat( messages, special_data, controls, callbacks ):
     response = _chat( messages, special_data, controls, callbacks )
     if not controls.get( 'stream', True ):
         message = response.choices[ 0 ].message
-        if 'content' in message:
+        if message.content:
             handle = callbacks.allocator( 'text/markdown' )
             callbacks.updater( handle, message.content )
-        elif 'function_call' in message:
+        elif message.function_call:
             handle = callbacks.allocator( 'application/json' )
             callbacks.updater(
                 handle, _reconstitute_function_call( message.function_call ) )
@@ -50,7 +50,7 @@ def chat( messages, special_data, controls, callbacks ):
     try: # streaming mode
         chunk0 = next( response )
         delta = chunk0.choices[ 0 ].delta
-        if delta.get( 'function_call' ):
+        if delta.function_call:
             handle = callbacks.allocator( 'application/json' )
             _gather_function_chunks( chunk0, response, handle, callbacks )
         else:
@@ -203,12 +203,12 @@ def _canonicalize_special_data( data ):
 
 def _chat( messages, special_data, controls, callbacks ):
     from time import sleep
-    from openai import ChatCompletion, OpenAIError
-    from openai.error import RateLimitError
+    from openai import OpenAI, OpenAIError, RateLimitError
+    client = OpenAI( ) # TODO: Cache client.
     attempts_limit = 3
     for attempts_count in range( attempts_limit ):
         try:
-            return ChatCompletion.create(
+            return client.chat.completions.create(
                 messages = messages, **special_data, **controls )
         except RateLimitError as exc:
             ic( exc )
@@ -228,47 +228,48 @@ def _gather_function_chunks( chunk0, response, handle, callbacks ):
     for chunk in chain( ( chunk0, ), response ):
         delta = chunk.choices[ 0 ].delta
         if not delta: break
-        if 'name' in delta.function_call:
-            function_call[ 'name' ] = delta.function_call[ 'name' ]
-        if 'arguments' in delta.function_call:
-            function_call[ 'arguments' ] += delta.function_call[ 'arguments' ]
+        if not delta.function_call: break
+        if delta.function_call.name:
+            function_call[ 'name' ] = delta.function_call.name
+        if delta.function_call.arguments:
+            function_call[ 'arguments' ] += delta.function_call.arguments
     callbacks.updater( handle, _reconstitute_function_call( function_call ) )
 
 
 def _provide_models( ):
     if _models: return _models.copy( )
     from collections import defaultdict
-    from operator import itemgetter
+    from operator import attrgetter
     import openai
     # TODO: Only call API when explicitly desired. Should persist to disk.
     model_names = sorted( map(
-        itemgetter( 'id' ),
-        openai.Model.list( ).to_dict_recursive( )[ 'data' ] ) )
+        attrgetter( 'id' ), openai.models.list( ).data ) )
     sysprompt_honor = defaultdict( lambda: False )
     sysprompt_honor.update( {
         #'gpt-3.5-turbo-0613': True,
         #'gpt-3.5-turbo-16k-0613': True,
-        'gpt-4': True,
-        'gpt-4-32k': True,
-        'gpt-4-0613': True,
-        'gpt-4-32k-0613': True,
-    } )
+        model_name: True for model_name in model_names
+        if model_name.startswith( 'gpt-4' ) } )
+    # TODO: Multi-function ("tools") support.
     function_support = defaultdict( lambda: False )
     function_support.update( {
-        'gpt-3.5-turbo-0613': True,
-        'gpt-3.5-turbo-16k-0613': True,
-        'gpt-4-0613': True,
-        'gpt-4-32k-0613': True,
-    } )
-    tokens_limits = defaultdict( lambda: 4096 ) # Some are 4097... _shrug_.
+        model_name: True for model_name in model_names
+        if model_name.endswith( ( '-0613', '-1106', '-preview', ) )
+           or model_name in ( 'gpt-4', 'gpt-4-32k', ) } )
+    # Some of the legacy models have 4097 or 8001 tokens limits,
+    # but we ignore them. 'gpt-3.5-turbo' has a 4096 tokens limit.
+    tokens_limits = defaultdict( lambda: 4096 )
     tokens_limits.update( {
-        'code-davinci-002': 8000,
-        'gpt-3.5-turbo-16k': 16384,
-        'gpt-3.5-turbo-16k-0613': 16384,
+        'code-davinci-002': 8001,
+        'gpt-3.5-turbo-16k': 16385,
+        'gpt-3.5-turbo-16k-0613': 16385,
+        'gpt-3.5-turbo-1106': 16385,
         'gpt-4': 8192,
         'gpt-4-32k': 32768,
         'gpt-4-0613': 8192,
         'gpt-4-32k-0613': 32768,
+        'gpt-4-1106-preview': 128000,
+        'gpt-4-vision-preview': 128000,
     } )
     return {
         model_name: {
@@ -291,5 +292,5 @@ def _stream_content_chunks( chunk0, response, handle, callbacks ):
     for chunk in chain( ( chunk0, ), response ):
         delta = chunk.choices[ 0 ].delta
         if not delta: break
-        if not delta.get( 'content' ): continue
+        if not delta.content: continue
         callbacks.updater( handle, delta.content )

@@ -31,6 +31,8 @@ def prepare( configuration, directories ):
     # TODO: Prepare asynchronously.
     for provider in ( openai, ):
         try: provider_name = provider.prepare( configuration, directories )
-        except Exception: continue
+        except Exception:
+            #raise
+            continue
         providers[ provider_name ] = provider
     return providers
