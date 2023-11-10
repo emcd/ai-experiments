@@ -35,10 +35,7 @@ class AdaptiveTextArea( ReactiveHTML ):
     # TODO: 'max_length' breaks object serialization for some reason;
     #       need to find out why and fix.
     #max_length = param.Integer( default = 32767 )
-    max_rows = param.Integer( default = 20 )
-    min_rows = param.Integer( default = 3 )
     placeholder = param.String( default = '' )
-    rows = param.Integer( default = 3 )
     submission_behavior = param.String( default = 'slack-alt' )
     submission_value = param.String( default = '' )
     value = param.String( default = '' )
@@ -86,9 +83,16 @@ class AdaptiveTextArea( ReactiveHTML ):
         'my_keyup': '''data.value = textarea.value;''',
         'value': '''
             textarea.value = data.value;
-            const taLines = data.value.split('\\n');
-            const rowsCount = Math.max(taLines.length, data.min_rows, 1);
-            textarea.rows = Math.min(rowsCount, data.max_rows || Infinity);
+            const taMinHeight = model.min_height || 0;
+            const taMaxHeight = model.max_height || Infinity;
+            // Account for border and padding.
+            const taOffset = textarea.offsetHeight - textarea.clientHeight;
+            // Reset scroll height on shrinkage; otherwise it sticks.
+            // https://stackoverflow.com/a/18937018/14833542
+            textarea.style.height = '0';
+            model.height = taOffset + Math.min(
+                Math.max(textarea.scrollHeight, taMinHeight), taMaxHeight);
+            textarea.style.height = `${model.height}px`;
             if (!state.timer_active) {
                 state.timer_active = true;
                 setTimeout(
@@ -107,8 +111,7 @@ class AdaptiveTextArea( ReactiveHTML ):
             onkeydown="${script('my_keydown')}"
             onkeyup="${script('my_keyup')}"
             placeholder="${placeholder}"
-            rows="${rows}"
-            style="${_style_css__}; width: ${model.width}px;"
+            style="${_style_css__}; height: ${model.height}px; width: ${model.width}px;"
         >
         ${value}
         </textarea>'''
