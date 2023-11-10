@@ -176,9 +176,6 @@ def register_event_callbacks( gui, layout, component_name ):
     if not hasattr( gui, component_name ): return
     component = getattr( gui, component_name )
     functions = entry.get( 'event_functions', { } )
-    # TODO: File bug report about multiple param registrations on same object
-    #       not being honored at execution time.
-    #       The 'precedence' parameter does not help. Nor does list syntax.
     for event_name, function_name in functions.items( ):
         function = getattr( registry, function_name )
         if 'on_click' == event_name:
@@ -186,6 +183,8 @@ def register_event_callbacks( gui, layout, component_name ):
             continue
         component.param.watch(
             lambda event: function( gui, event ), event_name )
+        #if event_name.endswith( '_value' ):
+        #    ic( component.param.watchers[ event_name ] )
     function_name = entry.get( 'javascript_cb_generator' )
     if function_name:
         cb_generator = getattr( registry, function_name )

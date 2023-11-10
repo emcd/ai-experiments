@@ -67,7 +67,7 @@ def on_change_freeform_prompt( gui, event ):
     )
     update_token_count( gui )
     update_search_button( gui )
-    # XXX: Can apparently only have one handler per instance.
+    # XXX: Hack until param watcher bug is fixed.
     on_submit_freeform_prompt( gui, event )
 
 

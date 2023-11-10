@@ -528,13 +528,14 @@ user_prompts_layout = {
         component_class = AdaptiveTextArea,
         component_arguments = dict(
             placeholder = 'Enter message here...',
-            max_rows = 20, rows = 3,
             height_policy = 'auto', width_policy = 'max',
+            max_height = 240, height = 48,
             max_width = sizes.prompt_width, width = sizes.prompt_width,
         ),
         event_functions = dict(
-            #entry_event = 'on_submit_freeform_prompt',
             latent_value = 'on_change_freeform_prompt',
+            # TODO: Debug watcher registration issue.
+            #submission_value = 'on_submit_freeform_prompt',
         ),
     ),
     # TODO? Convert to column and place to right of prompts column.
