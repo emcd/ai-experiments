@@ -80,7 +80,8 @@ def analyze( auxdata, /, url, control = None ):
             return _analyze_file( auxdata, components.path, control = control )
         if path.is_dir( ):
             return [ _list_directory(
-                auxdata, path, control = control, recursive = True ) ]
+                auxdata, path, control = control, recursive = True )[
+                    'whitelist' ] ]
         return f"Error: Type of entity at '{path}' not supported."
         # TODO: Handle symlinks, named pipes, etc....
     elif components.scheme in ( 'http', 'https', ):
@@ -148,10 +149,12 @@ def read( auxdata, /, source, control = None ):
                 path = path_, mime_type = from_file( path_, mime = True ) )
             return _read_file( auxdata, dirent )
         if path.is_dir( ):
+            dirents = _list_directory(
+                auxdata, path, control = control, recursive = True )
+            ic( dirents[ 'blacklist' ] )
             return [
-                _read_file( auxdata, dirent ) for dirent in
-                _list_directory(
-                    auxdata, path, control = control, recursive = True ) ]
+                _read_file( auxdata, dirent ) for dirent
+                in dirents[ 'whitelist' ] ]
         return f"Error: Type of entity at '{path}' not supported."
         # TODO: Handle symlinks, named pipes, etc....
     elif components.scheme in ( 'http', 'https', ):
@@ -247,6 +250,8 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
         updater = ( lambda handle, content: handle.append( content ) ),
     )
     handle = provider.chat( messages, { }, auxdata.controls, callbacks )
+    output = ''.join( handle )
+    ic( output )
     return provider.parse_data( ''.join( handle ), auxdata.controls )
 
 
