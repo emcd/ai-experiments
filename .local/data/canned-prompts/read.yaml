@@ -1,0 +1,13 @@
+id: 'Read'
+# TODO: Support replacement or supplemental instructions.
+template: |
+  Please analyze the content of the entity at the filesystem path or URL,
+  `${variables.source}`, via a function. The function will return a list of
+  mappings, each of which has the path to the content, the MIME type of the
+  content, and the content. For a single file, the list will contain a single
+  mapping. For a directory, the list will contain mappings of all files and
+  other directory entities of interest, recursively discovered.
+# TODO: requires-functions: [ 'read' ]
+variables:
+  - id: 'source'
+    label: 'Local Path or URL'

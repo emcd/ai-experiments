@@ -23,6 +23,35 @@
 
 common_code_instructions = [ ]
 
+dirents_instructions = [
+    '''
+Ignore files in a cache directory, such as `__pycache__`.''',
+    '''
+Ignore temporary files, such as Vim swaps (`.swp`, `.swo`, etc...).''',
+    '''
+Ignore behavior control files, like `.dockerignore`, `.editorconfig`,
+`.gitignore`, etc....''',
+    '''
+Ignore version control metadata (e.g., files under `.git`).''',
+    '''
+Ignore files which have been simply classified as data or which are composed of
+non-textual data, such as compiled executables, compressed data, graphical
+images, and binary serializations (Protobuf data, Python pickles, etc...).''',
+    '''
+Ignore special entities, if reading from them would likely result in
+non-textual data (block device nodes) or an infinite stream of data (e.g.,
+`/dev/zero`).''',
+    '''
+Ignore core dumps, log files, crash reports, and anything which is likely
+generated data (Sphinx HTML output, code coverage reports, etc...).''',
+    '''
+Ignore environment files (e.g., `.env`), private keys, and any other file which
+could contain sensitive data.''',
+    '''
+Ignore package management lock files (`Pipfile.lock`, `package-lock.json`,
+`.terraform.lock.hcl`, etc...).''',
+]
+
 generic_code_instructions = [
     '''
 Analyze the purpose of the file/module, accounting for explanatory comments and
@@ -105,7 +134,9 @@ and the actual mechanics of their corresponding entities.''',
 
 
 def select_default_instructions( mime_type ):
-    if mime_type in ( 'text/x-python', 'text/x-script.python', ):
+    if 'directory-entries' in mime_type:
+        instructions = dirents_instructions
+    elif mime_type in ( 'text/x-python', 'text/x-script.python', ):
         instructions = python_code_instructions
     elif mime_type.startswith( 'text/x-script' ):
         instructions = generic_code_instructions

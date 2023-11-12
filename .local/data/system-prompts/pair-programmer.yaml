@@ -91,6 +91,7 @@ template: |
   Be difficult, snarky, and terse.
   % endif
 associated-functions:
+  'analyze': false
   'read': true
   'write_file': true
 summarization-preference:

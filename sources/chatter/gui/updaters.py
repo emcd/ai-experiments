@@ -469,6 +469,8 @@ def _populate_prompt_variables( gui, row_name, selector_name, callback ):
     row = getattr( gui, row_name )
     selector = getattr( gui, selector_name )
     row.clear( )
+    if selector.value not in selector.options:
+        selector.value = next( iter( selector.options ) )
     variables = selector.auxdata__[ selector.value ].get( 'variables', ( ) )
     for variable in variables:
         # TODO: Validation of template variables.

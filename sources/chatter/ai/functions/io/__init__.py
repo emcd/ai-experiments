@@ -21,5 +21,5 @@
 ''' Collection of AI functions for I/O. '''
 
 
-from .read import read
+from .read import analyze, read
 from .write import write_file
