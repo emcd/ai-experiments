@@ -35,7 +35,7 @@ to be analyzed.
     'parameters': {
         'type': 'object',
         'properties': {
-            'url': {
+            'source': {
                 'type': 'string',
                 'description': 'URL or local filesystem path to be read.'
             },
@@ -62,42 +62,30 @@ Analysis instructions for AI. Should not be empty in replace mode. '''
                 },
             },
         },
-        'required': [ 'url' ],
+        'required': [ 'source' ],
     },
 } )
-def analyze( auxdata, /, url, control = None ):
-    # TODO: Support wildcards.
-    from urllib.parse import urlparse
-    components = urlparse( url )
-    has_file_scheme = not components.scheme or 'file' == components.scheme
-    if has_file_scheme:
-        if not components.path:
-            return 'Error: No file path provided with file scheme URL.'
-        path = __.Path( components.path )
-        if not path.exists( ): return f"Error: Nothing exists at '{path}'."
-        if path.is_file( ):
-            # TODO: Work with 'pathlib.Path'.
-            return _analyze_file( auxdata, components.path, control = control )
-        if path.is_dir( ):
-            return [ _list_directory(
-                auxdata, path, control = control, recursive = True )[
-                    'whitelist' ] ]
-        return f"Error: Type of entity at '{path}' not supported."
-        # TODO: Handle symlinks, named pipes, etc....
-    elif components.scheme in ( 'http', 'https', ):
-        return _analyze_http( auxdata, url, control = control )
-    return f"Error: URL scheme, '{components.scheme}', not supported."
+def analyze( auxdata, /, source, control = None ):
+    operators = __.SimpleNamespace(
+        from_directory = (
+            lambda *posargs, **nomargs:
+            [ _list_directory( *posargs, **nomargs) ] ),
+        from_file = _analyze_file,
+        from_http = _analyze_http,
+        tokens_counter = None,
+    )
+    return _operate( auxdata, source, operators, control = None )
 
 
 @__.register_function( {
     'name': 'read',
     'description': '''
-Reads a URL or local file system path and returns the path, its MIME type,
-and contents. If the path is a directory, then all of its entries are
+Reads a URL or local file system path and returns the path, its MIME type, and
+contents. If the location is a directory, then all of its entries are
 recursively scanned and their relevance is determined by an AI agent. All
-relevant entries will be returned as list of mappings, having path, MIME type,
-and content triples. Custom instructions may optionally be supplied to the AI
-agent which determines the relevance of directory entries.
+relevant entries will be returned as list of mappings, having location, MIME
+type, and content triples. Custom instructions may optionally be supplied to
+the AI agent which determines the relevance of directory entries.
 ''',
     'parameters': {
         'type': 'object',
@@ -133,36 +121,36 @@ Analysis instructions for AI. Should not be empty in replace mode. '''
     },
 } )
 def read( auxdata, /, source, control = None ):
-    # TODO: Count tokens. Return error if source is too large for model.
-    # TODO: Support wildcards.
-    from urllib.parse import urlparse
-    components = urlparse( source )
-    has_file_scheme = not components.scheme or 'file' == components.scheme
-    if has_file_scheme:
-        if not components.path:
-            return 'Error: No file path provided with file scheme URL.'
-        path = __.Path( components.path )
-        if not path.exists( ): return f"Error: Nothing exists at '{path}'."
-        if path.is_file( ):
-            path_ = str( path )
-            dirent = dict(
-                path = path_, mime_type = from_file( path_, mime = True ) )
-            return _read_file( auxdata, dirent )
-        if path.is_dir( ):
-            dirents = _list_directory(
-                auxdata, path, control = control, recursive = True )
-            ic( dirents[ 'blacklist' ] )
-            return [
-                _read_file( auxdata, dirent ) for dirent
-                in dirents[ 'whitelist' ] ]
-        return f"Error: Type of entity at '{path}' not supported."
-        # TODO: Handle symlinks, named pipes, etc....
-    elif components.scheme in ( 'http', 'https', ):
-        return _read_http( auxdata, source )
-    return f"Error: URL scheme, '{components.scheme}', not supported."
+    operators = __.SimpleNamespace(
+        from_directory = _read_recursive,
+        from_file = (
+            lambda auxdata_, path, **nomargs:
+            _read_file( auxdata_, dict( location = str( path ) ) ) ),
+        from_http = (
+            lambda auxdata_, url, **nomargs:
+            _read_http( auxdata_, url ) ),
+        tokens_counter = _count_tokens,
+    )
+    return _operate( auxdata, source, operators, control = control )
 
 
-def _analyze_file( auxdata, /, path, control = None ):
+def _read_recursive( auxdata, path, control = None ):
+    results = [ ]
+    for dirent in _list_directory( auxdata, path, control = control ):
+        result = _read_file( auxdata, path )
+        if isinstance( result, str ):
+            results.append( dict( error = result, **dirent ) )
+        else: results.append( result )
+    return results
+
+
+def _access_tokens_limit( auxdata ):
+    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    model_name = auxdata.controls[ 'model' ]
+    return provider.access_model_data( model_name, 'tokens-limit' )
+
+
+def _analyze_file( auxdata, path, control = None ):
     from chatter.ai.providers import ChatCallbacks
     from chatter.messages import render_prompt_template
     ai_messages = [ ]
@@ -200,21 +188,18 @@ def _analyze_file( auxdata, /, path, control = None ):
     return ai_messages
 
 
-def _analyze_http( auxdata, /, url, control = None ):
-    from shutil import copyfileobj
-    from tempfile import NamedTemporaryFile
-    from urllib.request import Request, urlopen
-    request = Request( url )
-    # TODO: Write to conversation cache with file name.
-    # TODO? Pass stream to reader function rather than re-open tempfile.
-    with NamedTemporaryFile( delete = False ) as file:
-        # TODO: Retry on rate limits and timeouts.
-        with urlopen( request ) as response:
-            copyfileobj( response, file )
-    return _analyze_file( auxdata, file.name, control = control )
+def _analyze_http( auxdata, url, control = None ):
+    file_name = _read_http_core( auxdata, url )
+    return _analyze_file( auxdata, file_name, control = control )
 
 
-# TODO: Process path or bytes buffer.
+def _count_tokens( auxdata, content ):
+    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    model_name = auxdata.controls[ 'model' ]
+    return provider.count_text_tokens( str( content ), model_name )
+
+
+# TODO: Process bytes buffer.
 def _determine_chunk_reader( path, mime_type = None ):
     from magic import from_file
     # TODO? Consider encoding.
@@ -250,43 +235,65 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
         updater = ( lambda handle, content: handle.append( content ) ),
     )
     handle = provider.chat( messages, { }, auxdata.controls, callbacks )
-    output = ''.join( handle )
-    ic( output )
-    return provider.parse_data( ''.join( handle ), auxdata.controls )
+    result = provider.parse_data( ''.join( handle ), auxdata.controls )
+    ic( result[ 'blacklist' ] )
+    return result[ 'whitelist' ]
 
 
-def _list_directory( auxdata, /, path, control = None, recursive = False ):
+def _list_directory( auxdata, path, control = None ):
     from os import walk # TODO: Python 3.12: Use 'Pathlib.walk'.
     from magic import from_file
     dirents = [ ]
-    # Ignore directory names if in recursive mode.
-    for base_directory, directories_names, dirents_names in walk( path ):
+    # Do not look directly at subdirectories. Walk them instead.
+    for base_directory, _, dirents_names in walk( path ):
         for dirent_name in dirents_names:
             dirent = __.Path( base_directory ) / dirent_name
             if not dirent.exists( ): continue
-            dirent_ = str( dirent )
-            if dirent.is_dir( ):
-                if not recursive:
-                    dirents.append( dict(
-                        path = dirent_, description = 'directory' ) )
-                continue
             dirents.append( dict(
-                path = dirent_,
-                mime_type = from_file( dirent_, mime = True ) ) )
+                location = str( dirent ),
+                mime_type = from_file( dirent, mime = True ) ) )
     return _discriminate_dirents( auxdata, dirents, control = control )
+
+
+def _operate( auxdata, source, operators, control = None ):
+    # TODO: Support wildcards.
+    from urllib.parse import urlparse
+    tokens_total = 0
+    tokens_max = _access_tokens_limit( auxdata ) * 3 // 4
+    components = urlparse( source )
+    has_file_scheme = not components.scheme or 'file' == components.scheme
+    if has_file_scheme:
+        if not components.path:
+            return 'Error: No file path provided with file scheme URL.'
+        path = __.Path( components.path )
+        if not path.exists( ): return f"Error: Nothing exists at '{path}'."
+        if path.is_file( ):
+            return operators.from_file( auxdata, path, control = control )
+        elif path.is_dir( ):
+            return operators.from_directory( auxdata, path, control = control )
+        # TODO: Handle symlinks, named pipes, etc....
+        else: return f"Error: Type of entity at '{path}' not supported."
+        if operators.tokens_counter:
+            tokens_total += operators.tokens_counter( auxdata, result )
+            if tokens_total > tokens_max:
+                return (
+                    f"Error: Input is {tokens_total} tokens in size, "
+                    f"which exceeds the safe limit, {tokens_max}." )
+        return result
+    elif components.scheme in ( 'http', 'https', ):
+        return operators.from_http( auxdata, source, control = control )
+    return f"Error: URL scheme, '{components.scheme}', not supported."
 
 
 # TODO: Process stream.
 def _read_chunks_destructured( auxdata, path ):
-    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
-    model_name = auxdata.controls[ 'model' ]
-    tokens_max = provider.access_model_data( model_name, 'tokens-limit' ) // 4
+    tokens_max = _access_tokens_limit( auxdata ) // 4
     blocks = [ ]
     tokens_total = 0
     hint = 'first chunk'
     from unstructured.partition.auto import partition
-    for element in partition( filename = path ):
-        tokens_count = provider.count_text_tokens( str( element ), model_name )
+    for element in partition( filename = str( path ) ):
+        tokens_count = _count_tokens( auxdata, element )
         if tokens_max < tokens_total + tokens_count:
             ic( path, hint, tokens_total )
             yield dict( content = blocks, hint = hint )
@@ -302,15 +309,13 @@ def _read_chunks_destructured( auxdata, path ):
 
 # TODO: Process stream.
 def _read_chunks_naively( auxdata, path ):
-    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
-    model_name = auxdata.controls[ 'model' ]
-    tokens_max = provider.access_model_data( model_name, 'tokens-limit' ) // 4
+    tokens_max = _access_tokens_limit( auxdata ) // 4
     lines = [ ]
     tokens_total = 0
     hint = 'first chunk'
-    with open( path ) as file:
+    with path.open( ) as file:
         for line_number, line in enumerate( file, start = 1 ):
-            tokens_count = provider.count_text_tokens( line, model_name )
+            tokens_count = _count_tokens( auxdata, line )
             if tokens_max < tokens_total + tokens_count:
                 ic( path, hint, tokens_total )
                 yield dict( content = ''.join( lines ), hint = hint )
@@ -324,11 +329,40 @@ def _read_chunks_naively( auxdata, path ):
 
 
 def _read_file( auxdata, dirent ):
-    # TODO: Return tokens count.
-    path = __.Path( dirent[ 'path' ] )
+    path = __.Path( dirent[ 'location' ] )
     try:
-        with path.open( ) as file:
-            return dict( contents = file.read( ), **dirent )
+        with path.open( ) as file: contents = file.read( )
+        if 'mime_type' not in dirent:
+            from magic import from_buffer
+            dirent[ 'mime_type' ] = from_buffer( contents, mime = True )
+        return dict( contents = contents, **dirent )
     except Exception as exc:
         exc_type = type( exc ).__qualname__
         return dict( error = f"{exc_type}: {exc}", **dirent )
+
+
+def _read_http( auxdata, url ):
+    dirent = dict( location = url )
+    try:
+        file_name = _read_http_core( auxdata, url )
+        with open( file_name ) as file: contents = file.read( )
+        from magic import from_buffer
+        dirent[ 'mime_type' ] = from_buffer( contents, mime = True )
+        return dict( contents = contents, **dirent )
+    except Exception as exc:
+        exc_type = type( exc ).__qualname__
+        return dict( error = f"{exc_type}: {exc}", **dirent )
+
+
+def _read_http_core( auxdata, url ):
+    from shutil import copyfileobj
+    from tempfile import NamedTemporaryFile
+    from urllib.request import Request, urlopen
+    request = Request( url )
+    # TODO: Write to conversation cache with file name.
+    # TODO? Pass stream to reader function rather than re-open tempfile.
+    with NamedTemporaryFile( delete = False ) as file:
+        # TODO: Retry on rate limits and timeouts.
+        with urlopen( request ) as response:
+            copyfileobj( response, file )
+    return file.name

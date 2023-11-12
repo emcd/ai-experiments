@@ -22,6 +22,7 @@
 
 
 from pathlib import Path
+from types import SimpleNamespace
 from ..base import register_function
 
 

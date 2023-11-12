@@ -5,14 +5,15 @@ template: |
 
   The conversation focuses on a list of directory entries, which may have been
   recursively generated across multiple subdirectories. This list will be valid
-  ${variables.format_name}. Each list item is a mapping consisting of a path to
-  a file system entity and the detected MIME type of its content. Discriminate
-  each of these list items according to your instructions and produce a mapping
-  which contains two lists, "whitelist" and "blacklist". Each item in the
-  whitelist shall be a mapping with the path of the file system entity ("path")
-  and the detected MIME type of its contents ("mime_type"). Each item in the
-  blacklist shall be a mapping with the path of the file system entity ("path")
-  and a terse reason ("reason") for ignoring it.
+  ${variables.format_name}. Each list item is a mapping which consists of a
+  location for the file system entity and the detected MIME type of its
+  content. Discriminate each of these list items according to your instructions
+  and produce a mapping which contains two lists, "whitelist" and "blacklist".
+  Each item in the whitelist shall be a mapping with the location of the file
+  system entity ("location") and the detected MIME type of its contents
+  ("mime_type"). Each item in the blacklist shall be a mapping with the
+  location of the file system entity ("location") and a terse reason ("reason")
+  for ignoring it.
 
   Do NOT provide any introductory or explanatory text in your response.
   Do NOT use Markdown or any formatting directives, such as backticks, to
@@ -24,10 +25,10 @@ template: |
 
   {
     "whitelist": [
-      { "path": "mylib/foo.py", "mime_type": "text/x-script.python" }
+      { "location": "mylib/foo.py", "mime_type": "text/x-script.python" }
     ],
     "blacklist": [
-      { "path": ".gitignore", "reason": "version control metadata" }
+      { "location": ".gitignore", "reason": "version control metadata" }
     ]
   }
 conceal: true
