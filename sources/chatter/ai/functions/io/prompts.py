@@ -50,6 +50,9 @@ could contain sensitive data.''',
     '''
 Ignore package management lock files (`Pipfile.lock`, `package-lock.json`,
 `.terraform.lock.hcl`, etc...).''',
+    '''
+If a MIME type is invalid or does not match file extension, but a file would
+not be ignored for another reason, then allow it.''',
 ]
 
 generic_code_instructions = [
