@@ -154,8 +154,8 @@ def _chat( gui ):
 
 def _generate_conversation_title( gui ):
     # TODO: Use model-preferred serialization format for title and labels.
-    from json import JSONDecodeError, loads
     from ..ai.providers import ChatCallbacks, ChatCompletionError
+    from ..codecs.json import loads
     from ..messages import render_prompt_template
     template = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
