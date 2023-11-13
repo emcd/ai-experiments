@@ -83,27 +83,17 @@ def calculate_conversations_path( gui ):
     return state_path / 'conversations'
 
 
-def extract_invocation_request( gui, component = None ):
+def extract_invocation_requests( gui, component = None ):
     if None is component: component = gui.column_conversation_history[ -1 ]
     message = component.gui__.text_message.object
-    # TODO: Process with AI provider.
     # TODO? Handle multipart MIME.
-    from ..codecs.json import loads
-    try: data = loads( message )
-    except: raise ValueError( 'Malformed JSON payload in message.' )
-    if not isinstance( data, AbstractDictionary ):
-        raise ValueError( 'Function invocation request is not dictionary.' )
-    if 'name' not in data:
-        raise ValueError( 'Function name is absent from invocation request.' )
-    name = data[ 'name' ]
-    arguments = data.get( 'arguments', { } )
+    # TODO: Use selected multichoice values instead of all possible.
     ai_functions = gui.auxdata__.ai_functions
-    # TODO: Check against multichoice values instead.
-    if name not in ai_functions:
-        raise ValueError( 'Function name in request is not available.' )
     auxdata = SimpleNamespace(
         controls = package_controls( gui ), **gui.auxdata__.__dict__ )
-    return name, partial_function( ai_functions[ name ], auxdata, **arguments )
+    provider = access_ai_provider_current( gui )
+    return provider.extract_invocation_requests(
+        message, auxdata, ai_functions )
 
 
 def generate_component( gui, layout, component_name ):
@@ -138,12 +128,12 @@ def package_messages( gui ):
         message_gui = row.auxdata__[ 'gui' ]
         if not message_gui.toggle_active.value: continue
         role = row.auxdata__[ 'role' ]
+        context = row.auxdata__.get( 'context', { } )
         message = dict(
             content = message_gui.text_message.object,
+            context = context,
             role = role,
         )
-        if 'actor-name' in row.auxdata__:
-            message[ 'actor-name' ] = row.auxdata__[ 'actor-name' ]
         messages.append( message )
     return messages
 

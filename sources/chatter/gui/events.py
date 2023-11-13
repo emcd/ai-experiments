@@ -102,8 +102,8 @@ def on_click_fork_conversation( gui, event ):
 
 
 def on_click_invoke_function( gui, event ):
-    from .actions import invoke_function
-    invoke_function( gui.parent__, gui.index__ )
+    from .actions import invoke_functions
+    invoke_functions( gui.parent__, gui.index__ )
 
 
 def on_click_search( gui, event ):

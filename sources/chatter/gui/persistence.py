@@ -86,16 +86,19 @@ def restore_conversation_messages( gui, column_name, state ):
     from .updaters import add_message
     column = getattr( gui, column_name )
     column.clear( )
+    # TODO: Package 'behaviors', 'context', and 'mime_type' into 'control'.
     for row_state in state.get( column_name, [ ] ):
-        actor_name = row_state.get( 'actor-name' )
+        context = row_state.get( 'context', { } )
+        if 'actor-name' in row_state: # Deprecated field.
+            context[ 'name' ] = row_state[ 'actor-name' ]
         behaviors = row_state[ 'behaviors' ]
         content = row_state[ 'content' ]
         mime_type = row_state[ 'mime-type' ]
         role = row_state[ 'role' ]
         add_message(
             gui, role, content,
-            actor_name = actor_name,
             behaviors = behaviors,
+            context = context,
             mime_type = mime_type )
 
 
@@ -157,7 +160,7 @@ def save_conversation_messages( gui, column_name ):
         }
         substate.update( {
             key: value for key, value in row.auxdata__.items( )
-            if key in ( 'actor-name', 'mime-type', 'role' )
+            if key in ( 'context', 'mime-type', 'role' )
         } )
         state.append( substate )
     return { column_name: state }

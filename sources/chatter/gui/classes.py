@@ -263,7 +263,7 @@ class ConversationMessage( ReactiveHTML ):
         </div>'''.strip( )
 
     # TODO: Should only need GUI namespace as argument.
-    def __init__( self, role, mime_type, actor_name = None, **params ):
+    def __init__( self, role, mime_type, context = None, **params ):
         super( ).__init__( **params )
         emoji = __.roles_emoji[ role ]
         styles = __.roles_styles[ role ]
@@ -283,7 +283,7 @@ class ConversationMessage( ReactiveHTML ):
             'mime-type': mime_type,
             'role': role,
         }
-        if actor_name: self.auxdata__[ 'actor-name' ] = actor_name
+        if context: self.auxdata__[ 'context' ] = context
         # TODO: Use user-supplied logos, when available.
         row_gui.toggle_active.name = emoji
         self.gui__ = row_gui

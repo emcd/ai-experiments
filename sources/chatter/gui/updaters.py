@@ -43,14 +43,14 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
 # TODO: Move row initialization here from ConversationMessage.
 def add_message(
     gui, role, content,
-    actor_name = None,
     behaviors = ( 'active', ),
+    context = None,
     mime_type = 'text/markdown',
 ):
     from .classes import ConversationMessage
     # TODO: Generate row component here and then pass to custom component.
     component = ConversationMessage(
-        role, mime_type, actor_name = actor_name,
+        role, mime_type, context = context,
         height_policy = 'auto', margin = 0, width_policy = 'max' )
     message_gui = component.gui__
     message_gui.parent__ = gui
@@ -60,7 +60,7 @@ def add_message(
     else: text_message.object = content
     if 'AI' == role:
         message_gui.button_fork.visible = True
-        try: __.extract_invocation_request( gui, component = component )
+        try: __.extract_invocation_requests( gui, component = component )
         except: pass
         else: message_gui.button_invoke.visible = True
     elif 'Document' == role:
@@ -397,7 +397,6 @@ def update_message( message_row, behaviors = ( 'active', ) ):
     for behavior in ( 'active', 'pinned' ):
         getattr( message_gui, f"toggle_{behavior}" ).value = (
             behavior in behaviors )
-    content = message_gui.text_message.object
 
 
 def update_messages_post_summarization( gui ):

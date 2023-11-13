@@ -20,7 +20,13 @@
 
 import typing as typ
 
+from collections.abc import (
+    Mapping as AbstractDictionary,
+    Sequence as AbstractSequence,
+)
 from dataclasses import dataclass
+from functools import partial as partial_function
+from types import SimpleNamespace
 
 
 class ChatCompletionError( Exception ): pass
