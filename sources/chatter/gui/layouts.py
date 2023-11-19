@@ -844,7 +844,7 @@ json_conversation_message_layout.update( {
     'text_message': dict(
         component_class = JSON,
         component_arguments = dict(
-            depth = 1, theme = 'light',
+            depth = 0, theme = 'light',
             height_policy = 'auto', width_policy = 'max',
             margin = sizes.standard_margin,
             styles = { 'overflow': 'auto' },

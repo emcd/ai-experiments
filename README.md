@@ -25,3 +25,14 @@
    python3 -m pip install --upgrade pip
    python3 -m pip install --upgrade --requirement .local/configuration/requirements.pip
    ```
+
+## Running `chatter.py`
+
+1. Activate the virtual environment. In Bash, this can be done with:
+   ```
+   . .local/environments/langchain/bin/activate
+   ```
+1. Run `chatter.py` using the Python interpreter:
+   ```
+   python3 chatter.py
+   ```
