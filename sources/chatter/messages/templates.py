@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Message processing utilities. '''
+''' Message template processors. '''
 
 
 def prepare_prompt_templates( configuration, directories ):

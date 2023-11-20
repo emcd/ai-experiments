@@ -52,7 +52,7 @@ from panel.widgets import (
     Toggle,
 )
 
-from .classes import AdaptiveTextArea, CompactSelector
+from .classes import AdaptiveTextArea, CompactSelector, ConversationMessage
 
 
 sizes = SimpleNamespace(
@@ -720,7 +720,7 @@ conversation_indicator_layout = {
 }
 
 conversation_message_common_layout = {
-    'row_message': dict(
+    'row_canister': dict(
         component_class = Row,
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
@@ -728,7 +728,7 @@ conversation_message_common_layout = {
         contains = [
             'spacer_left',
             'row_header',
-            'row_content',
+            'rehtml_message',
             'spacer_right',
         ],
     ),
@@ -745,8 +745,17 @@ conversation_message_common_layout = {
         ),
         event_functions = dict( value = 'on_toggle_message_active' ),
     ),
+    'rehtml_message': dict(
+        component_class = ConversationMessage,
+        contains = [ 'row_content' ],
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+            margin = 0,
+        ),
+    ),
     'row_content': dict(
         component_class = Row,
+        # TODO: Replace 'text_message' with 'pane_content'.
         contains = [ 'text_message', 'row_actions' ],
     ),
     'row_actions': dict(

@@ -40,7 +40,7 @@ def prepare_auxdata( configuration, directories ):
     from types import SimpleNamespace
     from ..ai.providers import prepare as prepare_ai_providers
     from ..ai.functions import prepare as prepare_ai_functions
-    from ..messages import prepare_prompt_templates
+    from ..messages.templates import prepare_prompt_templates
     from ..vectorstores import prepare as prepare_vectorstores
     return SimpleNamespace(
         ai_functions = prepare_ai_functions( configuration, directories ),

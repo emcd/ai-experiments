@@ -41,6 +41,7 @@ def _update_conversation_status_on_error( invocable ):
 
 @_update_conversation_status_on_error
 def chat( gui ):
+    from ..messages import AuxiliaryData
     from .updaters import (
         add_message,
         update_and_save_conversation,
@@ -55,21 +56,24 @@ def chat( gui ):
     else:
         prompt = gui.text_freeform_prompt.value
         gui.text_freeform_prompt.value = ''
-    if prompt: add_message( gui, 'Human', prompt )
+    if prompt:
+        auxdata = AuxiliaryData( role = 'Human' )
+        add_message( gui, auxdata, content = prompt )
     with _update_conversation_progress( gui, 'Generating AI response...' ):
-        response = _chat( gui )
-    update_message( response )
+        message_gui = _chat( gui )
+    update_message( message_gui )
     _add_conversation_indicator_if_necessary( gui )
     update_and_save_conversations_index( gui )
     if summarization:
         update_messages_post_summarization( gui )
         gui.toggle_summarize.value = False
     update_and_save_conversation( gui )
-    _invoke_functions_if_desirable( gui, response )
+    _invoke_functions_if_desirable( gui, message_gui )
 
 
 @_update_conversation_status_on_error
 def invoke_functions( gui, index ):
+    from ..messages import AuxiliaryData
     from .updaters import add_message, truncate_conversation
     truncate_conversation( gui, index )
     provider = __.access_ai_provider_current( gui )
@@ -79,10 +83,11 @@ def invoke_functions( gui, index ):
     for request in requests:
         with _update_conversation_progress( gui, 'Executing AI function...' ):
             control, message = provider.invoke_function( request, controls )
-        add_message(
-            gui, 'Function', message,
+        auxdata = AuxiliaryData(
             context = control.context,
-            mime_type = control.mime_type )
+            mime_type = control.mime_type,
+            role = 'Function' )
+        add_message( gui, auxdata, content = message )
     chat( gui )
     # Elide invocation requests and results, if desired.
     if gui.checkbox_elide_function_history.value:
@@ -96,10 +101,11 @@ def invoke_functions( gui, index ):
 
 @_update_conversation_status_on_error
 def search( gui ):
+    from ..messages import AuxiliaryData
     from .updaters import add_message, update_and_save_conversation
     prompt = gui.text_freeform_prompt.value
     gui.text_freeform_prompt.value = ''
-    add_message( gui, 'Human', prompt )
+    add_message( gui, AuxiliaryData( role = 'Human' ), content = prompt )
     documents_count = gui.slider_documents_count.value
     vectorstore = gui.auxdata__.vectorstores[
         gui.selector_vectorstore.value ][ 'instance' ]
@@ -110,8 +116,8 @@ def search( gui ):
             prompt, k = documents_count )
     for document in documents:
         mime_type = document.metadata.get( 'mime_type', 'text/plain' )
-        add_message(
-            gui, 'Document', document.page_content, mime_type = mime_type )
+        auxdata = AuxiliaryData( role = 'Document', mime_type = mime_type )
+        add_message( gui, auxdata, content = document.page_content )
     update_and_save_conversation( gui )
 
 
@@ -138,6 +144,7 @@ def _add_conversation_indicator_if_necessary( gui ):
 
 def _chat( gui ):
     from ..ai.providers import ChatCallbacks
+    from ..messages import AuxiliaryData
     from .updaters import add_message
     messages = __.package_messages( gui )
     controls = __.package_controls( gui )
@@ -146,7 +153,10 @@ def _chat( gui ):
         allocator = (
             lambda mime_type:
             add_message(
-                gui, 'AI', '', behaviors = ( ), mime_type = mime_type ) ),
+                gui,
+                AuxiliaryData(
+                    role = 'AI', behaviors = ( ), mime_type = mime_type ),
+                content = '' ) ),
         deallocator = (
             lambda handle: gui.column_conversation_history.pop( -1 ) ),
         updater = (
@@ -161,7 +171,7 @@ def _generate_conversation_title( gui ):
     # TODO: Use model-preferred serialization format for title and labels.
     from ..ai.providers import ChatCallbacks, ChatCompletionError
     from ..codecs.json import loads
-    from ..messages import render_prompt_template
+    from ..messages.templates import render_prompt_template
     template = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
     controls = __.package_controls( gui )
@@ -186,13 +196,13 @@ def _generate_conversation_title( gui ):
     return response[ 'title' ], response[ 'labels' ]
 
 
-def _invoke_functions_if_desirable( gui, message ):
-    if 'AI' != message.auxdata__[ 'role' ]: return
-    if not message.gui__.toggle_active.value: return
+def _invoke_functions_if_desirable( gui, message_gui ):
+    if 'AI' != message_gui.auxdata__.role: return
+    if not message_gui.toggle_active.value: return
     if not gui.checkbox_auto_functions.value: return
     try: __.extract_invocation_requests( gui )
     except: return
-    invoke_functions( gui, message.gui__.index__ )
+    invoke_functions( gui, message_gui.index__ )
 
 
 @__.produce_context_manager
@@ -205,6 +215,6 @@ def _update_conversation_progress( gui, message ):
 def _update_gui_on_chat( gui, handle, content ):
     from .updaters import autoscroll_document
     setattr(
-        handle.gui__.text_message, 'object',
-        getattr( handle.gui__.text_message, 'object' ) + content )
+        handle.text_message, 'object',
+        getattr( handle.text_message, 'object' ) + content )
     autoscroll_document( gui )

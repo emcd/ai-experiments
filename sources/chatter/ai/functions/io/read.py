@@ -137,7 +137,7 @@ def read( auxdata, /, source, control = None ):
 def _read_recursive( auxdata, path, control = None ):
     results = [ ]
     for dirent in _list_directory( auxdata, path, control = control ):
-        result = _read_file( auxdata, path )
+        result = _read_file( auxdata, dirent )
         if isinstance( result, str ):
             results.append( dict( error = result, **dirent ) )
         else: results.append( result )
@@ -151,8 +151,8 @@ def _access_tokens_limit( auxdata ):
 
 
 def _analyze_file( auxdata, path, control = None ):
-    from chatter.ai.providers import ChatCallbacks
-    from chatter.messages import render_prompt_template
+    from ....messages.templates import render_prompt_template
+    from ...providers import ChatCallbacks
     ai_messages = [ ]
     provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
     summarization_prompt = render_prompt_template(
@@ -173,11 +173,11 @@ def _analyze_file( auxdata, path, control = None ):
         #       Drop earliest messages from history, if so.
         if ai_messages:
             messages.append( dict(
-                content = summarization_prompt, role = 'User' ) )
+                content = summarization_prompt, role = 'Human' ) )
             messages.append( dict(
                 content = '\n\n'.join( ai_messages ), role ='AI' ) )
         _, content = __.render_prompt( auxdata, control, chunk, mime_type )
-        messages.append( dict( content = content, role = 'User' ) )
+        messages.append( dict( content = content, role = 'Human' ) )
         callbacks = ChatCallbacks(
             allocator = ( lambda mime_type: [ ] ),
             updater = ( lambda handle, content: handle.append( content ) ),
@@ -215,8 +215,8 @@ def _determine_chunk_reader( path, mime_type = None ):
 
 
 def _discriminate_dirents( auxdata, dirents, control = None ):
-    from chatter.ai.providers import ChatCallbacks
-    from chatter.messages import render_prompt_template
+    from ....messages.templates import render_prompt_template
+    from ...providers import ChatCallbacks
     # TODO: Chunk the directory analysis.
     provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
     supervisor_prompt = render_prompt_template(
@@ -229,7 +229,7 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
     messages = [ dict( content = supervisor_prompt, role = 'Supervisor' ) ]
     _, content = __.render_prompt(
         auxdata, control, dirents, 'directory-entries' )
-    messages.append( dict( content = content, role = 'User' ) )
+    messages.append( dict( content = content, role = 'Human' ) )
     callbacks = ChatCallbacks(
         allocator = ( lambda mime_type: [ ] ),
         updater = ( lambda handle, content: handle.append( content ) ),

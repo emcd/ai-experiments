@@ -83,23 +83,22 @@ def restore_conversation( gui ):
 
 
 def restore_conversation_messages( gui, column_name, state ):
+    from ..messages import AuxiliaryData
     from .updaters import add_message
     column = getattr( gui, column_name )
     column.clear( )
-    # TODO: Package 'behaviors', 'context', and 'mime_type' into 'control'.
-    for row_state in state.get( column_name, [ ] ):
-        context = row_state.get( 'context', { } )
-        if 'actor-name' in row_state: # Deprecated field.
-            context[ 'name' ] = row_state[ 'actor-name' ]
-        behaviors = row_state[ 'behaviors' ]
-        content = row_state[ 'content' ]
-        mime_type = row_state[ 'mime-type' ]
-        role = row_state[ 'role' ]
-        add_message(
-            gui, role, content,
-            behaviors = behaviors,
+    for message_state in state.get( column_name, [ ] ):
+        # TODO: Add persistence methods to auxdata class.
+        context = message_state.get( 'context', { } )
+        if 'actor-name' in message_state: # Deprecated field.
+            context[ 'name' ] = message_state[ 'actor-name' ]
+        content = message_state[ 'content' ]
+        auxdata = AuxiliaryData(
+            role = message_state[ 'role' ],
+            behaviors = message_state[ 'behaviors' ],
             context = context,
-            mime_type = mime_type )
+            mime_type = message_state[ 'mime-type' ] )
+        add_message( gui, auxdata, content )
 
 
 def restore_conversations_index( gui ):
@@ -148,20 +147,22 @@ def save_conversation( gui ):
 
 def save_conversation_messages( gui, column_name ):
     state = [ ]
-    for row in getattr( gui, column_name ):
-        message_gui = row.auxdata__[ 'gui' ]
+    for canister in getattr( gui, column_name ):
+        message_gui = canister.gui__
+        auxdata = message_gui.auxdata__
+        # TODO: Add persistence methods to auxdata class.
         behaviors = [ ]
+        # TODO: Link toggle values to auxdata behaviors array.
         for behavior in ( 'active', 'pinned' ):
             if getattr( message_gui, f"toggle_{behavior}" ).value:
                 behaviors.append( behavior )
         substate = {
             'behaviors': behaviors,
             'content': message_gui.text_message.object,
+            'context': auxdata.context,
+            'mime-type': auxdata.mime_type,
+            'role': auxdata.role,
         }
-        substate.update( {
-            key: value for key, value in row.auxdata__.items( )
-            if key in ( 'context', 'mime-type', 'role' )
-        } )
         state.append( substate )
     return { column_name: state }
 

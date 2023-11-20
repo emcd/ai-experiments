@@ -40,27 +40,32 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     descriptor.indicator = indicator
 
 
-# TODO: Move row initialization here from ConversationMessage.
-def add_message(
-    gui, role, content,
-    behaviors = ( 'active', ),
-    context = None,
-    mime_type = 'text/markdown',
-):
-    from .classes import ConversationMessage
-    # TODO: Generate row component here and then pass to custom component.
-    component = ConversationMessage(
-        role, mime_type, context = context,
-        height_policy = 'auto', margin = 0, width_policy = 'max' )
-    message_gui = component.gui__
-    message_gui.parent__ = gui
+def add_message( gui, auxdata, content = None ):
+    message_gui = create_message( gui, auxdata, content = content )
     message_gui.index__ = len( gui.column_conversation_history )
-    text_message = message_gui.text_message
-    if hasattr( text_message, 'value' ): text_message.value = content
-    else: text_message.object = content
+    message = message_gui.row_canister
+    gui.column_conversation_history.append( message )
+    return message_gui
+
+
+def autoscroll_document( gui ):
+    if 'manual' == gui.text_autoscroll_status.value: return
+    # Trigger JS callback to scroll and then reset state.
+    gui.text_autoscroll_status.value = 'scrolling'
+    gui.text_autoscroll_status.value = 'automatic'
+
+
+def configure_message_interface( message_gui, auxdata ):
+    gui = message_gui.parent__
+    message = message_gui.row_canister
+    behaviors = auxdata.behaviors
+    role = auxdata.role
+    message.styles.update( __.roles_styles[ role ] )
+    # TODO: Use user-supplied logos, when available.
+    message_gui.toggle_active.name = __.roles_emoji[ role ]
     if 'AI' == role:
         message_gui.button_fork.visible = True
-        try: __.extract_invocation_requests( gui, component = component )
+        try: __.extract_invocation_requests( gui, component = message )
         except: pass
         else: message_gui.button_invoke.visible = True
     elif 'Document' == role:
@@ -69,17 +74,6 @@ def add_message(
         message_gui.button_edit.visible = True
     for behavior in behaviors:
         getattr( message_gui, f"toggle_{behavior}" ).value = True
-    __.register_event_callbacks(
-        message_gui, message_gui.layout__, 'row_message' )
-    gui.column_conversation_history.append( component )
-    return component
-
-
-def autoscroll_document( gui ):
-    if 'manual' == gui.text_autoscroll_status.value: return
-    # Trigger JS callback to scroll and then reset state.
-    gui.text_autoscroll_status.value = 'scrolling'
-    gui.text_autoscroll_status.value = 'automatic'
 
 
 def create_and_display_conversation( gui, state = None ):
@@ -108,6 +102,25 @@ def create_conversation( gui, descriptor, state = None ):
     return pane_gui
 
 
+def create_message( gui, auxdata, content = None ):
+    layout = determine_message_layout( auxdata, content = content )
+    message_gui = __.SimpleNamespace(
+        auxdata__ = auxdata,
+        index__ = None,
+        layout__ = layout,
+        parent__ = gui )
+    message = __.generate_component( message_gui, layout, 'row_canister' )
+    message.gui__ = message_gui
+    message_gui.row_content.gui__ = message_gui
+    # TODO: Handle non-textual messages and text messages with attachments.
+    text_message = message_gui.text_message
+    if hasattr( text_message, 'value' ): text_message.value = content
+    else: text_message.object = content
+    configure_message_interface( message_gui, auxdata )
+    __.register_event_callbacks( message_gui, layout, 'row_canister' )
+    return message_gui
+
+
 def delete_conversation( gui, descriptor ):
     # TODO: Confirmation modal dialog.
     from .persistence import save_conversations_index
@@ -125,6 +138,18 @@ def delete_conversation( gui, descriptor ):
         f"{descriptor.identity}.json" )
     if path.exists( ): path.unlink( )
     save_conversations_index( gui )
+
+
+def determine_message_layout( auxdata, content = None ):
+    mime_type = auxdata.mime_type
+    # TODO: Handle layouts for pictorial messages.
+    if 'text/plain' == mime_type:
+        from .layouts import plain_conversation_message_layout as layout
+    elif 'application/json' == mime_type:
+        from .layouts import json_conversation_message_layout as layout
+    else:
+        from .layouts import rich_conversation_message_layout as layout
+    return layout
 
 
 def display_conversation( gui, descriptor ):
@@ -392,8 +417,7 @@ def update_functions_prompt( gui ):
     update_active_functions( gui )
 
 
-def update_message( message_row, behaviors = ( 'active', ) ):
-    message_gui = message_row.gui__
+def update_message( message_gui, behaviors = ( 'active', ) ):
     for behavior in ( 'active', 'pinned' ):
         getattr( message_gui, f"toggle_{behavior}" ).value = (
             behavior in behaviors )
@@ -403,7 +427,7 @@ def update_messages_post_summarization( gui ):
     ''' Exclude conversation items above summarization request. '''
     # TODO: Account for documents.
     for i in range( len( gui.column_conversation_history ) - 2 ):
-        message_gui = gui.column_conversation_history[ i ].auxdata__[ 'gui' ]
+        message_gui = gui.column_conversation_history[ i ].gui__
         if not message_gui.toggle_active.value: continue # already inactive
         if message_gui.toggle_pinned.value: continue # skip pinned messages
         message_gui.toggle_active.value = False
@@ -516,6 +540,6 @@ def _update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
     template = selector.auxdata__[ selector.value ][ 'template' ]
     controls = __.package_controls( gui )
     variables = { element.auxdata__[ 'id' ]: element.value for element in row }
-    from ..messages import render_prompt_template
+    from ..messages.templates import render_prompt_template
     text_prompt.object = render_prompt_template(
         template, controls, variables )

@@ -124,11 +124,12 @@ def package_messages( gui ):
     if gui.toggle_system_prompt_active.value:
         messages.append( dict(
             content = gui.text_system_prompt.object, role = 'Supervisor' ) )
-    for row in gui.column_conversation_history:
-        message_gui = row.auxdata__[ 'gui' ]
+    for canister in gui.column_conversation_history:
+        message_gui = canister.gui__
+        auxdata = message_gui.auxdata__
         if not message_gui.toggle_active.value: continue
-        role = row.auxdata__[ 'role' ]
-        context = row.auxdata__.get( 'context', { } )
+        role = auxdata.role
+        context = getattr( auxdata, 'context', { } )
         message = dict(
             content = message_gui.text_message.object,
             context = context,

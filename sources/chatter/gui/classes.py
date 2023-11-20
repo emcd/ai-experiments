@@ -234,8 +234,6 @@ class ConversationIndicator( ReactiveHTML ):
 
 
 
-# TODO: Reduce to simple wrapper for custom JS code.
-#       Row initialization should be elsewhere.
 class ConversationMessage( ReactiveHTML ):
 
     mouse_hover__ = param.Boolean( False )
@@ -262,33 +260,10 @@ class ConversationMessage( ReactiveHTML ):
                 type="hidden" value="${mouse_hover__}"/>
         </div>'''.strip( )
 
-    # TODO: Should only need GUI namespace as argument.
-    def __init__( self, role, mime_type, context = None, **params ):
+    def __init__( self, row, **params ):
         super( ).__init__( **params )
-        emoji = __.roles_emoji[ role ]
-        styles = __.roles_styles[ role ]
-        if 'text/plain' == mime_type:
-            from .layouts import plain_conversation_message_layout as layout
-        elif 'application/json' == mime_type:
-            from .layouts import json_conversation_message_layout as layout
-        else:
-            from .layouts import rich_conversation_message_layout as layout
-        row_gui = __.SimpleNamespace( )
-        row = __.generate_component( row_gui, layout, 'row_message' )
-        row.styles.update( styles )
-        row_gui.rehtml_message = self
-        row_gui.layout__ = layout
-        self.auxdata__ = {
-            'gui': row_gui,
-            'mime-type': mime_type,
-            'role': role,
-        }
-        if context: self.auxdata__[ 'context' ] = context
-        # TODO: Use user-supplied logos, when available.
-        row_gui.toggle_active.name = emoji
-        self.gui__ = row_gui
         self.row__ = row
 
     @param.depends( 'mouse_hover__', watch = True )
     def _handle_mouse_hover__( self ):
-        self.gui__.row_actions.visible = self.mouse_hover__
+        self.row__.gui__.row_actions.visible = self.mouse_hover__
