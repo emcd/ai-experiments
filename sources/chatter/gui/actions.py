@@ -43,7 +43,6 @@ def _update_conversation_status_on_error( invocable ):
 def chat( gui ):
     from ..messages import AuxiliaryData
     from .updaters import (
-        add_message,
         update_and_save_conversation,
         update_and_save_conversations_index,
         update_message,
@@ -58,7 +57,7 @@ def chat( gui ):
         gui.text_freeform_prompt.value = ''
     if prompt:
         auxdata = AuxiliaryData( role = 'Human' )
-        add_message( gui, auxdata, content = prompt )
+        _add_message( gui, auxdata, content = prompt )
     with _update_conversation_progress( gui, 'Generating AI response...' ):
         message_gui = _chat( gui )
     update_message( message_gui )
@@ -74,7 +73,7 @@ def chat( gui ):
 @_update_conversation_status_on_error
 def invoke_functions( gui, index ):
     from ..messages import AuxiliaryData
-    from .updaters import add_message, truncate_conversation
+    from .updaters import truncate_conversation
     truncate_conversation( gui, index )
     provider = __.access_ai_provider_current( gui )
     controls = __.package_controls( gui )
@@ -87,7 +86,7 @@ def invoke_functions( gui, index ):
             context = control.context,
             mime_type = control.mime_type,
             role = 'Function' )
-        add_message( gui, auxdata, content = message )
+        _add_message( gui, auxdata, content = message )
     chat( gui )
     # Elide invocation requests and results, if desired.
     if gui.checkbox_elide_function_history.value:
@@ -102,10 +101,10 @@ def invoke_functions( gui, index ):
 @_update_conversation_status_on_error
 def search( gui ):
     from ..messages import AuxiliaryData
-    from .updaters import add_message, update_and_save_conversation
+    from .updaters import update_and_save_conversation
     prompt = gui.text_freeform_prompt.value
     gui.text_freeform_prompt.value = ''
-    add_message( gui, AuxiliaryData( role = 'Human' ), content = prompt )
+    _add_message( gui, AuxiliaryData( role = 'Human' ), content = prompt )
     documents_count = gui.slider_documents_count.value
     vectorstore = gui.auxdata__.vectorstores[
         gui.selector_vectorstore.value ][ 'instance' ]
@@ -117,7 +116,7 @@ def search( gui ):
     for document in documents:
         mime_type = document.metadata.get( 'mime_type', 'text/plain' )
         auxdata = AuxiliaryData( role = 'Document', mime_type = mime_type )
-        add_message( gui, auxdata, content = document.page_content )
+        _add_message( gui, auxdata, content = document.page_content )
     update_and_save_conversation( gui )
 
 
@@ -142,17 +141,23 @@ def _add_conversation_indicator_if_necessary( gui ):
     update_conversation_hilite( gui, new_descriptor = descriptor )
 
 
+def _add_message( gui, auxdata, content = None ):
+    from .updaters import add_message, autoscroll_document
+    message_gui = add_message( gui, auxdata, content = content )
+    autoscroll_document( gui )
+    return message_gui
+
+
 def _chat( gui ):
     from ..ai.providers import ChatCallbacks
     from ..messages import AuxiliaryData
-    from .updaters import add_message
     messages = __.package_messages( gui )
     controls = __.package_controls( gui )
     special_data = __.package_special_data( gui )
     callbacks = ChatCallbacks(
         allocator = (
             lambda mime_type:
-            add_message(
+            _add_message(
                 gui,
                 AuxiliaryData(
                     role = 'AI', behaviors = ( ), mime_type = mime_type ),
