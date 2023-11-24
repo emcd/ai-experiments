@@ -751,10 +751,14 @@ conversation_message_common_layout = {
         component_arguments = dict(
             height_policy = 'auto', width_policy = 'max',
             margin = 0,
+            **_message_column_width_attributes,
         ),
     ),
     'row_content': dict(
         component_class = Row,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+        ),
         # TODO: Replace 'text_message' with 'pane_content'.
         contains = [ 'text_message', 'row_actions' ],
     ),
