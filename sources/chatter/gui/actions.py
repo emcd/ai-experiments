@@ -150,18 +150,12 @@ def _add_message( gui, auxdata, content = None ):
 
 def _chat( gui ):
     from ..ai.providers import ChatCallbacks
-    from ..messages import AuxiliaryData
     messages = __.package_messages( gui )
     controls = __.package_controls( gui )
     special_data = __.package_special_data( gui )
     callbacks = ChatCallbacks(
         allocator = (
-            lambda mime_type:
-            _add_message(
-                gui,
-                AuxiliaryData(
-                    role = 'AI', behaviors = ( ), mime_type = mime_type ),
-                content = '' ) ),
+            lambda auxdata_: _add_message( gui, auxdata_, content = '' ) ),
         deallocator = (
             lambda handle: gui.column_conversation_history.pop( -1 ) ),
         updater = (
@@ -189,7 +183,7 @@ def _generate_conversation_title( gui ):
         gui.selector_provider.value ]
     # TODO: Use standard set of text capture callbacks.
     callbacks = ChatCallbacks(
-        allocator = ( lambda mime_type: [ ] ),
+        allocator = ( lambda auxdata_: [ ] ),
         updater = ( lambda handle, content: handle.append( content ) ),
     )
     with _update_conversation_progress(

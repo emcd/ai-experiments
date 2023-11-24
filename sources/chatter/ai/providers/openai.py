@@ -37,12 +37,12 @@ def chat( messages, special_data, controls, callbacks ):
     controls = _canonicalize_controls( controls )
     response = _chat( messages, special_data, controls, callbacks )
     if not controls.get( 'stream', True ):
+        # TODO: Handle response arrays.
         message = response.choices[ 0 ].message
-        if message.content:
-            handle = callbacks.allocator( 'text/markdown' )
-            callbacks.updater( handle, message.content )
+        auxdata = _create_message_auxdata_from_response( message )
+        handle = callbacks.allocator( auxdata )
+        if message.content: callbacks.updater( handle, message.content )
         elif message.function_call:
-            handle = callbacks.allocator( 'application/json' )
             callbacks.updater(
                 handle, _reconstitute_invocations(
                     [ message.function_call ] ) )
@@ -60,20 +60,17 @@ def chat( messages, special_data, controls, callbacks ):
             elif delta.function_call: break
             elif delta.tool_calls: break
         response_ = chain( chunks, response )
+        auxdata = _create_message_auxdata_from_response( delta )
+        handle = callbacks.allocator( auxdata )
         if delta.tool_calls:
-            handle = callbacks.allocator( 'application/json' )
             _gather_tool_calls_chunks( response_, handle, callbacks )
         elif delta.function_call:
-            handle = callbacks.allocator( 'application/json' )
             _gather_tool_call_chunks_legacy( response_, handle, callbacks )
-        else:
-            handle = callbacks.allocator( 'text/markdown' )
-            _stream_content_chunks( response_, handle, callbacks )
+        else: _stream_content_chunks( response_, handle, callbacks )
     except OpenAIError as exc:
         callbacks.deallocator( handle )
         raise __.ChatCompletionError( f"Error: {exc}" ) from exc
     return handle
-
 
 
 def count_conversation_tokens( messages, special_data, controls ):
@@ -290,6 +287,20 @@ def _chat( messages, special_data, controls, callbacks ):
             raise __.ChatCompletionError( f"Error: {exc}" ) from exc
     raise __.ChatCompletionError(
         f"Exhausted {attempts_limit} retries with OpenAI API." )
+
+
+def _create_message_auxdata_from_response( response ):
+    from ...messages import AuxiliaryData
+    annotations = { }
+    if response.content: mime_type = 'text/markdown'
+    else:
+        mime_type = 'application/json'
+        annotations[ 'response_class' ] = 'invocation'
+    return AuxiliaryData(
+        role = 'AI',
+        annotations = annotations,
+        behaviors = [ ],
+        mime_type = mime_type )
 
 
 def _gather_tool_call_chunks_legacy( response, handle, callbacks ):

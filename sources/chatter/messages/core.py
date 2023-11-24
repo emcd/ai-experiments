@@ -28,9 +28,12 @@ from . import base as __
 class AuxiliaryData:
 
     role: str
+    annotations: __.AbstractMutableDictionary[ __.typ.Any ] = (
+        __.dataclass_declare( default_factory = dict ) )
     behaviors: __.AbstractMutableSequence[ str ] = (
         __.dataclass_declare(
             default_factory = lambda: [ 'active' ] ) )
     context: __.AbstractMutableDictionary[ __.typ.Any ] = (
         __.dataclass_declare( default_factory = dict ) )
+    # TODO: controls
     mime_type: str = 'text/markdown'

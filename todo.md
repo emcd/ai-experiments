@@ -45,11 +45,9 @@
 
 * GUI: Miscellaneous
 
-    - Store icons as SVG files as data. Make custom `IconButton` and
+    - Store icons as SVG files. Make custom `IconButton` and
       `IconToggle` classes, which use these.
       https://discourse.holoviz.org/t/how-to-trigger-re-render-of-template/5799/5
-    - Refactor `ConversationMessage` class into `ConversationMessageContent`
-      class. Show/hide action buttons row based on that.
     - Create `ConversationHistory` class to manage history column and status
       row. For reuse in main dashboard and for AI agent trackers.
     - Persist prompt variables.
