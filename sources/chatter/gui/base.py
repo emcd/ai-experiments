@@ -120,20 +120,18 @@ def package_controls( gui ):
 
 
 def package_messages( gui ):
+    from ..messages import AuxiliaryData
     messages = [ ]
     if gui.toggle_system_prompt_active.value:
         messages.append( dict(
-            content = gui.text_system_prompt.object, role = 'Supervisor' ) )
+            auxdata = AuxiliaryData( role = 'Supervisor' ),
+            content = gui.text_system_prompt.object ) )
     for canister in gui.column_conversation_history:
         message_gui = canister.gui__
-        auxdata = message_gui.auxdata__
         if not message_gui.toggle_active.value: continue
-        role = auxdata.role
-        context = getattr( auxdata, 'context', { } )
         message = dict(
+            auxdata = message_gui.auxdata__,
             content = message_gui.text_message.object,
-            context = context,
-            role = role,
         )
         messages.append( message )
     return messages

@@ -460,15 +460,13 @@ def update_system_prompt_text( gui ):
 def update_token_count( gui ):
     if not gui.selector_provider.options: return
     if not gui.selector_model.options: return
+    from ..messages import AuxiliaryData
     messages = __.package_messages( gui )
+    auxdata = AuxiliaryData( role = 'Human' )
     if 'freeform' == gui.selector_user_prompt_class.value:
-        messages.append( dict(
-            content = gui.text_freeform_prompt.value, role = 'Human',
-        ) )
-    else:
-        messages.append( dict(
-            content = gui.text_canned_prompt.object, role = 'Human',
-        ) )
+        content = gui.text_freeform_prompt.value
+    else: content = gui.text_canned_prompt.object
+    messages.append( dict( auxdata = auxdata, content = content ) )
     controls = __.package_controls( gui )
     special_data = __.package_special_data( gui )
     provider = gui.auxdata__.ai_providers[ gui.selector_provider.value ]

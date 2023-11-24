@@ -137,6 +137,7 @@ def extract_invocation_requests( message, auxdata, ai_functions ):
 
 
 def invoke_function( request, controls ):
+    from ...messages import AuxiliaryData
     result = request[ 'invocable__' ]( )
     if 'id' in request:
         context = dict(
@@ -146,8 +147,9 @@ def invoke_function( request, controls ):
         )
     else: context = dict( name = request[ 'name' ], role = 'function' )
     mime_type, message = render_data( result, controls )
-    control = __.SimpleNamespace( context = context, mime_type = mime_type )
-    return control, message
+    auxdata = AuxiliaryData(
+        role = 'Function', context = context, mime_type = mime_type )
+    return auxdata, message
 
 
 def prepare( configuration, directories ):
@@ -221,7 +223,8 @@ def _canonicalize_messages( ix_messages, model_name ):
             ix_message, messages[ -1 ], model_name
         ): continue
         content = ix_message[ 'content' ]
-        context = ix_message.get( 'context', { } ).copy( )
+        auxdata = ix_message[ 'auxdata' ]
+        context = auxdata.context.copy( )
         if 'role' not in context:
             context[ 'role' ] = _canonicalize_message_role(
                 ix_message, model_name )
@@ -241,7 +244,7 @@ def _canonicalize_messages( ix_messages, model_name ):
 
 
 def _canonicalize_message_role( ix_message, model_name ):
-    ix_role = ix_message[ 'role' ]
+    ix_role = ix_message[ 'auxdata' ].role
     if 'Supervisor' == ix_role:
         if access_model_data( model_name, 'honors-system-prompt' ):
             return 'system'
@@ -348,11 +351,13 @@ def _gather_tool_calls_chunks( response, handle, callbacks ):
 
 
 def _merge_canonical_messages_contingent( ix_message, message, model_name ):
+    # TODO: Take advantage of array syntax for content in OpenAI API,
+    #       rather than merging strings. Will need to do this for image data
+    #       anyway; might be able to do this for text data for consistency.
     if 'user' != message[ 'role' ]: return False
-    ix_role = ix_message[ 'role' ]
+    ix_role = ix_message[ 'auxdata' ].role
     if 'Document' == ix_role:
         # Merge document into previous user message.
-        # TODO? Convert to MIME-like format. Update sysprompt accordingly.
         message[ 'content' ] = '\n\n'.join( (
             message[ 'content' ],
             '## Supplemental Information ##',

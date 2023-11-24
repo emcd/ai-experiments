@@ -72,7 +72,6 @@ def chat( gui ):
 
 @_update_conversation_status_on_error
 def invoke_functions( gui, index ):
-    from ..messages import AuxiliaryData
     from .updaters import truncate_conversation
     truncate_conversation( gui, index )
     provider = __.access_ai_provider_current( gui )
@@ -81,11 +80,7 @@ def invoke_functions( gui, index ):
     requests = __.extract_invocation_requests( gui )
     for request in requests:
         with _update_conversation_progress( gui, 'Executing AI function...' ):
-            control, message = provider.invoke_function( request, controls )
-        auxdata = AuxiliaryData(
-            context = control.context,
-            mime_type = control.mime_type,
-            role = 'Function' )
+            auxdata, message = provider.invoke_function( request, controls )
         _add_message( gui, auxdata, content = message )
     chat( gui )
     # Elide invocation requests and results, if desired.
@@ -170,6 +165,7 @@ def _generate_conversation_title( gui ):
     # TODO: Use model-preferred serialization format for title and labels.
     from ..ai.providers import ChatCallbacks, ChatCompletionError
     from ..codecs.json import loads
+    from ..messages import AuxiliaryData
     from ..messages.templates import render_prompt_template
     template = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
@@ -177,7 +173,7 @@ def _generate_conversation_title( gui ):
     prompt = render_prompt_template( template, controls )
     messages = [
         *__.package_messages( gui )[ 1 : ],
-        { 'role': 'Human', 'content': prompt }
+        { 'auxdata': AuxiliaryData( role = 'Human' ), 'content': prompt }
     ]
     provider = gui.selector_provider.auxdata__[
         gui.selector_provider.value ]
