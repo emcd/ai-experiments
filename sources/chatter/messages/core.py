@@ -35,5 +35,32 @@ class AuxiliaryData:
             default_factory = lambda: [ 'active' ] ) )
     context: __.AbstractMutableDictionary[ __.typ.Any ] = (
         __.dataclass_declare( default_factory = dict ) )
-    # TODO: controls
+    controls: __.AbstractMutableDictionary[ __.typ.Any ] = (
+        __.dataclass_declare( default_factory = dict ) )
     mime_type: str = 'text/markdown'
+
+
+class Content: pass
+
+
+@__.dataclass
+class TextualContent( Content ):
+
+    content: str
+    mimetype: str
+
+
+# TODO: PictorialContent
+
+
+@__.dataclass
+class Canister:
+
+    role: str
+    contents: __.AbstractSequence[ Content ]
+    annotations: __.AbstractMutableDictionary[ __.typ.Any ] = (
+        __.dataclass_declare( default_factory = dict ) )
+    context: __.AbstractMutableDictionary[ __.typ.Any ] = (
+        __.dataclass_declare( default_factory = dict ) )
+    controls: __.AbstractMutableDictionary[ __.typ.Any ] = (
+        __.dataclass_declare( default_factory = dict ) )

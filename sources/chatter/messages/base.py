@@ -26,5 +26,6 @@ import typing as typ
 from collections.abc import (
     MutableMapping as AbstractMutableDictionary,
     MutableSequence as AbstractMutableSequence,
+    Sequence as AbstractSequence,
 )
 from dataclasses import dataclass, field as dataclass_declare

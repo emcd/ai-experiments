@@ -151,6 +151,7 @@ def _access_tokens_limit( auxdata ):
 
 
 def _analyze_file( auxdata, path, control = None ):
+    from ....messages import AuxiliaryData
     from ....messages.templates import render_prompt_template
     from ...providers import ChatCallbacks
     ai_messages = [ ]
@@ -173,11 +174,15 @@ def _analyze_file( auxdata, path, control = None ):
         #       Drop earliest messages from history, if so.
         if ai_messages:
             messages.append( dict(
-                content = summarization_prompt, role = 'Human' ) )
+                auxdata = AuxiliaryData( role = 'Human' ),
+                content = summarization_prompt ) )
             messages.append( dict(
-                content = '\n\n'.join( ai_messages ), role ='AI' ) )
+                auxdata = AuxiliaryData( role = 'AI' ),
+                content = '\n\n'.join( ai_messages ) ) )
         _, content = __.render_prompt( auxdata, control, chunk, mime_type )
-        messages.append( dict( content = content, role = 'Human' ) )
+        messages.append( dict(
+            auxdata = AuxiliaryData( role = 'Human' ),
+            content = content ) )
         callbacks = ChatCallbacks(
             allocator = ( lambda mime_type: [ ] ),
             updater = ( lambda handle, content: handle.append( content ) ),
@@ -215,6 +220,7 @@ def _determine_chunk_reader( path, mime_type = None ):
 
 
 def _discriminate_dirents( auxdata, dirents, control = None ):
+    from ....messages import AuxiliaryData
     from ....messages.templates import render_prompt_template
     from ...providers import ChatCallbacks
     # TODO: Chunk the directory analysis.
@@ -226,10 +232,13 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
         variables = dict(
             format_name = provider.provide_format_name( auxdata.controls ),
         ) )
-    messages = [ dict( content = supervisor_prompt, role = 'Supervisor' ) ]
+    messages = [ dict(
+        auxdata = AuxiliaryData( role = 'Supervisor' ),
+        content = supervisor_prompt ) ]
     _, content = __.render_prompt(
         auxdata, control, dirents, 'directory-entries' )
-    messages.append( dict( content = content, role = 'Human' ) )
+    messages.append( dict(
+        auxdata = AuxiliaryData( role = 'Human' ), content = content ) )
     callbacks = ChatCallbacks(
         allocator = ( lambda mime_type: [ ] ),
         updater = ( lambda handle, content: handle.append( content ) ),

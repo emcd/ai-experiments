@@ -36,29 +36,34 @@ def chat( messages, special_data, controls, callbacks ):
     special_data = _canonicalize_special_data( special_data, controls )
     controls = _canonicalize_controls( controls )
     response = _chat( messages, special_data, controls, callbacks )
+    # TODO: Split response handling into functions for batch and stream.
     if not controls.get( 'stream', True ):
         # TODO: Handle response arrays.
         message = response.choices[ 0 ].message
         auxdata = _create_message_auxdata_from_response( message )
         handle = callbacks.allocator( auxdata )
         if message.content: callbacks.updater( handle, message.content )
+        # TODO: Remap batch response invocations to intermediate dictionaries.
         elif message.function_call:
             callbacks.updater(
-                handle, _reconstitute_invocations(
-                    [ message.function_call ] ) )
-        # TODO: Map tool calls array to invocations format.
+                handle, _reconstitute_invocation_legacy(
+                    message.function_call ) )
+        elif message.tool_calls:
+            callbacks.updater(
+                handle, _reconstitute_invocations( message.tool_calls ) )
         return handle
     from openai import OpenAIError
     from itertools import chain
     try: # streaming mode
         chunks = [ ]
         while True:
-            chunk = next( response )
+            try: chunk = next( response )
+            except StopIteration:
+                raise __.ChatCompletionError(
+                    'Error: Empty response from AI.' )
             chunks.append( chunk )
             delta = chunk.choices[ 0 ].delta
-            if delta.content: break
-            elif delta.function_call: break
-            elif delta.tool_calls: break
+            if delta.content or delta.function_call or delta.tool_calls: break
         response_ = chain( chunks, response )
         auxdata = _create_message_auxdata_from_response( delta )
         handle = callbacks.allocator( auxdata )
@@ -311,7 +316,7 @@ def _gather_tool_call_chunks_legacy( response, handle, callbacks ):
     tool_call = defaultdict( str )
     for chunk in response:
         delta = chunk.choices[ 0 ].delta
-        if not delta: break
+        if not delta: break # TODO: Look for non-null finish reason.
         if not delta.function_call: break
         if delta.function_call.name:
             tool_call[ 'name' ] = delta.function_call.name
@@ -324,9 +329,9 @@ def _gather_tool_calls_chunks( response, handle, callbacks ):
     from collections import defaultdict
     tool_calls = [ ]
     index = 0
-    start = True
+    start = True # TODO: Look for non-null finish reason.
     for chunk in response:
-        delta = chunk.choices[ 0 ].delta
+        delta = chunk.choices[ 0 ].delta # TODO: Handle array of responses.
         if not delta: break
         if not delta.tool_calls:
             if start: continue # Can have a blank chunk at start.
@@ -338,8 +343,7 @@ def _gather_tool_calls_chunks( response, handle, callbacks ):
             tool_calls.append( {
                 'type': 'function', 'function': defaultdict( str ) } )
         tool_calls[ index ][ 'type' ] = 'function'
-        if tool_call.id:
-            tool_calls[ index ][ 'id' ] = tool_call.id
+        if tool_call.id: tool_calls[ index ][ 'id' ] = tool_call.id
         if tool_call.function:
             function = tool_calls[ index ][ 'function' ]
             if tool_call.function.name:
