@@ -151,7 +151,7 @@ def _access_tokens_limit( auxdata ):
 
 
 def _analyze_file( auxdata, path, control = None ):
-    from ....messages import AuxiliaryData
+    from ....messages.core import Canister, create_content
     from ....messages.templates import render_prompt_template
     from ...providers import ChatCallbacks
     ai_messages = [ ]
@@ -173,16 +173,15 @@ def _analyze_file( auxdata, path, control = None ):
         # TODO: Check if above high water mark for tokens count.
         #       Drop earliest messages from history, if so.
         if ai_messages:
-            messages.append( dict(
-                auxdata = AuxiliaryData( role = 'Human' ),
-                content = summarization_prompt ) )
-            messages.append( dict(
-                auxdata = AuxiliaryData( role = 'AI' ),
-                content = '\n\n'.join( ai_messages ) ) )
+            messages.append( Canister(
+                role = 'Human',
+                contents = [ create_content( summarization_prompt ) ] ) )
+            messages.append( Canister(
+                role = 'AI',
+                contents = [ create_content( '\n\n'.join( ai_messages ) ) ] ) )
         _, content = __.render_prompt( auxdata, control, chunk, mime_type )
-        messages.append( dict(
-            auxdata = AuxiliaryData( role = 'Human' ),
-            content = content ) )
+        messages.append( Canister(
+            role = 'Human', contents = [ create_content( content ) ] ) )
         callbacks = ChatCallbacks(
             allocator = ( lambda mime_type: [ ] ),
             updater = ( lambda handle, content: handle.append( content ) ),
@@ -220,7 +219,7 @@ def _determine_chunk_reader( path, mime_type = None ):
 
 
 def _discriminate_dirents( auxdata, dirents, control = None ):
-    from ....messages import AuxiliaryData
+    from ....messages.core import Canister, create_content
     from ....messages.templates import render_prompt_template
     from ...providers import ChatCallbacks
     # TODO: Chunk the directory analysis.
@@ -232,13 +231,13 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
         variables = dict(
             format_name = provider.provide_format_name( auxdata.controls ),
         ) )
-    messages = [ dict(
-        auxdata = AuxiliaryData( role = 'Supervisor' ),
-        content = supervisor_prompt ) ]
+    messages = [ Canister(
+        role = 'Supervisor',
+        contents = [ create_content( supervisor_prompt ) ] ) ]
     _, content = __.render_prompt(
         auxdata, control, dirents, 'directory-entries' )
-    messages.append( dict(
-        auxdata = AuxiliaryData( role = 'Human' ), content = content ) )
+    messages.append( Canister(
+        role = 'Human', contents = [ create_content( content ) ] ) )
     callbacks = ChatCallbacks(
         allocator = ( lambda mime_type: [ ] ),
         updater = ( lambda handle, content: handle.append( content ) ),

@@ -32,16 +32,16 @@ def access_model_data( model_name, data_name ):
 
 
 def chat( messages, special_data, controls, callbacks ):
-    messages = _canonicalize_messages( messages, controls[ 'model' ] )
-    special_data = _canonicalize_special_data( special_data, controls )
-    controls = _canonicalize_controls( controls )
+    messages = _nativize_messages( messages, controls[ 'model' ] )
+    special_data = _nativize_special_data( special_data, controls )
+    controls = _nativize_controls( controls )
     response = _chat( messages, special_data, controls, callbacks )
     # TODO: Split response handling into functions for batch and stream.
     if not controls.get( 'stream', True ):
         # TODO: Handle response arrays.
         message = response.choices[ 0 ].message
-        auxdata = _create_message_auxdata_from_response( message )
-        handle = callbacks.allocator( auxdata )
+        canister = _create_canister_from_response( message )
+        handle = callbacks.allocator( canister )
         if message.content: callbacks.updater( handle, message.content )
         # TODO: Remap batch response invocations to intermediate dictionaries.
         elif message.function_call:
@@ -65,8 +65,8 @@ def chat( messages, special_data, controls, callbacks ):
             delta = chunk.choices[ 0 ].delta
             if delta.content or delta.function_call or delta.tool_calls: break
         response_ = chain( chunks, response )
-        auxdata = _create_message_auxdata_from_response( delta )
-        handle = callbacks.allocator( auxdata )
+        canister = _create_canister_from_response( delta )
+        handle = callbacks.allocator( canister )
         if delta.tool_calls:
             _gather_tool_calls_chunks( response_, handle, callbacks )
         elif delta.function_call:
@@ -95,7 +95,7 @@ def count_conversation_tokens( messages, special_data, controls ):
         tokens_per_message, tokens_per_name = 3, 1
     else: raise NotImplementedError( f"Unsupported model: {model_name}" )
     tokens_count = 0
-    for message in _canonicalize_messages( messages, model_name ):
+    for message in _nativize_messages( messages, model_name ):
         tokens_count += tokens_per_message
         for index, value in message.items( ):
             if not isinstance( value, str ): value = dumps( value )
@@ -142,7 +142,7 @@ def extract_invocation_requests( message, auxdata, ai_functions ):
 
 
 def invoke_function( request, controls ):
-    from ...messages import AuxiliaryData
+    from ...messages.core import Canister, create_content
     result = request[ 'invocable__' ]( )
     if 'id' in request:
         context = dict(
@@ -151,10 +151,11 @@ def invoke_function( request, controls ):
             tool_call_id = request[ 'id' ],
         )
     else: context = dict( name = request[ 'name' ], role = 'function' )
-    mime_type, message = render_data( result, controls )
-    auxdata = AuxiliaryData(
-        role = 'Function', context = context, mime_type = mime_type )
-    return auxdata, message
+    mimetype, message = render_data( result, controls )
+    content = create_content( message, mimetype = mimetype )
+    canister = Canister(
+        role = 'Function', contents = [ content ], context = context )
+    return canister
 
 
 def prepare( configuration, directories ):
@@ -211,72 +212,6 @@ def select_default_model( models, auxdata ):
     return next( iter( models ) )
 
 
-def _canonicalize_controls( controls ):
-    nomargs = {
-        name: value for name, value in controls.items( )
-        if name in ( 'model', 'temperature', )
-    }
-    nomargs[ 'stream' ] = True
-    return nomargs
-
-
-def _canonicalize_messages( ix_messages, model_name ):
-    from json import dumps, loads
-    messages = [ ]
-    for ix_message in ix_messages:
-        if messages and _merge_canonical_messages_contingent(
-            ix_message, messages[ -1 ], model_name
-        ): continue
-        content = ix_message[ 'content' ]
-        auxdata = ix_message[ 'auxdata' ]
-        context = auxdata.context.copy( )
-        if 'role' not in context:
-            context[ 'role' ] = _canonicalize_message_role(
-                ix_message, model_name )
-        # Hack for reconstituting AI-recognized tools calls.
-        if 'assistant' == context[ 'role' ]:
-            try: tool_calls = loads( content )
-            except: pass
-            else:
-                if 'tool_calls' in tool_calls:
-                    for tool_call in tool_calls[ 'tool_calls' ]:
-                        tool_call[ 'function' ][ 'arguments' ] = (
-                            dumps( tool_call[ 'function' ][ 'arguments' ] ) )
-                    context.update( tool_calls )
-                    content = None
-        messages.append( dict( content = content, **context ) )
-    return messages
-
-
-def _canonicalize_message_role( ix_message, model_name ):
-    ix_role = ix_message[ 'auxdata' ].role
-    if 'Supervisor' == ix_role:
-        if access_model_data( model_name, 'honors-system-prompt' ):
-            return 'system'
-        return 'user'
-    if 'Function' == ix_role: # Context probably overrides.
-        if access_model_data( model_name, 'supports-multifunctions' ):
-            return 'tool'
-        if access_model_data( model_name, 'supports-functions' ):
-            return 'function'
-    if ix_role in ( 'Human', 'Document', 'Function' ): return 'user'
-    if 'AI' == ix_role: return 'assistant'
-    raise ValueError( f"Invalid role '{ix_role}'." )
-
-
-def _canonicalize_special_data( data, controls ):
-    model_name = controls[ 'model' ]
-    nomargs = { }
-    if 'ai-functions' in data:
-        if access_model_data( model_name, 'supports-multifunctions' ):
-            nomargs[ 'tools' ] = [
-                { 'type': 'function', 'function': function }
-                for function in data[ 'ai-functions' ] ]
-        elif access_model_data( model_name, 'supports-functions' ):
-            nomargs[ 'functions' ] = data[ 'ai-functions' ]
-    return nomargs
-
-
 def _chat( messages, special_data, controls, callbacks ):
     from time import sleep
     from openai import OpenAI, OpenAIError, RateLimitError
@@ -297,18 +232,17 @@ def _chat( messages, special_data, controls, callbacks ):
         f"Exhausted {attempts_limit} retries with OpenAI API." )
 
 
-def _create_message_auxdata_from_response( response ):
-    from ...messages import AuxiliaryData
-    annotations = { }
-    if response.content: mime_type = 'text/markdown'
+def _create_canister_from_response( response ):
+    from ...messages.core import Canister, create_content
+    attributes = __.SimpleNamespace( behaviors = [ ] )
+    if response.content: mimetype = 'text/markdown'
     else:
-        mime_type = 'application/json'
-        annotations[ 'response_class' ] = 'invocation'
-    return AuxiliaryData(
+        mimetype = 'application/json'
+        attributes.response_class = 'invocation'
+    return Canister(
         role = 'AI',
-        annotations = annotations,
-        behaviors = [ ],
-        mime_type = mime_type )
+        contents = [ create_content( '', mimetype = mimetype ) ],
+        attributes = attributes )
 
 
 def _gather_tool_call_chunks_legacy( response, handle, callbacks ):
@@ -354,27 +288,93 @@ def _gather_tool_calls_chunks( response, handle, callbacks ):
         'tool_calls': tool_calls } ) )
 
 
-def _merge_canonical_messages_contingent( ix_message, message, model_name ):
+def _merge_messages_contingent( canister, message, model_name ):
     # TODO: Take advantage of array syntax for content in OpenAI API,
     #       rather than merging strings. Will need to do this for image data
     #       anyway; might be able to do this for text data for consistency.
     if 'user' != message[ 'role' ]: return False
-    ix_role = ix_message[ 'auxdata' ].role
-    if 'Document' == ix_role:
+    # TODO: Handle content arrays.
+    content = canister.contents[ 0 ].data
+    if 'Document' == canister.role:
         # Merge document into previous user message.
         message[ 'content' ] = '\n\n'.join( (
             message[ 'content' ],
             '## Supplemental Information ##',
-            ix_message[ 'content' ] ) )
+            content ) )
         return True
-    if 'Human' == ix_role and not access_model_data(
+    if 'Human' == canister.role and not access_model_data(
         model_name, 'allows-adjacent-users'
     ):
         # Merge adjacent user messages, if model rejects them.
         message[ 'content' ] = '\n\n'.join( (
-            message[ 'content' ], ix_message[ 'content' ] ) )
+            message[ 'content' ], content ) )
         return True
     return False
+
+
+def _nativize_controls( controls ):
+    nomargs = {
+        name: value for name, value in controls.items( )
+        if name in ( 'model', 'temperature', )
+    }
+    nomargs[ 'stream' ] = True
+    return nomargs
+
+
+def _nativize_messages( canisters, model_name ):
+    from json import dumps, loads
+    messages = [ ]
+    for canister in canisters:
+        if messages and _merge_messages_contingent(
+            canister, messages[ -1 ], model_name
+        ): continue
+        # TODO: Content arrays.
+        content = canister.contents[ 0 ].data
+        context = canister.context.copy( )
+        if 'role' not in context:
+            context[ 'role' ] = _nativize_message_role(
+                canister, model_name )
+        # Hack for reconstituting AI-recognized tools calls.
+        if 'assistant' == context[ 'role' ]:
+            try: tool_calls = loads( content )
+            except: pass
+            else:
+                if 'tool_calls' in tool_calls:
+                    for tool_call in tool_calls[ 'tool_calls' ]:
+                        tool_call[ 'function' ][ 'arguments' ] = (
+                            dumps( tool_call[ 'function' ][ 'arguments' ] ) )
+                    context.update( tool_calls )
+                    content = None
+        messages.append( dict( content = content, **context ) )
+    return messages
+
+
+def _nativize_message_role( canister, model_name ):
+    if 'Supervisor' == canister.role:
+        if access_model_data( model_name, 'honors-system-prompt' ):
+            return 'system'
+        return 'user'
+    if 'Function' == canister.role: # Context probably overrides.
+        if access_model_data( model_name, 'supports-multifunctions' ):
+            return 'tool'
+        if access_model_data( model_name, 'supports-functions' ):
+            return 'function'
+    if canister.role in ( 'Human', 'Document', 'Function' ): return 'user'
+    if 'AI' == canister.role: return 'assistant'
+    raise ValueError( f"Invalid role '{canister.role}'." )
+
+
+def _nativize_special_data( data, controls ):
+    model_name = controls[ 'model' ]
+    nomargs = { }
+    if 'ai-functions' in data:
+        if access_model_data( model_name, 'supports-multifunctions' ):
+            nomargs[ 'tools' ] = [
+                { 'type': 'function', 'function': function }
+                for function in data[ 'ai-functions' ] ]
+        elif access_model_data( model_name, 'supports-functions' ):
+            nomargs[ 'functions' ] = data[ 'ai-functions' ]
+    return nomargs
 
 
 def _provide_models( ):

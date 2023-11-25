@@ -21,5 +21,5 @@
 ''' Conversation message classes and utilities. '''
 
 
+from . import core
 from . import templates
-from .core import AuxiliaryData

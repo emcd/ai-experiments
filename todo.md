@@ -45,6 +45,8 @@
 
 * GUI: Miscellaneous
 
+    - Refactor 'classes' module into 'widgets', 'messages', and
+      'conversations'.
     - Store icons as SVG files. Make custom `IconButton` and
       `IconToggle` classes, which use these.
       https://discourse.holoviz.org/t/how-to-trigger-re-render-of-template/5799/5

@@ -83,22 +83,17 @@ def restore_conversation( gui ):
 
 
 def restore_conversation_messages( gui, column_name, state ):
-    from ..messages import AuxiliaryData
+    from ..messages.core import DirectoryManager, restore_canister
     from .updaters import add_message
     column = getattr( gui, column_name )
     column.clear( )
-    for message_state in state.get( column_name, [ ] ):
-        # TODO: Add persistence methods to auxdata class.
-        context = message_state.get( 'context', { } )
-        if 'actor-name' in message_state: # Deprecated field.
-            context[ 'name' ] = message_state[ 'actor-name' ]
-        content = message_state[ 'content' ]
-        auxdata = AuxiliaryData(
-            role = message_state[ 'role' ],
-            behaviors = message_state[ 'behaviors' ],
-            context = context,
-            mime_type = message_state[ 'mime-type' ] )
-        add_message( gui, auxdata, content )
+    for canister_state in state.get( column_name, [ ] ):
+        if 'mime-type' in canister_state:
+            canister = _restore_conversation_message_v0( canister_state )
+        else:
+            manager = DirectoryManager( gui.auxdata__ )
+            canister = restore_canister( manager, canister_state )
+        add_message( gui, canister )
 
 
 def restore_conversations_index( gui ):
@@ -146,24 +141,14 @@ def save_conversation( gui ):
 
 
 def save_conversation_messages( gui, column_name ):
+    from ..messages.core import DirectoryManager
+    from .base import assimilate_canister_dto_from_gui
+    manager = DirectoryManager( gui.auxdata__ )
     state = [ ]
     for canister in getattr( gui, column_name ):
-        message_gui = canister.gui__
-        auxdata = message_gui.auxdata__
-        # TODO: Add persistence methods to auxdata class.
-        behaviors = [ ]
-        # TODO: Link toggle values to auxdata behaviors array.
-        for behavior in ( 'active', 'pinned' ):
-            if getattr( message_gui, f"toggle_{behavior}" ).value:
-                behaviors.append( behavior )
-        substate = {
-            'behaviors': behaviors,
-            'content': message_gui.text_message.object,
-            'context': auxdata.context,
-            'mime-type': auxdata.mime_type,
-            'role': auxdata.role,
-        }
-        state.append( substate )
+        canister_gui = canister.gui__
+        assimilate_canister_dto_from_gui( canister_gui )
+        state.append( canister_gui.canister__.save( manager ) )
     return { column_name: state }
 
 
@@ -192,3 +177,20 @@ def save_prompt_variables( gui, row_name ):
     for widget in getattr( gui, row_name ):
         state.append( { 'name': widget.name, 'value': widget.value } )
     return { row_name: state }
+
+
+def _restore_conversation_message_v0( canister_state ):
+    from ..messages.core import Canister, create_content
+    role = canister_state[ 'role' ]
+    attributes = __.SimpleNamespace(
+        behaviors = canister_state[ 'behaviors' ] )
+    context = canister_state.get( 'context', { } )
+    if 'actor-name' in canister_state: # Deprecated field.
+        context[ 'name' ] = canister_state[ 'actor-name' ]
+    content = create_content(
+        canister_state[ 'content' ], mimetype = canister_state[ 'mime-type' ] )
+    return Canister(
+        role = role,
+        contents = [ content ],
+        attributes = attributes,
+        context = context )

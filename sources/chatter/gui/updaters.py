@@ -40,12 +40,12 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     descriptor.indicator = indicator
 
 
-def add_message( gui, auxdata, content = None ):
-    message_gui = create_message( gui, auxdata, content = content )
-    message_gui.index__ = len( gui.column_conversation_history )
-    message = message_gui.row_canister
-    gui.column_conversation_history.append( message )
-    return message_gui
+def add_message( gui, dto ):
+    gui_ = create_message( gui, dto )
+    gui_.index__ = len( gui.column_conversation_history )
+    widget = gui_.row_canister
+    gui.column_conversation_history.append( widget )
+    return gui_
 
 
 def autoscroll_document( gui ):
@@ -55,25 +55,25 @@ def autoscroll_document( gui ):
     gui.text_autoscroll_status.value = 'automatic'
 
 
-def configure_message_interface( message_gui, auxdata ):
-    gui = message_gui.parent__
-    message = message_gui.row_canister
-    behaviors = auxdata.behaviors
-    role = auxdata.role
-    message.styles.update( __.roles_styles[ role ] )
+def configure_message_interface( canister_gui, dto ):
+    gui = canister_gui.parent__
+    canister = canister_gui.row_canister
+    behaviors = dto.attributes.behaviors
+    role = dto.role
+    canister.styles.update( __.roles_styles[ role ] )
     # TODO: Use user-supplied logos, when available.
-    message_gui.toggle_active.name = __.roles_emoji[ role ]
+    canister_gui.toggle_active.name = __.roles_emoji[ role ]
     if 'AI' == role:
-        message_gui.button_fork.visible = True
+        canister_gui.button_fork.visible = True
         try: __.extract_invocation_requests( gui, component = message )
         except: pass
-        else: message_gui.button_invoke.visible = True
+        else: canister_gui.button_invoke.visible = True
     elif 'Document' == role:
-        message_gui.button_delete.visible = True
+        canister_gui.button_delete.visible = True
     elif 'Human' == role:
-        message_gui.button_edit.visible = True
+        canister_gui.button_edit.visible = True
     for behavior in behaviors:
-        getattr( message_gui, f"toggle_{behavior}" ).value = True
+        getattr( canister_gui, f"toggle_{behavior}" ).value = True
 
 
 def create_and_display_conversation( gui, state = None ):
@@ -102,23 +102,27 @@ def create_conversation( gui, descriptor, state = None ):
     return pane_gui
 
 
-def create_message( gui, auxdata, content = None ):
-    layout = determine_message_layout( auxdata, content = content )
-    message_gui = __.SimpleNamespace(
-        auxdata__ = auxdata,
+def create_message( gui, dto ):
+    # TODO: Handle content arrays properly.
+    layout = determine_message_layout( dto )
+    gui_ = __.SimpleNamespace(
+        canister__ = dto,
         index__ = None,
         layout__ = layout,
         parent__ = gui )
-    message = __.generate_component( message_gui, layout, 'row_canister' )
-    message.gui__ = message_gui
-    message_gui.row_content.gui__ = message_gui
+    widget = __.generate_component( gui_, layout, 'row_canister' )
+    widget.gui__ = gui_
+    gui_.row_content.gui__ = gui_
     # TODO: Handle non-textual messages and text messages with attachments.
-    text_message = message_gui.text_message
+    content = dto.contents[ 0 ].data
+    text_message = gui_.text_message
     if hasattr( text_message, 'value' ): text_message.value = content
     else: text_message.object = content
-    configure_message_interface( message_gui, auxdata )
-    __.register_event_callbacks( message_gui, layout, 'row_canister' )
-    return message_gui
+    dto.attributes.behaviors = getattr(
+        dto.attributes, 'behaviors', [ 'active' ] )
+    configure_message_interface( gui_, dto )
+    __.register_event_callbacks( gui_, layout, 'row_canister' )
+    return gui_
 
 
 def delete_conversation( gui, descriptor ):
@@ -140,12 +144,13 @@ def delete_conversation( gui, descriptor ):
     save_conversations_index( gui )
 
 
-def determine_message_layout( auxdata, content = None ):
-    mime_type = auxdata.mime_type
+def determine_message_layout( dto ):
+    # TODO: Consider contents array.
+    mimetype = dto.contents[ 0 ].mimetype
     # TODO: Handle layouts for pictorial messages.
-    if 'text/plain' == mime_type:
+    if 'text/plain' == mimetype:
         from .layouts import plain_conversation_message_layout as layout
-    elif 'application/json' == mime_type:
+    elif 'application/json' == mimetype:
         from .layouts import json_conversation_message_layout as layout
     else:
         from .layouts import rich_conversation_message_layout as layout
@@ -460,13 +465,13 @@ def update_system_prompt_text( gui ):
 def update_token_count( gui ):
     if not gui.selector_provider.options: return
     if not gui.selector_model.options: return
-    from ..messages import AuxiliaryData
+    from ..messages.core import Canister, create_content
     messages = __.package_messages( gui )
-    auxdata = AuxiliaryData( role = 'Human' )
     if 'freeform' == gui.selector_user_prompt_class.value:
         content = gui.text_freeform_prompt.value
     else: content = gui.text_canned_prompt.object
-    messages.append( dict( auxdata = auxdata, content = content ) )
+    messages.append( Canister(
+        role = 'Human', contents = [ create_content( content ) ] ) )
     controls = __.package_controls( gui )
     special_data = __.package_special_data( gui )
     provider = gui.auxdata__.ai_providers[ gui.selector_provider.value ]

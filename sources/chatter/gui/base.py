@@ -75,6 +75,17 @@ def access_ai_provider_current( gui ):
     return gui.auxdata__.ai_providers[ gui.selector_provider.value ]
 
 
+def assimilate_canister_dto_from_gui( canister_gui ):
+    dto = canister_gui.canister__
+    behaviors = [ ]
+    for behavior in ( 'active', 'pinned' ):
+        if getattr( canister_gui, f"toggle_{behavior}" ).value:
+            behaviors.append( behavior )
+    dto.attributes.behaviors = behaviors
+    # TODO: Implement full array support.
+    dto.contents[ 0 ].data = canister_gui.text_message.object
+
+
 def calculate_conversations_path( gui ):
     configuration = gui.auxdata__.configuration
     directories = gui.auxdata__.directories
@@ -120,21 +131,18 @@ def package_controls( gui ):
 
 
 def package_messages( gui ):
-    from ..messages import AuxiliaryData
-    messages = [ ]
+    from ..messages.core import Canister, create_content
+    canisters = [ ]
     if gui.toggle_system_prompt_active.value:
-        messages.append( dict(
-            auxdata = AuxiliaryData( role = 'Supervisor' ),
-            content = gui.text_system_prompt.object ) )
+        canisters.append( Canister(
+            role = 'Supervisor',
+            contents = [ create_content( gui.text_system_prompt.object ) ] ) )
     for canister in gui.column_conversation_history:
-        message_gui = canister.gui__
-        if not message_gui.toggle_active.value: continue
-        message = dict(
-            auxdata = message_gui.auxdata__,
-            content = message_gui.text_message.object,
-        )
-        messages.append( message )
-    return messages
+        canister_gui = canister.gui__
+        if not canister_gui.toggle_active.value: continue
+        assimilate_canister_dto_from_gui( canister_gui )
+        canisters.append( canister_gui.canister__ )
+    return canisters
 
 
 def package_special_data( gui ):
