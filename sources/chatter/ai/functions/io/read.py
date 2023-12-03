@@ -151,9 +151,9 @@ def _access_tokens_limit( auxdata ):
 
 
 def _analyze_file( auxdata, path, control = None ):
-    from ....messages.core import Canister, create_content
+    from ....messages.core import Canister
     from ....messages.templates import render_prompt_template
-    from ...providers import ChatCallbacks
+    from ...providers import chat_callbacks_minimal
     ai_messages = [ ]
     provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
     summarization_prompt = render_prompt_template(
@@ -173,22 +173,16 @@ def _analyze_file( auxdata, path, control = None ):
         # TODO: Check if above high water mark for tokens count.
         #       Drop earliest messages from history, if so.
         if ai_messages:
-            messages.append( Canister(
-                role = 'Human',
-                contents = [ create_content( summarization_prompt ) ] ) )
-            messages.append( Canister(
-                role = 'AI',
-                contents = [ create_content( '\n\n'.join( ai_messages ) ) ] ) )
+            messages.append( Canister( role = 'Human' ).add_content(
+                summarization_prompt ) )
+            messages.append( Canister( role = 'AI' ).add_content(
+                '\n\n'.join( ai_messages ) ) )
         _, content = __.render_prompt( auxdata, control, chunk, mime_type )
-        messages.append( Canister(
-            role = 'Human', contents = [ create_content( content ) ] ) )
-        callbacks = ChatCallbacks(
-            allocator = ( lambda mime_type: [ ] ),
-            updater = ( lambda handle, content: handle.append( content ) ),
-        )
-        handle = provider.chat( messages, { }, auxdata.controls, callbacks )
+        messages.append( Canister( role = 'Human' ).add_content( content ) )
+        ai_canister = provider.chat(
+            messages, { }, auxdata.controls, chat_callbacks_minimal )
         # TODO: Handle combination of analysis and metadata.
-        ai_messages.append( ''.join( handle ) )
+        ai_messages.append( ai_canister[ 0 ].data )
     return ai_messages
 
 
@@ -219,9 +213,9 @@ def _determine_chunk_reader( path, mime_type = None ):
 
 
 def _discriminate_dirents( auxdata, dirents, control = None ):
-    from ....messages.core import Canister, create_content
+    from ....messages.core import Canister
     from ....messages.templates import render_prompt_template
-    from ...providers import ChatCallbacks
+    from ...providers import chat_callbacks_minimal
     # TODO: Chunk the directory analysis.
     provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
     supervisor_prompt = render_prompt_template(
@@ -231,19 +225,15 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
         variables = dict(
             format_name = provider.provide_format_name( auxdata.controls ),
         ) )
-    messages = [ Canister(
-        role = 'Supervisor',
-        contents = [ create_content( supervisor_prompt ) ] ) ]
+    messages = [
+        Canister( role = 'Supervisor' ).add_content( supervisor_prompt )
+    ]
     _, content = __.render_prompt(
         auxdata, control, dirents, 'directory-entries' )
-    messages.append( Canister(
-        role = 'Human', contents = [ create_content( content ) ] ) )
-    callbacks = ChatCallbacks(
-        allocator = ( lambda mime_type: [ ] ),
-        updater = ( lambda handle, content: handle.append( content ) ),
-    )
-    handle = provider.chat( messages, { }, auxdata.controls, callbacks )
-    result = provider.parse_data( ''.join( handle ), auxdata.controls )
+    messages.append( Canister( role = 'Human' ).add_content( content ) )
+    ai_canister = provider.chat(
+        messages, { }, auxdata.controls, chat_callbacks_minimal )
+    result = provider.parse_data( ai_canister[ 0 ].data, auxdata.controls )
     ic( result[ 'blacklist' ] )
     return result[ 'whitelist' ]
 

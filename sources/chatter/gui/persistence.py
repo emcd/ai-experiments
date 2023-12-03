@@ -179,18 +179,84 @@ def save_prompt_variables( gui, row_name ):
     return { row_name: state }
 
 
+def upgrade_conversation( gui, identity ):
+    import json
+    from ..messages.core import DirectoryManager, restore_canister
+    directory_manager = DirectoryManager( gui.auxdata__ )
+    # TODO: Use directory manager for conversation location.
+    conversations_path = __.calculate_conversations_path( gui )
+    path = conversations_path / f"{identity}.json"
+    # Conversation may have disappeared for some reason.
+    if not path.exists( ): return
+    ic( path )
+    with path.open( ) as file:
+        try: state = json.load( file )
+        except json.JSONDecodeError: state = None
+    if None is state:
+        path.unlink( )
+        return
+    # TODO: Consider format version.
+    history_original = state.get( 'column_conversation_history', [ ] )
+    history_upgrade = [ ]
+    for canister_state in history_original:
+        if 'mime-type' in canister_state:
+            canister = _restore_conversation_message_v0( canister_state )
+        else: canister = restore_canister( directory_manager, canister_state )
+        history_upgrade.append( canister.save( directory_manager ) )
+    state[ 'column_conversation_history' ] = history_upgrade
+    with path.open( 'w' ) as file: json.dump( state, file, indent = 2 )
+
+
+def upgrade_conversations( gui ):
+    conversations_path = __.calculate_conversations_path( gui )
+    index_path = conversations_path / 'index.toml'
+    from tomli import load
+    with index_path.open( 'rb' ) as file: index = load( file )
+    # TODO: Consider format version.
+    for descriptor in index[ 'descriptors' ]:
+        identity = descriptor[ 'identity' ]
+        upgrade_conversation( gui, identity )
+
+
 def _restore_conversation_message_v0( canister_state ):
-    from ..messages.core import Canister, create_content
+    from ..messages.core import Canister
     role = canister_state[ 'role' ]
     attributes = __.SimpleNamespace(
         behaviors = canister_state[ 'behaviors' ] )
     context = canister_state.get( 'context', { } )
     if 'actor-name' in canister_state: # Deprecated field.
         context[ 'name' ] = canister_state[ 'actor-name' ]
-    content = create_content(
-        canister_state[ 'content' ], mimetype = canister_state[ 'mime-type' ] )
-    return Canister(
-        role = role,
-        contents = [ content ],
-        attributes = attributes,
-        context = context )
+    if 'AI' == role:
+        content, extra_context = _standardize_invocation_requests_v0(
+            canister_state )
+        if extra_context: attributes.response_class = 'invocation'
+        context.update( extra_context )
+    else: content = canister_state[ 'content' ]
+    if context: attributes.model_context = context
+    return Canister( role, attributes = attributes ).add_content(
+        content, mimetype = canister_state[ 'mime-type' ] )
+
+
+def _standardize_invocation_requests_v0( canister_state ):
+    from json import dumps, loads
+    content = canister_state[ 'content' ]
+    try: extra_context = loads( content )
+    except: return content, { }
+    requests = [ ]
+    if 'tool_calls' in extra_context:
+        for tool_call in extra_context[ 'tool_calls' ]:
+            function = tool_call[ 'function' ]
+            requests.append( dict(
+                name = function[ 'name' ],
+                arguments = function[ 'arguments' ].copy( )
+            ) )
+            function[ 'arguments' ] = dumps( function[ 'arguments' ] )
+        return dumps( requests ), extra_context
+    if 'name' in extra_context and 'arguments' in extra_context:
+        requests.append( dict(
+            name = extra_context[ 'name' ],
+            arguments = extra_context[ 'arguments' ].copy( )
+        ) )
+        extra_context[ 'arguments' ] = dumps( extra_context[ 'arguments' ] )
+        return dumps( requests ), extra_context
+    return content, { }

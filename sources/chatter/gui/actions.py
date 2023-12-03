@@ -41,7 +41,7 @@ def _update_conversation_status_on_error( invocable ):
 
 @_update_conversation_status_on_error
 def chat( gui ):
-    from ..messages.core import Canister, create_content
+    from ..messages.core import Canister
     from .updaters import (
         update_and_save_conversation,
         update_and_save_conversations_index,
@@ -56,8 +56,7 @@ def chat( gui ):
         prompt = gui.text_freeform_prompt.value
         gui.text_freeform_prompt.value = ''
     if prompt:
-        canister = Canister(
-            role = 'Human', contents = [ create_content( prompt ) ] )
+        canister = Canister( role = 'Human' ).add_content( prompt )
         _add_message( gui, canister )
     with _update_conversation_progress( gui, 'Generating AI response...' ):
         message_gui = _chat( gui )
@@ -96,12 +95,11 @@ def invoke_functions( gui, index ):
 
 @_update_conversation_status_on_error
 def search( gui ):
-    from ..messages.core import Canister, create_content
+    from ..messages.core import Canister
     from .updaters import update_and_save_conversation
     prompt = gui.text_freeform_prompt.value
     gui.text_freeform_prompt.value = ''
-    canister = Canister(
-        role = 'Human', contents = [ create_content( prompt ) ] )
+    canister = Canister( role = 'Human' ).add_content( prompt )
     _add_message( gui, canister )
     documents_count = gui.slider_documents_count.value
     vectorstore = gui.auxdata__.vectorstores[
@@ -113,8 +111,8 @@ def search( gui ):
             prompt, k = documents_count )
     for document in documents:
         mimetype = document.metadata.get( 'mime_type', 'text/plain' )
-        content = create_content( document.page_content, mimetype = mimetype )
-        canister = Canister( role = 'Document', contents = [ content ] )
+        canister = Canister( role = 'Document' ).add_content(
+            document.page_content, mimetype = mimetype )
         _add_message( gui, canister )
     update_and_save_conversation( gui )
 
@@ -149,46 +147,42 @@ def _add_message( gui, canister ):
 
 def _chat( gui ):
     from ..ai.providers import ChatCallbacks
+    from .base import access_ai_provider_current
     messages = __.package_messages( gui )
     controls = __.package_controls( gui )
     special_data = __.package_special_data( gui )
     callbacks = ChatCallbacks(
         allocator = (
-            lambda canister_: _add_message( gui, canister_ ) ),
+            lambda canister: _add_message( gui, canister ) ),
         deallocator = (
-            lambda handle: gui.column_conversation_history.pop( -1 ) ),
+            lambda canister_gui: gui.column_conversation_history.pop( -1 ) ),
         updater = (
-            lambda handle, content:
-            _update_gui_on_chat( gui, handle, content ) ),
+            lambda canister_gui: _update_gui_on_chat( gui, canister_gui ) ),
     )
-    provider = gui.selector_provider.auxdata__[ gui.selector_provider.value ]
+    provider = access_ai_provider_current( gui )
     return provider.chat( messages, special_data, controls, callbacks )
 
 
 def _generate_conversation_title( gui ):
     # TODO: Use model-preferred serialization format for title and labels.
-    from ..ai.providers import ChatCallbacks, ChatCompletionError
+    from ..ai.providers import chat_callbacks_minimal
     from ..codecs.json import loads
-    from ..messages.core import Canister, create_content
+    from ..messages.core import Canister
     from ..messages.templates import render_prompt_template
+    from .base import access_ai_provider_current
     template = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
     controls = __.package_controls( gui )
     prompt = render_prompt_template( template, controls )
-    canister = Canister(
-        role = 'Human', contents = [ create_content( prompt ) ] )
+    canister = Canister( role = 'Human' ).add_content( prompt )
     messages = [ *__.package_messages( gui )[ 1 : ], canister ]
-    provider = gui.selector_provider.auxdata__[
-        gui.selector_provider.value ]
-    # TODO: Use standard set of text capture callbacks.
-    callbacks = ChatCallbacks(
-        allocator = ( lambda canister_: [ ] ),
-        updater = ( lambda handle, content: handle.append( content ) ),
-    )
+    provider = access_ai_provider_current( gui )
     with _update_conversation_progress(
         gui, 'Generating conversation title...'
-    ): handle = provider.chat( messages, { }, controls, callbacks )
-    response = ''.join( handle )
+    ):
+        ai_canister = provider.chat(
+            messages, { }, controls, chat_callbacks_minimal )
+    response = ai_canister[ 0 ].data
     __.scribe.info( f"New conversation title: {response}" )
     response = loads( response )
     return response[ 'title' ], response[ 'labels' ]
@@ -199,7 +193,9 @@ def _invoke_functions_if_desirable( gui, message_gui ):
     if not message_gui.toggle_active.value: return
     if not gui.checkbox_auto_functions.value: return
     try: __.extract_invocation_requests( gui )
-    except: return
+    except Exception as exc:
+        ic( exc )
+        return
     invoke_functions( gui, message_gui.index__ )
 
 
@@ -210,9 +206,11 @@ def _update_conversation_progress( gui, message ):
     update_conversation_status( gui )
 
 
-def _update_gui_on_chat( gui, handle, content ):
+def _update_gui_on_chat( gui, canister_gui ):
+    from .base import assimilate_canister_dto_to_gui
     from .updaters import autoscroll_document
-    setattr(
-        handle.text_message, 'object',
-        getattr( handle.text_message, 'object' ) + content )
+    assimilate_canister_dto_to_gui( canister_gui )
+    #setattr(
+    #    handle.text_message, 'object',
+    #    getattr( handle.text_message, 'object' ) + content )
     autoscroll_document( gui )

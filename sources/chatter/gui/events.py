@@ -116,6 +116,11 @@ def on_click_uncan_prompt( gui, event ):
     gui.selector_user_prompt_class.value = 'freeform'
 
 
+def on_click_upgrade_conversations( gui, event ):
+    from .persistence import upgrade_conversations
+    upgrade_conversations( gui )
+
+
 def on_select_canned_prompt( gui, event ):
     from .updaters import populate_canned_prompt_variables
     populate_canned_prompt_variables( gui )
