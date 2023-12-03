@@ -83,7 +83,17 @@ def assimilate_canister_dto_from_gui( canister_gui ):
             behaviors.append( behavior )
     dto.attributes.behaviors = behaviors
     # TODO: Implement full array support.
-    dto.contents[ 0 ].data = canister_gui.text_message.object
+    dto[ 0 ].data = canister_gui.text_message.object
+
+
+def assimilate_canister_dto_to_gui( canister_gui ):
+    dto = canister_gui.canister__
+    # TODO: Implement full array support.
+    canister_gui.text_message.object = dto[ 0 ].data
+    behaviors = getattr( dto.attributes, 'behaviors', [ ] )
+    for behavior in ( 'active', 'pinned' ):
+        value = behavior in behaviors
+        getattr( canister_gui, f"toggle_{behavior}" ).value = value
 
 
 def calculate_conversations_path( gui ):
@@ -96,15 +106,14 @@ def calculate_conversations_path( gui ):
 
 def extract_invocation_requests( gui, component = None ):
     if None is component: component = gui.column_conversation_history[ -1 ]
-    message = component.gui__.text_message.object
-    # TODO? Handle multipart MIME.
+    canister = component.gui__.canister__
     # TODO: Use selected multichoice values instead of all possible.
     ai_functions = gui.auxdata__.ai_functions
     auxdata = SimpleNamespace(
         controls = package_controls( gui ), **gui.auxdata__.__dict__ )
     provider = access_ai_provider_current( gui )
     return provider.extract_invocation_requests(
-        message, auxdata, ai_functions )
+        canister, auxdata, ai_functions )
 
 
 def generate_component( gui, layout, component_name ):
@@ -131,12 +140,12 @@ def package_controls( gui ):
 
 
 def package_messages( gui ):
-    from ..messages.core import Canister, create_content
+    from ..messages.core import Canister
     canisters = [ ]
     if gui.toggle_system_prompt_active.value:
-        canisters.append( Canister(
-            role = 'Supervisor',
-            contents = [ create_content( gui.text_system_prompt.object ) ] ) )
+        canisters.append(
+            Canister( role = 'Supervisor' ).add_content(
+                gui.text_system_prompt.object ) )
     for canister in gui.column_conversation_history:
         canister_gui = canister.gui__
         if not canister_gui.toggle_active.value: continue

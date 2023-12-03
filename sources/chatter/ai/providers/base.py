@@ -28,6 +28,8 @@ from dataclasses import dataclass
 from functools import partial as partial_function
 from types import SimpleNamespace
 
+from ...messages.core import Canister
+
 
 class ChatCompletionError( Exception ): pass
 
@@ -35,8 +37,8 @@ class ChatCompletionError( Exception ): pass
 @dataclass
 class ChatCallbacks:
 
-    allocator: typ.Callable[ [ str ], typ.Any ] = (
-        lambda mime_type: None )
+    allocator: typ.Callable[ [ Canister ], typ.Any ] = (
+        lambda canister: canister )
     deallocator: typ.Callable[ [ typ.Any ], None ] = (
         lambda handle: None )
     failure_notifier: typ.Callable[ [ str ], None ] = (
@@ -46,4 +48,7 @@ class ChatCallbacks:
     success_notifier: typ.Callable[ [ typ.Any ], None ] = (
         lambda status: None )
     updater: typ.Callable[ [ typ.Any, str ], None ] = (
-        lambda handle, content: None )
+        lambda handle: None )
+
+
+chat_callbacks_minimal = ChatCallbacks( )

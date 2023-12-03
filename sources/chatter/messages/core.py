@@ -85,6 +85,7 @@ class TextualContent( Content ):
         # TODO? Handle URL for content source.
         descriptor = dict(
             mimetype = self.mimetype, timestamp = self.timestamp )
+        # TODO: Add 'format-version' to descriptor.
         descriptor_location = location / 'descriptor.toml'
         with descriptor_location.open( 'wb' ) as descriptor_file:
             dump( descriptor, descriptor_file )
@@ -103,23 +104,31 @@ class TextualContent( Content ):
 class Canister:
 
     role: str
-    contents: __.AbstractSequence[ Content ]
     attributes: __.SimpleNamespace = (
         __.dataclass_declare( default_factory = __.SimpleNamespace ) )
-    context: __.AbstractMutableDictionary[ __.typ.Any ] = (
-        __.dataclass_declare( default_factory = dict ) )
+    contents: __.AbstractSequence[ Content ] = (
+        __.dataclass_declare( default_factory = list ) )
+
+    def add_content( self, data, /, **descriptor ):
+        self.contents.append( create_content( data, **descriptor ) )
+        return self
 
     def save( self, manager ):
-        canister_state = dict( role = self.role )
+        state = dict( role = self.role )
         # TODO: Async scatter contents.
-        contents_state = [ ]
-        for content in self.contents:
-            contents_state.append( content.save( manager ) )
-        canister_state[ 'contents' ] = contents_state
+        contents_identifiers = [ ]
+        for content in self:
+            contents_identifiers.append( content.save( manager ) )
+        state[ 'contents' ] = contents_identifiers
         attributes = self.attributes.__dict__
-        if attributes: canister_state[ 'attributes' ] = attributes
-        if self.context: canister_state[ 'context' ] = self.context
-        return canister_state
+        if attributes: state[ 'attributes' ] = attributes
+        return state
+
+    def __getitem__( self, index ): return self.contents[ index ]
+
+    def __iter__( self ): return iter( self.contents )
+
+    def __len__( self ): return len( self.contents )
 
 
 # TODO: Cohort: Bundle of related canisters.
@@ -155,17 +164,16 @@ def create_content( data, /, **descriptor ):
 
 def restore_canister( manager, canister_state ):
     role = canister_state[ 'role' ]
-    # TODO: Async gather contents.
-    contents = [ ]
-    for content_identity in canister_state[ 'contents' ]:
-        contents.append( restore_content( manager, content_identity ) )
     nomargs = { }
     attributes = canister_state.get( 'attributes' )
     if attributes:
         nomargs[ 'attributes' ] = __.SimpleNamespace( **attributes )
-    context = canister_state.get( 'context' )
-    if context: nomargs[ 'context' ] = context
-    return Canister( role, contents, **nomargs )
+    canister = Canister( role, **nomargs )
+    # TODO: Async gather contents.
+    for content_identity in canister_state[ 'contents' ]:
+        canister.contents.append(
+            restore_content( manager, content_identity ) )
+    return canister
 
 
 def restore_content( manager, identity ):

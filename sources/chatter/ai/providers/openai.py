@@ -36,46 +36,9 @@ def chat( messages, special_data, controls, callbacks ):
     special_data = _nativize_special_data( special_data, controls )
     controls = _nativize_controls( controls )
     response = _chat( messages, special_data, controls, callbacks )
-    # TODO: Split response handling into functions for batch and stream.
-    if not controls.get( 'stream', True ):
-        # TODO: Handle response arrays.
-        message = response.choices[ 0 ].message
-        canister = _create_canister_from_response( message )
-        handle = callbacks.allocator( canister )
-        if message.content: callbacks.updater( handle, message.content )
-        # TODO: Remap batch response invocations to intermediate dictionaries.
-        elif message.function_call:
-            callbacks.updater(
-                handle, _reconstitute_invocation_legacy(
-                    message.function_call ) )
-        elif message.tool_calls:
-            callbacks.updater(
-                handle, _reconstitute_invocations( message.tool_calls ) )
-        return handle
-    from openai import OpenAIError
-    from itertools import chain
-    try: # streaming mode
-        chunks = [ ]
-        while True:
-            try: chunk = next( response )
-            except StopIteration:
-                raise __.ChatCompletionError(
-                    'Error: Empty response from AI.' )
-            chunks.append( chunk )
-            delta = chunk.choices[ 0 ].delta
-            if delta.content or delta.function_call or delta.tool_calls: break
-        response_ = chain( chunks, response )
-        canister = _create_canister_from_response( delta )
-        handle = callbacks.allocator( canister )
-        if delta.tool_calls:
-            _gather_tool_calls_chunks( response_, handle, callbacks )
-        elif delta.function_call:
-            _gather_tool_call_chunks_legacy( response_, handle, callbacks )
-        else: _stream_content_chunks( response_, handle, callbacks )
-    except OpenAIError as exc:
-        callbacks.deallocator( handle )
-        raise __.ChatCompletionError( f"Error: {exc}" ) from exc
-    return handle
+    if controls.get( 'stream', True ):
+        return _process_iterative_chat_response( response, callbacks )
+    return _process_complete_chat_response( response, callbacks )
 
 
 def count_conversation_tokens( messages, special_data, controls ):
@@ -115,46 +78,46 @@ def count_text_tokens( text, model_name ):
     return len( encoding.encode( text ) )
 
 
-def extract_invocation_requests( message, auxdata, ai_functions ):
+def extract_invocation_requests( canister, auxdata, ai_functions ):
     from ...codecs.json import loads
-    try: requests = loads( message )
+    try: requests = loads( canister[ 0 ].data )
     except: raise ValueError( 'Malformed JSON payload in message.' )
-    if not isinstance( requests, __.AbstractDictionary ):
-        raise ValueError( 'Function invocation requests is not dictionary.' )
-    if 'tool_calls' in requests: requests = requests[ 'tool_calls' ]
-    elif 'name' in requests: requests = [ requests ]
-    for request in requests:
+    if not isinstance( requests, __.AbstractSequence ):
+        raise ValueError( 'Function invocation requests is not sequence.' )
+    model_context = getattr( canister.attributes, 'model_context', { } )
+    tool_calls = model_context.get( 'tool_calls' )
+    for i, request in enumerate( requests ):
         if not isinstance( request, __.AbstractDictionary ):
             raise ValueError(
                 'Function invocation request is not dictionary.' )
-        if 'function' in request: function = request[ 'function' ]
-        else: function = request
-        if 'name' not in function:
+        if 'name' not in request:
             raise ValueError(
                 'Function name is absent from invocation request.' )
-        name = function[ 'name' ]
+        name = request[ 'name' ]
         if name not in ai_functions:
             raise ValueError( 'Function name in request is not available.' )
-        arguments = function.get( 'arguments', { } )
+        arguments = request.get( 'arguments', { } )
         request[ 'invocable__' ] = __.partial_function(
             ai_functions[ name ], auxdata, **arguments )
+        if tool_calls: request[ 'context__' ] = tool_calls[ i ]
     return requests
 
 
 def invoke_function( request, controls ):
-    from ...messages.core import Canister, create_content
+    from ...messages.core import Canister
+    request_context = request[ 'context__' ]
     result = request[ 'invocable__' ]( )
-    if 'id' in request:
-        context = dict(
-            name = request[ 'function' ][ 'name' ],
+    if 'id' in request_context:
+        result_context = dict(
+            name = request_context[ 'function' ][ 'name' ],
             role = 'tool',
-            tool_call_id = request[ 'id' ],
+            tool_call_id = request_context[ 'id' ],
         )
-    else: context = dict( name = request[ 'name' ], role = 'function' )
+    else: result_context = dict( name = request[ 'name' ], role = 'function' )
     mimetype, message = render_data( result, controls )
-    content = create_content( message, mimetype = mimetype )
-    canister = Canister(
-        role = 'Function', contents = [ content ], context = context )
+    canister = Canister( 'Function' )
+    canister.add_content( message, mimetype = mimetype )
+    canister.attributes.model_context = result_context
     return canister
 
 
@@ -233,19 +196,18 @@ def _chat( messages, special_data, controls, callbacks ):
 
 
 def _create_canister_from_response( response ):
-    from ...messages.core import Canister, create_content
+    from ...messages.core import Canister
     attributes = __.SimpleNamespace( behaviors = [ ] )
     if response.content: mimetype = 'text/markdown'
     else:
         mimetype = 'application/json'
         attributes.response_class = 'invocation'
     return Canister(
-        role = 'AI',
-        contents = [ create_content( '', mimetype = mimetype ) ],
-        attributes = attributes )
+        role = 'AI', attributes = attributes ).add_content(
+            '', mimetype = mimetype )
 
 
-def _gather_tool_call_chunks_legacy( response, handle, callbacks ):
+def _gather_tool_call_chunks_legacy( canister, response, handle, callbacks ):
     from collections import defaultdict
     tool_call = defaultdict( str )
     for chunk in response:
@@ -256,10 +218,12 @@ def _gather_tool_call_chunks_legacy( response, handle, callbacks ):
             tool_call[ 'name' ] = delta.function_call.name
         if delta.function_call.arguments:
             tool_call[ 'arguments' ] += delta.function_call.arguments
-    callbacks.updater( handle, _reconstitute_invocation_legacy( tool_call ) )
+    canister.attributes.model_context = tool_call
+    canister[ 0 ].data = _reconstitute_invocation_legacy( tool_call )
+    callbacks.updater( handle )
 
 
-def _gather_tool_calls_chunks( response, handle, callbacks ):
+def _gather_tool_calls_chunks( canister, response, handle, callbacks ):
     from collections import defaultdict
     tool_calls = [ ]
     index = 0
@@ -284,8 +248,9 @@ def _gather_tool_calls_chunks( response, handle, callbacks ):
                 function[ 'name' ] = tool_call.function.name
             if tool_call.function.arguments:
                 function[ 'arguments' ] += tool_call.function.arguments
-    callbacks.updater( handle, _reconstitute_invocations( {
-        'tool_calls': tool_calls } ) )
+    canister.attributes.model_context = dict( tool_calls = tool_calls )
+    canister[ 0 ].data = _reconstitute_invocations( tool_calls )
+    callbacks.updater( handle )
 
 
 def _merge_messages_contingent( canister, message, model_name ):
@@ -294,7 +259,7 @@ def _merge_messages_contingent( canister, message, model_name ):
     #       anyway; might be able to do this for text data for consistency.
     if 'user' != message[ 'role' ]: return False
     # TODO: Handle content arrays.
-    content = canister.contents[ 0 ].data
+    content = canister[ 0 ].data
     if 'Document' == canister.role:
         # Merge document into previous user message.
         message[ 'content' ] = '\n\n'.join( (
@@ -322,29 +287,23 @@ def _nativize_controls( controls ):
 
 
 def _nativize_messages( canisters, model_name ):
-    from json import dumps, loads
     messages = [ ]
     for canister in canisters:
         if messages and _merge_messages_contingent(
             canister, messages[ -1 ], model_name
         ): continue
-        # TODO: Content arrays.
-        content = canister.contents[ 0 ].data
-        context = canister.context.copy( )
-        if 'role' not in context:
-            context[ 'role' ] = _nativize_message_role(
-                canister, model_name )
-        # Hack for reconstituting AI-recognized tools calls.
-        if 'assistant' == context[ 'role' ]:
-            try: tool_calls = loads( content )
-            except: pass
-            else:
-                if 'tool_calls' in tool_calls:
-                    for tool_call in tool_calls[ 'tool_calls' ]:
-                        tool_call[ 'function' ][ 'arguments' ] = (
-                            dumps( tool_call[ 'function' ][ 'arguments' ] ) )
-                    context.update( tool_calls )
-                    content = None
+        # TODO: Handle content arrays.
+        content = canister[ 0 ].data
+        attributes = canister.attributes
+        context = getattr( attributes, 'model_context', { } ).copy( )
+        role = context.get( 'role' )
+        if not role:
+            role = _nativize_message_role( canister, model_name )
+            context[ 'role' ] = role
+        if 'assistant' == role:
+            content, extra_context = (
+                _nativize_multifunction_invocation_contingent( canister ) )
+            context.update( extra_context )
         messages.append( dict( content = content, **context ) )
     return messages
 
@@ -364,6 +323,16 @@ def _nativize_message_role( canister, model_name ):
     raise ValueError( f"Invalid role '{canister.role}'." )
 
 
+def _nativize_multifunction_invocation_contingent( canister ):
+    attributes = canister.attributes
+    content = canister[ 0 ].data
+    if 'invocation' == getattr( attributes, 'response_class', '' ):
+        if hasattr( attributes, 'model_context' ):
+            if 'tool_calls' in attributes.model_context:
+                return None, attributes.model_context
+    return content, { }
+
+
 def _nativize_special_data( data, controls ):
     model_name = controls[ 'model' ]
     nomargs = { }
@@ -375,6 +344,52 @@ def _nativize_special_data( data, controls ):
         elif access_model_data( model_name, 'supports-functions' ):
             nomargs[ 'functions' ] = data[ 'ai-functions' ]
     return nomargs
+
+
+def _process_complete_chat_response( response, callbacks ):
+    # TODO: Handle response arrays.
+    message = response.choices[ 0 ].message
+    canister = _create_canister_from_response( message )
+    handle = callbacks.allocator( canister )
+    if message.content: canister[ 0 ].data = message.content
+    # TODO: Remap batch response invocations to intermediate dictionaries.
+    # TODO: Separate 'model_context' attribute and content.
+    elif message.function_call:
+        canister[ 0 ].data = _reconstitute_invocation_legacy(
+            message.function_call )
+    elif message.tool_calls:
+        canister[ 0 ].data = _reconstitute_invocations( message.tool_calls )
+    callbacks.updater( handle )
+    return handle
+
+
+def _process_iterative_chat_response( response, callbacks ):
+    # TODO: Handle response arrays.
+    from openai import OpenAIError
+    from itertools import chain
+    try:
+        chunks = [ ]
+        while True:
+            try: chunk = next( response )
+            except StopIteration:
+                raise __.ChatCompletionError(
+                    'Error: Empty response from AI.' )
+            chunks.append( chunk )
+            delta = chunk.choices[ 0 ].delta
+            if delta.content or delta.function_call or delta.tool_calls: break
+        response_ = chain( chunks, response )
+        canister = _create_canister_from_response( delta )
+        handle = callbacks.allocator( canister )
+        if delta.tool_calls:
+            _gather_tool_calls_chunks( canister, response_, handle, callbacks )
+        elif delta.function_call:
+            _gather_tool_call_chunks_legacy(
+                canister, response_, handle, callbacks )
+        else: _stream_content_chunks( canister, response_, handle, callbacks )
+    except OpenAIError as exc:
+        callbacks.deallocator( handle )
+        raise __.ChatCompletionError( f"Error: {exc}" ) from exc
+    return handle
 
 
 def _provide_models( ):
@@ -433,21 +448,30 @@ def _provide_models( ):
 
 def _reconstitute_invocation_legacy( invocation ):
     from json import dumps, loads
-    invocation[ 'arguments' ] = loads( invocation[ 'arguments' ] )
-    return dumps( invocation )
+    return dumps( [ dict(
+        name = invocation[ 'name' ],
+        arguments = loads( invocation[ 'arguments' ] ),
+    ) ] )
 
 
 def _reconstitute_invocations( invocations ):
     from json import dumps, loads
-    for invocation in invocations[ 'tool_calls' ]:
+    invocations_ = [ ]
+    for invocation in invocations:
         function = invocation[ 'function' ]
-        function[ 'arguments' ] = loads( function[ 'arguments' ] )
-    return dumps( invocations )
+        invocations_.append( dict(
+            name = function[ 'name' ],
+            arguments = loads( function[ 'arguments' ] ),
+        ) )
+    return dumps( invocations_ )
 
 
-def _stream_content_chunks( response, handle, callbacks ):
+def _stream_content_chunks( canister, response, handle, callbacks ):
+    # TODO: Handle content arrays.
     for chunk in response:
         delta = chunk.choices[ 0 ].delta
+        # TODO: Detect finish reason.
         if not delta: break
         if not delta.content: continue
-        callbacks.updater( handle, delta.content )
+        canister[ 0 ].data += delta.content
+        callbacks.updater( handle )

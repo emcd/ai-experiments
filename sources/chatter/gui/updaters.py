@@ -114,7 +114,7 @@ def create_message( gui, dto ):
     widget.gui__ = gui_
     gui_.row_content.gui__ = gui_
     # TODO: Handle non-textual messages and text messages with attachments.
-    content = dto.contents[ 0 ].data
+    content = dto[ 0 ].data
     text_message = gui_.text_message
     if hasattr( text_message, 'value' ): text_message.value = content
     else: text_message.object = content
@@ -146,7 +146,7 @@ def delete_conversation( gui, descriptor ):
 
 def determine_message_layout( dto ):
     # TODO: Consider contents array.
-    mimetype = dto.contents[ 0 ].mimetype
+    mimetype = dto[ 0 ].mimetype
     # TODO: Handle layouts for pictorial messages.
     if 'text/plain' == mimetype:
         from .layouts import plain_conversation_message_layout as layout
@@ -465,13 +465,12 @@ def update_system_prompt_text( gui ):
 def update_token_count( gui ):
     if not gui.selector_provider.options: return
     if not gui.selector_model.options: return
-    from ..messages.core import Canister, create_content
+    from ..messages.core import Canister
     messages = __.package_messages( gui )
     if 'freeform' == gui.selector_user_prompt_class.value:
         content = gui.text_freeform_prompt.value
     else: content = gui.text_canned_prompt.object
-    messages.append( Canister(
-        role = 'Human', contents = [ create_content( content ) ] ) )
+    messages.append( Canister( role = 'Human' ).add_content( content ) )
     controls = __.package_controls( gui )
     special_data = __.package_special_data( gui )
     provider = gui.auxdata__.ai_providers[ gui.selector_provider.value ]
