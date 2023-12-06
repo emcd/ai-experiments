@@ -12,7 +12,6 @@
 
 * AI: Models and Providers
 
-    - Standardized set of text capture callbacks.
     - Environment and executables detection for supported providers.
     - Support Llama 2 models via Llama.cpp, Ollama, or Vllm.
 

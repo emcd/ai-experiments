@@ -37,7 +37,7 @@
 
 from types import SimpleNamespace
 
-from panel.layout import Column, HSpacer, Row
+from panel.layout import Card, Column, HSpacer, Row
 from panel.pane import JSON, Markdown
 from panel.widgets import (
     Button,
@@ -597,15 +597,27 @@ conversation_control_layout = {
             max_width = sizes.sidebar_width_max, # min_width = 192,
             width = sizes.sidebar_width_max,
         ),
+        # TODO: Dynamically-generated sections for each kind of model:
+        #       chat completion, picture generation, text-to-speech, etc...
+        contains = [
+            'card_conversation',
+            'card_vectorstore_textual',
+            'text_autoscroll_status',
+            'text_clipboard_export',
+        ],
+    ),
+    'card_conversation': dict(
+        component_class = Card,
+        component_arguments = dict(
+            title = 'Conversation Model',
+            height_policy = 'auto', width_policy = 'max',
+        ),
         contains = [
             'selector_provider',
             'selector_model',
             'slider_temperature',
-            'selector_vectorstore',
-            'slider_documents_count',
+            'slider_responses_count',
             'text_tokens_total',
-            'text_autoscroll_status',
-            'text_clipboard_export',
         ],
     ),
     'selector_provider': dict(
@@ -630,6 +642,30 @@ conversation_control_layout = {
             start = 0, end = 2, step = 0.1, value = 0,
         ),
     ),
+    'slider_responses_count': dict(
+        component_class = IntSlider,
+        component_arguments = dict(
+            name = 'Responses Count',
+            start = 1, end = 3, step = 1, value = 1,
+        ),
+    ),
+    'text_tokens_total': dict(
+        component_class = StaticText,
+        component_arguments = dict( name = 'Token Counter', value = '0', ),
+        persist = False,
+    ),
+    'card_vectorstore_textual': dict(
+        component_class = Card,
+        component_arguments = dict(
+            title = 'Textual Vector Database',
+            collapsed = True,
+            height_policy = 'auto', width_policy = 'max',
+        ),
+        contains = [
+            'selector_vectorstore',
+            'slider_documents_count',
+        ],
+    ),
     'selector_vectorstore': dict(
         component_class = Select,
         component_arguments = dict(
@@ -644,11 +680,6 @@ conversation_control_layout = {
             start = 0, end = 5, step = 1, value = 3,
         ),
         event_functions = dict( value = 'on_adjust_documents_count' ),
-    ),
-    'text_tokens_total': dict(
-        component_class = StaticText,
-        component_arguments = dict( name = 'Token Counter', value = '0', ),
-        persist = False,
     ),
     'text_autoscroll_status': dict(
         component_class = TextInput,
