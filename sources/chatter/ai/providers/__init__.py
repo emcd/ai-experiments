@@ -21,7 +21,7 @@
 ''' Functionality for various AI providers. '''
 
 
-from .base import ChatCallbacks, ChatCompletionError
+from .base import ChatCallbacks, ChatCompletionError, chat_callbacks_minimal
 
 
 def prepare( configuration, directories ):

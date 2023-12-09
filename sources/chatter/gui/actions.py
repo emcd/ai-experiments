@@ -45,7 +45,6 @@ def chat( gui ):
     from .updaters import (
         update_and_save_conversation,
         update_and_save_conversations_index,
-        update_message,
         update_messages_post_summarization,
     )
     summarization = gui.toggle_summarize.value
@@ -59,15 +58,16 @@ def chat( gui ):
         canister = Canister( role = 'Human' ).add_content( prompt )
         _add_message( gui, canister )
     with _update_conversation_progress( gui, 'Generating AI response...' ):
-        message_gui = _chat( gui )
-    update_message( message_gui )
+        canister_gui = _chat( gui )
+    canister_gui.canister__.attributes.behaviors = [ 'active' ]
+    __.assimilate_canister_dto_to_gui( canister_gui )
     _add_conversation_indicator_if_necessary( gui )
     update_and_save_conversations_index( gui )
     if summarization:
         update_messages_post_summarization( gui )
         gui.toggle_summarize.value = False
     update_and_save_conversation( gui )
-    _invoke_functions_if_desirable( gui, message_gui )
+    _invoke_functions_if_desirable( gui, canister_gui )
 
 
 @_update_conversation_status_on_error
@@ -127,11 +127,8 @@ def _add_conversation_indicator_if_necessary( gui ):
     if descriptor.identity in conversations.descriptors__: return
     # Do not proceed if we are in a function invocation. Wait for result.
     # Also, some models (e.g., GPT-4) are confused by the invocation.
-    try: __.extract_invocation_requests( gui )
-    except: pass
-    else: return
-    try: title, labels = _generate_conversation_title( gui )
-    except Exception as exc: return
+    if not _detect_ai_completion( gui ): return
+    title, labels = _generate_conversation_title( gui )
     descriptor.title = title
     descriptor.labels = labels
     add_conversation_indicator( gui, descriptor  )
@@ -161,6 +158,15 @@ def _chat( gui ):
     )
     provider = access_ai_provider_current( gui )
     return provider.chat( messages, special_data, controls, callbacks )
+
+
+def _detect_ai_completion( gui, component = None ):
+    if None is component: component = gui.column_conversation_history[ -1 ]
+    canister = component.gui__.canister__
+    if 'AI' != canister.role: return False
+    attributes = canister.attributes
+    return 'completion' == getattr(
+        attributes, 'response_class', 'completion' )
 
 
 def _generate_conversation_title( gui ):

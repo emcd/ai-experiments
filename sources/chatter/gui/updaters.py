@@ -424,12 +424,6 @@ def update_functions_prompt( gui ):
     update_active_functions( gui )
 
 
-def update_message( message_gui, behaviors = ( 'active', ) ):
-    for behavior in ( 'active', 'pinned' ):
-        getattr( message_gui, f"toggle_{behavior}" ).value = (
-            behavior in behaviors )
-
-
 def update_messages_post_summarization( gui ):
     ''' Exclude conversation items above summarization request. '''
     # TODO: Account for documents.
