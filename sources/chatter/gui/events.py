@@ -122,8 +122,8 @@ def on_click_upgrade_conversations( gui, event ):
 
 
 def on_select_canned_prompt( gui, event ):
-    from .updaters import populate_canned_prompt_variables
-    populate_canned_prompt_variables( gui )
+    from .updaters import populate_prompt_variables
+    populate_prompt_variables( gui, species = 'user' )
 
 
 def on_select_conversation( gui, event ):
@@ -142,11 +142,8 @@ def on_select_model( gui, event ):
 
 
 def on_select_system_prompt( gui, event ):
-    from .updaters import (
-        populate_system_prompt_variables,
-        update_functions_prompt,
-    )
-    populate_system_prompt_variables( gui )
+    from .updaters import populate_prompt_variables, update_functions_prompt
+    populate_prompt_variables( gui, species = 'supervisor' )
     update_functions_prompt( gui )
 
 

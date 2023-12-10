@@ -1,0 +1,8 @@
+{
+  "whitelist": [
+    { "location": "mylib/foo.py", "mime_type": "text/x-script.python" }
+  ],
+  "blacklist": [
+    { "location": ".gitignore", "reason": "version control metadata" }
+  ]
+}

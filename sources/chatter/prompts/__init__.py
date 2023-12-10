@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Conversation message classes and utilities. '''
+''' Prompt classes and utilities. '''
 
 
 from . import core

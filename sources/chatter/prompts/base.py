@@ -18,7 +18,17 @@
 #============================================================================#
 
 
-''' Conversation message classes and utilities. '''
+''' Common declarations and utilities for prompts. '''
 
 
-from . import core
+import typing as typ
+
+from abc import ABCMeta as ABCFactory, abstractmethod as abstract_function
+from collections.abc import (
+    MutableMapping as AbstractMutableDictionary,
+    MutableSequence as AbstractMutableSequence,
+    Sequence as AbstractSequence,
+)
+from dataclasses import dataclass, field as dataclass_declare
+from pathlib import Path
+from types import MappingProxyType as DictionaryProxy, SimpleNamespace

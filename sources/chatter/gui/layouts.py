@@ -279,8 +279,10 @@ system_prompts_layout = {
     'row_system_prompt_variables': dict(
         component_class = Row,
         persistence_functions = dict(
-            save = 'save_prompt_variables',
-            restore = 'restore_prompt_variables',
+            save = (
+                'save_prompt_variables', dict( species = 'supervisor' ) ),
+            restore = (
+                'restore_prompt_variables', dict( species = 'supervisor' ) ),
         ),
     ),
     'text_system_prompt': dict(

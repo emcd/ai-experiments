@@ -1,0 +1,22 @@
+name = 'Recap: Requirements + Code'
+species = 'user'
+attributes = { summarizes = true }
+templates = [ 'recap-requirements+code' ]
+
+[[variables]]
+name = 'requirements'
+species = 'boolean'
+attributes = { label = 'Requirements' }
+default = true
+
+[[variables]]
+name = 'agenda'
+species = 'boolean'
+attributes = { label = 'Agenda' }
+default = true
+
+[[variables]]
+name = 'code'
+species = 'boolean'
+attributes = { label = 'Code' }
+default = true

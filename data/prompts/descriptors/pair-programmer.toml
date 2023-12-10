@@ -1,0 +1,31 @@
+name = 'Pair Programmer'
+species = 'supervisor'
+templates = [ 'pair-programmer' ]
+
+[attributes.functions]
+analyze = false
+read = true
+write_file = true
+
+[attributes.user-prompt-preference]
+name = 'Recap: Requirements + Code'
+
+[[variables]]
+name = 'language'
+species = 'flex-array'
+attributes = { compact = true }
+default = [ 'Python' ]
+
+[variables.element]
+species = 'text'
+attributes = { label = 'Language' }
+
+[[variables]]
+name = 'persona'
+species = 'options'
+attributes = { label = 'Persona' }
+default = 'collaborator'
+
+[variables.options]
+collaborator = { label = 'Collaborator' }
+redditor = { label = 'Redditor / Stack Overflower' }

@@ -1,0 +1,11 @@
+name = 'File Analysis'
+species = 'supervisor'
+attributes = { conceal = true }
+templates = [ 'read-file-chunks' ]
+
+[fragments]
+python-json = 'code-analysis-request-python.json'
+
+[[variables]]
+name = 'format'
+species = 'text'
