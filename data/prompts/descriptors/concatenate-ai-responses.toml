@@ -1,0 +1,4 @@
+name = 'Concatenate: AI Responses'
+species = 'user'
+attributes = { summarizes = true }
+templates = [ 'concatenate-ai-responses' ]

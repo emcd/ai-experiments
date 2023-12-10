@@ -170,12 +170,13 @@ def _detect_ai_completion( gui, component = None ):
 
 
 def _generate_conversation_title( gui ):
-    # TODO: Use model-preferred serialization format for title and labels.
     from ..ai.providers import chat_callbacks_minimal
     from ..codecs.json import loads
     from ..messages.core import Canister
     from ..messages.templates import render_prompt_template
     from .base import access_ai_provider_current
+    # TODO: Use 'Title + Labels' template and render with format variable
+    #       from model's preferred format.
     template = gui.selector_canned_prompt.auxdata__[
         'JSON: Title + Labels' ][ 'template' ]
     controls = __.package_controls( gui )

@@ -220,10 +220,10 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
     provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
     supervisor_prompt = render_prompt_template(
         auxdata.prompt_templates.system[
-            'Automation: Discriminate Directory Entries' ][ 'template' ],
+            'Discriminate Directory Entries' ][ 'template' ],
         controls = auxdata.controls,
         variables = dict(
-            format_name = provider.provide_format_name( auxdata.controls ),
+            format = provider.provide_format_name( auxdata.controls ),
         ) )
     messages = [
         Canister( role = 'Supervisor' ).add_content( supervisor_prompt )

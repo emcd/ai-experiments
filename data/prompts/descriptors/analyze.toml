@@ -1,0 +1,28 @@
+name = 'Analyze'
+species = 'user'
+templates = [ 'analyze' ]
+# TODO: attributes = { requires-functions = [ 'analyze' ] }
+
+[[variables]]
+name = 'source'
+species = 'text'
+attributes = { label = 'URL or Local Path' }
+
+[[variables]]
+name = 'mode'
+species = 'options'
+attributes = { label = 'Instructions Mode', presentation = 'array' }
+default = 'supplement'
+
+[variables.options]
+replace = { label = 'Replace' }
+supplement = { label = 'Supplement' }
+
+[[variables]]
+name = 'instructions'
+species = 'flex-array'
+attributes = { label = 'Instructions' }
+minimum = 0
+
+[variables.element]
+species = 'text'

@@ -1,0 +1,9 @@
+{
+  "instructions": "Summarize all classes, functions, and global variables.\nPlease note any comments which contain important mechanical information.\nAlso, please note any TODO comments and where they occur.\nAnd, please note any potential bugs, missing cases, or insufficient error handling.\n",
+  "content": {
+    1: "def hello( addressee ):\n",
+    2: "    print( f\"Hello, {addressee}!\" )\n",
+    3: "\n",
+    4: "hello( 'world' )\n"
+  }
+}

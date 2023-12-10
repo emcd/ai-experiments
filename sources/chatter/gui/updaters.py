@@ -512,7 +512,7 @@ def _populate_prompt_variables( gui, row_name, selector_name, callback ):
         else:
             raise ValueError(
                 f"Invalid component species, '{species}', "
-                f"for prompt variable '{name}'." )
+                f"for prompt variable '{label}'." )
         component.param.watch( lambda event: callback( gui ), 'value' )
         component.auxdata__ = variable
         row.append( component )

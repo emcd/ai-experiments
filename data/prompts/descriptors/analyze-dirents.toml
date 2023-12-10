@@ -1,0 +1,12 @@
+name = 'Discriminate Directory Entries'
+species = 'supervisor'
+attributes = { conceal = true }
+templates = [ 'analyze-dirents' ]
+
+[fragments]
+json = 'analyze-dirents.json'
+
+[[variables]]
+name = 'format'
+species = 'options'
+options = [ 'JSON' ]

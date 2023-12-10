@@ -1,0 +1,11 @@
+name = 'Title + Labels'
+species = 'user'
+attributes = { conceal = true }
+templates = [ 'title+labels' ]
+
+[fragments]
+json = 'title+labels.json'
+
+[[variables]]
+name = 'format'
+species = 'text'
