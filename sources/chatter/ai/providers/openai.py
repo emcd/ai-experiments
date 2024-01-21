@@ -367,6 +367,7 @@ def _process_iterative_chat_response( response, callbacks ):
     # TODO: Handle response arrays.
     from openai import OpenAIError
     from itertools import chain
+    handle = None
     try:
         chunks = [ ]
         while True:
@@ -387,7 +388,7 @@ def _process_iterative_chat_response( response, callbacks ):
                 canister, response_, handle, callbacks )
         else: _stream_content_chunks( canister, response_, handle, callbacks )
     except OpenAIError as exc:
-        callbacks.deallocator( handle )
+        if handle: callbacks.deallocator( handle )
         raise __.ChatCompletionError( f"Error: {exc}" ) from exc
     return handle
 
