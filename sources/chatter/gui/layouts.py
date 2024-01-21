@@ -364,7 +364,7 @@ system_prompts_layout = {
         component_class = Checkbox,
         component_arguments = dict(
             name = 'Function History Elision',
-            value = True,
+            value = False,
             align = 'center',
         ),
     ),
