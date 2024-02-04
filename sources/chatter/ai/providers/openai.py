@@ -414,12 +414,12 @@ def _provide_models( ):
     function_support = defaultdict( lambda: False )
     function_support.update( {
         model_name: True for model_name in model_names
-        if model_name.endswith( ( '-0613', '-1106', '-preview', ) )
+        if model_name.endswith( ( '-0125', '-0613', '-1106', '-preview', ) )
            or model_name in ( 'gpt-4', 'gpt-4-32k', ) } )
     multifunction_support = defaultdict( lambda: False )
     multifunction_support.update( {
         model_name: True for model_name in model_names
-        if model_name.endswith( ( '-1106', '-preview', ) ) } )
+        if model_name.endswith( ( '-0125', '-1106', '-preview', ) ) } )
     # Some of the legacy models have 4097 or 8001 tokens limits,
     # but we ignore them. 'gpt-3.5-turbo' has a 4096 tokens limit.
     tokens_limits = defaultdict( lambda: 4096 )
@@ -427,12 +427,15 @@ def _provide_models( ):
         'code-davinci-002': 8001,
         'gpt-3.5-turbo-16k': 16385,
         'gpt-3.5-turbo-16k-0613': 16385,
+        'gpt-3.5-turbo-0125': 16385,
         'gpt-3.5-turbo-1106': 16385,
         'gpt-4': 8192,
         'gpt-4-32k': 32768,
         'gpt-4-0613': 8192,
         'gpt-4-32k-0613': 32768,
+        'gpt-4-0125-preview': 128000,
         'gpt-4-1106-preview': 128000,
+        'gpt-4-turbo-preview': 128000,
         'gpt-4-vision-preview': 128000,
     } )
     return {
