@@ -137,6 +137,7 @@ def provide_chat_models( ):
     return {
         name: attributes for name, attributes in _models.items( )
         if name.startswith( ( 'gpt-3.5-turbo', 'gpt-4', ) )
+           and not name.startswith( ( 'gpt-3.5-turbo-instruct', ) )
     }
 
 
@@ -170,7 +171,7 @@ def select_default_model( models, auxdata ):
         return configuration[
             'providers' ][ _NAME.lower( ) ][ 'default-model' ]
     except KeyError: pass
-    for model_name in ( 'gpt-4', 'gpt-3.5.-turbo-16k', 'gpt-3.5-turbo', ):
+    for model_name in ( 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', ):
         if model_name in models: return model_name
     return next( iter( models ) )
 
@@ -267,10 +268,8 @@ def _merge_messages_contingent( canister, message, model_name ):
             '## Supplemental Information ##',
             content ) )
         return True
-    if 'Human' == canister.role and not access_model_data(
-        model_name, 'allows-adjacent-users'
-    ):
-        # Merge adjacent user messages, if model rejects them.
+    if 'Human' == canister.role:
+        # Merge adjacent user messages.
         message[ 'content' ] = '\n\n'.join( (
             message[ 'content' ], content ) )
         return True
@@ -392,7 +391,37 @@ def _process_iterative_chat_response( response, callbacks ):
         raise __.ChatCompletionError( f"Error: {exc}" ) from exc
     return handle
 
-
+# TODO: Move attribute associations to data file.
+# https://platform.openai.com/docs/guides/function-calling/supported-models
+_function_support_models = frozenset( (
+    'gpt-3.5-turbo', 'gpt-3.5-turbo-16k', 'gpt-4', 'gpt-4-32k', 'gpt-4-turbo',
+    'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
+    'gpt-3.5-turbo-16k-0613',
+    'gpt-4-0613', 'gpt-4-1106-preview', 'gpt-4-0125-preview',
+    'gpt-4-32k-0613',
+    'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
+    'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
+) )
+_multifunction_support_models = frozenset( (
+    'gpt-3.5.-turbo', 'gpt-4-turbo',
+    'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
+    'gpt-4-1106-preview', 'gpt-4-0125-preview',
+    'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
+    'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
+) )
+# https://platform.openai.com/docs/models
+_model_family_context_window_sizes = __.DictionaryProxy( {
+    'gpt-3.5-turbo': 16_385,
+    'gpt-4-32k': 32_768,
+    'gpt-4-0125': 128_000,
+    'gpt-4-1106': 128_000,
+    'gpt-4-turbo': 128_000,
+    'gpt-4-vision': 128_000,
+} )
+_model_context_window_sizes = {
+    'gpt-3.5-turbo-0301': 4_096,
+    'gpt-3.5-turbo-0613': 4_096,
+}
 def _provide_models( ):
     if _models: return _models.copy( )
     from collections import defaultdict
@@ -401,10 +430,7 @@ def _provide_models( ):
     # TODO: Only call API when explicitly desired. Should persist to disk.
     model_names = sorted( map(
         attrgetter( 'id' ), openai.models.list( ).data ) )
-    adjacent_users = defaultdict( lambda: False )
-    adjacent_users.update( {
-        model_name: True for model_name in model_names
-        if model_name.startswith( 'gpt-3.5-turbo' ) } )
+    # TODO? Reevaluate current status 3.5 Turbo sysprompt adherence.
     sysprompt_honor = defaultdict( lambda: False )
     sysprompt_honor.update( {
         #'gpt-3.5-turbo-0613': True,
@@ -414,33 +440,24 @@ def _provide_models( ):
     function_support = defaultdict( lambda: False )
     function_support.update( {
         model_name: True for model_name in model_names
-        if model_name.endswith( ( '-0125', '-0613', '-1106', '-preview', ) )
-           or model_name in ( 'gpt-4', 'gpt-4-32k', ) } )
+        if model_name in _function_support_models } )
     multifunction_support = defaultdict( lambda: False )
     multifunction_support.update( {
         model_name: True for model_name in model_names
-        if model_name.endswith( ( '-0125', '-1106', '-preview', ) ) } )
-    # Some of the legacy models have 4097 or 8001 tokens limits,
-    # but we ignore them. 'gpt-3.5-turbo' has a 4096 tokens limit.
+        if model_name in _multifunction_support_models } )
+    # Legacy 'gpt-3.5-turbo' has a 4096 tokens limit.
     tokens_limits = defaultdict( lambda: 4096 )
-    tokens_limits.update( {
-        'code-davinci-002': 8001,
-        'gpt-3.5-turbo-16k': 16385,
-        'gpt-3.5-turbo-16k-0613': 16385,
-        'gpt-3.5-turbo-0125': 16385,
-        'gpt-3.5-turbo-1106': 16385,
-        'gpt-4': 8192,
-        'gpt-4-32k': 32768,
-        'gpt-4-0613': 8192,
-        'gpt-4-32k-0613': 32768,
-        'gpt-4-0125-preview': 128000,
-        'gpt-4-1106-preview': 128000,
-        'gpt-4-turbo-preview': 128000,
-        'gpt-4-vision-preview': 128000,
-    } )
+    for model_name in model_names:
+        if model_name in _model_context_window_sizes:
+            tokens_limits[ model_name ] = (
+                _model_context_window_sizes[ model_name ] )
+            continue
+        for model_family_name, tokens_limit \
+        in _model_family_context_window_sizes.items( ):
+            if model_name.startswith( model_family_name ):
+                tokens_limits[ model_name ] = tokens_limit
     return {
         model_name: {
-            'allows-adjacent-users': adjacent_users[ model_name ],
             'honors-system-prompt': sysprompt_honor[ model_name ],
             'supports-functions': function_support[ model_name ],
             'supports-multifunctions': multifunction_support[ model_name ],

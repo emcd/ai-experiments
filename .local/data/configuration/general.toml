@@ -13,4 +13,4 @@ environment-file = '{main_path}/.env'
 
 [providers.'openai']
 enable = true
-#default-model = 'gpt-4-1106-preview'
+#default-model = 'gpt-4-turbo'
