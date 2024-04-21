@@ -170,19 +170,19 @@ def _detect_ai_completion( gui, component = None ):
 
 
 def _generate_conversation_title( gui ):
-    # TODO: Use model-preferred serialization format for title and labels.
     from ..ai.providers import chat_callbacks_minimal
     from ..codecs.json import loads
     from ..messages.core import Canister
-    from ..messages.templates import render_prompt_template
     from .base import access_ai_provider_current
-    template = gui.selector_canned_prompt.auxdata__[
-        'JSON: Title + Labels' ][ 'template' ]
-    controls = __.package_controls( gui )
-    prompt = render_prompt_template( template, controls )
-    canister = Canister( role = 'Human' ).add_content( prompt )
-    messages = [ *__.package_messages( gui )[ 1 : ], canister ]
     provider = access_ai_provider_current( gui )
+    controls = __.package_controls( gui )
+    provider_format_name = provider.provide_format_name( controls )
+    prompt = (
+        gui.auxdata__.prompt_definitions[ 'Title + Labels' ]
+        .create_prompt( values = { 'format': provider_format_name } ) )
+    canister = Canister( role = 'Human' ).add_content(
+        prompt.render( gui.auxdata__ ) )
+    messages = [ *__.package_messages( gui )[ 1 : ], canister ]
     with _update_conversation_progress(
         gui, 'Generating conversation title...'
     ):
@@ -190,7 +190,7 @@ def _generate_conversation_title( gui ):
             messages, { }, controls, chat_callbacks_minimal )
     response = ai_canister[ 0 ].data
     __.scribe.info( f"New conversation title: {response}" )
-    response = loads( response )
+    response = provider.parse_data( response, controls )
     return response[ 'title' ], response[ 'labels' ]
 
 

@@ -221,52 +221,65 @@ def populate_providers_selector( gui ):
     gui.selector_provider.auxdata__ = providers
 
 
-def populate_system_prompt_variables( gui ):
-    _populate_prompt_variables(
-        gui,
-        'row_system_prompt_variables',
-        'selector_system_prompt',
-        update_system_prompt_text )
-    # If there is a canned prompt preference, then update accordingly.
-    can_update = hasattr( gui.selector_canned_prompt, 'auxdata__' )
-    summarization = gui.selector_system_prompt.auxdata__[
-        gui.selector_system_prompt.value ].get( 'summarization-preference' )
-    if can_update and None is not summarization:
-        gui.selector_canned_prompt.value = summarization[ 'id' ]
-        defaults = summarization.get( 'defaults', { } )
-        for i, variable in enumerate(
-            gui.selector_canned_prompt.auxdata__[
-                gui.selector_canned_prompt.value ].get( 'variables', ( ) )
-        ):
-            variable_id = variable[ 'id' ]
-            if variable_id not in defaults: continue
-            gui.row_canned_prompt_variables[ i ].value = defaults[
-                variable_id ]
+def populate_prompt_variables( gui, species, data = None ):
+    from .controls import ContainerManager
+    # TODO: Rename selectors to match species.
+    # TEMP HACK: Use selector name as key until cutover to unified dict.
+    template_class = 'system' if 'supervisor' == species else 'canned'
+    row_name = f"row_{template_class}_prompt_variables"
+    selector_name = f"selector_{template_class}_prompt"
+    text_prompt_name = f"text_{template_class}_prompt"
+    selector = getattr( gui, selector_name )
+    name = selector.value
+    if name not in selector.options:
+        selector.value = name = next( iter( selector.options ) )
+    definition = gui.auxdata__.prompt_definitions[ name ]
+    prompts_cache = selector.auxdata__.prompts_cache
+    if None is not data: prompts_cache[ name ] = definition.deserialize( data )
+    prompt = prompts_cache.get( name )
+    if None is prompt:
+        prompts_cache[ name ] = prompt = definition.create_prompt( )
+    callback = ( lambda event: _update_prompt_text( gui, species = species ) )
+    row = getattr( gui, row_name )
+    ContainerManager( row, prompt.controls.values( ), callback )
+    _update_prompt_text( gui, species = species )
+    if 'user' == species: postpopulate_canned_prompt_variables( gui )
+    elif 'supervisor' == species: postpopulate_system_prompt_variables( gui )
 
 
 def populate_system_prompts_selector( gui ):
-    _populate_prompts_selector( gui, 'system' )
-    populate_system_prompt_variables( gui )
-
-
-def populate_canned_prompt_variables( gui ):
-    _populate_prompt_variables(
-        gui,
-        'row_canned_prompt_variables',
-        'selector_canned_prompt',
-        update_canned_prompt_text )
-    update_summarization_toggle( gui )
+    _populate_prompts_selector( gui, species = 'supervisor' )
+    populate_prompt_variables( gui, species = 'supervisor' )
 
 
 def populate_canned_prompts_selector( gui ):
-    _populate_prompts_selector( gui, 'canned' )
-    populate_canned_prompt_variables( gui )
+    _populate_prompts_selector( gui, species = 'user' )
+    populate_prompt_variables( gui, species = 'user' )
 
 
 def populate_vectorstores_selector( gui ):
     vectorstores = gui.auxdata__.vectorstores
     gui.selector_vectorstore.options = list( vectorstores.keys( ) )
     update_search_button( gui )
+
+
+def postpopulate_canned_prompt_variables( gui ):
+    update_summarization_toggle( gui )
+
+
+def postpopulate_system_prompt_variables( gui ):
+    # TODO: Fix bug where canned prompt variables are not selected on init.
+    can_update = hasattr( gui.selector_canned_prompt, 'auxdata__' )
+    # If there is a canned prompt preference, then update accordingly.
+    definition = gui.auxdata__.prompt_definitions[
+        gui.selector_system_prompt.value ]
+    attributes = definition.attributes
+    user_prompt_preference = attributes.get( 'user-prompt-preference' )
+    if can_update and None is not user_prompt_preference:
+        gui.selector_canned_prompt.value = user_prompt_preference[ 'name' ]
+        populate_prompt_variables(
+            gui, species = 'user',
+            data = user_prompt_preference.get( 'defaults', { } ) )
 
 
 def select_conversation( gui, identity ):
@@ -334,11 +347,7 @@ def update_and_save_conversations_index( gui ):
 
 
 def update_canned_prompt_text( gui ):
-    _update_prompt_text(
-        gui,
-        'row_canned_prompt_variables',
-        'selector_canned_prompt',
-        'text_canned_prompt' )
+    _update_prompt_text( gui, species = 'user' )
     if 'canned' == gui.selector_user_prompt_class.value:
         update_and_save_conversation( gui )
 
@@ -409,9 +418,9 @@ def update_functions_prompt( gui ):
         gui.selector_model.value ][ 'supports-functions' ]
     gui.row_functions_prompt.visible = supports_functions
     if supports_functions:
-        associated_functions = gui.selector_system_prompt.auxdata__[
-            gui.selector_system_prompt.value ].get(
-                'associated-functions', { } )
+        attributes = gui.auxdata__.prompt_definitions[
+            gui.selector_system_prompt.value ].attributes
+        associated_functions = attributes.get( 'functions', { } )
     else: associated_functions = { }
     available_functions = gui.auxdata__.ai_functions
     gui.multichoice_functions.value = [ ]
@@ -442,18 +451,15 @@ def update_search_button( gui ):
 
 
 def update_summarization_toggle( gui ):
-    summarizes = gui.selector_canned_prompt.auxdata__[
-        gui.selector_canned_prompt.value ].get( 'summarizes', False )
+    prompt_name = gui.selector_canned_prompt.value
+    attributes = gui.auxdata__.prompt_definitions[ prompt_name ].attributes
+    summarizes = attributes.get( 'summarizes', False )
     gui.toggle_summarize.value = (
         'canned' == gui.selector_user_prompt_class.value and summarizes )
 
 
 def update_system_prompt_text( gui ):
-    _update_prompt_text(
-        gui,
-        'row_system_prompt_variables',
-        'selector_system_prompt',
-        'text_system_prompt' )
+    _update_prompt_text( gui, species = 'supervisor' )
     if gui.toggle_system_prompt_active.value:
         update_and_save_conversation( gui )
 
@@ -485,59 +491,27 @@ def update_token_count( gui ):
     update_chat_button( gui )
 
 
-def _populate_prompt_variables( gui, row_name, selector_name, callback ):
-    from panel.widgets import Checkbox, Select, TextInput
-    row = getattr( gui, row_name )
-    selector = getattr( gui, selector_name )
-    row.clear( )
-    if selector.value not in selector.options:
-        selector.value = next( iter( selector.options ) )
-    variables = selector.auxdata__[ selector.value ].get( 'variables', ( ) )
-    for variable in variables:
-        # TODO: Validation of template variables.
-        species = variable.get( 'species', 'text' )
-        label = variable[ 'label' ]
-        if 'text' == species:
-            default = variable.get( 'default', '' )
-            component = TextInput( name = label, value = default )
-        elif 'boolean' == species:
-            default = variable.get( 'default', False )
-            component = Checkbox( name = label, value = default )
-        elif 'options' == species:
-            default = variable.get( 'default', variable[ 'options' ][ 0 ] )
-            component = Select(
-                name = label,
-                options = variable[ 'options' ],
-                value = default )
-        else:
-            raise ValueError(
-                f"Invalid component species, '{species}', "
-                f"for prompt variable '{name}'." )
-        component.param.watch( lambda event: callback( gui ), 'value' )
-        component.auxdata__ = variable
-        row.append( component )
-    callback( gui )
-
-
-def _populate_prompts_selector( gui, template_class ):
+def _populate_prompts_selector( gui, species ):
+    # TODO: Rename selectors to match species.
+    template_class = 'system' if 'supervisor' == species else 'canned'
     selector = getattr( gui, f"selector_{template_class}_prompt" )
-    templates = getattr( gui.auxdata__.prompt_templates, template_class )
-    selector.auxdata__ = templates # TODO: Remove this reference.
-    prompt_names = [ ]
-    for name, data in templates.items( ):
-        if data.get( 'conceal', False ): continue
-        prompt_names.append( name )
-    prompt_names.sort( )
-    selector.options = prompt_names
+    names = list( sorted( # Panel explicitly needs a list or dict.
+        name for name, definition
+        in gui.auxdata__.prompt_definitions.items( )
+        if      species == definition.species
+            and not definition.attributes.get( 'conceal', False ) ) )
+    selector.options = names
+    selector.auxdata__ = getattr(
+        selector, 'auxdata__', __.SimpleNamespace( prompts_cache = { } ) )
 
 
-def _update_prompt_text( gui, row_name, selector_name, text_prompt_name ):
-    row = getattr( gui, row_name )
-    selector = getattr( gui, selector_name )
-    text_prompt = getattr( gui, text_prompt_name )
-    template = selector.auxdata__[ selector.value ][ 'template' ]
-    controls = __.package_controls( gui )
-    variables = { element.auxdata__[ 'id' ]: element.value for element in row }
-    from ..messages.templates import render_prompt_template
-    text_prompt.object = render_prompt_template(
-        template, controls, variables )
+def _update_prompt_text( gui, species ):
+    # TODO: Rename selectors to match species.
+    template_class = 'system' if 'supervisor' == species else 'canned'
+    selector = getattr( gui, f"selector_{template_class}_prompt" )
+    container = getattr( gui, f"row_{template_class}_prompt_variables" )
+    container.auxdata__.manager.assimilate( )
+    prompt = selector.auxdata__.prompts_cache[ selector.value ]
+    text_prompt = getattr( gui, f"text_{template_class}_prompt" )
+    text_prompt.object = prompt.render( gui.auxdata__ )
+    update_token_count( gui )

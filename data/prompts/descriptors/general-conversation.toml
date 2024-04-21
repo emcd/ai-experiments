@@ -1,0 +1,13 @@
+name = 'General Conversation'
+species = 'supervisor'
+templates = [ 'general-conversation' ]
+
+[attributes.functions]
+analyze = false
+read = true
+roll_dice = false
+write_file = true
+
+[attributes.user-prompt-preference]
+name = 'Recap: General Conversation'
+defaults = { tables = false }

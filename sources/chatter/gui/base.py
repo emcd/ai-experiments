@@ -23,6 +23,10 @@
 
 import typing as typ
 
+from abc import (
+    ABCMeta as ABCFactory,
+    abstractmethod as abstract_member_function,
+)
 from collections import namedtuple
 from collections.abc import (
     Mapping as AbstractDictionary,

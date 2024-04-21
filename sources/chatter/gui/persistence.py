@@ -38,9 +38,12 @@ def collect_conversation( gui ):
         if hasattr( component, 'on_click' ): continue
         elif hasattr( component, 'objects' ):
             if 'persistence_functions' not in data: continue
-            saver_name = data[ 'persistence_functions' ][ 'save' ]
+            saver_data = data[ 'persistence_functions' ][ 'save' ]
+            if isinstance( saver_data, str ):
+                saver_name, saver_extras = saver_data, { }
+            else: saver_name, saver_extras = saver_data
             saver = globals( )[ saver_name ]
-            state.update( saver( gui, name ) )
+            state.update( saver( gui, name, **saver_extras ) )
         elif hasattr( component, 'value' ):
             state[ name ] = dict( value = component.value )
         elif hasattr( component, 'object' ):
@@ -64,9 +67,12 @@ def inject_conversation( gui, state ):
         if hasattr( component, 'on_click' ): continue
         elif hasattr( component, 'objects' ):
             if 'persistence_functions' not in data: continue
-            restorer_name = data[ 'persistence_functions' ][ 'restore' ]
+            restorer_data = data[ 'persistence_functions' ][ 'restore' ]
+            if isinstance( restorer_data, str ):
+                restorer_name, restorer_extras = restorer_data, { }
+            else: restorer_name, restorer_extras = restorer_data
             restorer = globals( )[ restorer_name ]
-            restorer( gui, name, state )
+            restorer( gui, name, state, **restorer_extras )
         elif hasattr( component, 'value' ):
             component.value = state[ name ][ 'value' ]
         elif hasattr( component, 'object' ):
@@ -119,12 +125,13 @@ def restore_conversations_index( gui ):
     save_conversations_index( gui )
 
 
-def restore_prompt_variables( gui, row_name, state ):
-    for widget_state, widget in zip(
-        state.get( row_name, ( ) ), getattr( gui, row_name )
-    ):
-        # TODO: Sanity check widget names.
-        widget.value = widget_state[ 'value' ]
+def restore_prompt_variables( gui, row_name, state, species ):
+    from .updaters import populate_prompt_variables
+    container_state = state.get( row_name )
+    if not isinstance( container_state, __.AbstractDictionary ):
+        container_state = _restore_prompt_variables_v0(
+            gui, container_state, species = species )
+    populate_prompt_variables( gui, species = species, data = container_state )
 
 
 def save_conversation( gui ):
@@ -172,11 +179,15 @@ def save_conversations_index( gui ):
         dump( { 'format-version': 1, 'descriptors': descriptors }, file )
 
 
-def save_prompt_variables( gui, row_name ):
-    state = [ ]
-    for widget in getattr( gui, row_name ):
-        state.append( { 'name': widget.name, 'value': widget.value } )
-    return { row_name: state }
+def save_prompt_variables( gui, row_name, species ):
+    # TEMP HACK: Use selector name as key until cutover to unified dict.
+    template_class = 'system' if 'supervisor' == species else 'canned'
+    selector = getattr( gui, f"selector_{template_class}_prompt" )
+    prompt_name = selector.value
+    prompt = selector.auxdata__.prompts_cache[ prompt_name ]
+    container = getattr( gui, row_name )
+    container.auxdata__.manager.assimilate( )
+    return { row_name: prompt.serialize( ) }
 
 
 def upgrade_conversation( gui, identity ):
@@ -235,6 +246,23 @@ def _restore_conversation_message_v0( canister_state ):
     if context: attributes.model_context = context
     return Canister( role, attributes = attributes ).add_content(
         content, mimetype = canister_state[ 'mime-type' ] )
+
+
+def _restore_prompt_variables_v0( gui, state, species ):
+    # TEMP HACK: Use selector name as key until cutover to unified dict.
+    template_class = 'system' if 'supervisor' == species else 'canned'
+    selector = getattr( gui, f"selector_{template_class}_prompt" )
+    definition = gui.auxdata__.prompt_definitions[ selector.value ]
+    variables = definition.variables
+    data = { }
+    for substate in state:
+        name = substate[ 'name' ]
+        value = substate[ 'value' ]
+        if name not in variables: continue
+        variable = variables[ name ]
+        if isinstance( variable, FlexArray ): value = [ value ]
+        data[ name ] = value
+    return __.DictionaryProxy( data )
 
 
 def _standardize_invocation_requests_v0( canister_state ):

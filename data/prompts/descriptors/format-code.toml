@@ -1,0 +1,11 @@
+name = 'Format Code'
+species = 'user'
+templates = [ 'format-code-python' ]
+
+[[variables]]
+name = 'style'
+species = 'options'
+attributes = { label = 'Style' }
+
+[variables.options]
+python-custom = { label = 'Python (Custom)' }

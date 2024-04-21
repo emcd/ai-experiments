@@ -152,29 +152,26 @@ def _access_tokens_limit( auxdata ):
 
 def _analyze_file( auxdata, path, control = None ):
     from ....messages.core import Canister
-    from ....messages.templates import render_prompt_template
     from ...providers import chat_callbacks_minimal
     ai_messages = [ ]
     provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
-    summarization_prompt = render_prompt_template(
-        auxdata.prompt_templates.canned[
-            'Concatenate: AI Responses' ][ 'template' ],
-        controls = auxdata.controls )
-    supervisor_prompt = render_prompt_template(
-        auxdata.prompt_templates.system[
-            'Automation: File Analysis' ][ 'template' ],
-        controls = auxdata.controls,
-        variables = dict(
-            format_name = provider.provide_format_name( auxdata.controls ),
-        ) )
+    provider_format_name = provider.provide_format_name( auxdata.controls )
+    summarization_prompt = (
+        auxdata.prompt_definitions[ 'Concatenate: AI Responses' ]
+        .create_prompt( ) )
+    supervisor_prompt = (
+        auxdata.prompt_definitions[ 'Automation: File Analysis' ]
+        .create_prompt( values = { 'format': provider_format_name } ) )
     chunk_reader, mime_type = _determine_chunk_reader( path )
     for chunk in chunk_reader( auxdata, path ):
-        messages = [ dict( content = supervisor_prompt, role = 'Supervisor' ) ]
+        messages = [
+            Canister( role = 'Supervisor' ).add_content(
+                supervisor_prompt.render( auxdata ) ) ]
         # TODO: Check if above high water mark for tokens count.
         #       Drop earliest messages from history, if so.
         if ai_messages:
             messages.append( Canister( role = 'Human' ).add_content(
-                summarization_prompt ) )
+                summarization_prompt.render( auxdata ) ) )
             messages.append( Canister( role = 'AI' ).add_content(
                 '\n\n'.join( ai_messages ) ) )
         _, content = __.render_prompt( auxdata, control, chunk, mime_type )
@@ -214,19 +211,15 @@ def _determine_chunk_reader( path, mime_type = None ):
 
 def _discriminate_dirents( auxdata, dirents, control = None ):
     from ....messages.core import Canister
-    from ....messages.templates import render_prompt_template
     from ...providers import chat_callbacks_minimal
     # TODO: Chunk the directory analysis.
     provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
-    supervisor_prompt = render_prompt_template(
-        auxdata.prompt_templates.system[
-            'Automation: Discriminate Directory Entries' ][ 'template' ],
-        controls = auxdata.controls,
-        variables = dict(
-            format_name = provider.provide_format_name( auxdata.controls ),
-        ) )
+    provider_format_name = provider.provide_format_name( auxdata.controls )
+    prompt = (
+        auxdata.prompt_definitions[ 'Discriminate Directory Entries' ]
+        .create_prompt( values = { 'format': provider_format_name } ) )
     messages = [
-        Canister( role = 'Supervisor' ).add_content( supervisor_prompt )
+        Canister( role = 'Supervisor' ).add_content( prompt.render( auxdata ) )
     ]
     _, content = __.render_prompt(
         auxdata, control, dirents, 'directory-entries' )

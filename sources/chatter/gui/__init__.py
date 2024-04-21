@@ -36,27 +36,20 @@ def prepare( configuration, directories ):
     return gui
 
 
+# TODO: Support async loading.
 def prepare_auxdata( configuration, directories ):
     from types import SimpleNamespace
     from ..ai.providers import prepare as prepare_ai_providers
     from ..ai.functions import prepare as prepare_ai_functions
-    from ..messages.templates import prepare_prompt_templates
+    from ..prompts.core import prepare as prepare_prompt_definitions
     from ..vectorstores import prepare as prepare_vectorstores
-    return SimpleNamespace(
-        ai_functions = prepare_ai_functions( configuration, directories ),
-        # TODO: Asynchronously prepare AI providers.
-        #       Use callback to notify on completion.
-        ai_providers = prepare_ai_providers( configuration, directories ),
-        configuration = configuration,
-        directories = directories,
-        # TODO: Asynchronously prepare prompt templates.
-        #       Use callback to notify on completion.
-        prompt_templates = prepare_prompt_templates(
-            configuration, directories ),
-        # TODO: Asynchronously prepare vectorstores.
-        #       Use callback to notify on completion.
-        vectorstores = prepare_vectorstores( configuration, directories ),
-    )
+    auxdata = SimpleNamespace(
+        configuration = configuration, directories = directories )
+    auxdata.ai_functions = prepare_ai_functions( configuration, directories )
+    auxdata.ai_providers = prepare_ai_providers( configuration, directories )
+    auxdata.prompt_definitions = prepare_prompt_definitions( auxdata )
+    auxdata.vectorstores = prepare_vectorstores( configuration, directories )
+    return auxdata # TODO: Return immutable namespace.
 
 
 def prepare_favicon( gui ):

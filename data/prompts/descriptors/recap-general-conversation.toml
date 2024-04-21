@@ -1,0 +1,22 @@
+name = 'Recap: General Conversation'
+species = 'user'
+attributes = { summarizes = true }
+templates = [ 'recap-general-conversation' ]
+
+[[variables]]
+name = 'subject'
+species = 'boolean'
+attributes = { label = 'Subject or Objectives' }
+default = true
+
+[[variables]]
+name = 'agenda'
+species = 'boolean'
+attributes = { label = 'Agenda or Outline' }
+default = true
+
+[[variables]]
+name = 'tables'
+species = 'boolean'
+attributes = { label = 'Lists and Tables' }
+default = true
