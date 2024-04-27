@@ -21,4 +21,7 @@
 ''' Support for interactions with generative artificial intelligences. '''
 
 
+__version__ = '1.0a202404271857'
+
+
 from . import gui
