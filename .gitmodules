@@ -1,3 +1,0 @@
-[submodule "data/vectordb-sources/github/langchain"]
-	path = data/vectordb-sources/github/langchain
-	url = https://github.com/hwchase17/langchain.git
