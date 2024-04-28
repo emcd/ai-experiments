@@ -8,7 +8,7 @@ NOTE: Please read the installation and configuration instructions before use.
 Currently, there is no installable package, but you can run the application
 via Hatch:
 ```
-hatch run python chatter.py
+hatch run aiwb
 ```
 
 # Installation

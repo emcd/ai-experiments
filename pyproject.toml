@@ -3,7 +3,7 @@ requires = [ 'hatchling' ]
 build-backend = 'hatchling.build'
 
 [project]
-name = 'ai-workbench'
+name = 'aiwb'
 description = 'Workbench for interacting with multiple AI models in multiple modes.'
 dynamic = [ 'version' ]
 license = 'Apache-2.0'
@@ -27,15 +27,15 @@ dependencies = [
 # TODO: classifiers: https://pypi.org/classifiers
 # TODO: keywords
 [project.gui-scripts]
-# TODO: entrypoint for workbench GUI
+aiwb = 'chatter:main'
 [project.optional-dependencies]
 experiments = [
-  'ai-workbench[vectorsearch]',
+  'aiwb[rag]',
   'langchain',
   'notebook',
   'pytesseract',
 ]
-vectorsearch = [
+rag = [
   'beautifulsoup4',
   'chromadb ~= 0.3.29',
   'faiss-cpu',
@@ -59,8 +59,15 @@ directory = '.local/artifacts/coverage-pytest'
 output = '.local/artifacts/coverage-pytest/coverage.xml'
 
 # https://hatch.pypa.io/latest/config/metadata/
+[tool.hatch.build]
+directory = '.local/artifacts'
+[tool.hatch.build.targets.sdist]
+only-include = [ 'sources/chatter', 'data' ]
 [tool.hatch.build.targets.wheel]
-packages = [ 'sources/chatter' ]
+only-include = [ 'sources/chatter', 'data' ]
+[tool.hatch.build.targets.wheel.sources]
+'sources/chatter' = 'chatter'
+'data' = 'chatter/data'
 [tool.hatch.envs.develop]
 description = ''' Development environment. '''
 dependencies = [

@@ -1,5 +1,6 @@
 .env
 .ipynb_checkpoints/
+.local/artifacts/
 .local/environments/
 .local/installations/
 .local/state/
