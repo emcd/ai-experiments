@@ -49,8 +49,6 @@ def prepare( ):
     configuration[ 'main-path' ] = main_path
     prepare_environment( configuration, directories )
     prepare_inscribers( configuration, directories )
-    import __main__
-    ic( __main__.__file__ )
     return configuration, directories
 
 

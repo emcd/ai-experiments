@@ -150,7 +150,7 @@ def provide_format_name( controls ): return 'JSON'
 def parse_data( content, controls ):
     mime_type = provide_format_mime_type( controls )
     if 'application/json' == mime_type:
-        from chatter.codecs.json import loads
+        from ...codecs.json import loads
         text = loads( content )
     else: raise NotImplementedError( f"Cannot parse '{mime_type}'." )
     return text

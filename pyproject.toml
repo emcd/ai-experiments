@@ -27,7 +27,7 @@ dependencies = [
 # TODO: classifiers: https://pypi.org/classifiers
 # TODO: keywords
 [project.gui-scripts]
-aiwb = 'chatter:main'
+aiwb = 'aiwb:main'
 [project.optional-dependencies]
 experiments = [
   'aiwb[rag]',
@@ -62,12 +62,14 @@ output = '.local/artifacts/coverage-pytest/coverage.xml'
 [tool.hatch.build]
 directory = '.local/artifacts'
 [tool.hatch.build.targets.sdist]
-only-include = [ 'sources/chatter', 'data' ]
+only-include = [ 'sources/aiwb', 'data' ]
 [tool.hatch.build.targets.wheel]
-only-include = [ 'sources/chatter', 'data' ]
+only-include = [ 'sources/aiwb', 'data' ]
 [tool.hatch.build.targets.wheel.sources]
-'sources/chatter' = 'chatter'
-'data' = 'chatter/data'
+'sources/aiwb' = 'aiwb'
+'data' = 'aiwb/data'
+[tool.hatch.envs.default]
+python = '3.10'
 [tool.hatch.envs.develop]
 description = ''' Development environment. '''
 dependencies = [
@@ -76,7 +78,7 @@ dependencies = [
   'pytest',
 ]
 [tool.hatch.version]
-path = 'sources/chatter/__init__.py'
+path = 'sources/aiwb/__init__.py'
 
 # https://pylint.pycqa.org/en/latest/user_guide/configuration/index.html
 [tool.pylint.main]
