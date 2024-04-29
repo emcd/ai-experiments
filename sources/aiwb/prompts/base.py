@@ -20,6 +20,8 @@
 
 ''' Common declarations and utilities for prompts. '''
 
+# pylint: disable=unused-import
+
 
 import typing as typ
 

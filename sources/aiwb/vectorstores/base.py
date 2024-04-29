@@ -20,6 +20,8 @@
 
 ''' Common functionality and utilities for vectorstores. '''
 
+# pylint: disable=unused-import
+
 
 from pathlib import Path
 from urllib.parse import urlparse

@@ -20,6 +20,8 @@
 
 ''' Foundation for AI functions for I/O. '''
 
+# pylint: disable=unused-import
+
 
 from pathlib import Path
 from types import SimpleNamespace

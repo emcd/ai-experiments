@@ -20,6 +20,8 @@
 
 ''' Common utilities for AI functions. '''
 
+# pylint: disable=unused-import
+
 
 from collections.abc import Mapping as AbstractDictionary
 from types import MappingProxyType as DictionaryProxy

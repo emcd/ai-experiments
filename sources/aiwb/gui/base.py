@@ -20,6 +20,8 @@
 
 ''' Classes, constants, and utilities common to the GUI. '''
 
+# pylint: disable=unused-import
+
 
 import typing as typ
 

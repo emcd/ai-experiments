@@ -20,6 +20,8 @@
 
 ''' Common declarations and utilities for messages. '''
 
+# pylint: disable=unused-import
+
 
 import typing as typ
 

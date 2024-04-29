@@ -21,6 +21,10 @@
 ''' Event handlers for Holoviz Panel GUI. '''
 
 
+# Note: Cyclic imports are at runtime after module initialization.
+# pylint: disable=cyclic-import
+
+
 from . import base as __
 
 

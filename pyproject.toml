@@ -23,6 +23,7 @@ dependencies = [
   'tiktoken',
   'tomli',
   'tomli-w',
+  'unstructured',
 ]
 # TODO: classifiers: https://pypi.org/classifiers
 # TODO: keywords
@@ -40,7 +41,6 @@ rag = [
   'chromadb ~= 0.3.29',
   'faiss-cpu',
   'scrapy',
-  'unstructured',
 ]
 # TODO: [project.urls]
 [[project.authors]]
@@ -192,6 +192,7 @@ missing-member-max-choices = 2
 # TODO? mixin-class-rgx
 # TODO: signature-mutators
 [tool.pylint.variables]
+additional-builtins = [ 'ic' ]
 callbacks = [ ]
 dummy-variables-rgx = '''_$'''
 ignored-argument-names = '''_.*'''
