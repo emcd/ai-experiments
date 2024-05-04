@@ -212,7 +212,7 @@ class Options( DefinitionBase ):
 
     @classmethod
     def produce_default( class_, descriptor ):
-        if 'default' in descriptor: return default[ 'descriptor' ]
+        if 'default' in descriptor: return descriptor[ 'default' ]
         return next( iter( descriptor[ 'options' ] ) )
 
     def __init__( self, name, options, **nomargs ):

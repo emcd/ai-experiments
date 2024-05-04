@@ -86,8 +86,8 @@ class DiscreteInterval( ComponentManager ):
             converter = float
         component = component_class(
             name = attributes.label,
-            start = converter( description.minimum ),
-            end = converter( description.maximum ),
+            start = converter( definition.minimum ),
+            end = converter( definition.maximum ),
             step = converter( definition.grade ),
             value = control.value )
         component.param.watch( lambda event: callback( event ), 'value' )

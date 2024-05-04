@@ -4,7 +4,7 @@ build-backend = 'hatchling.build'
 
 [project]
 name = 'aiwb'
-description = 'Workbench for interacting with multiple AI models in multiple modes.'
+description = 'Workbench for interacting with multiple AI models in various modalities.'
 dynamic = [ 'version' ]
 license = 'Apache-2.0'
 readme = { 'file' = 'README.md', 'content-type' = 'text/markdown' }
@@ -13,6 +13,7 @@ dependencies = [
   'anthropic',
   'icecream',
   'jsonschema',
+  'langchain',
   'mako',
   'openai ~= 1.1',
   'panel ~= 1.2',
@@ -32,7 +33,6 @@ aiwb = 'aiwb:main'
 [project.optional-dependencies]
 experiments = [
   'aiwb[rag]',
-  'langchain',
   'notebook',
   'pytesseract',
 ]

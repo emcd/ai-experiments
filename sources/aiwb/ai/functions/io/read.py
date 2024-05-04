@@ -258,12 +258,11 @@ def _operate( auxdata, source, operators, control = None ):
             return 'Error: No file path provided with file scheme URL.'
         path = __.Path( components.path )
         if not path.exists( ): return f"Error: Nothing exists at '{path}'."
-        if path.is_file( ):
-            return operators.from_file( auxdata, path, control = control )
-        elif path.is_dir( ):
-            return operators.from_directory( auxdata, path, control = control )
+        if path.is_file( ): operator = operators.from_file
+        elif path.is_dir( ): operator = operators.from_directory
         # TODO: Handle symlinks, named pipes, etc....
         else: return f"Error: Type of entity at '{path}' not supported."
+        result = operator( auxdata, path, control = control )
         if operators.tokens_counter:
             tokens_total += operators.tokens_counter( auxdata, result )
             if tokens_total > tokens_max:

@@ -252,6 +252,7 @@ def _restore_conversation_message_v0( canister_state ):
 
 
 def _restore_prompt_variables_v0( gui, state, species ):
+    from ..controls.core import FlexArray
     # TEMP HACK: Use selector name as key until cutover to unified dict.
     template_class = 'system' if 'supervisor' == species else 'canned'
     selector = getattr( gui, f"selector_{template_class}_prompt" )
