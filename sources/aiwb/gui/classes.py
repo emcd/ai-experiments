@@ -120,8 +120,7 @@ class AdaptiveTextArea( ReactiveHTML ):
         super( ).__init__( **params )
         style = self._style_default__.copy( )
         style.update( params.get( 'style', { } ) )
-        self._style_css__ = '; '.join( map(
-            lambda pair: ': '.join( pair ), style.items( ) ) )
+        self._style_css__ = '; '.join( map( ': '.join, style.items( ) ) )
 
 
 class CompactSelector( ReactiveHTML ):
@@ -157,8 +156,7 @@ class CompactSelector( ReactiveHTML ):
         super( ).__init__( **params )
         style = self._style_default__.copy( )
         style.update( params.get( 'style', { } ) )
-        self._style_css__ = '; '.join( map(
-            lambda pair: ': '.join( pair ), style.items( ) ) )
+        self._style_css__ = '; '.join( map( ': '.join, style.items( ) ) )
 
     def _select_change( self, event ):
         self.value = event.data[ 'target' ][ 'value' ]
@@ -211,7 +209,9 @@ class ConversationIndicator( ReactiveHTML ):
     # TODO: Should only need GUI namespace as argument.
     def __init__( self, title, identity, **params ):
         super( ).__init__( **params )
-        from .layouts import conversation_indicator_layout as layout
+        from .layouts import ( # pylint: disable=cyclic-import
+            conversation_indicator_layout as layout,
+        )
         row_gui = __.SimpleNamespace( )
         row = __.generate_component( row_gui, layout, 'column_indicator' )
         row_gui.rehtml_indicator = self

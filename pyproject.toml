@@ -110,7 +110,7 @@ load-plugins = [
 recursive = false
 suggestion-mode = true
 [tool.pylint.basic]
-#const-rgx = '([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$'
+const-rgx = '([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$'
 good-names = [ '_', '__' ]
 include-naming-hint = true
 [tool.pylint.classes]
@@ -120,6 +120,7 @@ valid-classmethod-first-arg = [ 'kind', 'class_' ]
 valid-metaclass-classmethod-first-arg = [ 'maker', 'factory' ]
 [tool.pylint.design]
 # TODO: exclude-too-few-public-methods: Consider exception hierarchies.
+ignored-parents = [ 'panel.reactive.ReactiveHTML', 'panel.template.base.Template' ]
 max-args = 5
 max-attributes = 7
 max-bool-expr = 3
@@ -184,7 +185,7 @@ ignored-checks-for-mixins = [
   'not-async-context-manager',
   'not-context-manager',
 ]
-ignored-classes = [ 'thread._local', '_thread._local', 'argparse.Namespace' ]
+#ignored-classes = [ 'thread._local', '_thread._local', 'argparse.Namespace' ]
 ignore-mixin-members = false
 missing-member-hint = true
 missing-member-hint-distance = 1

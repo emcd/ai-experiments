@@ -67,7 +67,7 @@ class Boolean( ComponentManager ):
         attributes = definition.attributes
         component = widgets.Checkbox(
             name = attributes.label, value = control.value )
-        component.param.watch( lambda event: callback( event ), 'value' )
+        component.param.watch( callback, 'value' )
         return component
 
 
@@ -90,7 +90,7 @@ class DiscreteInterval( ComponentManager ):
             end = converter( definition.maximum ),
             step = converter( definition.grade ),
             value = control.value )
-        component.param.watch( lambda event: callback( event ), 'value' )
+        component.param.watch( callback, 'value' )
         return component
 
 
@@ -141,7 +141,7 @@ class Options( ComponentManager ):
             name = attributes.label,
             options = options,
             value = control.value )
-        component.param.watch( lambda event: callback( event ), 'value' )
+        component.param.watch( callback, 'value' )
         return component
 
 
@@ -153,7 +153,7 @@ class Text( ComponentManager ):
         attributes = definition.attributes
         component = widgets.TextInput(
             name = attributes.label, value = control.value )
-        component.param.watch( lambda event: callback( event ), 'value' )
+        component.param.watch( callback, 'value' )
         return component
 
 

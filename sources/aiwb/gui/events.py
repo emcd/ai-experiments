@@ -25,7 +25,7 @@
 # pylint: disable=cyclic-import
 
 
-from . import base as __
+#from . import base as __
 
 
 _document_autoscroller_code = '''

@@ -171,7 +171,7 @@ def package_special_data( gui ):
 
 
 def populate_component( gui, layout, component_name ):
-    from . import updaters as registry
+    from . import updaters as registry # pylint: disable=cyclic-import
     entry = layout[ component_name ]
     for element_name in entry.get( 'contains', ( ) ):
         populate_component( gui, layout, element_name )
@@ -182,7 +182,7 @@ def populate_component( gui, layout, component_name ):
 
 
 def register_event_callbacks( gui, layout, component_name ):
-    from . import events as registry
+    from . import events as registry # pylint: disable=cyclic-import
     entry = layout[ component_name ]
     for element_name in entry.get( 'contains', ( ) ):
         register_event_callbacks( gui, layout, element_name )
