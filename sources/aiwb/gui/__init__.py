@@ -62,6 +62,8 @@ def prepare_favicon( gui ):
     if not isinstance( image, ImageBase ):
         # TODO: Log warning.
         return
+    # pylint: disable=protected-access
     favicon = image._b64( image._data( image.object ) )
+    # pylint: enable=protected-access
     template.add_variable( 'app_favicon', favicon )
     template.add_variable( 'favicon_type', 'image/png' )

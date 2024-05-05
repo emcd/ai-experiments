@@ -165,7 +165,7 @@ def create_content( data, /, **descriptor ):
         if isinstance( data, str ): return TextualContent( data, **descriptor )
         return TextualContent( data.decode( ), **descriptor )
     # TODO: aural, motion-av, pictorial
-    else: raise NotImplementedError( f"MIME type not implemented: {mimetype}" )
+    raise NotImplementedError( f"MIME type not implemented: {mimetype}" )
 
 
 def restore_canister( manager, canister_state ):

@@ -373,7 +373,7 @@ def update_conversation_hilite( gui, new_descriptor = None ):
             { 'background': 'LightGray' } )
     # TODO: Try using 'view.resize_layout()' in custom JS for proper fix.
     # Hack: Reload indicators to force repaint.
-    indicators = [ indicator for indicator in conversations ]
+    indicators = list( conversations )
     conversations.clear( )
     conversations.extend( indicators )
 

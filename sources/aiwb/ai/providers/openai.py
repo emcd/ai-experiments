@@ -18,6 +18,9 @@
 #============================================================================#
 
 
+''' Implemenation of OpenAI AI provider. '''
+
+
 from . import base as __
 
 
@@ -372,9 +375,9 @@ def _process_iterative_chat_response( response, callbacks ):
         chunks = [ ]
         while True:
             try: chunk = next( response )
-            except StopIteration:
+            except StopIteration as exc:
                 raise __.ChatCompletionError(
-                    'Error: Empty response from AI.' )
+                    'Error: Empty response from AI.' ) from exc
             chunks.append( chunk )
             delta = chunk.choices[ 0 ].delta
             if delta.content or delta.function_call or delta.tool_calls: break
