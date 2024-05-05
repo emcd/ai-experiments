@@ -22,13 +22,13 @@
 
 
 def loads( string ):
-    from json import JSONDecodeError, loads
+    from json import JSONDecodeError, loads as loads_
     # LLMs can sometimes wrap JSON with code fences.
     if string.startswith( '```json' ) and string.endswith( '```' ):
         string = string[ 7 : -3 ]
     elif string.startswith( '```' ) and string.endswith( '```' ):
         string = string[ 3 : -3 ]
-    try: return loads( string )
+    try: return loads_( string )
     except JSONDecodeError:
         # On failure, try to find JSON array or object at end of string,
         # since LLMs can sometimes be chatty even when asked not to be.
@@ -47,5 +47,5 @@ def loads( string ):
                 start_index = i
                 break
         else: raise
-        if start_index < end_index: return loads( string[ start_index : ] )
+        if start_index < end_index: return loads_( string[ start_index : ] )
         raise

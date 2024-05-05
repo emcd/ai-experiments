@@ -25,9 +25,13 @@ from . import base as __
 
 
 def restore( configuration, directories, data ):
+    # TODO: Adapt to new Langchain interface or remove Langchain dependency.
+    #       https://python.langchain.com/docs/modules/data_connection/vectorstores/#get-started
     # TODO: Configurable embedding function.
     from langchain.embeddings.openai import OpenAIEmbeddings
-    from langchain.vectorstores import Chroma
+    from langchain.vectorstores import ( # pylint: disable=no-name-in-module
+        Chroma,
+    )
     embedder = OpenAIEmbeddings( )
     arguments = data.get( 'arguments', { } )
     location_info = __.urlparse( data[ 'location' ] )

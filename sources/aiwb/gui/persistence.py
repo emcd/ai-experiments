@@ -39,7 +39,7 @@ def collect_conversation( gui ):
         if not hasattr( gui, name ): continue
         component = getattr( gui, name )
         if hasattr( component, 'on_click' ): continue
-        elif hasattr( component, 'objects' ):
+        if hasattr( component, 'objects' ):
             if 'persistence_functions' not in data: continue
             saver_data = data[ 'persistence_functions' ][ 'save' ]
             if isinstance( saver_data, str ):
@@ -68,7 +68,7 @@ def inject_conversation( gui, state ):
         if not hasattr( gui, name ): continue
         component = getattr( gui, name )
         if hasattr( component, 'on_click' ): continue
-        elif hasattr( component, 'objects' ):
+        if hasattr( component, 'objects' ):
             if 'persistence_functions' not in data: continue
             restorer_data = data[ 'persistence_functions' ][ 'restore' ]
             if isinstance( restorer_data, str ):

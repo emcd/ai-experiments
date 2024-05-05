@@ -163,7 +163,7 @@ def create_content( data, /, **descriptor ):
     mimetype_class = classify_mimetype( mimetype )
     if 'textual' == mimetype_class:
         if isinstance( data, str ): return TextualContent( data, **descriptor )
-        else: return TextualContent( data.decode( ), **descriptor )
+        return TextualContent( data.decode( ), **descriptor )
     # TODO: aural, motion-av, pictorial
     else: raise NotImplementedError( f"MIME type not implemented: {mimetype}" )
 

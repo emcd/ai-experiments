@@ -190,14 +190,11 @@ def register_event_callbacks( gui, layout, component_name ):
     component = getattr( gui, component_name )
     functions = entry.get( 'event_functions', { } )
     for event_name, function_name in functions.items( ):
-        function = getattr( registry, function_name )
+        function = partial_function( getattr( registry, function_name ), gui )
         if 'on_click' == event_name:
-            component.on_click( lambda event: function( gui, event ) )
+            component.on_click( function )
             continue
-        component.param.watch(
-            lambda event: function( gui, event ), event_name )
-        #if event_name.endswith( '_value' ):
-        #    ic( component.param.watchers[ event_name ] )
+        component.param.watch( function, event_name )
     function_name = entry.get( 'javascript_cb_generator' )
     if function_name:
         cb_generator = getattr( registry, function_name )

@@ -547,8 +547,7 @@ user_prompts_layout = {
         ),
         event_functions = dict(
             latent_value = 'on_change_freeform_prompt',
-            # TODO: Debug watcher registration issue.
-            #submission_value = 'on_submit_freeform_prompt',
+            submission_value = 'on_submit_freeform_prompt',
         ),
     ),
     # TODO? Convert to column and place to right of prompts column.

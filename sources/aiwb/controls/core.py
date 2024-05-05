@@ -26,6 +26,21 @@ from . import base as __
 
 class DefinitionBase( metaclass = __.ABCFactory ):
 
+    class Instance:
+
+        def __init__( self, definition, value ):
+            self.definition = definition
+            self.value = value
+
+        @property
+        def value( self ): return self._value
+
+        @value.setter
+        def value( self, value_ ):
+            self._value = self.definition.validate_value( value_ )
+
+        def serialize( self ): return self.value
+
     @classmethod
     def instantiate_descriptor( class_, descriptor ):
         nomargs = descriptor.copy( )
@@ -59,25 +74,9 @@ class DefinitionBase( metaclass = __.ABCFactory ):
         raise NotImplementedError # TODO: Fill out error.
 
 
-class InstanceBase:
-
-    def __init__( self, definition, value ):
-        self.definition = definition
-        self.value = value
-
-    @property
-    def value( self ): return self._value
-
-    @value.setter
-    def value( self, value_ ):
-        self._value = self.definition.validate_value( value_ )
-
-    def serialize( self ): return self.value
-
-
 class Boolean( DefinitionBase ):
 
-    class Instance( InstanceBase ): pass
+    class Instance( DefinitionBase.Instance ): pass
 
     @classmethod
     def produce_default( class_, descriptor ): return False
@@ -90,7 +89,7 @@ class Boolean( DefinitionBase ):
 
 class DiscreteInterval( DefinitionBase ):
 
-    class Instance( InstanceBase ): pass
+    class Instance( DefinitionBase.Instance ): pass
 
     @classmethod
     def produce_default( class_, descriptor ):
@@ -116,7 +115,7 @@ class DiscreteInterval( DefinitionBase ):
 
 class FlexArray( DefinitionBase ):
 
-    class Instance( InstanceBase ):
+    class Instance( DefinitionBase.Instance ):
 
         def __init__( self, definition, value ):
             subvalues = value
@@ -208,7 +207,7 @@ class FlexArray( DefinitionBase ):
 
 class Options( DefinitionBase ):
 
-    class Instance( InstanceBase ): pass
+    class Instance( DefinitionBase.Instance ): pass
 
     @classmethod
     def produce_default( class_, descriptor ):
@@ -229,7 +228,7 @@ class Options( DefinitionBase ):
 
 class Text( DefinitionBase ):
 
-    class Instance( InstanceBase ): pass
+    class Instance( DefinitionBase.Instance ): pass
 
     @classmethod
     def produce_default( class_, descriptor ): return ''

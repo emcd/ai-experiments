@@ -270,7 +270,7 @@ def _operate( auxdata, source, operators, control = None ):
                     f"Error: Input is {tokens_total} tokens in size, "
                     f"which exceeds the safe limit, {tokens_max}." )
         return result
-    elif components.scheme in ( 'http', 'https', ):
+    if components.scheme in ( 'http', 'https', ):
         return operators.from_http( auxdata, source, control = control )
     return f"Error: URL scheme, '{components.scheme}', not supported."
 

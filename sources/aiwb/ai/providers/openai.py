@@ -61,8 +61,8 @@ def count_conversation_tokens( messages, special_data, controls ):
     for message in _nativize_messages( messages, model_name ):
         tokens_count += tokens_per_message
         for index, value in message.items( ):
-            if not isinstance( value, str ): value = dumps( value )
-            tokens_count += count_text_tokens( value, model_name )
+            value_ = value if isinstance( value, str ) else dumps( value )
+            tokens_count += count_text_tokens( value_, model_name )
             if 'name' == index: tokens_count += tokens_per_name
     for function in special_data.get( 'ai-functions', [ ] ):
         tokens_count += count_text_tokens( dumps( function ), model_name )
@@ -81,7 +81,8 @@ def count_text_tokens( text, model_name ):
 def extract_invocation_requests( canister, auxdata, ai_functions ):
     from ...codecs.json import loads
     try: requests = loads( canister[ 0 ].data )
-    except: raise ValueError( 'Malformed JSON payload in message.' )
+    except Exception as exc:
+        raise ValueError( 'Malformed JSON payload in message.' ) from exc
     if not isinstance( requests, __.AbstractSequence ):
         raise ValueError( 'Function invocation requests is not sequence.' )
     model_context = getattr( canister.attributes, 'model_context', { } )
@@ -234,7 +235,7 @@ def _gather_tool_calls_chunks( canister, response, handle, callbacks ):
         if not delta: break
         if not delta.tool_calls:
             if start: continue # Can have a blank chunk at start.
-            else: break
+            break
         start = False
         tool_call = delta.tool_calls[ 0 ]
         index = tool_call.index

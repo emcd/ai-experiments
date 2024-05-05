@@ -71,8 +71,6 @@ def on_change_freeform_prompt( gui, event ):
     )
     update_token_count( gui )
     update_search_button( gui )
-    # XXX: Hack until param watcher bug is fixed.
-    on_submit_freeform_prompt( gui, event )
 
 
 def on_click_chat( gui, event ):
@@ -172,8 +170,6 @@ def on_submit_freeform_prompt( gui, event ):
     if not source.submission_value: return
     source.submission_value = ''
     from .actions import chat
-    #from .updaters import update_and_save_conversation
-    #update_and_save_conversation( gui )
     chat( gui )
 
 
