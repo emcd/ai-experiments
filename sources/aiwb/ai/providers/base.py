@@ -25,6 +25,10 @@
 
 import typing as typ
 
+from abc import (
+    ABCMeta as ABCFactory,
+    abstractmethod as abstract_member_function,
+)
 from collections.abc import (
     Mapping as AbstractDictionary,
     Sequence as AbstractSequence,
@@ -57,3 +61,16 @@ class ChatCallbacks:
 
 
 chat_callbacks_minimal = ChatCallbacks( )
+
+
+class Model( metaclass = ABCFactory ):
+
+    def __init__( provider, name ):
+        self.provider = provider
+        self.name = name
+
+
+class Provider( metaclass = ABCFactory ):
+
+    @abstract_member_function
+    def provide_models( filter = None ): raise NotImplementedError
