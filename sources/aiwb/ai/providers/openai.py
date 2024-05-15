@@ -175,7 +175,7 @@ def select_default_model( models, auxdata ):
         return configuration[
             'providers' ][ _NAME.lower( ) ][ 'default-model' ]
     except KeyError: pass
-    for model_name in ( 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', ):
+    for model_name in ( 'gpt-4o', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', ):
         if model_name in models: return model_name
     return next( iter( models ) )
 
@@ -398,20 +398,23 @@ def _process_iterative_chat_response( response, callbacks ):
 # TODO: Move attribute associations to data file.
 # https://platform.openai.com/docs/guides/function-calling/supported-models
 _function_support_models = frozenset( (
-    'gpt-3.5-turbo', 'gpt-3.5-turbo-16k', 'gpt-4', 'gpt-4-32k', 'gpt-4-turbo',
+    'gpt-3.5-turbo', 'gpt-3.5-turbo-16k',
+    'gpt-4', 'gpt-4-32k', 'gpt-4-turbo', 'gpt-4o',
     'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
     'gpt-3.5-turbo-16k-0613',
     'gpt-4-0613', 'gpt-4-1106-preview', 'gpt-4-0125-preview',
     'gpt-4-32k-0613',
     'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
     'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
+    'gpt-4o-2024-05-13',
 ) )
 _multifunction_support_models = frozenset( (
-    'gpt-3.5.-turbo', 'gpt-4-turbo',
-    'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
+    'gpt-3.5.-turbo', 'gpt-4-turbo', 'gpt-4o',
+    'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
     'gpt-4-1106-preview', 'gpt-4-0125-preview',
     'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
-    'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
+    'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
+    'gpt-4o-2024-05-13',
 ) )
 # https://platform.openai.com/docs/models
 _model_family_context_window_sizes = __.DictionaryProxy( {
@@ -421,6 +424,7 @@ _model_family_context_window_sizes = __.DictionaryProxy( {
     'gpt-4-1106': 128_000,
     'gpt-4-turbo': 128_000,
     'gpt-4-vision': 128_000,
+    'gpt-4o': 128_000,
 } )
 _model_context_window_sizes = {
     'gpt-3.5-turbo-0301': 4_096,
