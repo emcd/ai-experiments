@@ -212,23 +212,32 @@ def _determine_chunk_reader( path, mime_type = None ):
 def _discriminate_dirents( auxdata, dirents, control = None ):
     from ....messages.core import Canister
     from ...providers import chat_callbacks_minimal
-    # TODO: Chunk the directory analysis.
     provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
     provider_format_name = provider.provide_format_name( auxdata.controls )
     prompt = (
         auxdata.prompt_definitions[ 'Discriminate Directory Entries' ]
         .create_prompt( values = { 'format': provider_format_name } ) )
-    messages = [
-        Canister( role = 'Supervisor' ).add_content( prompt.render( auxdata ) )
-    ]
-    _, content = __.render_prompt(
-        auxdata, control, dirents, 'directory-entries' )
-    messages.append( Canister( role = 'Human' ).add_content( content ) )
-    ai_canister = provider.chat(
-        messages, { }, auxdata.controls, chat_callbacks_minimal )
-    result = provider.parse_data( ai_canister[ 0 ].data, auxdata.controls )
-    ic( result[ 'blacklist' ] )
-    return result[ 'whitelist' ]
+    supervisor_message = prompt.render( auxdata )
+    complete_result = [ ]
+    # TODO: Python 3.12: itertools.batches
+    batch_size = 70 # TODO: Base on output tokens limit.
+    batches_count = len( dirents ) // batch_size + 1
+    for batch_n in range( batches_count ):
+        dirents_batch = dirents[
+            ( batch_n * batch_size ) : ( ( batch_n + 1 ) * batch_size ) ]
+        messages = [
+            Canister( role = 'Supervisor' ).add_content( supervisor_message )
+        ]
+        _, content = __.render_prompt(
+            auxdata, control, dirents_batch, 'directory-entries' )
+        messages.append( Canister( role = 'Human' ).add_content( content ) )
+        ai_canister = provider.chat(
+            messages, { }, auxdata.controls, chat_callbacks_minimal )
+        #ic( ai_canister[ 0 ].data )
+        result = provider.parse_data( ai_canister[ 0 ].data, auxdata.controls )
+        ic( result[ 'blacklist' ] )
+        complete_result.extend( result[ 'whitelist' ] )
+    return complete_result
 
 
 def _list_directory( auxdata, path, control = None ):
