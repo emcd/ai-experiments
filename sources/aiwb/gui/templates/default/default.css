@@ -118,12 +118,12 @@ body {
   position: sticky;
 }
 
-body,
+/* body, */
 .sticky-panel {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-body::-webkit-scrollbar,
+/* body::-webkit-scrollbar, */
 .sticky-panel::-webkit-scrollbar {
   display: none;
 }
