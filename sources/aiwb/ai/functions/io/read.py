@@ -241,16 +241,23 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
 
 
 def _list_directory( auxdata, path, control = None ):
+    # TODO: Configurable filter behavior.
     from os import walk # TODO: Python 3.12: Use 'Pathlib.walk'.
+    from gitignorefile import Cache
     from magic import from_file
     dirents = [ ]
-    # Do not look directly at subdirectories. Walk them instead.
-    for base_directory, _, dirents_names in walk( path ):
+    ignorer = Cache( )
+    for base_directory, directories_names, dirents_names in walk( path ):
+        if '.git' in directories_names: directories_names.remove( '.git' )
         for dirent_name in dirents_names:
             dirent = __.Path( base_directory ) / dirent_name
-            if not dirent.exists( ): continue
+            if not dirent.exists( ): continue # Gracefully handle races.
+            dirent_fqname = str( dirent )
+            if ignorer( dirent_fqname ): continue
+            inode = dirent.stat( )
+            if 40000 < inode.st_size: continue
             dirents.append( dict(
-                location = str( dirent ),
+                location = dirent_fqname,
                 mime_type = from_file( dirent, mime = True ) ) )
     return _discriminate_dirents( auxdata, dirents, control = control )
 
