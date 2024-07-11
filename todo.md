@@ -1,6 +1,6 @@
 ## LLM Chatter
 
-* AI: Functions
+* AI: Agents and Functions
 
     - Environment, executables, and libraries detection for supported
       functionality.
@@ -17,6 +17,7 @@
 
 * General
 
+    - Decouple widgets from data in conversation save/restore.
     - Support async loading of vector databases, prompt templates, etc....
     - Support hosting conversation-related resources as relative URLs.
       Allows abstraction from local file system.
@@ -68,6 +69,11 @@
       See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
     - Custom logo for human user in chat history.
     - Gravatar integration for human user logo in chat history?
+    - Dropdown menu instead of floating menu for conversation actions.
+    - Thin hover-over menu under each message instead of floating menu for
+      message actions.
+    - Model information in thin bar under each message.
+    - Copy button for code panes embedded in message pane.
 
 * GUI: Page Header
 
