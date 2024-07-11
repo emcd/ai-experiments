@@ -20,6 +20,10 @@
 
 ''' Default chatter template. '''
 
+# TODO: Update design.
+#       References:
+#       * https://github.com/holoviz/panel/issues/4830
+
 
 # TODO: Cleanup imports.
 

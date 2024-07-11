@@ -21,10 +21,23 @@
 ''' Auxiliary classes for Holoviz Panel GUI. '''
 
 
+# References:
+#   * https://blog.holoviz.org/posts/reactivehtml/index.html
+#   * https://discourse.holoviz.org/t/how-to-trigger-re-render-of-template/5799/2
+
+
+# TODO: Apply stylesheets for native widgets to custom widgets.
+#       References:
+#       * https://github.com/holoviz/panel/issues/5586
+#       * https://panel.holoviz.org/how_to/styling/apply_css.html
+#       * https://discourse.holoviz.org/t/css-not-working-in-shadow-dom-when-using-host/6118
+
+
 import param
 
 from panel.layout import Row
 from panel.reactive import ReactiveHTML
+#from panel.widgets import TextAreaInput
 
 from . import base as __
 
@@ -104,6 +117,9 @@ class AdaptiveTextArea( ReactiveHTML ):
             return true;''',
     }
 
+    # _stylesheets = TextAreaInput._stylesheets
+
+    # TODO: Add CSS class 'bk-input' from native stylesheet.
     _template = '''
         <textarea id="textarea"
             class="my-no-scrollbar"

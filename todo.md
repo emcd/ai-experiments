@@ -28,6 +28,7 @@
 
 * GUI: Key Bindings
 
+    - https://github.com/holoviz/panel/issues/3193
     - `dd` to delete selected message
     - `a` to append to user prompt
     - `i` to insert at beginning of user prompt
