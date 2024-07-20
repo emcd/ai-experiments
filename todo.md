@@ -64,8 +64,8 @@
     - Implement modal dialog for vector store addition, etc....
     - Toggle for conversation indicator labels display.
     - Search for conversations by title or label.
-    - Mathematica/Jupyter-style In/Out cell groups?
-      Maybe does not lend itself to selective message activation.
+    - Mathematica/Jupyter-style In/Out cell groups.
+      Cohorts of user prompt, tool calls, and AI response.
     - Fade transition for conversation indicators?
       See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
     - Custom logo for human user in chat history.
@@ -73,7 +73,7 @@
     - Dropdown menu instead of floating menu for conversation actions.
     - Thin hover-over menu under each message instead of floating menu for
       message actions.
-    - Model information in thin bar under each message.
+    - Model information in thin bar under each message cohort.
     - Copy button for code panes embedded in message pane.
 
 * GUI: Page Header
@@ -89,10 +89,13 @@
 
 * GUI: Theme components.
 
-    - Font families from blog.
-    - Color scheme from blog.
     - Support for system/dark/light mode selection.
-    - Probably use template themes, but also see:
+    - Color scheme from blog + Material Solarized.
+      https://github.com/emcd/emcd.github.io/blob/source/themes/mine/assets/css/theme.css
+      https://material-theme.com/docs/reference/color-palette/
+    - Override component fonts and font sizes.
+      Markdown text in serif font.
+      Component labels in sans serif font of sufficient weight.
       https://discourse.holoviz.org/t/how-do-i-use-css-to-modify-panel-widgets-style-like-fontsize-and-color/1534
 
 * Prompts

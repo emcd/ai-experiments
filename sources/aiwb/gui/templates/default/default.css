@@ -16,7 +16,19 @@
     --design-surface-text-color,
     var(--panel-on-surface-color)
   );
-  --bokeh-base-font: 'Lato', sans-serif;
+  /* https://systemfontstack.com */
+  /* Georgia and Lora added as top preferences for the serif family. */
+  /* TODO: Pass font names and sizes via design object, if possible. */
+  --sans-serif-fonts: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
+  --serif-fonts: Georgia, Lora, Iowan Old Style, Apple Garamond, Baskerville, Times New Roman, Droid Serif, Times, Source Serif Pro, serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+  --monospace-fonts: Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace;
+  --body-font-size:  12pt;
+  /* --bokeh-base-font: 'Lato', sans-serif; */
+  --bokeh-base-font: var(--serif-fonts);
+  --bokeh-mono-font: var(--monospace-fonts);
+  --bokeh-font-size: var(--body-font-size);
+
+  --side-panel-width: 336px;
 }
 
 .my-no-scrollbar {
@@ -50,14 +62,14 @@ html {
 
 body {
   background-color: var(--background-color);
-  font-family: var(--bokeh-base-font);
+  font-family: var(--serif-fonts);
+  font-size: var(--body-font-size);
   margin: 0px;
 }
 
 #container {
   display: grid;
-  /* TODO: Use variable for side panel widths. */
-  grid-template-columns: 336px 1fr 336px;
+  grid-template-columns: var(--side-panel-width) 1fr var(--side-panel-width);
   padding: 0px;
   width: 100vw;
 }
@@ -131,7 +143,7 @@ body {
 .left-panel, .right-panel {
   background: #e8e8e8; /* TODO: Use theme color. */
   height: 100vh;
-  width: 336px; /* TODO: Use variable. */
+  width: var(--side-panel-width);
   top: 0;
   z-index: 11;
 }

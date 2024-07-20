@@ -34,7 +34,7 @@ from . import prompts
 def main( ):
     configuration, directories = prepare( )
     gui_ns = gui.prepare( configuration, directories )
-    gui_ns.template__.show( title = 'AI Workbench' )
+    gui_ns.template__.show( autoreload = True, title = 'AI Workbench' )
 
 
 def prepare( ):

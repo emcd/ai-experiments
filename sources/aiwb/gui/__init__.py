@@ -22,14 +22,16 @@
 
 
 def prepare( configuration, directories ):
+    # Designs and Themes: https://panel.holoviz.org/api/panel.theme.html
     from types import SimpleNamespace
+    from panel.theme import Native
     from .base import generate_component
     from .layouts import dashboard_layout as layout
     from .templates.default import DefaultTemplate
     from .updaters import populate_dashboard
     gui = SimpleNamespace( )
     gui.auxdata__ = prepare_auxdata( configuration, directories )
-    gui.template__ = template = DefaultTemplate( )
+    gui.template__ = DefaultTemplate( design = Native )
     prepare_favicon( gui )
     generate_component( gui, layout, 'dashboard' )
     populate_dashboard( gui )
