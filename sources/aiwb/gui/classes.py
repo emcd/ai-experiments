@@ -26,21 +26,279 @@
 #   * https://discourse.holoviz.org/t/how-to-trigger-re-render-of-template/5799/2
 
 
-# TODO: Apply stylesheets for native widgets to custom widgets.
-#       References:
-#       * https://github.com/holoviz/panel/issues/5586
-#       * https://panel.holoviz.org/how_to/styling/apply_css.html
-#       * https://discourse.holoviz.org/t/css-not-working-in-shadow-dom-when-using-host/6118
-
-
 import param
 
 from panel.layout import Row
 from panel.reactive import ReactiveHTML
-#from panel.widgets import TextAreaInput
 
 from . import base as __
 
+
+# Applying stylesheets from native Panel widgets to custom widgets is not
+# straightforward, because the Panel widgets are derived from Bokeh widgets,
+# where the stylesheets are intrinsic on the HTML+CSS side and not exposed
+# on the Python side.
+#
+# References:
+# * https://github.com/holoviz/panel/issues/5586
+# * https://panel.holoviz.org/how_to/styling/apply_css.html
+
+# https://github.com/bokeh/bokeh/blob/4e546e5fa7a14caa9812e9ef392a0d70054b28ce/bokehjs/src/less/widgets/inputs.less
+# AI-formatted CSS dump from browser.
+_bokeh_input_stylesheets = '''
+:host {
+    --input-min-height: calc(var(--line-height-computed) + 2*var(--padding-vertical) + 2px);
+}
+
+.bk-input {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    flex-grow: 1;
+    min-height: var(--input-min-height);
+    padding: 0 var(--padding-horizontal);
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+}
+
+.bk-input:focus {
+    border-color: #66afe9;
+    outline: 0;
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
+}
+
+.bk-input::placeholder,
+.bk-input:-ms-input-placeholder,
+.bk-input::-moz-placeholder,
+.bk-input::-webkit-input-placeholder {
+    color: #999;
+    opacity: 1;
+}
+
+.bk-input[disabled],
+.bk-input.bk-disabled {
+    cursor: not-allowed;
+    background-color: #eee;
+    opacity: 1;
+}
+
+.bk-input-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+.bk-input-container .bk-input-prefix,
+.bk-input-container .bk-input-suffix {
+    display: flex;
+    align-items: center;
+    flex: 0 1 0;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+    padding: 0 var(--padding-horizontal);
+    background-color: #e6e6e6;
+}
+
+.bk-input-container .bk-input-prefix {
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.bk-input-container .bk-input-suffix {
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.bk-input-container .bk-input {
+    flex: 1 0 0;
+}
+
+.bk-input-container .bk-input:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.bk-input-container .bk-input:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+input[type=file].bk-input {
+    padding-left: 0;
+}
+
+input[type=file]::file-selector-button {
+    box-sizing: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+select:not([multiple]).bk-input,
+select:not([size]).bk-input {
+    height: auto;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg version="1.1" viewBox="0 0 25 20" xmlns="http://www.w3.org/2000/svg"><path d="M 0,0 25,0 12.5,20 Z" fill="black" /></svg>');
+    background-position: right 0.5em center;
+    background-size: 8px 6px;
+    background-repeat: no-repeat;
+    padding-right: calc(var(--padding-horizontal) + 8px);
+}
+
+option {
+    padding: 0;
+}
+
+select[multiple].bk-input,
+select[size].bk-input,
+textarea.bk-input {
+    height: auto;
+}
+
+.bk-input-group {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: start;
+    flex-direction: column;
+    white-space: nowrap;
+}
+
+.bk-input-group.bk-inline {
+    flex-direction: row;
+}
+
+.bk-input-group.bk-inline > *:not(:first-child) {
+    margin-left: 5px;
+}
+
+.bk-input-group > .bk-spin-wrapper {
+    display: inherit;
+    width: inherit;
+    height: inherit;
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+    vertical-align: middle;
+}
+
+.bk-input-group > .bk-spin-wrapper input {
+    padding-right: 20px;
+}
+
+.bk-input-group > .bk-spin-wrapper > .bk-spin-btn {
+    position: absolute;
+    display: block;
+    height: 50%;
+    min-height: 0;
+    min-width: 0;
+    width: 30px;
+    padding: 0;
+    margin: 0;
+    right: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.bk-input-group > .bk-spin-wrapper > .bk-spin-btn:before {
+    content: "";
+    display: inline-block;
+    transform: translateY(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+}
+
+.bk-input-group > .bk-spin-wrapper > .bk-spin-btn.bk-spin-btn-up {
+    top: 0;
+}
+
+.bk-input-group > .bk-spin-wrapper > .bk-spin-btn.bk-spin-btn-up:before {
+    border-bottom: 5px solid black;
+}
+
+.bk-input-group > .bk-spin-wrapper > .bk-spin-btn.bk-spin-btn-up:disabled:before {
+    border-bottom-color: grey;
+}
+
+.bk-input-group > .bk-spin-wrapper > .bk-spin-btn.bk-spin-btn-down {
+    bottom: 0;
+}
+
+.bk-input-group > .bk-spin-wrapper > .bk-spin-btn.bk-spin-btn-down:before {
+    border-top: 5px solid black;
+}
+
+.bk-input-group > .bk-spin-wrapper > .bk-spin-btn.bk-spin-btn-down:disabled:before {
+    border-top-color: grey;
+}
+
+.bk-description {
+    position: relative;
+    display: inline-block;
+    margin-left: 0.25em;
+    vertical-align: middle;
+    margin-top: -2px;
+    cursor: pointer;
+}
+
+.bk-description > .bk-icon {
+    opacity: 0.5;
+    width: 18px;
+    height: 18px;
+    background-color: gray;
+    mask-image: var(--bokeh-icon-help);
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    -webkit-mask-image: var(--bokeh-icon-help);
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+}
+
+label:hover > .bk-description > .bk-icon,
+.bk-icon.bk-opaque {
+    opacity: 1;
+}
+'''
+
+_bokeh_font_stylesheets = '''
+:host {
+    --base-font: var(--bokeh-base-font, Helvetica, Arial, sans-serif);
+    --mono-font: var(--bokeh-mono-font, monospace);
+    --font-size: var(--bokeh-font-size, 12px);
+    --line-height: calc(20 / 14);
+    --line-height-computed: calc(var(--font-size) * var(--line-height));
+    --border-radius: 4px;
+    --padding-vertical: 6px;
+    --padding-horizontal: 12px;
+    --bokeh-top-level: 1000;
+}
+
+:host {
+    box-sizing: border-box;
+    font-family: var(--base-font);
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+    font-family: inherit;
+}
+
+pre, code {
+    font-family: var(--mono-font);
+    margin: 0;
+}
+'''
 
 class AdaptiveTextArea( ReactiveHTML ):
 
@@ -55,6 +313,7 @@ class AdaptiveTextArea( ReactiveHTML ):
     _style_css__ = param.String( default = '' )
 
     _style_default__ = __.DictionaryProxy( {
+        'font-size': '100%',
         'resize': 'none',
     } )
 
@@ -117,12 +376,11 @@ class AdaptiveTextArea( ReactiveHTML ):
             return true;''',
     }
 
-    # _stylesheets = TextAreaInput._stylesheets
+    _stylesheets = [ _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
 
-    # TODO: Add CSS class 'bk-input' from native stylesheet.
     _template = '''
         <textarea id="textarea"
-            class="my-no-scrollbar"
+            class="my-no-scrollbar bk-input"
             maxlength="32767"
             onkeydown="${script('my_keydown')}"
             onkeyup="${script('my_keyup')}"
@@ -149,10 +407,13 @@ class CompactSelector( ReactiveHTML ):
         'appearance': 'none',
         '-moz-appearance': 'none', '-webkit-appearance': 'none',
         'border-radius': '10%',
+        'padding': '0',
         # https://stackoverflow.com/a/60236111/14833542
         'text-align': 'center', 'text-align-last': 'center',
         '-moz-text-align-last': 'center',
     } )
+
+    _stylesheets = [ _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
 
     _template = '''
         <div class="bk-input-group">
