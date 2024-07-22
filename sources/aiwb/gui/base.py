@@ -130,6 +130,12 @@ def generate_component( gui, layout, component_name ):
     if entry.get( 'virtual', False ): return None
     component_class = entry[ 'component_class' ]
     component_arguments = entry.get( 'component_arguments', { } )
+    auxdata = (
+        gui.auxdata__ if hasattr( gui, 'auxdata__' )
+        else gui.parent__.auxdata__ )
+    for transformer in auxdata.component_transformers:
+        component_class, component_arguments = (
+            transformer( component_class, component_arguments ) )
     component = component_class( *elements, **component_arguments )
     setattr( gui, component_name, component )
     interpolant_id = entry.get( 'interpolant_id' )

@@ -453,8 +453,6 @@ class ConversationDescriptor:
     indicator: __.typ.Optional[ Row ] = None
 
 
-# TODO: Reduce to simple wrapper for custom JS code.
-#       Row initialization should be elsewhere.
 class ConversationIndicator( ReactiveHTML ):
 
     clicked = param.Event( default = False )
@@ -483,19 +481,12 @@ class ConversationIndicator( ReactiveHTML ):
                 type="hidden" value="${mouse_hover__}"/>
         </div>'''.strip( )
 
-    # TODO: Should only need GUI namespace as argument.
-    def __init__( self, title, identity, **params ):
+    def __init__( self, container_gui, **params ):
         super( ).__init__( **params )
-        from .layouts import ( # pylint: disable=cyclic-import
-            conversation_indicator_layout as layout,
-        )
-        row_gui = __.SimpleNamespace( )
-        row = __.generate_component( row_gui, layout, 'column_indicator' )
-        row_gui.rehtml_indicator = self
-        row_gui.text_title.object = title
-        self.gui__ = row_gui
-        self.row__ = row
-        self.identity__ = identity
+        # TODO: Remove non-GUI component attributes.
+        self.gui__ = container_gui
+        self.row__ = container_gui.column_indicator # TODO: Rename.
+        self.identity__ = container_gui.identity__
 
     def _div_click( self, event ):
         # TODO: Suppress event propagation from buttons contained in this.

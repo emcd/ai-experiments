@@ -49,6 +49,7 @@ def prepare_auxdata( configuration, directories ):
         configuration = configuration, directories = directories )
     auxdata.ai_functions = prepare_ai_functions( configuration, directories )
     auxdata.ai_providers = prepare_ai_providers( configuration, directories )
+    auxdata.component_transformers = [ ] # TODO: Populate.
     auxdata.prompt_definitions = prepare_prompt_definitions( auxdata )
     auxdata.vectorstores = prepare_vectorstores( configuration, directories )
     return auxdata # TODO: Return immutable namespace.

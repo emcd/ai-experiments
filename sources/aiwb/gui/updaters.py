@@ -28,11 +28,16 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     from .classes import ConversationIndicator
     from .events import on_select_conversation
     from .layouts import conversation_indicator_layout as layout
-    indicator = ConversationIndicator( descriptor.title, descriptor.identity )
+    container_gui = __.SimpleNamespace(
+        parent__ = gui, identity__ = descriptor.identity )
+    container = __.generate_component(
+        container_gui, layout, 'column_indicator' )
+    container_gui.rehtml_indicator = indicator = (
+        ConversationIndicator( container_gui ) )
+    container_gui.text_title.object = descriptor.title
     indicator.param.watch(
         lambda event: on_select_conversation( gui, event ), 'clicked' )
-    indicator.gui__.parent__ = gui
-    __.register_event_callbacks( indicator.gui__, layout, 'column_indicator' )
+    __.register_event_callbacks( container_gui, layout, 'column_indicator' )
     conversations = gui.column_conversations_indicators
     if 'END' == position: conversations.append( indicator )
     else: conversations.insert( position, indicator )
