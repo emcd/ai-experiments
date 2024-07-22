@@ -13,7 +13,7 @@
 * AI: Models and Providers
 
     - Environment and executables detection for supported providers.
-    - Support Llama 2 models via Llama.cpp, Ollama, or Vllm.
+    - Support local models via Llama.cpp, Ollama, or Vllm.
 
 * General
 
@@ -41,6 +41,7 @@
       ChatGPT mode: `<ENTER>`
       Mathematica/Jupyter mode: `<SHIFT>`+`<ENTER>`
       Slack alternative mode: `<CONTROL>`+`<ENTER>`
+      (support implemented; needs settings page)
     - `<UP ARROW>` and `<DOWN ARROW>` to navigate messages
     - `{` and `}` to navigate code blocks in message
 
@@ -48,9 +49,10 @@
 
     - Refactor 'classes' module into 'widgets', 'messages', and
       'conversations'.
-    - Store icons as SVG files. Make custom `IconButton` and
-      `IconToggle` classes, which use these.
+    - Store icons as SVG files.
+      Either make custom `IconButton` and `IconToggle` classes for this.
       https://discourse.holoviz.org/t/how-to-trigger-re-render-of-template/5799/5
+      Or, hook component generator to inject SVG data on creation.
     - Create `ConversationHistory` class to manage history column and status
       row. For reuse in main dashboard and for AI agent trackers.
     - Persist prompt variables.
@@ -65,7 +67,7 @@
     - Toggle for conversation indicator labels display.
     - Search for conversations by title or label.
     - Mathematica/Jupyter-style In/Out cell groups.
-      Cohorts of user prompt, tool calls, and AI response.
+      Message clusters: user prompt, tool calls, and AI response.
     - Fade transition for conversation indicators?
       See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
     - Custom logo for human user in chat history.
@@ -74,7 +76,12 @@
     - Thin hover-over menu under each message instead of floating menu for
       message actions.
     - Model information in thin bar under each message cohort.
-    - Copy button for code panes embedded in message pane.
+    - Copy button for code blocks embedded in message pane.
+      https://github.com/holoviz/panel/issues/6209
+      https://github.com/executablebooks/markdown-it-py/issues/324
+      https://github.com/ReAlign/markdown-it-copy/blob/master/index.js
+      https://github.com/DCsunset/markdown-it-code-copy/blob/master/index.js
+      https://github.com/executablebooks/sphinx-copybutton/blob/master/sphinx_copybutton/_static/copybutton.js_t
 
 * GUI: Page Header
 
