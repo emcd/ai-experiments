@@ -24,14 +24,32 @@
 from . import __
 
 
-def register_transformers( auxdata ):
-    ''' Registers component transformers. '''
-    return __.AccretiveDictionary( {
+def prepare( auxdata ):
+    ''' Prepares support for GUI components. '''
+    _prepare_icons_cache( auxdata )
+    _register_transformers( auxdata )
+
+
+_icons_cache = __.AccretiveDictionary( )
+# TODO? Execute with async gather.
+def _prepare_icons_cache( auxdata ):
+    directory = auxdata.configuration[ 'main-path' ] / 'data/icons'
+    for file in directory.glob( '*.svg' ):
+        with file.open( ) as stream:
+            _icons_cache[ file.stem ] = stream.read( )
+
+
+def _register_transformers( auxdata ):
+    auxdata.gui.transformers = __.AccretiveDictionary( {
         name: transformer for name, transformer
-        in ( ( 'select-font-family', _transform_component_font_family ), ) } )
+        in (
+            ( 'use-local-icon', _use_local_icon ),
+            #( 'transform-font', _transform_font ),
+        )
+    } )
 
 
-def _transform_component_font_family( auxdata, class_, arguments ):
+def _transform_font( auxdata, class_, arguments ):
     from panel.layout import Column, Row
     from panel.pane import Markdown
     from panel.reactive import ReactiveHTML
@@ -43,4 +61,12 @@ def _transform_component_font_family( auxdata, class_, arguments ):
     elif not issubclass( class_, ( Markdown, ReactiveHTML ) ):
         styles[ 'font-family' ] = 'var(--sans-serif-fonts)'
         arguments[ 'styles' ] = styles
+    return class_, arguments
+
+
+def _use_local_icon( auxdata, class_, arguments ):
+    icon = arguments.get( 'icon' )
+    if None is icon: pass
+    elif icon.startswith( '<svg' ) and icon.endswith( '</svg>' ): pass
+    elif icon in _icons_cache: arguments[ 'icon' ] = _icons_cache[ icon ]
     return class_, arguments

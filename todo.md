@@ -49,10 +49,6 @@
 
     - Refactor 'classes' module into 'widgets', 'messages', and
       'conversations'.
-    - Store icons as SVG files.
-      Either make custom `IconButton` and `IconToggle` classes for this.
-      https://discourse.holoviz.org/t/how-to-trigger-re-render-of-template/5799/5
-      Or, hook component generator to inject SVG data on creation.
     - Create `ConversationHistory` class to manage history column and status
       row. For reuse in main dashboard and for AI agent trackers.
     - Persist prompt variables.
@@ -100,10 +96,7 @@
     - Color scheme from blog + Material Solarized.
       https://github.com/emcd/emcd.github.io/blob/source/themes/mine/assets/css/theme.css
       https://material-theme.com/docs/reference/color-palette/
-    - Override component fonts and font sizes.
-      Component labels in sans serif font of sufficient weight.
-      https://github.com/holoviz/panel/issues/4830
-      https://discourse.holoviz.org/t/how-do-i-use-css-to-modify-panel-widgets-style-like-fontsize-and-color/1534
+    - Button titles in sans serif font of sufficient weight.
 
 * Prompts
 

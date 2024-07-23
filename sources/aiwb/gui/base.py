@@ -133,7 +133,7 @@ def generate_component( gui, layout, component_name ):
     auxdata = (
         gui.auxdata__ if hasattr( gui, 'auxdata__' )
         else gui.parent__.auxdata__ )
-    for transformer in auxdata.gui_transformers.values( ):
+    for transformer in auxdata.gui.transformers.values( ):
         component_class, component_arguments = (
             transformer( auxdata, component_class, component_arguments ) )
     component = component_class( *elements, **component_arguments )
