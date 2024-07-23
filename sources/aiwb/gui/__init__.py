@@ -21,6 +21,9 @@
 ''' GUI with Panel widgets. '''
 
 
+from . import __
+
+
 def prepare( configuration, directories ):
     # Designs and Themes: https://panel.holoviz.org/api/panel.theme.html
     from types import SimpleNamespace
@@ -40,19 +43,22 @@ def prepare( configuration, directories ):
 
 # TODO: Support async loading.
 def prepare_auxdata( configuration, directories ):
-    from types import SimpleNamespace
     from ..ai.providers import prepare as prepare_ai_providers
     from ..ai.functions import prepare as prepare_ai_functions
     from ..prompts.core import prepare as prepare_prompt_definitions
     from ..vectorstores import prepare as prepare_vectorstores
-    auxdata = SimpleNamespace(
+    from .components import register_transformers
+    # TODO: Prepare auxdata namespace in core and pass to here.
+    auxdata = __.AccretiveNamespace(
         configuration = configuration, directories = directories )
+    # TODO: Prepare AI-related functionality in core.
     auxdata.ai_functions = prepare_ai_functions( configuration, directories )
     auxdata.ai_providers = prepare_ai_providers( configuration, directories )
-    auxdata.component_transformers = [ ] # TODO: Populate.
+    auxdata.gui_transformers = register_transformers( auxdata )
+    # TODO: Prepare prompts and vectorstores in core and pass here.
     auxdata.prompt_definitions = prepare_prompt_definitions( auxdata )
     auxdata.vectorstores = prepare_vectorstores( configuration, directories )
-    return auxdata # TODO: Return immutable namespace.
+    return auxdata
 
 
 def prepare_favicon( gui ):

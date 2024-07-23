@@ -101,7 +101,6 @@
       https://github.com/emcd/emcd.github.io/blob/source/themes/mine/assets/css/theme.css
       https://material-theme.com/docs/reference/color-palette/
     - Override component fonts and font sizes.
-      Markdown text in serif font.
       Component labels in sans serif font of sufficient weight.
       https://github.com/holoviz/panel/issues/4830
       https://discourse.holoviz.org/t/how-do-i-use-css-to-modify-panel-widgets-style-like-fontsize-and-color/1534
