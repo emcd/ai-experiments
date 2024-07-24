@@ -95,7 +95,7 @@ def prepare( auxdata ):
 # TODO: Support async loading.
 def _acquire_descriptors( auxdata ):
     from tomli import load
-    distribution_directory_base = auxdata.configuration[ 'main-path' ] / 'data'
+    distribution_directory_base = auxdata.distribution.location / 'data'
     suffix = 'prompts/descriptors'
     descriptors = { }
     for directory in (
@@ -112,7 +112,7 @@ def _acquire_descriptors( auxdata ):
 
 
 def _acquire_fragment( auxdata, filename ):
-    distribution_directory_base = auxdata.configuration[ 'main-path' ] / 'data'
+    distribution_directory_base = auxdata.distribution.location / 'data'
     suffix = 'prompts/fragments'
     for directory in (
         distribution_directory_base / suffix,
@@ -128,7 +128,7 @@ def _acquire_fragment( auxdata, filename ):
 
 def _acquire_template( auxdata, identifier ):
     from mako.template import Template
-    distribution_directory_base = auxdata.configuration[ 'main-path' ] / 'data'
+    distribution_directory_base = auxdata.distribution.location / 'data'
     suffix = 'prompts/templates'
     for directory in (
         distribution_directory_base / suffix,

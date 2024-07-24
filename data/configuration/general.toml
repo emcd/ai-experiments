@@ -1,0 +1,16 @@
+format-version = 1
+
+maintenance-mode = false
+
+[locations]
+data = '{user_data}'
+state = '{user_state}'
+environment-file = '{distribution}/.env'
+
+#data = '/home/me/Dropbox/common/data/{application_name}'
+#state = '/home/me/Dropbox/common/state/{application_name}'
+#environment-file = '{user_configuration}/environment'
+
+[providers.'openai']
+enable = true
+#default-model = 'gpt-4o'

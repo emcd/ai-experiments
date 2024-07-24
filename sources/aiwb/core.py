@@ -18,13 +18,25 @@
 #============================================================================#
 
 
-''' Support for interactions with generative artificial intelligences. '''
+''' Core classes and functions for AI applications. '''
 
 
-__version__ = '1.0a202404271857'
+from . import __
 
 
-from . import ai
-from . import controls
-from . import messages
-from . import prompts
+def prepare( ) -> __.AccretiveNamespace:
+    ''' Prepares AI-related functionality for applications. '''
+    # TODO: Support async loading.
+    from . import vectorstores
+    from .ai import functions as ai_functions # TODO: invocables
+    from .ai import providers as ai_providers # TODO: providers
+    from .prompts import core as prompts
+    auxdata = __.prepare( )
+    # TODO: Pass auxdata to all preparers.
+    configuration = auxdata.configuration
+    directories = auxdata.directories
+    auxdata.ai_functions = ai_functions.prepare( configuration, directories )
+    auxdata.ai_providers = ai_providers.prepare( configuration, directories )
+    auxdata.prompt_definitions = prompts.prepare( auxdata )
+    auxdata.vectorstores = vectorstores.prepare( configuration, directories )
+    return auxdata

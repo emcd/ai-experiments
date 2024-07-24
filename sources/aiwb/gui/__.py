@@ -21,6 +21,8 @@
 ''' Common constants, imports, and utilities for GUI. '''
 
 
+from types import SimpleNamespace
+
 from accretive.qaliases import AccretiveDictionary, AccretiveNamespace
 
 

@@ -24,50 +24,36 @@
 from . import __
 
 
-def prepare( configuration, directories ):
+def main( ):
+    from .. import core
+    auxdata = core.prepare( )
+    gui = prepare( auxdata )
+    gui.template__.show( autoreload = True, title = 'AI Workbench' )
+
+
+def prepare( auxdata ) -> __.SimpleNamespace:
     # Designs and Themes: https://panel.holoviz.org/api/panel.theme.html
-    from types import SimpleNamespace
     from panel.theme import Native
+    from . import components
     from .base import generate_component
     from .layouts import dashboard_layout as layout
     from .templates.default import DefaultTemplate
     from .updaters import populate_dashboard
-    gui = SimpleNamespace( )
-    gui.auxdata__ = prepare_auxdata( configuration, directories )
+    auxdata.gui = __.AccretiveNamespace( )
+    components.prepare( auxdata )
+    gui = __.SimpleNamespace( auxdata__ = auxdata )
     gui.template__ = DefaultTemplate( design = Native )
-    prepare_favicon( gui )
+    _prepare_favicon( gui )
     generate_component( gui, layout, 'dashboard' )
     populate_dashboard( gui )
     return gui
 
 
-# TODO: Support async loading.
-def prepare_auxdata( configuration, directories ):
-    from ..ai.providers import prepare as prepare_ai_providers
-    from ..ai.functions import prepare as prepare_ai_functions
-    from ..prompts.core import prepare as prepare_prompt_definitions
-    from ..vectorstores import prepare as prepare_vectorstores
-    from . import components
-    # TODO: Prepare auxdata namespace in core and pass to here.
-    auxdata = __.AccretiveNamespace(
-        configuration = configuration, directories = directories )
-    auxdata.gui = __.AccretiveNamespace( )
-    components.prepare( auxdata )
-    # TODO: Prepare AI-related functionality in core.
-    auxdata.ai_functions = prepare_ai_functions( configuration, directories )
-    auxdata.ai_providers = prepare_ai_providers( configuration, directories )
-    # TODO: Prepare prompts and vectorstores in core and pass here.
-    auxdata.prompt_definitions = prepare_prompt_definitions( auxdata )
-    auxdata.vectorstores = prepare_vectorstores( configuration, directories )
-    return auxdata
-
-
-def prepare_favicon( gui ):
+def _prepare_favicon( gui ):
     from panel.pane import panel
     from panel.pane.image import ImageBase
     template = gui.template__
-    path = gui.auxdata__.configuration[ 'main-path' ].joinpath(
-        '.local/data/favicon-32.png' )
+    path = gui.auxdata__.distribution.location / 'data/icons/favicon-32.png'
     image = panel( path )
     if not isinstance( image, ImageBase ):
         # TODO: Log warning.

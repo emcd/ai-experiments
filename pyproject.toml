@@ -28,10 +28,22 @@ dependencies = [
   'tomli-w',
   'unstructured',
 ]
-# TODO: classifiers: https://pypi.org/classifiers
-# TODO: keywords
+classifiers = [ # https://pypi.org/classifiers
+  'Development Status :: 3 - Alpha',
+  'Intended Audience :: Developers',
+  'License :: OSI Approved :: Apache Software License',
+  'Programming Language :: Python :: 3 :: Only',
+  'Programming Language :: Python :: 3.8',
+  'Programming Language :: Python :: 3.9',
+  'Programming Language :: Python :: 3.10',
+  'Programming Language :: Python :: 3.11',
+  'Programming Language :: Python :: 3.12',
+  'Programming Language :: Python :: Implementation :: CPython',
+  'Topic :: Software Development',
+]
+keywords = [ 'ai', 'llm', 'workbench', 'conversation' ]
 [project.gui-scripts]
-aiwb = 'aiwb:main'
+aiwb = 'aiwb.gui:main'
 [project.optional-dependencies]
 experiments = [
   'aiwb[rag]',
@@ -44,10 +56,10 @@ rag = [
   'faiss-cpu',
   'scrapy',
 ]
-# TODO: [project.urls]
 [[project.authors]]
 name = 'Eric McDonald'
 email = 'emcd@users.noreply.github.com'
+# TODO: [project.urls]
 
 # https://coverage.readthedocs.io/en/latest/config.html
 [tool.coverage.run]

@@ -66,7 +66,7 @@ class DirectoryManager:
         configuration = self.auxdata.configuration
         directories = self.auxdata.directories
         location = __.Path( configuration[ 'locations' ][ 'state' ].format(
-            user_state_path = directories.user_state_path ) )
+            user_state = directories.user_state_path ) )
         if dirname: return location / dirname
         return location
 

@@ -30,5 +30,6 @@ from urllib.parse import urlparse
 def derive_standard_file_paths( configuration, directories ):
     return dict(
         data_path = Path(
-            configuration[ 'locations' ][ 'data' ] ) / 'vectorstores',
+            configuration[ 'locations' ][ 'data' ].format(
+                user_data = directories.user_data_path ) ) / 'vectorstores',
     )

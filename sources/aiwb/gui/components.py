@@ -33,7 +33,7 @@ def prepare( auxdata ):
 _icons_cache = __.AccretiveDictionary( )
 # TODO? Execute with async gather.
 def _prepare_icons_cache( auxdata ):
-    directory = auxdata.configuration[ 'main-path' ] / 'data/icons'
+    directory = auxdata.distribution.location / 'data/icons'
     for file in directory.glob( '*.svg' ):
         with file.open( ) as stream:
             _icons_cache[ file.stem ] = stream.read( )
