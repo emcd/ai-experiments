@@ -21,7 +21,7 @@
 ''' Collection of AI functions. '''
 
 
-def prepare( auxdata ):
+async def prepare( auxdata ):
     from . import io, probability
     # TODO: Prepare functions: check for dependencies, environment, etc....
     from .base import survey_functions

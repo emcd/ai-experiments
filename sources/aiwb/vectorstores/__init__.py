@@ -25,12 +25,11 @@ from . import chroma
 from . import faiss
 
 
-def prepare( auxdata ):
+async def prepare( auxdata ):
+    # TODO: Support async loading.
+    #       Possibly return Result | Future objects for use after GUI load.
     from tomli import load as load_toml
-    # TODO: Pass auxdata to all preparers.
-    configuration = auxdata.configuration
-    directories = auxdata.directories
-    manifest_path = directories.user_config_path / 'vectorstores.toml'
+    manifest_path = auxdata.directories.user_config_path / 'vectorstores.toml'
     stores = { }
     if not manifest_path.exists( ):
         auxdata.vectorstores = stores
@@ -46,8 +45,8 @@ def prepare( auxdata ):
             raise ValueError(
                 f"Unknown vectorstore provider, '{provider_name}', "
                 f"for vectorstore '{store_name}'." )
-        instance = globals( )[ provider_name ].restore(
-            configuration, directories, data )
+        # TODO: Use __import__ or importlib.import instead of globals.
+        instance = await globals( )[ provider_name ].restore( auxdata, data )
         stores[ store_name ][ 'instance' ] = instance
     auxdata.vectorstores = stores
     return stores

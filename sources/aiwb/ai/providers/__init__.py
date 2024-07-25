@@ -24,7 +24,7 @@
 from .base import ChatCallbacks, ChatCompletionError, chat_callbacks_minimal
 
 
-def prepare( auxdata ):
+async def prepare( auxdata ):
     from . import openai
     from accretive.qaliases import AccretiveDictionary
     providers = AccretiveDictionary( )

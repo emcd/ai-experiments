@@ -24,16 +24,15 @@
 from . import __
 
 
-def prepare( ) -> __.AccretiveNamespace:
+async def prepare( ) -> __.AccretiveNamespace:
     ''' Prepares AI-related functionality for applications. '''
-    # TODO: Support async loading.
+    from asyncio import gather
+    from . import prompts
     from . import vectorstores
     from .ai import functions as ai_functions # TODO: invocables
     from .ai import providers as ai_providers # TODO: providers
-    from .prompts import core as prompts
     auxdata = __.prepare( )
-    ai_functions.prepare( auxdata )
-    ai_providers.prepare( auxdata )
-    prompts.prepare( auxdata )
-    vectorstores.prepare( auxdata )
+    await gather( *( # TODO: Python 3.11: TaskGroup
+        module.prepare( auxdata ) for module in (
+            ai_functions, ai_providers, prompts, vectorstores ) ) )
     return auxdata

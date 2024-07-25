@@ -24,7 +24,7 @@
 from . import base as __
 
 
-def restore( configuration, directories, data ):
+async def restore( auxdata, data ):
     # TODO: Adapt to new Langchain interface or remove Langchain dependency.
     #       https://python.langchain.com/docs/modules/data_connection/vectorstores/#get-started
     # TODO: Configurable embedding function.
@@ -32,6 +32,8 @@ def restore( configuration, directories, data ):
     from langchain.vectorstores import ( # pylint: disable=no-name-in-module
         FAISS,
     )
+    configuration = auxdata.configuration
+    directories = auxdata.directories
     embedder = OpenAIEmbeddings( )
     arguments = data.get( 'arguments', { } )
     location_info = __.urlparse( data[ 'location' ] )

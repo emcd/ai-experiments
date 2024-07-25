@@ -24,34 +24,27 @@
 from . import __
 
 
-def entrypoint( ):
-    ''' Schedules main function with an event loop. '''
-    # TODO: Enable event loop execution once we can support it.
-    #       Probably after a migration off of Panel.
-    # TODO: Consider 'aiomisc.entrypoint'.
-    #from asyncio import get_event_loop
-    #return get_event_loop( ).run_until_complete( main( ) )
-    return main( )
-
-
 def main( ):
     ''' Prepares and executes GUI. '''
-    from .. import core
-    auxdata = core.prepare( )
-    gui = prepare( auxdata )
+    # TODO: Consider 'aiomisc.entrypoint'.
+    from asyncio import run
+    gui = run( prepare( ) )
     gui.template__.show( autoreload = True, title = 'AI Workbench' )
     return 0
 
 
-def prepare( auxdata ) -> __.SimpleNamespace:
+async def prepare( ) -> __.SimpleNamespace:
     ''' Prepares everything related to the GUI. '''
     # Designs and Themes: https://panel.holoviz.org/api/panel.theme.html
     from panel.theme import Native
+    from .. import core
     from . import components
     from .base import generate_component
     from .layouts import dashboard_layout as layout
     from .templates.default import DefaultTemplate
     from .updaters import populate_dashboard
+    auxdata = await core.prepare( )
+    # TODO: Spin up FastAPI server.
     auxdata.gui = __.AccretiveNamespace( )
     components.prepare( auxdata )
     gui = __.SimpleNamespace( auxdata__ = auxdata )
@@ -78,4 +71,4 @@ def _prepare_favicon( gui ):
     template.add_variable( 'favicon_type', 'image/png' )
 
 
-if '__main__' == __name__: entrypoint( )
+if '__main__' == __name__: main( )
