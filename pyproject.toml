@@ -43,7 +43,7 @@ classifiers = [ # https://pypi.org/classifiers
 ]
 keywords = [ 'ai', 'llm', 'workbench', 'conversation' ]
 [project.gui-scripts]
-aiwb = 'aiwb.gui:main'
+aiwb = 'aiwb.gui:entrypoint'
 [project.optional-dependencies]
 experiments = [
   'aiwb[rag]',

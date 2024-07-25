@@ -24,15 +24,16 @@
 from .base import ChatCallbacks, ChatCompletionError, chat_callbacks_minimal
 
 
-def prepare( configuration, directories ):
+def prepare( auxdata ):
     from . import openai
-    # TODO: Use accretive dictionary for providers registry.
-    providers = { }
+    from accretive.qaliases import AccretiveDictionary
+    providers = AccretiveDictionary( )
     # TODO: Prepare asynchronously.
     for provider in ( openai, ):
-        try: provider_name = provider.prepare( configuration, directories )
+        try: provider_name = provider.prepare( auxdata )
         except Exception:
             #raise
             continue
         providers[ provider_name ] = provider
+    auxdata.ai_providers = providers
     return providers

@@ -87,9 +87,10 @@ class Instance:
 
 # TODO: Support async loading.
 def prepare( auxdata ):
-    return __.DictionaryProxy( {
+    auxdata.prompt_definitions = definitions = __.DictionaryProxy( {
         name: Definition.instantiate_descriptor( descriptor )
         for name, descriptor in _acquire_descriptors( auxdata ).items( ) } )
+    return definitions
 
 
 # TODO: Support async loading.

@@ -25,11 +25,16 @@ from . import chroma
 from . import faiss
 
 
-def prepare( configuration, directories ):
+def prepare( auxdata ):
     from tomli import load as load_toml
+    # TODO: Pass auxdata to all preparers.
+    configuration = auxdata.configuration
+    directories = auxdata.directories
     manifest_path = directories.user_config_path / 'vectorstores.toml'
     stores = { }
-    if not manifest_path.exists( ): return stores
+    if not manifest_path.exists( ):
+        auxdata.vectorstores = stores
+        return stores
     with manifest_path.open( 'rb' ) as manifest_stream:
         manifest = load_toml( manifest_stream )
     for data in manifest.get( 'stores', ( ) ):
@@ -44,4 +49,5 @@ def prepare( configuration, directories ):
         instance = globals( )[ provider_name ].restore(
             configuration, directories, data )
         stores[ store_name ][ 'instance' ] = instance
+    auxdata.vectorstores = stores
     return stores

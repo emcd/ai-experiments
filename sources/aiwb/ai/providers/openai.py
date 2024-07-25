@@ -125,7 +125,7 @@ def invoke_function( request, controls ):
     return canister
 
 
-def prepare( configuration, directories ):
+def prepare( auxdata ):
     from os import environ as cpe  # current process environment
     if 'OPENAI_API_KEY' in cpe:
         import openai

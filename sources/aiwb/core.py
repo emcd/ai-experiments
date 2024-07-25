@@ -32,11 +32,8 @@ def prepare( ) -> __.AccretiveNamespace:
     from .ai import providers as ai_providers # TODO: providers
     from .prompts import core as prompts
     auxdata = __.prepare( )
-    # TODO: Pass auxdata to all preparers.
-    configuration = auxdata.configuration
-    directories = auxdata.directories
-    auxdata.ai_functions = ai_functions.prepare( configuration, directories )
-    auxdata.ai_providers = ai_providers.prepare( configuration, directories )
-    auxdata.prompt_definitions = prompts.prepare( auxdata )
-    auxdata.vectorstores = vectorstores.prepare( configuration, directories )
+    ai_functions.prepare( auxdata )
+    ai_providers.prepare( auxdata )
+    prompts.prepare( auxdata )
+    vectorstores.prepare( auxdata )
     return auxdata
