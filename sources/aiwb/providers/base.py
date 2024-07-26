@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from functools import partial as partial_function
 from types import MappingProxyType as DictionaryProxy, SimpleNamespace
 
-from ...messages.core import Canister
+from ..messages.core import Canister
 
 
 class ChatCompletionError( Exception ): pass

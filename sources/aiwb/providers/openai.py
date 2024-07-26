@@ -82,7 +82,7 @@ def count_text_tokens( text, model_name ):
 
 
 def extract_invocation_requests( canister, auxdata, ai_functions ):
-    from ...codecs.json import loads
+    from ..codecs.json import loads
     try: requests = loads( canister[ 0 ].data )
     except Exception as exc:
         raise ValueError( 'Malformed JSON payload in message.' ) from exc
@@ -108,7 +108,7 @@ def extract_invocation_requests( canister, auxdata, ai_functions ):
 
 
 def invoke_function( request, controls ):
-    from ...messages.core import Canister
+    from ..messages.core import Canister
     request_context = request[ 'context__' ]
     result = request[ 'invocable__' ]( )
     if 'id' in request_context:
@@ -154,7 +154,7 @@ def provide_format_name( controls ): return 'JSON'
 def parse_data( content, controls ):
     mime_type = provide_format_mime_type( controls )
     if 'application/json' == mime_type:
-        from ...codecs.json import loads
+        from ..codecs.json import loads
         text = loads( content )
     else: raise NotImplementedError( f"Cannot parse '{mime_type}'." )
     return text
@@ -201,7 +201,7 @@ def _chat( messages, special_data, controls, callbacks ):
 
 
 def _create_canister_from_response( response ):
-    from ...messages.core import Canister
+    from ..messages.core import Canister
     attributes = __.SimpleNamespace( behaviors = [ ] )
     if response.content: mimetype = 'text/markdown'
     else:

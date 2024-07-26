@@ -143,7 +143,7 @@ def _add_message( gui, canister ):
 
 
 def _chat( gui ):
-    from ..ai.providers import ChatCallbacks
+    from ..providers import ChatCallbacks
     from .base import access_ai_provider_current
     messages = __.package_messages( gui )
     controls = __.package_controls( gui )
@@ -170,9 +170,9 @@ def _detect_ai_completion( gui, component = None ):
 
 
 def _generate_conversation_title( gui ):
-    from ..ai.providers import chat_callbacks_minimal
     from ..codecs.json import loads
     from ..messages.core import Canister
+    from ..providers import chat_callbacks_minimal
     from .base import access_ai_provider_current
     provider = access_ai_provider_current( gui )
     controls = __.package_controls( gui )
