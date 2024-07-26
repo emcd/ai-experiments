@@ -11,22 +11,24 @@ readme = { 'file' = 'README.md', 'content-type' = 'text/markdown' }
 requires-python = '>= 3.10'
 dependencies = [
   'accretive',
-  'anthropic',
+  'aiofiles',
+  'anthropic', # TODO: Install in environment context as needed.
+  'fastapi',
   'gitignorefile',
   'icecream',
   'jsonschema',
-  'langchain',
+  'langchain', # TODO: Remove dependency.
   'mako',
-  'openai ~= 1.1',
+  'openai ~= 1.1', # TODO: Install in environment context as needed.
   'panel ~= 1.4',
   'platformdirs',
   'python-dotenv',
   'python-magic',
   'rich',
-  'tiktoken',
+  'tiktoken', # TODO: Install in environment context as needed.
   'tomli',
   'tomli-w',
-  'unstructured',
+  'unstructured', # TODO: Remove dependency.
 ]
 classifiers = [ # https://pypi.org/classifiers
   'Development Status :: 3 - Alpha',
@@ -45,15 +47,15 @@ keywords = [ 'ai', 'llm', 'workbench', 'conversation' ]
 [project.gui-scripts]
 aiwb = 'aiwb.gui:main'
 [project.optional-dependencies]
+chromadb = [ 'chromadb ~= 0.3.29' ]
+faiss-cpu = [ 'faiss-cpu' ]
 experiments = [
-  'aiwb[rag]',
+  'aiwb[chromadb,faiss-cpu,web-scraper]',
   'notebook',
   'pytesseract',
 ]
-rag = [
+web-scraper = [
   'beautifulsoup4',
-  'chromadb ~= 0.3.29',
-  'faiss-cpu',
   'scrapy',
 ]
 [[project.authors]]

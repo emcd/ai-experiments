@@ -26,11 +26,21 @@ from . import __
 
 def main( ):
     ''' Prepares and executes GUI. '''
+    # Note: Cannot be async because Hatch does not support async entrypoints.
+    #       Also, the Bokeh Tornado server used by Panel has problems
+    #       launching from inside an async caller.
     # TODO: Consider 'aiomisc.entrypoint'.
     from asyncio import run
+    from time import sleep
     gui = run( prepare( ) )
-    gui.template__.show( autoreload = True, title = 'AI Workbench' )
-    return 0
+    server_context = gui.server_context__
+    server_context.thread.start( )
+    try:
+        while not server_context.server.started: sleep( 0.001 )
+        gui.template__.show( autoreload = True, title = 'AI Workbench' )
+    finally:
+        server_context.server.should_exit = True
+        server_context.thread.join( )
 
 
 async def prepare( ) -> __.SimpleNamespace:
@@ -39,28 +49,29 @@ async def prepare( ) -> __.SimpleNamespace:
     from panel.theme import Native
     from .. import core
     from . import components
+    from . import server
     from .base import generate_component
     from .layouts import dashboard_layout as layout
     from .templates.default import DefaultTemplate
     from .updaters import populate_dashboard
     auxdata = await core.prepare( )
-    # TODO: Spin up FastAPI server.
     auxdata.gui = __.AccretiveNamespace( )
     components.prepare( auxdata )
     gui = __.SimpleNamespace( auxdata__ = auxdata )
     gui.template__ = DefaultTemplate( design = Native )
-    _prepare_favicon( gui )
+    gui.server_context__ = await server.prepare( auxdata )
+    await _prepare_favicon( gui )
     generate_component( gui, layout, 'dashboard' )
     populate_dashboard( gui )
     return gui
 
 
-def _prepare_favicon( gui ):
+async def _prepare_favicon( gui ):
     from panel.pane import panel
     from panel.pane.image import ImageBase
     template = gui.template__
     path = gui.auxdata__.distribution.location / 'data/icons/favicon-32.png'
-    image = panel( path )
+    image = panel( path ) # TODO? Use aiofiles.
     if not isinstance( image, ImageBase ):
         # TODO: Log warning.
         return
