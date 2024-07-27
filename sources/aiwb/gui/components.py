@@ -24,19 +24,31 @@
 from . import __
 
 
-def prepare( auxdata ):
+async def prepare( auxdata ):
     ''' Prepares support for GUI components. '''
-    _prepare_icons_cache( auxdata )
+    # Designs and Themes: https://panel.holoviz.org/api/panel.theme.html
+    from panel.theme import Native
+    from .templates.default import DefaultTemplate
+    auxdata.gui.components = __.SimpleNamespace(
+        auxdata__ = auxdata,
+        template__ = DefaultTemplate( design = Native ) )
+    await _prepare_icons_cache( auxdata )
     _register_transformers( auxdata )
 
 
 _icons_cache = __.AccretiveDictionary( )
-# TODO? Execute with async gather.
-def _prepare_icons_cache( auxdata ):
+async def _prepare_icons_cache( auxdata ):
+    from asyncio import gather # TODO: Python 3.11: TaskGroup
+    from contextlib import AsyncExitStack
+    from aiofiles import open as open_async
     directory = auxdata.distribution.location / 'data/icons'
-    for file in directory.glob( '*.svg' ):
-        with file.open( ) as stream:
-            _icons_cache[ file.stem ] = stream.read( )
+    files = tuple( directory.glob( '*.svg' ) )
+    async with AsyncExitStack( ) as contexts:
+        streams = await gather( *(
+            contexts.enter_async_context( open_async( file ) )
+            for file in files ) )
+        icons = await gather( *( stream.read( ) for stream in streams ) )
+    _icons_cache.update( zip( ( file.stem for file in files ), icons ) )
 
 
 def _register_transformers( auxdata ):

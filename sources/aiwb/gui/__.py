@@ -21,7 +21,6 @@
 ''' Common constants, imports, and utilities for GUI. '''
 
 
-from contextlib import contextmanager as context_manager
 from types import SimpleNamespace
 
 from accretive.qaliases import AccretiveDictionary, AccretiveNamespace

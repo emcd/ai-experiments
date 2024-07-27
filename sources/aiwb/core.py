@@ -26,13 +26,13 @@ from . import __
 
 async def prepare( ) -> __.AccretiveNamespace:
     ''' Prepares AI-related functionality for applications. '''
-    from asyncio import gather
+    from asyncio import gather # TODO: Python 3.11: TaskGroup
     from . import invocables
     from . import prompts
     from . import providers
     from . import vectorstores
     auxdata = __.prepare( )
-    await gather( *( # TODO: Python 3.11: TaskGroup
+    await gather( *(
         module.prepare( auxdata ) for module in (
             invocables, prompts, providers, vectorstores ) ) )
     return auxdata
