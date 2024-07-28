@@ -28,6 +28,7 @@ dependencies = [
   'tiktoken', # TODO: Install in environment context as needed.
   'tomli',
   'tomli-w',
+  'typing-extensions',
   'unstructured', # TODO: Remove dependency.
 ]
 classifiers = [ # https://pypi.org/classifiers

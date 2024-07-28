@@ -23,8 +23,6 @@
 # pylint: disable=unused-import
 
 
-import typing as typ
-
 from collections.abc import (
     Mapping as AbstractDictionary,
     Sequence as AbstractSequence,
@@ -33,6 +31,7 @@ from dataclasses import dataclass
 from functools import partial as partial_function
 from types import MappingProxyType as DictionaryProxy, SimpleNamespace
 
+from .. import _annotations as _a
 from ..messages.core import Canister
 
 
@@ -41,19 +40,32 @@ class ChatCompletionError( Exception ): pass
 
 @dataclass
 class ChatCallbacks:
+    ''' Callbacks for AI provider to correspond with caller. '''
 
-    allocator: typ.Callable[ [ Canister ], typ.Any ] = (
+    allocator: _a.Callable[ [ Canister ], _a.Any ] = (
         lambda canister: canister )
-    deallocator: typ.Callable[ [ typ.Any ], None ] = (
+    deallocator: _a.Callable[ [ _a.Any ], None ] = (
         lambda handle: None )
-    failure_notifier: typ.Callable[ [ str ], None ] = (
+    failure_notifier: _a.Callable[ [ str ], None ] = (
         lambda status: None )
-    progress_notifier: typ.Callable[ [ int ], None ] = (
+    progress_notifier: _a.Callable[ [ int ], None ] = (
         lambda tokens_count: None )
-    success_notifier: typ.Callable[ [ typ.Any ], None ] = (
+    success_notifier: _a.Callable[ [ _a.Any ], None ] = (
         lambda status: None )
-    updater: typ.Callable[ [ typ.Any, str ], None ] = (
+    updater: _a.Callable[ [ _a.Any, str ], None ] = (
         lambda handle: None )
+
+
+class Provider:
+    ''' Base for AI providers. '''
 
 
 chat_callbacks_minimal = ChatCallbacks( )
+
+
+# TODO: Automatically populate with all classes and functions
+#       where their __module__ attribute is __name__ of this module.
+__all__ = (
+    'ChatCallbacks', 'ChatCompletionError', 'Provider',
+    'chat_callbacks_minimal',
+)

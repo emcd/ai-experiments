@@ -21,10 +21,14 @@
 ''' Implemenation of OpenAI AI provider. '''
 
 
-from . import base as __
+from . import __
 
 
-_NAME = 'OpenAI'
+class Provider( __.Provider ):
+    ''' Model management, etc... '''
+
+    name = 'openai' # TODO: Derive from subpackage.
+    proper_name = 'OpenAI'
 
 
 _models = { } # TODO: Hide models cache in closure cell.
@@ -125,7 +129,7 @@ def invoke_function( request, controls ):
     return canister
 
 
-def prepare( auxdata ):
+async def prepare( auxdata ):
     from os import environ as cpe  # current process environment
     if 'OPENAI_API_KEY' in cpe:
         import openai
@@ -133,8 +137,8 @@ def prepare( auxdata ):
         if 'OPENAI_ORGANIZATION_ID' in cpe:
             openai.organization = cpe[ 'OPENAI_ORGANIZATION_ID' ]
     else: raise LookupError( f"Missing 'OPENAI_API_KEY'." )
-    _models.update( _provide_models( ) )
-    return _NAME
+    _models.update( await _discover_models( ) )
+    return Provider( )
 
 
 def provide_chat_models( ):
@@ -171,9 +175,10 @@ def render_data( content, controls ):
 
 def select_default_model( models, auxdata ):
     configuration = auxdata.configuration
+    # TODO: Merge configuration on provider instantiation.
     try:
-        return configuration[
-            'providers' ][ _NAME.lower( ) ][ 'default-model' ]
+        return (
+            configuration[ 'providers' ][ Provider.name ][ 'default-model' ] )
     except KeyError: pass
     for model_name in ( 'gpt-4o', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', ):
         if model_name in models: return model_name
@@ -210,6 +215,85 @@ def _create_canister_from_response( response ):
     return Canister(
         role = 'AI', attributes = attributes ).add_content(
             '', mimetype = mimetype )
+
+# TODO: Move attribute associations to data file.
+# https://platform.openai.com/docs/guides/function-calling/supported-models
+_function_support_models = frozenset( (
+    'gpt-3.5-turbo', 'gpt-3.5-turbo-16k',
+    'gpt-4', 'gpt-4-32k', 'gpt-4-turbo', 'gpt-4o',
+    'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
+    'gpt-3.5-turbo-16k-0613',
+    'gpt-4-0613', 'gpt-4-1106-preview', 'gpt-4-0125-preview',
+    'gpt-4-32k-0613',
+    'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
+    'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
+    'gpt-4o-2024-05-13',
+) )
+_multifunction_support_models = frozenset( (
+    'gpt-3.5.-turbo', 'gpt-4-turbo', 'gpt-4o',
+    'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
+    'gpt-4-1106-preview', 'gpt-4-0125-preview',
+    'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
+    'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
+    'gpt-4o-2024-05-13',
+) )
+# https://platform.openai.com/docs/models
+_model_family_context_window_sizes = __.DictionaryProxy( {
+    'gpt-3.5-turbo': 16_385,
+    'gpt-4-32k': 32_768,
+    'gpt-4-0125': 128_000,
+    'gpt-4-1106': 128_000,
+    'gpt-4-turbo': 128_000,
+    'gpt-4-vision': 128_000,
+    'gpt-4o': 128_000,
+} )
+_model_context_window_sizes = {
+    'gpt-3.5-turbo-0301': 4_096,
+    'gpt-3.5-turbo-0613': 4_096,
+}
+async def _discover_models( ):
+    if _models: return _models.copy( )
+    from collections import defaultdict
+    from operator import attrgetter
+    from openai import AsyncOpenAI
+    # TODO: Only call API when explicitly desired. Should persist to disk.
+    model_names = sorted( map(
+        attrgetter( 'id' ), ( await AsyncOpenAI( ).models.list( ) ).data ) )
+    # TODO? Reevaluate current status 3.5 Turbo sysprompt adherence.
+    sysprompt_honor = defaultdict( lambda: False )
+    sysprompt_honor.update( {
+        #'gpt-3.5-turbo-0613': True,
+        #'gpt-3.5-turbo-16k-0613': True,
+        model_name: True for model_name in model_names
+        if model_name.startswith( 'gpt-4' ) } )
+    function_support = defaultdict( lambda: False )
+    function_support.update( {
+        model_name: True for model_name in model_names
+        if model_name in _function_support_models } )
+    multifunction_support = defaultdict( lambda: False )
+    multifunction_support.update( {
+        model_name: True for model_name in model_names
+        if model_name in _multifunction_support_models } )
+    # Legacy 'gpt-3.5-turbo' has a 4096 tokens limit.
+    tokens_limits = defaultdict( lambda: 4096 )
+    for model_name in model_names:
+        if model_name in _model_context_window_sizes:
+            tokens_limits[ model_name ] = (
+                _model_context_window_sizes[ model_name ] )
+            continue
+        for model_family_name, tokens_limit \
+        in _model_family_context_window_sizes.items( ):
+            if model_name.startswith( model_family_name ):
+                tokens_limits[ model_name ] = tokens_limit
+    return {
+        model_name: {
+            'honors-system-prompt': sysprompt_honor[ model_name ],
+            'supports-functions': function_support[ model_name ],
+            'supports-multifunctions': multifunction_support[ model_name ],
+            'tokens-limit': tokens_limits[ model_name ],
+        }
+        for model_name in model_names
+    }
 
 
 def _gather_tool_call_chunks_legacy( canister, response, handle, callbacks ):
@@ -394,85 +478,6 @@ def _process_iterative_chat_response( response, callbacks ):
         if handle: callbacks.deallocator( handle )
         raise __.ChatCompletionError( f"Error: {exc}" ) from exc
     return handle
-
-# TODO: Move attribute associations to data file.
-# https://platform.openai.com/docs/guides/function-calling/supported-models
-_function_support_models = frozenset( (
-    'gpt-3.5-turbo', 'gpt-3.5-turbo-16k',
-    'gpt-4', 'gpt-4-32k', 'gpt-4-turbo', 'gpt-4o',
-    'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
-    'gpt-3.5-turbo-16k-0613',
-    'gpt-4-0613', 'gpt-4-1106-preview', 'gpt-4-0125-preview',
-    'gpt-4-32k-0613',
-    'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
-    'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
-    'gpt-4o-2024-05-13',
-) )
-_multifunction_support_models = frozenset( (
-    'gpt-3.5.-turbo', 'gpt-4-turbo', 'gpt-4o',
-    'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
-    'gpt-4-1106-preview', 'gpt-4-0125-preview',
-    'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
-    'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
-    'gpt-4o-2024-05-13',
-) )
-# https://platform.openai.com/docs/models
-_model_family_context_window_sizes = __.DictionaryProxy( {
-    'gpt-3.5-turbo': 16_385,
-    'gpt-4-32k': 32_768,
-    'gpt-4-0125': 128_000,
-    'gpt-4-1106': 128_000,
-    'gpt-4-turbo': 128_000,
-    'gpt-4-vision': 128_000,
-    'gpt-4o': 128_000,
-} )
-_model_context_window_sizes = {
-    'gpt-3.5-turbo-0301': 4_096,
-    'gpt-3.5-turbo-0613': 4_096,
-}
-def _provide_models( ):
-    if _models: return _models.copy( )
-    from collections import defaultdict
-    from operator import attrgetter
-    import openai
-    # TODO: Only call API when explicitly desired. Should persist to disk.
-    model_names = sorted( map(
-        attrgetter( 'id' ), openai.models.list( ).data ) )
-    # TODO? Reevaluate current status 3.5 Turbo sysprompt adherence.
-    sysprompt_honor = defaultdict( lambda: False )
-    sysprompt_honor.update( {
-        #'gpt-3.5-turbo-0613': True,
-        #'gpt-3.5-turbo-16k-0613': True,
-        model_name: True for model_name in model_names
-        if model_name.startswith( 'gpt-4' ) } )
-    function_support = defaultdict( lambda: False )
-    function_support.update( {
-        model_name: True for model_name in model_names
-        if model_name in _function_support_models } )
-    multifunction_support = defaultdict( lambda: False )
-    multifunction_support.update( {
-        model_name: True for model_name in model_names
-        if model_name in _multifunction_support_models } )
-    # Legacy 'gpt-3.5-turbo' has a 4096 tokens limit.
-    tokens_limits = defaultdict( lambda: 4096 )
-    for model_name in model_names:
-        if model_name in _model_context_window_sizes:
-            tokens_limits[ model_name ] = (
-                _model_context_window_sizes[ model_name ] )
-            continue
-        for model_family_name, tokens_limit \
-        in _model_family_context_window_sizes.items( ):
-            if model_name.startswith( model_family_name ):
-                tokens_limits[ model_name ] = tokens_limit
-    return {
-        model_name: {
-            'honors-system-prompt': sysprompt_honor[ model_name ],
-            'supports-functions': function_support[ model_name ],
-            'supports-multifunctions': multifunction_support[ model_name ],
-            'tokens-limit': tokens_limits[ model_name ],
-        }
-        for model_name in model_names
-    }
 
 
 def _reconstitute_invocation_legacy( invocation ):

@@ -18,13 +18,12 @@
 * General
 
     - Decouple widgets from data in conversation save/restore.
-    - Support async loading of vector databases, prompt templates, etc....
     - Support hosting conversation-related resources as relative URLs.
       Allows abstraction from local file system.
-    - Rewrite in Vue.js and Python FastAPI?
+      (FastAPI server implemented. Still need to implement routes.)
     - Support for image generation chats with OpenAI Dall-E and Leonardo.ai.
     - Option to record conversations to vector databases.
-    - Import conversations from OpenAI shares.
+    - Import conversations from OpenAI shares or account data exports.
 
 * GUI: Key Bindings
 
@@ -57,7 +56,7 @@
       deactivation.
     - Ensure central column content always fits on screen. Hide side panels
       to save space, if necessary.
-    - Scroll-to-top and scroll-to-bottom button.
+    - Scroll-to-bottom button.
     - Export conversations to static HTML.
     - Implement modal dialog for vector store addition, etc....
     - Toggle for conversation indicator labels display.

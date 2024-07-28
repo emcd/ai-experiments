@@ -18,30 +18,22 @@
 #============================================================================#
 
 
-''' Functionality for various AI providers. '''
+''' Standard annotations across Python versions. '''
+
+# ruff: noqa: F401
+# pylint: disable=unused-import
 
 
-from .__ import *
+from typing_extensions import (
+    Annotated as Annotation,
+    Any,
+    Callable,
+    Doc,
+    Never,
+    Self,
+    TypeAlias,
+    cast,
+)
 
 
-async def prepare( auxdata ):
-    ''' Prepare desired AI providers. '''
-    from asyncio import gather # TODO: Python 3.11: TaskGroup
-    from importlib import import_module
-    from accretive.qaliases import AccretiveDictionary
-    # TODO: Determine providers from configuration and only load those.
-    names = ( 'openai', )
-    modules = [ ]
-    auxdata.ai_providers = registry = AccretiveDictionary( )
-    for name in names:
-        modules.append( import_module( f".{name}", package = __package__ ) )
-    providers = await gather(
-        *( module.prepare( auxdata ) for module in modules ),
-        return_exceptions = True )
-    for provider, module in zip( providers, modules ):
-        if isinstance( provider, BaseException ):
-            # TODO: Log exception and also push onto warning stack.
-            continue
-        # TODO: Register provider object rather than module.
-        registry[ provider.proper_name ] = module
-    return registry
+__all__ = ( )
