@@ -15,6 +15,24 @@
     - Environment and executables detection for supported providers.
     - Support local models via Llama.cpp, Ollama, or Vllm.
 
+* Architecture and Design
+
+    - Separate library core and application core.
+      Optional logging configuration for library core.
+      Optional environment variables processing for library core.
+      Configrable application name for library core.
+    - Global immutable state DTOs instead of accretive namespaces.
+      GUI global state inherits from application global state.
+      Dataclasses implementations should be frozen and kw-only
+      with async classmethod to prepare fully-initialized DTOs.
+    - Async loading of prompt definitions.
+    - Async loading of vectorstores. Drop Langchain dependency.
+    - Regnerative dictionary, which is immutable except for invocation
+      of registered async regeneration function.
+      Useful for AI models registries.
+    - Visibility functions for wildcard exports of modules.
+      (Borrow from 'accretive' package.)
+
 * General
 
     - Decouple widgets from data in conversation save/restore.
