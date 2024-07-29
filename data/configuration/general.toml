@@ -3,13 +3,13 @@ format-version = 1
 maintenance-mode = false
 
 [locations]
+cache = '{user_cache}'
 data = '{user_data}'
 state = '{user_state}'
-environment-file = '{distribution}/.env'
+environment-file = '{user_configuration}/environment'
 
 #data = '/home/me/Dropbox/common/data/{application_name}'
 #state = '/home/me/Dropbox/common/state/{application_name}'
-#environment-file = '{user_configuration}/environment'
 
 [providers.'openai']
 enable = true

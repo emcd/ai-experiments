@@ -16,10 +16,10 @@ dependencies = [
   'fastapi',
   'gitignorefile',
   'icecream',
-  'jsonschema',
+  'jsonschema', # TODO: Remove dependency once on Pydantic models.
   'langchain', # TODO: Remove dependency.
-  'mako',
-  'openai ~= 1.1', # TODO: Install in environment context as needed.
+  'mako', # TODO? Replace with Jinja2.
+  'openai', # TODO: Install in environment context as needed.
   'panel ~= 1.4',
   'platformdirs',
   'python-dotenv',
@@ -27,9 +27,9 @@ dependencies = [
   'rich',
   'tiktoken', # TODO: Install in environment context as needed.
   'tomli',
-  'tomli-w',
+  'tomli-w', # TODO: Remove dependency. Use pretty JSON for machine-generated files.
   'typing-extensions',
-  'unstructured', # TODO: Remove dependency.
+  'unstructured', # TODO? Move dependency to 'experiments' option group.
 ]
 classifiers = [ # https://pypi.org/classifiers
   'Development Status :: 3 - Alpha',

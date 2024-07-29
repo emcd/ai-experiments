@@ -33,9 +33,8 @@ def prepare( ) -> AccretiveNamespace:
     ''' Initializes fundamental parts of application. '''
     from platformdirs import PlatformDirs
     distribution = discover_distribution_information( )
-    # TODO: Change platform directories anchor to name of distribution.
     directories = PlatformDirs(
-        'llm-chatter', package_distributor, ensure_exists = True )
+        distribution.name, package_distributor, ensure_exists = True )
     configuration = _provide_configuration( distribution, directories )
     auxdata = AccretiveNamespace(
         configuration = configuration,
@@ -49,12 +48,16 @@ def prepare( ) -> AccretiveNamespace:
 def discover_distribution_information( ) -> AccretiveNamespace:
     ''' Discovers information about our package distribution. '''
     from importlib.metadata import files, packages_distributions
+    from tomli import load
     # https://github.com/pypa/packaging-problems/issues/609
     name = packages_distributions( ).get( __package__ )
     if None is name: # Development sources rather than distribution package.
         editable = True # Implies no use of importlib.resources.
         location = Path( __file__ ).parents[ 2 ].resolve( strict = True )
-        name = location.stem
+        # TODO: Open and read asynchronously and parse string.
+        with ( location / 'pyproject.toml' ).open( 'rb' ) as file:
+            pyproject = load( file )
+        name = pyproject[ 'project' ][ 'name' ]
     else:
         editable = False
         location = next(
@@ -64,13 +67,52 @@ def discover_distribution_information( ) -> AccretiveNamespace:
         editable = editable, location = location, name = name )
 
 
+def provide_cache_location( auxdata, *appendages ):
+    ''' Provides cache location from configuration. '''
+    spec = auxdata.configuration.get( 'locations', { } ).get( 'cache' )
+    if not spec: base = auxdata.directories.user_cache_path
+    else:
+        base = Path( spec.format(
+            user_cache = auxdata.directories.user_cache_dir,
+            application_name = auxdata.distribution.name ) )
+    if appendages: return base.joinpath( *appendages )
+    return base
+
+
+def provide_data_location( auxdata, *appendages ):
+    ''' Provides data location from configuration. '''
+    spec = auxdata.configuration.get( 'locations', { } ).get( 'data' )
+    if not spec: base = auxdata.directories.user_data_path
+    else:
+        base = Path( spec.format(
+            user_data = auxdata.directories.user_data_dir,
+            application_name = auxdata.distribution.name ) )
+    if appendages: return base.joinpath( *appendages )
+    return base
+
+
+def provide_state_location( auxdata, *appendages ):
+    ''' Provides state location from configuration. '''
+    spec = auxdata.configuration.get( 'locations', { } ).get( 'state' )
+    if not spec: base = auxdata.directories.user_state_path
+    else:
+        base = Path( spec.format(
+            user_state = auxdata.directories.user_state_dir,
+            application_name = auxdata.distribution.name ) )
+    if appendages: return base.joinpath( *appendages )
+    return base
+
+
 def _acquire_environment( auxdata ):
-    from pathlib import Path
-    path = Path(
-        auxdata.configuration[ 'locations' ][ 'environment-file' ].format(
-            user_configuration = auxdata.directories.user_config_path,
-            distribution = auxdata.distribution.location ) )
+    locations = auxdata.configuration[ 'locations' ]
+    path = Path( ) / '.env'
+    if not path.exists( ) and auxdata.distribution.editable:
+        path = Path( auxdata.distribution.location ) / '.env'
+    if not path.exists( ) and 'environment-file' in locations:
+        path = Path( locations[ 'environment-file' ].format(
+            user_configuration = auxdata.directories.user_config_path ) )
     if not path.exists( ): return
+    # TODO? Load asynchronously into StringIO object for parsing.
     from dotenv import load_dotenv
     with path.open( ) as environment_file:
         load_dotenv( stream = environment_file )

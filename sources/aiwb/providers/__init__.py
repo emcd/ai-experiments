@@ -21,7 +21,9 @@
 ''' Functionality for various AI providers. '''
 
 
-from .__ import *
+from . import __
+
+from .__ import * # TODO: Import public interface from 'core' instead.
 
 
 async def prepare( auxdata ):
@@ -29,6 +31,7 @@ async def prepare( auxdata ):
     from asyncio import gather # TODO: Python 3.11: TaskGroup
     from importlib import import_module
     from accretive.qaliases import AccretiveDictionary
+    scribe = __.acquire_scribe( __package__ )
     # TODO: Determine providers from configuration and only load those.
     names = ( 'openai', )
     modules = [ ]
@@ -38,9 +41,10 @@ async def prepare( auxdata ):
     providers = await gather(
         *( module.prepare( auxdata ) for module in modules ),
         return_exceptions = True )
-    for provider, module in zip( providers, modules ):
+    for name, module, provider in zip( names, modules, providers ):
         if isinstance( provider, BaseException ):
-            # TODO: Log exception and also push onto warning stack.
+            scribe.error( f"Could not prepare {name!r}.", exc_info = provider )
+            # TODO: Add to warning queue.
             continue
         # TODO: Register provider object rather than module.
         registry[ provider.proper_name ] = module

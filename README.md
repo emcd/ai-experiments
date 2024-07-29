@@ -47,15 +47,48 @@ application is run via Hatch.
 
 # Configuration
 
-## OpenAI Provider
+## General
 
-1. Create a file named `.env` in the same directory as this README file.
-1. Add your OpenAI API key to the `.env` file in the following format:
+A file, named `general.toml`, located in the user configuration directory for
+the application, on first run. The user configuration directory varies by
+platform:
+* MacOS:
+* Windows:
+* XDG (Linux distributions, etc...): `~/.config/aiwb`
+This file includes configurations for your AI providers, switches to enable or
+disable special functionality, and the locations where your environment,
+prompts, and conversations are stored.
+
+## Environment
+
+Environment variables are loaded from one of the following files:
+1. An `.env` file in your current working directory.
+1. An `.env` file in the same directory as this README.
+1. The location from the `environment-file` entry in the general configuration
+   (see above). By default, this is a file, named `environment`, in the user
+   configuration directory.
+The files are considered in the above order and only the first that exists is a
+source for environment variables. The remainder are ignored.
+
+Warning: If you keep your home directory, or pieces of it, in version control,
+and you have an environment file in the user configuration directory for the
+application, then you probably want to add the file location to `.gitignore`,
+or equivalent, to avoid exposing sensitive credentials.
+
+## AI Providers
+
+### OpenAI
+
+1. Add your OpenAI API key to the environment file as follows:
    ```
    OPENAI_API_KEY=<your OpenAI API key>
    ```
-1. If you have an OpenAI organization ID, you can also add it to the `.env`
+1. If you have an OpenAI organization ID, you can add it to the environment
    file:
    ```
-   OPENAI_ORGANIZATION_ID=<your organization ID>
+   OPENAI_ORG_ID=<your organization ID>
+   ```
+1. If you have an OpenAI project ID, you can add it to the environment file:
+   ```
+   OPENAI_PROJECT_ID=<your project ID>
    ```

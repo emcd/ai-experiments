@@ -31,7 +31,9 @@ class Provider( __.Provider ):
     proper_name = 'OpenAI'
 
 
-_models = { } # TODO: Hide models cache in closure cell.
+# TODO: Maintain models with ModelsManager class.
+#       Use RegenerativeDictionary with populator function.
+_models = { }
 
 
 def access_model_data( model_name, data_name ):
@@ -130,14 +132,11 @@ def invoke_function( request, controls ):
 
 
 async def prepare( auxdata ):
-    from os import environ as cpe  # current process environment
-    if 'OPENAI_API_KEY' in cpe:
-        import openai
-        openai.api_key = cpe[ 'OPENAI_API_KEY' ]
-        if 'OPENAI_ORGANIZATION_ID' in cpe:
-            openai.organization = cpe[ 'OPENAI_ORGANIZATION_ID' ]
-    else: raise LookupError( f"Missing 'OPENAI_API_KEY'." )
-    _models.update( await _discover_models( ) )
+    from os import environ
+    if 'OPENAI_API_KEY' not in environ:
+        raise LookupError( "Missing 'OPENAI_API_KEY'." )
+    # TODO: Warn on missing 'OPENAI_ORG_ID' and 'OPENAI_PROJECT_ID'.
+    _models.update( await _cache_acquire_models( auxdata ) )
     return Provider( )
 
 
@@ -185,10 +184,31 @@ def select_default_model( models, auxdata ):
     return next( iter( models ) )
 
 
+async def _cache_acquire_models( auxdata ):
+    from json import dumps, loads
+    from aiofiles import open as open_async
+    path = __.provide_cache_location(
+        auxdata, 'providers', Provider.name, 'models.json' )
+    if path.is_file( ):
+        # TODO: Get cache expiration interval from configuration.
+        interval = __.TimeDelta( seconds = 4 * 60 * 60 ) # 4 hours
+        then = ( __.DateTime.now( __.TimeZone.utc ) - interval ).timestamp( )
+        if path.stat( ).st_mtime > then:
+            async with open_async( path ) as file:
+                return loads( await file.read( ) )
+    models = await _discover_models_from_api( )
+    path.parent.mkdir( exist_ok = True, parents = True )
+    async with open_async( path, 'w' ) as file:
+        await file.write( dumps( models, indent = 4 ) )
+    return models
+
+
 def _chat( messages, special_data, controls, callbacks ):
+    # TODO: Operate asynchronously.
+    # TODO? Remove rate limit handling, since newer client does this.
     from time import sleep
     from openai import OpenAI, OpenAIError, RateLimitError
-    client = OpenAI( ) # TODO: Cache client.
+    client = OpenAI( ) # TODO: Use async client.
     attempts_limit = 3
     for attempts_count in range( attempts_limit ):
         try:
@@ -215,6 +235,7 @@ def _create_canister_from_response( response ):
     return Canister(
         role = 'AI', attributes = attributes ).add_content(
             '', mimetype = mimetype )
+
 
 # TODO: Move attribute associations to data file.
 # https://platform.openai.com/docs/guides/function-calling/supported-models
@@ -251,31 +272,29 @@ _model_context_window_sizes = {
     'gpt-3.5-turbo-0301': 4_096,
     'gpt-3.5-turbo-0613': 4_096,
 }
-async def _discover_models( ):
-    if _models: return _models.copy( )
-    from collections import defaultdict
+async def _discover_models_from_api( ):
     from operator import attrgetter
+    from accretive import ProducerDictionary
     from openai import AsyncOpenAI
-    # TODO: Only call API when explicitly desired. Should persist to disk.
     model_names = sorted( map(
         attrgetter( 'id' ), ( await AsyncOpenAI( ).models.list( ) ).data ) )
     # TODO? Reevaluate current status 3.5 Turbo sysprompt adherence.
-    sysprompt_honor = defaultdict( lambda: False )
+    sysprompt_honor = ProducerDictionary( lambda: False )
     sysprompt_honor.update( {
         #'gpt-3.5-turbo-0613': True,
         #'gpt-3.5-turbo-16k-0613': True,
         model_name: True for model_name in model_names
         if model_name.startswith( 'gpt-4' ) } )
-    function_support = defaultdict( lambda: False )
+    function_support = ProducerDictionary( lambda: False )
     function_support.update( {
         model_name: True for model_name in model_names
         if model_name in _function_support_models } )
-    multifunction_support = defaultdict( lambda: False )
+    multifunction_support = ProducerDictionary( lambda: False )
     multifunction_support.update( {
         model_name: True for model_name in model_names
         if model_name in _multifunction_support_models } )
     # Legacy 'gpt-3.5-turbo' has a 4096 tokens limit.
-    tokens_limits = defaultdict( lambda: 4096 )
+    tokens_limits = ProducerDictionary( lambda: 4096 )
     for model_name in model_names:
         if model_name in _model_context_window_sizes:
             tokens_limits[ model_name ] = (
