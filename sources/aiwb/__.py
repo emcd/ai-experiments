@@ -23,6 +23,7 @@
 
 from pathlib import Path
 
+from aiofiles import open as open_async
 from accretive.qaliases import AccretiveNamespace
 
 
@@ -41,7 +42,7 @@ def prepare( ) -> AccretiveNamespace:
         directories = directories,
         distribution = distribution )
     _acquire_environment( auxdata )
-    _prepare_scribes( )
+    _prepare_scribes( auxdata )
     return auxdata
 
 
@@ -54,7 +55,6 @@ def discover_distribution_information( ) -> AccretiveNamespace:
     if None is name: # Development sources rather than distribution package.
         editable = True # Implies no use of importlib.resources.
         location = Path( __file__ ).parents[ 2 ].resolve( strict = True )
-        # TODO: Open and read asynchronously and parse string.
         with ( location / 'pyproject.toml' ).open( 'rb' ) as file:
             pyproject = load( file )
         name = pyproject[ 'project' ][ 'name' ]
@@ -112,13 +112,12 @@ def _acquire_environment( auxdata ):
         path = Path( locations[ 'environment-file' ].format(
             user_configuration = auxdata.directories.user_config_path ) )
     if not path.exists( ): return
-    # TODO? Load asynchronously into StringIO object for parsing.
     from dotenv import load_dotenv
     with path.open( ) as environment_file:
         load_dotenv( stream = environment_file )
 
 
-def _prepare_scribes( ):
+def _prepare_scribes( auxdata ):
     from icecream import ic, install
     from rich.pretty import pretty_repr
     ic.configureOutput(
@@ -126,10 +125,13 @@ def _prepare_scribes( ):
         includeContext = True,
         prefix = 'DEBUG    ', )
     install( )
+    from os import environ
+    envvar_name = "{name}_LOG_LEVEL".format(
+        name = auxdata.distribution.name.upper( ) )
+    level_name = environ.get( envvar_name, 'INFO' )
     import logging
     from rich.console import Console
     from rich.logging import RichHandler
-    # TODO: Get log level from environment.
     rich_handler = RichHandler(
         console = Console( stderr = True ),
         rich_tracebacks = True,
@@ -137,7 +139,7 @@ def _prepare_scribes( ):
     logging.basicConfig(
         format = '%(name)s: %(message)s',
         handlers = [ rich_handler ],
-        level = logging.INFO )
+        level = getattr( logging, level_name ) )
     logging.captureWarnings( True )
     logging.debug( 'Logging initialized.' )
     # TODO? Configure OpenTelemetry emitter.
