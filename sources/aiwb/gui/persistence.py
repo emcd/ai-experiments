@@ -256,7 +256,7 @@ def _restore_prompt_variables_v0( gui, state, species ):
     # TEMP HACK: Use selector name as key until cutover to unified dict.
     template_class = 'system' if 'supervisor' == species else 'canned'
     selector = getattr( gui, f"selector_{template_class}_prompt" )
-    definition = gui.auxdata__.prompt_definitions[ selector.value ]
+    definition = gui.auxdata__.prompts[ selector.value ]
     variables = definition.variables
     data = { }
     for substate in state:

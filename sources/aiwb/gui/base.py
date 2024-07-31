@@ -78,7 +78,7 @@ roles_styles = {
 
 
 def access_ai_provider_current( gui ):
-    return gui.auxdata__.ai_providers[ gui.selector_provider.value ]
+    return gui.auxdata__.providers[ gui.selector_provider.value ]
 
 
 def assimilate_canister_dto_from_gui( canister_gui ):
@@ -114,7 +114,7 @@ def extract_invocation_requests( gui, component = None ):
     if None is component: component = gui.column_conversation_history[ -1 ]
     canister = component.gui__.canister__
     # TODO: Use selected multichoice values instead of all possible.
-    ai_functions = gui.auxdata__.ai_functions
+    ai_functions = gui.auxdata__.invocables
     auxdata = SimpleNamespace(
         controls = package_controls( gui ), **gui.auxdata__.__dict__ )
     provider = access_ai_provider_current( gui )
@@ -216,5 +216,5 @@ def _provide_active_ai_functions( gui ):
     if not gui.multichoice_functions.value: return [ ]
     return [
         loads( function.__doc__ )
-        for name, function in gui.auxdata__.ai_functions.items( )
+        for name, function in gui.auxdata__.invocables.items( )
         if name in gui.multichoice_functions.value ]

@@ -31,7 +31,7 @@ from ..base import register_function
 def render_prompt( auxdata, control, content, mime_type ):
     from .prompts import select_default_instructions
     control = control or { }
-    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
     instructions = control.get( 'instructions', '' )
     if control.get( 'mode', 'supplement' ):
         instructions = ' '.join( filter( None, (

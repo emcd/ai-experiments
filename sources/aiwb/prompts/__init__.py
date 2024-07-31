@@ -26,4 +26,4 @@ from . import core
 
 async def prepare( auxdata ):
     ''' Loads prompt definitions. '''
-    await core.prepare( auxdata )
+    return await core.prepare( auxdata )

@@ -220,7 +220,7 @@ def populate_models_selector( gui ):
 
 
 def populate_providers_selector( gui ):
-    providers = gui.auxdata__.ai_providers
+    providers = gui.auxdata__.providers
     gui.selector_provider.options = list( providers.keys( ) )
     # TODO: Drop this auxdata and rely on main GUI auxdata instead.
     gui.selector_provider.auxdata__ = providers
@@ -238,7 +238,7 @@ def populate_prompt_variables( gui, species, data = None ):
     name = selector.value
     if name not in selector.options:
         selector.value = name = next( iter( selector.options ) )
-    definition = gui.auxdata__.prompt_definitions[ name ]
+    definition = gui.auxdata__.prompts[ name ]
     prompts_cache = selector.auxdata__.prompts_cache
     if None is not data: prompts_cache[ name ] = definition.deserialize( data )
     prompt = prompts_cache.get( name )
@@ -276,8 +276,7 @@ def postpopulate_system_prompt_variables( gui ):
     # TODO: Fix bug where canned prompt variables are not selected on init.
     can_update = hasattr( gui.selector_canned_prompt, 'auxdata__' )
     # If there is a canned prompt preference, then update accordingly.
-    definition = gui.auxdata__.prompt_definitions[
-        gui.selector_system_prompt.value ]
+    definition = gui.auxdata__.prompts[ gui.selector_system_prompt.value ]
     attributes = definition.attributes
     user_prompt_preference = attributes.get( 'user-prompt-preference' )
     if can_update and None is not user_prompt_preference:
@@ -320,7 +319,7 @@ def truncate_conversation( gui, index ):
 
 
 def update_active_functions( gui ):
-    available_functions = gui.auxdata__.ai_functions
+    available_functions = gui.auxdata__.invocables
     # TODO: Construct components from layout.
     from panel.pane import JSON
     from .layouts import _message_column_width_attributes, sizes
@@ -423,11 +422,11 @@ def update_functions_prompt( gui ):
         gui.selector_model.value ][ 'supports-functions' ]
     gui.row_functions_prompt.visible = supports_functions
     if supports_functions:
-        attributes = gui.auxdata__.prompt_definitions[
+        attributes = gui.auxdata__.prompts[
             gui.selector_system_prompt.value ].attributes
         associated_functions = attributes.get( 'functions', { } )
     else: associated_functions = { }
-    available_functions = gui.auxdata__.ai_functions
+    available_functions = gui.auxdata__.invocables
     gui.multichoice_functions.value = [ ]
     gui.multichoice_functions.options = [
         function_name for function_name in available_functions.keys( )
@@ -457,7 +456,7 @@ def update_search_button( gui ):
 
 def update_summarization_toggle( gui ):
     prompt_name = gui.selector_canned_prompt.value
-    attributes = gui.auxdata__.prompt_definitions[ prompt_name ].attributes
+    attributes = gui.auxdata__.prompts[ prompt_name ].attributes
     summarizes = attributes.get( 'summarizes', False )
     gui.toggle_summarize.value = (
         'canned' == gui.selector_user_prompt_class.value and summarizes )
@@ -480,7 +479,7 @@ def update_token_count( gui ):
     messages.append( Canister( role = 'Human' ).add_content( content ) )
     controls = __.package_controls( gui )
     special_data = __.package_special_data( gui )
-    provider = gui.auxdata__.ai_providers[ gui.selector_provider.value ]
+    provider = gui.auxdata__.providers[ gui.selector_provider.value ]
     tokens_count = provider.count_conversation_tokens(
         messages, special_data, controls )
     tokens_limit = gui.selector_model.auxdata__[
@@ -502,7 +501,7 @@ def _populate_prompts_selector( gui, species ):
     selector = getattr( gui, f"selector_{template_class}_prompt" )
     names = list( sorted( # Panel explicitly needs a list or dict.
         name for name, definition
-        in gui.auxdata__.prompt_definitions.items( )
+        in gui.auxdata__.prompts.items( )
         if      species == definition.species
             and not definition.attributes.get( 'conceal', False ) ) )
     selector.options = names

@@ -178,7 +178,7 @@ def _generate_conversation_title( gui ):
     controls = __.package_controls( gui )
     provider_format_name = provider.provide_format_name( controls )
     prompt = (
-        gui.auxdata__.prompt_definitions[ 'Title + Labels' ]
+        gui.auxdata__.prompts[ 'Title + Labels' ]
         .create_prompt( values = { 'format': provider_format_name } ) )
     canister = Canister( role = 'Human' ).add_content(
         prompt.render( gui.auxdata__ ) )

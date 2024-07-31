@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from enum import Enum
 from logging import getLogger as acquire_scribe
 from pathlib import Path
+from types import MappingProxyType as DictionaryProxy
 
 from aiofiles import open as open_async
 from accretive.qaliases import AccretiveDictionary, AccretiveNamespace

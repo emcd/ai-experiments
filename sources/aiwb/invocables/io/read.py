@@ -145,7 +145,7 @@ def _read_recursive( auxdata, path, control = None ):
 
 
 def _access_tokens_limit( auxdata ):
-    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
     model_name = auxdata.controls[ 'model' ]
     return provider.access_model_data( model_name, 'tokens-limit' )
 
@@ -154,13 +154,12 @@ def _analyze_file( auxdata, path, control = None ):
     from ...messages.core import Canister
     from ...providers import chat_callbacks_minimal
     ai_messages = [ ]
-    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
     provider_format_name = provider.provide_format_name( auxdata.controls )
     summarization_prompt = (
-        auxdata.prompt_definitions[ 'Concatenate: AI Responses' ]
-        .create_prompt( ) )
+        auxdata.prompts[ 'Concatenate: AI Responses' ].create_prompt( ) )
     supervisor_prompt = (
-        auxdata.prompt_definitions[ 'Automation: File Analysis' ]
+        auxdata.prompts[ 'Automation: File Analysis' ]
         .create_prompt( values = { 'format': provider_format_name } ) )
     chunk_reader, mime_type = _determine_chunk_reader( path )
     for chunk in chunk_reader( auxdata, path ):
@@ -189,7 +188,7 @@ def _analyze_http( auxdata, url, control = None ):
 
 
 def _count_tokens( auxdata, content ):
-    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
     model_name = auxdata.controls[ 'model' ]
     return provider.count_text_tokens( str( content ), model_name )
 
@@ -212,10 +211,10 @@ def _determine_chunk_reader( path, mime_type = None ):
 def _discriminate_dirents( auxdata, dirents, control = None ):
     from ...messages.core import Canister
     from ...providers import chat_callbacks_minimal
-    provider = auxdata.ai_providers[ auxdata.controls[ 'provider' ] ]
+    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
     provider_format_name = provider.provide_format_name( auxdata.controls )
     prompt = (
-        auxdata.prompt_definitions[ 'Discriminate Directory Entries' ]
+        auxdata.prompts[ 'Discriminate Directory Entries' ]
         .create_prompt( values = { 'format': provider_format_name } ) )
     supervisor_message = prompt.render( auxdata )
     complete_result = [ ]

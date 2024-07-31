@@ -30,10 +30,8 @@ async def prepare( auxdata ):
     #       Possibly return Result | Future objects for use after GUI load.
     from tomli import load as load_toml
     manifest_path = auxdata.directories.user_config_path / 'vectorstores.toml'
-    stores = { }
-    if not manifest_path.exists( ):
-        auxdata.vectorstores = stores
-        return stores
+    stores = { } # TODO: AccretiveDictionary
+    if not manifest_path.exists( ): return stores
     with manifest_path.open( 'rb' ) as manifest_stream:
         manifest = load_toml( manifest_stream )
     for data in manifest.get( 'stores', ( ) ):
@@ -48,5 +46,4 @@ async def prepare( auxdata ):
         # TODO: Use __import__ or importlib.import instead of globals.
         instance = await globals( )[ provider_name ].restore( auxdata, data )
         stores[ store_name ][ 'instance' ] = instance
-    auxdata.vectorstores = stores
     return stores

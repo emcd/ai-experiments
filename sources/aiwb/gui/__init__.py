@@ -47,6 +47,7 @@ def main( ):
 async def prepare( ) -> __.AccretiveNamespace:
     ''' Prepares everything related to the GUI. '''
     from asyncio import gather # TODO: Python 3.11: TaskGroup
+    from dataclasses import fields
     from ..appcore import prepare as prepare_core
     from .base import generate_component
     from .components import prepare as prepare_components
@@ -54,6 +55,10 @@ async def prepare( ) -> __.AccretiveNamespace:
     from .server import prepare as prepare_server
     from .updaters import populate_dashboard
     auxdata = await prepare_core( )
+    # TEMP: Convert Globals to AccretiveNamespace.
+    auxdata = __.AccretiveNamespace(
+            **{ field.name: getattr( auxdata, field.name )
+                for field in fields( auxdata ) } )
     auxdata.gui = gui = __.AccretiveNamespace( )
     await gather( *(
         preparer( auxdata ) for preparer

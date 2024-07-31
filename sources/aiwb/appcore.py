@@ -22,29 +22,44 @@
 
 
 from . import __
+from . import libcore as _libcore
+
+
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class Globals( _libcore.Globals ):
+    ''' Immutable global data. Required by many application functions. '''
+
+    invocables: __.DictionaryProxy
+    prompts: __.DictionaryProxy
+    providers: __.AccretiveDictionary
+    vectorstores: dict
+
+    @classmethod
+    async def prepare( selfclass, base: _libcore.Globals ) -> __.a.Self:
+        ''' Acquires data to create DTO. '''
+        from asyncio import gather # TODO: Python 3.11: TaskGroup
+        from dataclasses import fields
+        from importlib import import_module
+        slots = ( 'invocables', 'prompts', 'providers', 'vectorstores' )
+        modules = tuple(
+            import_module( f".{slot}", __package__ ) for slot in slots )
+        attributes = await gather( *(
+            module.prepare( base ) for module in modules ) )
+        ic( attributes )
+        return selfclass(
+            **{ field.name: getattr( base, field.name )
+                for field in fields( base ) },
+            **dict( zip( slots, attributes ) ) )
 
 
 async def prepare( ) -> __.AccretiveNamespace:
     ''' Prepares AI-related functionality for applications. '''
-    from asyncio import gather # TODO: Python 3.11: TaskGroup
-    from . import invocables
-    from . import prompts
-    from . import providers
-    from . import vectorstores
-    from .libcore import ( ScribeModes, prepare as prepare_ )
     _configure_logging_pre( )
-    auxdata = await prepare_(
-        environment = True, scribe_mode = ScribeModes.Rich )
-    # TEMP: Convert accretive namespace.
-    auxdata = __.AccretiveNamespace(
-        configuration = auxdata.configuration,
-        directories = auxdata.directories,
-        distribution = auxdata.distribution )
-    _configure_logging_post( auxdata )
+    auxdata_base = await _libcore.prepare(
+        environment = True, scribe_mode = _libcore.ScribeModes.Rich )
+    _configure_logging_post( auxdata_base )
+    auxdata = await Globals.prepare( auxdata_base )
     # TODO: Configure metrics and traces emitters.
-    await gather( *(
-        module.prepare( auxdata ) for module in (
-            invocables, prompts, providers, vectorstores ) ) )
     return auxdata
 
 

@@ -35,7 +35,7 @@ async def prepare( auxdata ):
     # TODO: Determine providers from configuration and only load those.
     names = ( 'openai', )
     modules = [ ]
-    auxdata.ai_providers = registry = AccretiveDictionary( )
+    registry = AccretiveDictionary( )
     for name in names:
         modules.append( import_module( f".{name}", package = __package__ ) )
     providers = await gather(
