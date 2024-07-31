@@ -1,3 +1,4 @@
+*.swp
 .env
 .ipynb_checkpoints/
 .local/artifacts/

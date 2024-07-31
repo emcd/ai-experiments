@@ -21,50 +21,18 @@
 ''' Base functionality to support AI workbench. '''
 
 
+import enum
+
+from dataclasses import dataclass
+from enum import Enum
+from logging import getLogger as acquire_scribe
 from pathlib import Path
 
 from aiofiles import open as open_async
-from accretive.qaliases import AccretiveNamespace
+from accretive.qaliases import AccretiveDictionary, AccretiveNamespace
+from platformdirs import PlatformDirs
 
-
-package_distributor = 'emcd'
-
-
-def prepare( ) -> AccretiveNamespace:
-    ''' Initializes fundamental parts of application. '''
-    from platformdirs import PlatformDirs
-    distribution = discover_distribution_information( )
-    directories = PlatformDirs(
-        distribution.name, package_distributor, ensure_exists = True )
-    configuration = _provide_configuration( distribution, directories )
-    auxdata = AccretiveNamespace(
-        configuration = configuration,
-        directories = directories,
-        distribution = distribution )
-    _acquire_environment( auxdata )
-    _prepare_scribes( auxdata )
-    return auxdata
-
-
-def discover_distribution_information( ) -> AccretiveNamespace:
-    ''' Discovers information about our package distribution. '''
-    from importlib.metadata import files, packages_distributions
-    from tomli import load
-    # https://github.com/pypa/packaging-problems/issues/609
-    name = packages_distributions( ).get( __package__ )
-    if None is name: # Development sources rather than distribution package.
-        editable = True # Implies no use of importlib.resources.
-        location = Path( __file__ ).parents[ 2 ].resolve( strict = True )
-        with ( location / 'pyproject.toml' ).open( 'rb' ) as file:
-            pyproject = load( file )
-        name = pyproject[ 'project' ][ 'name' ]
-    else:
-        editable = False
-        location = next(
-            file for file in files( __package__ )
-            if f"{__package__}/__init__.py" == str( file ) ).locate( ).parent
-    return AccretiveNamespace(
-        editable = editable, location = location, name = name )
+from . import _annotations as a
 
 
 def provide_cache_location( auxdata, *appendages ):
@@ -101,57 +69,3 @@ def provide_state_location( auxdata, *appendages ):
             application_name = auxdata.distribution.name ) )
     if appendages: return base.joinpath( *appendages )
     return base
-
-
-def _acquire_environment( auxdata ):
-    locations = auxdata.configuration[ 'locations' ]
-    path = Path( ) / '.env'
-    if not path.exists( ) and auxdata.distribution.editable:
-        path = Path( auxdata.distribution.location ) / '.env'
-    if not path.exists( ) and 'environment-file' in locations:
-        path = Path( locations[ 'environment-file' ].format(
-            user_configuration = auxdata.directories.user_config_path ) )
-    if not path.exists( ): return
-    from dotenv import load_dotenv
-    with path.open( ) as environment_file:
-        load_dotenv( stream = environment_file )
-
-
-def _prepare_scribes( auxdata ):
-    from icecream import ic, install
-    from rich.pretty import pretty_repr
-    ic.configureOutput(
-        argToStringFunction = pretty_repr,
-        includeContext = True,
-        prefix = 'DEBUG    ', )
-    install( )
-    from os import environ
-    envvar_name = "{name}_LOG_LEVEL".format(
-        name = auxdata.distribution.name.upper( ) )
-    level_name = environ.get( envvar_name, 'INFO' )
-    import logging
-    from rich.console import Console
-    from rich.logging import RichHandler
-    rich_handler = RichHandler(
-        console = Console( stderr = True ),
-        rich_tracebacks = True,
-        show_time = False )
-    logging.basicConfig(
-        format = '%(name)s: %(message)s',
-        handlers = [ rich_handler ],
-        level = getattr( logging, level_name ) )
-    logging.captureWarnings( True )
-    logging.debug( 'Logging initialized.' )
-    # TODO? Configure OpenTelemetry emitter.
-    #       Can use flame graph of locally-collected traces for profiling.
-
-
-def _provide_configuration( distribution, directories ):
-    from shutil import copyfile
-    from tomli import load
-    location = directories.user_config_path / 'general.toml'
-    if not location.exists( ):
-        copyfile(
-            str( distribution.location / 'data/configuration/general.toml' ),
-            str( location ) )
-    with location.open( 'rb' ) as file: return load( file )

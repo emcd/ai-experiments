@@ -47,7 +47,7 @@ def main( ):
 async def prepare( ) -> __.AccretiveNamespace:
     ''' Prepares everything related to the GUI. '''
     from asyncio import gather # TODO: Python 3.11: TaskGroup
-    from ..core import prepare as prepare_core
+    from ..appcore import prepare as prepare_core
     from .base import generate_component
     from .components import prepare as prepare_components
     from .layouts import dashboard_layout as layout

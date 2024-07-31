@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Core classes and functions for AI applications. '''
+''' Core entities for use with workbench applications. '''
 
 
 from . import __
@@ -31,8 +31,45 @@ async def prepare( ) -> __.AccretiveNamespace:
     from . import prompts
     from . import providers
     from . import vectorstores
-    auxdata = __.prepare( )
+    from .libcore import ( ScribeModes, prepare as prepare_ )
+    _configure_logging_pre( )
+    auxdata = await prepare_(
+        environment = True, scribe_mode = ScribeModes.Rich )
+    # TEMP: Convert accretive namespace.
+    auxdata = __.AccretiveNamespace(
+        configuration = auxdata.configuration,
+        directories = auxdata.directories,
+        distribution = auxdata.distribution )
+    _configure_logging_post( auxdata )
+    # TODO: Configure metrics and traces emitters.
     await gather( *(
         module.prepare( auxdata ) for module in (
             invocables, prompts, providers, vectorstores ) ) )
     return auxdata
+
+
+def _configure_logging_pre( ):
+    ''' Configures standard Python logging during early initialization. '''
+    import logging
+    from rich.console import Console
+    from rich.logging import RichHandler
+    handler = RichHandler(
+        console = Console( stderr = True ),
+        rich_tracebacks = True,
+        show_time = False )
+    logging.basicConfig(
+        format = '%(name)s: %(message)s',
+        handlers = [ handler ] )
+    logging.captureWarnings( True )
+
+
+def _configure_logging_post( auxdata: __.AccretiveNamespace ):
+    ''' Configures standard Python logging after context available. '''
+    # TODO: auxdata should be Globals
+    import logging
+    from os import environ
+    envvar_name = "{name}_LOG_LEVEL".format(
+        name = auxdata.distribution.name.upper( ) )
+    level = getattr( logging, environ.get( envvar_name, 'INFO' ) )
+    scribe = __.acquire_scribe( )
+    scribe.setLevel( level )
