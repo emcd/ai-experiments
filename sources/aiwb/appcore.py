@@ -45,7 +45,6 @@ class Globals( _libcore.Globals ):
             import_module( f".{slot}", __package__ ) for slot in slots )
         attributes = await gather( *(
             module.prepare( base ) for module in modules ) )
-        ic( attributes )
         return selfclass(
             **{ field.name: getattr( base, field.name )
                 for field in fields( base ) },
@@ -78,9 +77,8 @@ def _configure_logging_pre( ):
     logging.captureWarnings( True )
 
 
-def _configure_logging_post( auxdata: __.AccretiveNamespace ):
+def _configure_logging_post( auxdata: _libcore.Globals ):
     ''' Configures standard Python logging after context available. '''
-    # TODO: auxdata should be Globals
     import logging
     from os import environ
     envvar_name = "{name}_LOG_LEVEL".format(

@@ -41,7 +41,7 @@ async def prepare( auxdata ):
     thread = Thread( target = server.run, kwargs = { "sockets": [ sock ] } )
     address, port = sock.getsockname( )
     ic( address, port )
-    auxdata.gui.server_context = __.AccretiveNamespace(
+    return __.AccretiveNamespace(
         server = server, thread = thread, address = address, port = port )
 
 

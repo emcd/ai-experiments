@@ -21,9 +21,12 @@
 ''' Common constants, imports, and utilities for GUI. '''
 
 
+from dataclasses import dataclass
 from types import SimpleNamespace
 
 from accretive.qaliases import AccretiveDictionary, AccretiveNamespace
+
+from .. import _annotations as a
 
 
 __all__ = ( )

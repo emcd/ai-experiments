@@ -17,12 +17,12 @@
 
 * Architecture and Design
 
-    - Global immutable state DTOs instead of accretive namespaces.
-      GUI global state inherits from application global state.
     - Async loading of prompt definitions.
     - Async loading of vectorstores. Drop Langchain dependency.
     - Visibility functions for wildcard exports of modules.
       (Borrow from 'accretive' package.)
+    - Rework GUI to pass immutable global state through functions
+      instead of GUI components namespace.
 
 * General
 
