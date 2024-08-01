@@ -193,19 +193,24 @@ def populate_conversation( gui ):
     update_conversation_postpopulate( gui )
 
 
-def populate_dashboard( gui ):
+async def populate_dashboard( auxdata ):
+    from .base import generate_component
     from .classes import ConversationDescriptor
-    from .layouts import conversations_manager_layout
+    from .layouts import conversations_manager_layout, dashboard_layout
     from .persistence import restore_conversations_index
-    conversations = gui.column_conversations_indicators
+    components = auxdata.gui.components
+    generate_component( components, dashboard_layout, 'dashboard' )
+    conversations = components.column_conversations_indicators
     conversations.descriptors__ = { }
     conversations.current_descriptor__ = ConversationDescriptor( )
-    restore_conversations_index( gui )
-    if gui.auxdata__.configuration.get( 'maintenance-mode', False ):
-        gui.button_upgrade_conversations.visible = True
+    await restore_conversations_index( auxdata )
+    if auxdata.configuration.get( 'maintenance-mode', False ):
+        components.button_upgrade_conversations.visible = True
     __.register_event_callbacks(
-        gui, conversations_manager_layout, 'column_conversations_manager' )
-    create_and_display_conversation( gui )
+        components,
+        conversations_manager_layout,
+        'column_conversations_manager' )
+    create_and_display_conversation( components ) # TODO: async
 
 
 def populate_models_selector( gui ):

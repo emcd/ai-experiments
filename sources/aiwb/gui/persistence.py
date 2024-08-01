@@ -105,27 +105,35 @@ def restore_conversation_messages( gui, column_name, state ):
         add_message( gui, canister )
 
 
-def restore_conversations_index( gui ):
+async def restore_conversations_index( auxdata ):
+    from aiofiles import open as open_
+    from tomli import loads
     from .classes import ConversationDescriptor
     from .updaters import (
         add_conversation_indicator,
         sort_conversations_index,
     )
-    conversations_path = __.calculate_conversations_path( gui )
+    components = auxdata.gui.components
+    conversations_path = __.calculate_conversations_path( components )
     index_path = conversations_path / 'index.toml'
-    if not index_path.exists( ): return save_conversations_index( gui )
-    from tomli import load
-    with index_path.open( 'rb' ) as file:
-        descriptors = load( file )[ 'descriptors' ]
+    if not index_path.exists( ):
+        return save_conversations_index( components ) # TODO: async
+    async with open_( index_path ) as file:
+        descriptors = loads( await file.read( ) )[ 'descriptors' ]
+    # TODO: Check conversation indicators concurrently.
+    #       (asyncio.gather aiofiles.os.path.isfile)
+    #       Then, add as array of objects.
     for descriptor in descriptors:
         identity = descriptor[ 'identity' ]
         conversation_path = conversations_path / f"{identity}.json"
         # Conversation may have disappeared for some reason.
         if not conversation_path.exists( ): continue
         add_conversation_indicator(
-            gui, ConversationDescriptor( **descriptor ), position = 'END' )
-    sort_conversations_index( gui ) # extra sanity
-    save_conversations_index( gui )
+            components,
+            ConversationDescriptor( **descriptor ),
+            position = 'END' )
+    sort_conversations_index( components ) # extra sanity
+    save_conversations_index( components ) # TODO: async
 
 
 def restore_prompt_variables( gui, row_name, state, species ):

@@ -62,6 +62,7 @@ async def _prepare_favicon( auxdata: Globals ):
     # https://news.ycombinator.com/item?id=30347043
     from base64 import b64encode
     from aiofiles import open as open_
+    # TODO: Use importlib.resources as appropriate.
     path = auxdata.distribution.location / 'data/icons/favicon-32.png'
     async with open_( path, 'rb' ) as stream:
         icon = await stream.read( )
@@ -87,12 +88,8 @@ async def _prepare_server_complete( auxdata: Globals ):
     ''' Finishes preparation of GUI server. '''
     from asyncio import gather # TODO: Python 3.11: TaskGroup
     from . import components
-    from .base import generate_component
-    from .layouts import dashboard_layout as layout
     from .updaters import populate_dashboard
     await gather(
         _prepare_favicon( auxdata ),
         components.prepare( auxdata ) )
-    # TODO: Create components and populate dashboard asynchronously.
-    generate_component( auxdata.gui.components, layout, 'dashboard' )
-    populate_dashboard( auxdata.gui.components )
+    await populate_dashboard( auxdata )
