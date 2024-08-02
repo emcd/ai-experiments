@@ -70,6 +70,7 @@ class Globals:
     distribution: DistributionInformation
     directories: __.PlatformDirs
     configuration: __.AccretiveDictionary
+    notifications: __.SimpleQueue
 
     @classmethod
     async def prepare(
@@ -84,10 +85,12 @@ class Globals:
             distribution.name, distribution.publisher, ensure_exists = True )
         configuration = (
             await acquire_configuration( distribution, directories ) )
+        notifications = __.SimpleQueue( )
         return selfclass(
             configuration = configuration,
             directories = directories,
-            distribution = distribution )
+            distribution = distribution,
+            notifications = notifications )
 
 
 class ScribeModes( __.Enum ): # TODO: Python 3.11: StrEnum

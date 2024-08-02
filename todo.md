@@ -17,18 +17,22 @@
 
 * Architecture and Design
 
-    - Async loading of prompt definitions.
     - Async loading of vectorstores. Drop Langchain dependency.
     - Visibility functions for wildcard exports of modules.
       (Borrow from 'accretive' package.)
     - Rework GUI to pass immutable global state through functions
       instead of GUI components namespace.
     - Wrap PlatformDirs object with configuration-based accessor.
+    - Add notifications queue.
+      Propagate warnings and non-critical errors to queue.
+      (Queue done; need to propagate where appropriate.)
 
 * General
 
     - Accessor for distribution data which will use local filesystem
       when distribution is editable and importlib.resources otherwise.
+      (Or, Traversable.asfile to dump the distribution to a directory.)
+    - Licensing information for Tabler SVG files.
     - Decouple widgets from data in conversation save/restore.
     - Support hosting conversation-related resources as relative URLs.
       Allows abstraction from local file system.

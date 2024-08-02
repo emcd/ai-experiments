@@ -33,6 +33,7 @@ from enum import Enum
 from logging import getLogger as acquire_scribe
 from os import PathLike
 from pathlib import Path
+from queue import SimpleQueue
 from types import MappingProxyType as DictionaryProxy
 
 from accretive.qaliases import AccretiveDictionary, AccretiveNamespace
