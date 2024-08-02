@@ -34,3 +34,5 @@ from collections.abc import (
 from dataclasses import dataclass, field as dataclass_declare
 from pathlib import Path
 from types import MappingProxyType as DictionaryProxy, SimpleNamespace
+
+from ..__ import read_files_async

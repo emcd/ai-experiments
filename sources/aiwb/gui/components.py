@@ -33,15 +33,10 @@ async def prepare( auxdata: _core.Globals ):
 
 _icons_cache = __.AccretiveDictionary( )
 async def _prepare_icons_cache( auxdata ):
-    from asyncio import gather # TODO: Python 3.11: TaskGroup
-    from contextlib import AsyncExitStack
-    from aiofiles import open as open_
+    # TODO: Use importlib.resources as necessary.
     directory = auxdata.distribution.location / 'data/icons'
     files = tuple( directory.glob( '*.svg' ) )
-    async with AsyncExitStack( ) as contexts:
-        streams = await gather( *(
-            contexts.enter_async_context( open_( file ) ) for file in files ) )
-        icons = await gather( *( stream.read( ) for stream in streams ) )
+    icons = await __.read_files_async( *files )
     _icons_cache.update( zip( ( file.stem for file in files ), icons ) )
 
 

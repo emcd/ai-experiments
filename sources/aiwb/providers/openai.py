@@ -186,7 +186,7 @@ def select_default_model( models, auxdata ):
 
 async def _cache_acquire_models( auxdata ):
     from json import dumps, loads
-    from aiofiles import open as open_async
+    from aiofiles import open as open_
     path = __.provide_cache_location(
         auxdata, 'providers', Provider.name, 'models.json' )
     if path.is_file( ):
@@ -194,11 +194,11 @@ async def _cache_acquire_models( auxdata ):
         interval = __.TimeDelta( seconds = 4 * 60 * 60 ) # 4 hours
         then = ( __.DateTime.now( __.TimeZone.utc ) - interval ).timestamp( )
         if path.stat( ).st_mtime > then:
-            async with open_async( path ) as file:
+            async with open_( path ) as file:
                 return loads( await file.read( ) )
     models = await _discover_models_from_api( )
     path.parent.mkdir( exist_ok = True, parents = True )
-    async with open_async( path, 'w' ) as file:
+    async with open_( path, 'w' ) as file:
         await file.write( dumps( models, indent = 4 ) )
     return models
 

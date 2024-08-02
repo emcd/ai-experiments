@@ -27,6 +27,7 @@ from types import SimpleNamespace
 from accretive.qaliases import AccretiveDictionary, AccretiveNamespace
 
 from .. import _annotations as a
+from ..__ import read_files_async
 
 
 __all__ = ( )

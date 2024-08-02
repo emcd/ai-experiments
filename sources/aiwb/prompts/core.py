@@ -21,7 +21,7 @@
 ''' Core functions for prompts. '''
 
 
-from . import base as __
+from . import __
 
 
 class Definition:
@@ -85,31 +85,33 @@ class Instance:
         return serialize_dictionary( self.controls )
 
 
-# TODO: Support async loading.
 async def prepare( auxdata ):
+    ''' Load prompt definitions. '''
+    descriptors = await _acquire_descriptors( auxdata )
     definitions = __.DictionaryProxy( {
         name: Definition.instantiate_descriptor( descriptor )
-        for name, descriptor in _acquire_descriptors( auxdata ).items( ) } )
+        for name, descriptor in descriptors.items( ) } )
     return definitions
 
 
-# TODO: Support async loading.
-def _acquire_descriptors( auxdata ):
-    from tomli import load
+async def _acquire_descriptors( auxdata ):
+    # TODO: Support configurable prompt locations.
+    from itertools import chain
+    from tomli import loads
+    # TODO: Use importlib.resources as necessary.
     distribution_directory_base = auxdata.distribution.location / 'data'
     suffix = 'prompts/descriptors'
-    descriptors = { }
-    for directory in (
-        distribution_directory_base / suffix,
-        auxdata.directories.user_data_path / suffix,
-    ):
-        if not directory.exists( ): continue
-        for path in directory.resolve( strict = True ).glob( '*.toml' ):
-            with path.open( 'rb' ) as stream:
-                data = load( stream )
-            # TODO? Prefix with species.
-            descriptors[ data[ 'name' ] ] = data
-    return __.DictionaryProxy( descriptors )
+    directories = tuple(
+        directory for directory_base
+        in ( distribution_directory_base, auxdata.directories.user_data_path )
+        if ( directory := directory_base / suffix ).exists( ) )
+    files = tuple( chain.from_iterable(
+        directory.resolve( strict = True ).glob( '*.toml' )
+        for directory in directories ) )
+    # TODO? Warn on errors. Use return_exceptions = True.
+    records = await __.read_files_async( *files, deserializer = loads )
+    return __.DictionaryProxy( {
+        record[ 'name' ]: record for record in records } )
 
 
 def _acquire_fragment( auxdata, filename ):

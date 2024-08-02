@@ -29,9 +29,11 @@ from typing_extensions import (
     Any,
     Callable,
     Doc,
+    Generic,
     Never,
     Self,
     TypeAlias,
+    TypeVar,
     cast,
 )
 
