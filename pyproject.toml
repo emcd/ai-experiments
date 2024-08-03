@@ -13,12 +13,13 @@ dependencies = [
   'accretive',
   'aiofiles',
   'anthropic', # TODO: Install in environment context as needed.
-  'exceptiongroup', # TODO: Python 3.11: Remove dependency.
-  'fastapi',
+  'exceptiongroup', # TODO: Python 3.11: Remove.
+  'fastapi[standard]',
   'gitignorefile',
   'icecream',
-  'jsonschema', # TODO: Remove dependency once on Pydantic models.
-  'langchain', # TODO: Remove dependency.
+  'importlib-resources', # TODO: Python 3.12: Remove.
+  'jsonschema', # TODO: Remove once on Pydantic models.
+  'langchain', # TODO: Remove.
   'mako', # TODO? Replace with Jinja2.
   'openai', # TODO: Install in environment context as needed.
   'panel ~= 1.4',
@@ -28,9 +29,9 @@ dependencies = [
   'rich',
   'tiktoken', # TODO: Install in environment context as needed.
   'tomli',
-  'tomli-w', # TODO: Remove dependency. Use pretty JSON for machine-generated files.
+  'tomli-w', # TODO? Remove. Use pretty JSON for machine-generated files.
   'typing-extensions',
-  'unstructured', # TODO? Move dependency to 'experiments' option group.
+  'unstructured', # TODO? Move to 'experiments' option group.
 ]
 classifiers = [ # https://pypi.org/classifiers
   'Development Status :: 3 - Alpha',

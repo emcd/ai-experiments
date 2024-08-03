@@ -34,10 +34,14 @@ class DistributionInformation:
     publisher: str
 
     @classmethod
-    async def prepare( selfclass, package: str, publisher: str ) -> __.a.Self:
+    async def prepare(
+        selfclass, package: str, publisher: str, contexts: __.Contexts
+    ) -> __.a.Self:
         ''' Acquires information about our package distribution. '''
-        from importlib.metadata import files, packages_distributions
+        from importlib.metadata import packages_distributions
         from aiofiles import open as open_
+        # TODO: Python 3.12: importlib.resources
+        from importlib_resources import files, as_file
         from tomli import loads
         # https://github.com/pypa/packaging-problems/issues/609
         name = packages_distributions( ).get( package )
@@ -50,12 +54,8 @@ class DistributionInformation:
             name = pyproject[ 'project' ][ 'name' ]
         else:
             editable = False
-            # TODO: Consider zipfiles, etc....
-            # TODO: Consider single-file packages.
-            location = next(
-                file for file in ( files( package ) or ( ) )
-                if f"{package}/__init__.py" == str( file )
-            ).locate( ).parent
+            # Extract package contents to temporary directory, if necessary.
+            location = contexts.enter_context( as_file( files( package ) ) )
         return selfclass(
             editable = editable,
             location = location,
@@ -67,6 +67,7 @@ class DistributionInformation:
 class Globals:
     ''' Immutable global data. Required by many library functions. '''
 
+    contexts: __.Contexts # TODO? Make accretive.
     distribution: DistributionInformation
     directories: __.PlatformDirs
     configuration: __.AccretiveDictionary
@@ -74,13 +75,16 @@ class Globals:
 
     @classmethod
     async def prepare(
-        selfclass, distribution: DistributionInformation = None
+        selfclass,
+        contexts: __.Contexts,
+        distribution: DistributionInformation = None,
     ) -> __.a.Self:
         ''' Acquires data to create DTO. '''
         if None is distribution:
             distribution = (
                 await DistributionInformation.prepare(
-                    package = __package__, publisher = 'emcd' ) )
+                    package = __package__, publisher = 'emcd',
+                    contexts = contexts ) )
         directories = __.PlatformDirs(
             distribution.name, distribution.publisher, ensure_exists = True )
         configuration = (
@@ -88,6 +92,7 @@ class Globals:
         notifications = __.SimpleQueue( )
         return selfclass(
             configuration = configuration,
+            contexts = contexts,
             directories = directories,
             distribution = distribution,
             notifications = notifications )
@@ -160,6 +165,7 @@ def configure_logging( auxdata: Globals, mode: ScribeModes ):
 
 
 async def prepare(
+    contexts: __.Contexts,
     environment: bool = False,
     scribe_mode: ScribeModes = ScribeModes.Null,
 ) -> Globals:
@@ -173,7 +179,7 @@ async def prepare(
         concurrently initialize other entities outside of the library, even
         though the library initialization, itself, is inherently sequential.
     '''
-    auxdata = await Globals.prepare( )
+    auxdata = await Globals.prepare( contexts = contexts )
     if environment: await update_environment( auxdata )
     configure_icecream( mode = scribe_mode )
     configure_logging( auxdata, mode = scribe_mode )

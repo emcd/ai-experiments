@@ -33,16 +33,42 @@ def main( ):
     # TODO? aiomisc.entrypoint
     from asyncio import run
     from time import sleep
-    auxdata = run( core.prepare( ) )
-    components = auxdata.gui.components
-    api = auxdata.api
-    api.thread.start( )
-    try:
-        while not api.server.started: sleep( 0.001 )
-        components.template__.show( autoreload = True, title = 'AI Workbench' )
-    finally:
-        api.server.should_exit = True
-        api.thread.join( )
+    with __.Contexts( ) as contexts:
+        auxdata = run( core.prepare( contexts = contexts ) )
+        components = auxdata.gui.components
+        api = auxdata.api
+        api.thread.start( )
+        try:
+            while not api.server.started: sleep( 0.001 )
+            components.template__.show(
+                autoreload = True, title = 'AI Workbench' )
+        finally:
+            api.server.should_exit = True
+            api.thread.join( )
+
+
+#def main( ):
+#    ''' Prepares and executes GUI. '''
+#    # Note: Cannot be async because Hatch does not support async entrypoints.
+#    # TODO? aiomisc.entrypoint
+#    from asyncio import run
+#    run( _main( ) )
+#
+#
+#async def _main( ):
+#    from asyncio import sleep
+#    async with __.ContextsAsync( ) as contexts:
+#        auxdata = await core.prepare( contexts = contexts )
+#        components = auxdata.gui.components
+#        api = auxdata.api
+#        api.thread.start( )
+#        try:
+#            while not api.server.started: await sleep( 0.001 )
+#            components.template__.show(
+#                autoreload = True, title = 'AI Workbench' )
+#        finally:
+#            api.server.should_exit = True
+#            api.thread.join( )
 
 
 if '__main__' == __name__: main( )

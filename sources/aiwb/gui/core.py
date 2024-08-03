@@ -51,9 +51,9 @@ class Globals( _appcore.Globals ):
         return instance
 
 
-async def prepare( ) -> Globals:
+async def prepare( contexts: __.Contexts ) -> Globals:
     ''' Prepares everything related to the GUI. '''
-    auxdata_base = await _appcore.prepare( )
+    auxdata_base = await _appcore.prepare( contexts = contexts )
     return await Globals.prepare( auxdata_base )
 
 

@@ -21,6 +21,7 @@
 ''' Common constants, imports, and utilities for GUI. '''
 
 
+from contextlib import ExitStack as Contexts
 from dataclasses import dataclass
 from types import SimpleNamespace
 

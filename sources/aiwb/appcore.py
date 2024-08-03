@@ -51,11 +51,13 @@ class Globals( _libcore.Globals ):
             **dict( zip( slots, attributes ) ) )
 
 
-async def prepare( ) -> __.AccretiveNamespace:
+async def prepare( contexts: __.Contexts ) -> __.AccretiveNamespace:
     ''' Prepares AI-related functionality for applications. '''
     _configure_logging_pre( )
     auxdata_base = await _libcore.prepare(
-        environment = True, scribe_mode = _libcore.ScribeModes.Rich )
+        contexts = contexts,
+        environment = True,
+        scribe_mode = _libcore.ScribeModes.Rich )
     _configure_logging_post( auxdata_base )
     auxdata = await Globals.prepare( auxdata_base )
     # TODO: Configure metrics and traces emitters.

@@ -28,6 +28,7 @@ from collections.abc import (
     Iterable as AbstractIterable,
     Sequence as AbstractSequence,
 )
+from contextlib import ExitStack as Contexts
 from dataclasses import dataclass
 from enum import Enum
 from logging import getLogger as acquire_scribe
