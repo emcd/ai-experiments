@@ -84,5 +84,7 @@ def _configure_logging_post( auxdata: _libcore.Globals ):
     envvar_name = "{name}_LOG_LEVEL".format(
         name = auxdata.distribution.name.upper( ) )
     level = getattr( logging, environ.get( envvar_name, 'INFO' ) )
-    scribe = __.acquire_scribe( )
-    scribe.setLevel( level )
+    root_scribe = __.acquire_scribe( )
+    root_scribe.setLevel( level )
+    library_scribe = __.acquire_scribe( __package__ )
+    library_scribe.propagate = False # Prevent double-logging.

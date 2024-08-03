@@ -21,29 +21,57 @@
 ''' Functionality for various vectorstores. '''
 
 
-from . import chroma
-from . import faiss
+from .. import libcore as _libcore
+from . import __
 
 
-async def prepare( auxdata ):
-    # TODO: Support async loading.
-    #       Possibly return Result | Future objects for use after GUI load.
-    from tomli import load as load_toml
-    manifest_path = auxdata.directories.user_config_path / 'vectorstores.toml'
-    stores = { } # TODO: AccretiveDictionary
-    if not manifest_path.exists( ): return stores
-    with manifest_path.open( 'rb' ) as manifest_stream:
-        manifest = load_toml( manifest_stream )
-    for data in manifest.get( 'stores', ( ) ):
-        store_name = data[ 'name' ]
-        stores[ store_name ] = data.copy( )
-        provider_name = data[ 'provider' ]
-        if provider_name not in globals( ):
-            # TODO: Improve error signaling.
-            raise ValueError(
-                f"Unknown vectorstore provider, '{provider_name}', "
-                f"for vectorstore '{store_name}'." )
-        # TODO: Use __import__ or importlib.import instead of globals.
-        instance = await globals( )[ provider_name ].restore( auxdata, data )
-        stores[ store_name ][ 'instance' ] = instance
-    return stores
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class StoreDescriptor:
+    ''' Vectorstore name and data, including provider. '''
+
+    name: str
+    data: dict
+    provider: __.Module
+
+    @classmethod
+    def from_dictionary( selfclass, data: __.AbstractDictionary ):
+        ''' Constructs store descriptor from dictionary, loading provider. '''
+        from importlib import import_module
+        name = data[ 'name' ]
+        data = data
+        # TODO? Cache module imports to avoid redundant imports.
+        provider = import_module(
+            ".{name}".format( name = data[ 'provider' ] ), __package__ )
+        return selfclass( name = name, data = data, provider = provider )
+
+
+async def prepare( auxdata: _libcore.Globals ) -> __.AccretiveDictionary:
+    ''' Ensures requested providers exist and returns vectorstore futures. '''
+    # TODO: https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
+    from aiofiles import open as open_
+    from tomli import loads
+    scribe = __.acquire_scribe( __package__ )
+    registry = __.AccretiveDictionary( )
+    # TODO: Vectorstore descriptors as part of general configuration.
+    path = auxdata.directories.user_config_path / 'vectorstores.toml'
+    if not path.exists( ): return registry
+    async with open_( path ) as stream:
+        manifest = loads( await stream.read( ) )
+    stores = tuple(
+        StoreDescriptor.from_dictionary( data )
+        for data in manifest.get( 'stores', ( ) ) )
+    results = await __.gather_async(
+        *( store.provider.restore( auxdata, store ) for store in stores ),
+        return_exceptions = True )
+    for store, result in zip( stores, results ):
+        match result:
+            case __.g.Error( error ):
+                summary = (
+                    f"Could not load vectorstore {store.name!r}. "
+                    f"Reason: {error}" )
+                scribe.error( summary )
+                auxdata.notifications.put( error )
+            case __.g.Value( future ):
+                registry[ store.name ] = future # TODO: Implement futures.
+    # TODO? Notify if empty registry.
+    return registry

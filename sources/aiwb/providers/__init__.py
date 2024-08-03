@@ -33,10 +33,11 @@ async def prepare( auxdata ):
     scribe = __.acquire_scribe( __package__ )
     # TODO: Determine providers from configuration and only load those.
     names = ( 'openai', )
-    modules = [ ]
     registry = AccretiveDictionary( )
-    for name in names:
-        modules.append( import_module( f".{name}", package = __package__ ) )
+    # TODO: Build provider specs from configuration and load modules there.
+    #       See vectorstores subpackage for example.
+    modules = tuple(
+        import_module( f".{name}", package = __package__ ) for name in names )
     results = await __.gather_async(
         *( module.prepare( auxdata ) for module in modules ),
         return_exceptions = True )
@@ -47,7 +48,7 @@ async def prepare( auxdata ):
                 scribe.error( summary, exc_info = error )
                 auxdata.notifications.put( error )
             case __.g.Value( provider ):
-                # TODO: Register provider object rather than module.
+                # TODO: Register provider future rather than module.
                 registry[ provider.proper_name ] = module
     # TODO? Notify if empty registry.
     return registry

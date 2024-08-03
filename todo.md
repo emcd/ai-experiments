@@ -23,7 +23,7 @@
 
 * Architecture and Design
 
-    - Async loading of vectorstores. Drop Langchain dependency.
+    - Drop or adapt Langchain dependency for vectorstores.
     - Visibility functions for wildcard exports of modules.
       (Borrow from 'accretive' package.)
     - Rework GUI to pass immutable global state through functions
@@ -32,6 +32,7 @@
     - Accessor for distribution data which will use local filesystem
       when distribution is editable and importlib.resources otherwise.
       (Or, Traversable.asfile to dump the distribution to a directory.)
+    - Process configuration includes.
 
 * General
 

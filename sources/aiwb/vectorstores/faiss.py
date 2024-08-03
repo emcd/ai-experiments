@@ -21,10 +21,10 @@
 ''' Implementation of interface to FAISS. '''
 
 
-from . import base as __
+from . import __
 
 
-async def restore( auxdata, data ):
+async def restore( auxdata, store ):
     # TODO: Adapt to new Langchain interface or remove Langchain dependency.
     #       https://python.langchain.com/docs/modules/data_connection/vectorstores/#get-started
     # TODO: Configurable embedding function.
@@ -32,14 +32,13 @@ async def restore( auxdata, data ):
     from langchain.vectorstores import ( # pylint: disable=no-name-in-module
         FAISS,
     )
-    configuration = auxdata.configuration
-    directories = auxdata.directories
     embedder = OpenAIEmbeddings( )
+    data = store.data
     arguments = data.get( 'arguments', { } )
     location_info = __.urlparse( data[ 'location' ] )
     if 'file' == location_info.scheme:
         location = __.Path( location_info.path.format(
-            **__.derive_standard_file_paths( configuration, directories ) ) )
+            **__.derive_standard_file_paths( auxdata ) ) )
         return FAISS.load_local(
             folder_path = str( location ),
             embeddings = embedder,
