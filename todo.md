@@ -1,14 +1,20 @@
-## LLM Chatter
+* AI: Agents
+    - Programming Agents: orchestrator, designer, programmer, reviewer
+    - Role-playing Game Agents: orchestrator, master, player, character
 
-* AI: Agents and Functions
+* AI: Functions
 
-    - Environment, executables, and libraries detection for supported
-      functionality.
+    - Detection of environment, executables, and libraries for functions.
     - Improve callbacks to record intermediate AI assistant outputs.
+    - Tool to recursively list directories (without reading files).
+    - Tool to interact with PR comments.
+    - Tool to interact with vector databases for documentation search.
+    - Tool to perform documentation searchs against web sites.
+    - Tool to generate gists.
+    - Tool to submit and update PRs.
     - Use `ctags` to help with code navigation.
     - Use Beautiful Soup to help with web page analysis.
       Replace large JS data blobs, canvas elements, etc... with comments.
-    - Role-playing Game Agents: orchestrator, master, player, character
 
 * AI: Models and Providers
 
@@ -23,15 +29,12 @@
     - Rework GUI to pass immutable global state through functions
       instead of GUI components namespace.
     - Wrap PlatformDirs object with configuration-based accessor.
-    - Add notifications queue.
-      Propagate warnings and non-critical errors to queue.
-      (Queue done; need to propagate where appropriate.)
-
-* General
-
     - Accessor for distribution data which will use local filesystem
       when distribution is editable and importlib.resources otherwise.
       (Or, Traversable.asfile to dump the distribution to a directory.)
+
+* General
+
     - Licensing information for Tabler SVG files.
     - Decouple widgets from data in conversation save/restore.
     - Support hosting conversation-related resources as relative URLs.
@@ -117,19 +120,3 @@
 
     - Ensure Markdown constructs are used to structure human-facing output.
     - Ensure lists and tables from AI agents are recapitulated.
-
-
-## Github Actions Workflows
-
-* Define tool to interact with PR comments.
-
-* Define tool to interact with vector databases for documentation search.
-
-* Define tool to perform documentation searchs against web sites.
-
-* Define tool to generate gists.
-
-* Define tool to submit and update PRs.
-
-* Define agent to use these tools and a command supplied via argument to a
-  workflow.

@@ -28,7 +28,6 @@ from .__ import * # TODO: Import public interface from 'core' instead.
 
 async def prepare( auxdata ):
     ''' Prepare desired AI providers. '''
-    from asyncio import gather # TODO: Python 3.11: TaskGroup
     from importlib import import_module
     from accretive.qaliases import AccretiveDictionary
     scribe = __.acquire_scribe( __package__ )
@@ -38,14 +37,17 @@ async def prepare( auxdata ):
     registry = AccretiveDictionary( )
     for name in names:
         modules.append( import_module( f".{name}", package = __package__ ) )
-    providers = await gather(
+    results = await __.gather_async(
         *( module.prepare( auxdata ) for module in modules ),
         return_exceptions = True )
-    for name, module, provider in zip( names, modules, providers ):
-        if isinstance( provider, BaseException ):
-            scribe.error( f"Could not prepare {name!r}.", exc_info = provider )
-            # TODO: Add to warning queue.
-            continue
-        # TODO: Register provider object rather than module.
-        registry[ provider.proper_name ] = module
+    for name, module, result in zip( names, modules, results ):
+        match result:
+            case __.g.Error( error ):
+                summary = f"Could not prepare AI provider {name!r}."
+                scribe.error( summary, exc_info = error )
+                auxdata.notifications.put( error )
+            case __.g.Value( provider ):
+                # TODO: Register provider object rather than module.
+                registry[ provider.proper_name ] = module
+    # TODO? Notify if empty registry.
     return registry

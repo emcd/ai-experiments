@@ -40,8 +40,9 @@ from types import (
     SimpleNamespace,
 )
 
-from .. import _annotations as _a
-from ..__ import provide_cache_location
+from .. import _annotations as _a # TODO: a
+from .. import _generics as g
+from ..__ import gather_async, provide_cache_location
 from ..messages.core import Canister
 
 

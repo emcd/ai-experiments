@@ -43,27 +43,6 @@ from . import _annotations as a
 from . import _generics as g
 
 
-async def intercept_error_async( awaitable: AbstractAwaitable ) -> g.Result:
-    ''' Converts unwinding exceptions to error results.
-
-        Exceptions, which are not instances of :py:exc:`Exception` or one of
-        its subclasses, are allowed to propagate. In particular,
-        :py:exc:`KeyboardInterrupt` and :py:exc:`SystemExit` must be allowed
-        to propagate to be consistent with :py:class:`asyncio.TaskGroup`
-        behavior.
-
-        Helpful when working with :py:func:`asyncio.gather`, for example,
-        because exceptions can be distinguished from computed values
-        and collected together into an exception group.
-
-        In general, it is a bad idea to swallow exceptions. In this case,
-        the intent is to add them into an exception group for continued
-        propagation.
-    '''
-    try: return g.Value( await awaitable )
-    except Exception as exc: return g.Error( exc )
-
-
 async def gather_async(
     *operands: a.Any,
     return_exceptions: a.Annotation[
@@ -85,6 +64,27 @@ async def gather_async(
     errors = tuple( result.error for result in results if result.is_error( ) )
     if errors: raise ExceptionGroup( error_message, errors )
     return tuple( result.extract( ) for result in results )
+
+
+async def intercept_error_async( awaitable: AbstractAwaitable ) -> g.Result:
+    ''' Converts unwinding exceptions to error results.
+
+        Exceptions, which are not instances of :py:exc:`Exception` or one of
+        its subclasses, are allowed to propagate. In particular,
+        :py:exc:`KeyboardInterrupt` and :py:exc:`SystemExit` must be allowed
+        to propagate to be consistent with :py:class:`asyncio.TaskGroup`
+        behavior.
+
+        Helpful when working with :py:func:`asyncio.gather`, for example,
+        because exceptions can be distinguished from computed values
+        and collected together into an exception group.
+
+        In general, it is a bad idea to swallow exceptions. In this case,
+        the intent is to add them into an exception group for continued
+        propagation.
+    '''
+    try: return g.Value( await awaitable )
+    except Exception as exc: return g.Error( exc )
 
 
 async def read_files_async(

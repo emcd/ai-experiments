@@ -98,6 +98,7 @@ async def _acquire_descriptors( auxdata ):
     # TODO: Support configurable prompt locations.
     from itertools import chain
     from tomli import loads
+    scribe = __.acquire_scribe( __package__ )
     # TODO: Use importlib.resources as necessary.
     distribution_directory_base = auxdata.distribution.location / 'data'
     suffix = 'prompts/descriptors'
@@ -108,10 +109,18 @@ async def _acquire_descriptors( auxdata ):
     files = tuple( chain.from_iterable(
         directory.resolve( strict = True ).glob( '*.toml' )
         for directory in directories ) )
-    # TODO? Warn on errors. Use return_exceptions = True.
-    records = await __.read_files_async( *files, deserializer = loads )
-    return __.DictionaryProxy( {
-        record[ 'name' ]: record for record in records } )
+    results = await __.read_files_async(
+        *files, deserializer = loads, return_exceptions = True )
+    descriptors = { }
+    for file, result in zip( files, results ):
+        match result:
+            case __.g.Error( error ):
+                summary = f"Could not load prompt descriptor at: {file}"
+                scribe.error( summary, exc_info = error )
+                auxdata.notifications.put( error )
+            case __.g.Value( record ):
+                descriptors[ record[ 'name' ] ] = record
+    return __.DictionaryProxy( descriptors )
 
 
 def _acquire_fragment( auxdata, filename ):
