@@ -60,7 +60,8 @@ async def gather_async(
     from exceptiongroup import ExceptionGroup # TODO: Python 3.11: builtin
     if ignore_nonawaitables:
         results = await _gather_async_permissive( operands )
-    else: results = await _gather_async_strict( operands )
+    else:
+        results = await _gather_async_strict( operands )
     if return_exceptions: return results
     errors = tuple( result.error for result in results if result.is_error( ) )
     if errors: raise ExceptionGroup( error_message, errors )
@@ -116,42 +117,6 @@ async def read_files_async(
             ignore_nonawaitables = return_exceptions )
     if deserializer: return tuple( transformer( datum ) for datum in data )
     return data
-
-
-def provide_cache_location( auxdata, *appendages ):
-    ''' Provides cache location from configuration. '''
-    spec = auxdata.configuration.get( 'locations', { } ).get( 'cache' )
-    if not spec: base = auxdata.directories.user_cache_path
-    else:
-        base = Path( spec.format(
-            user_cache = auxdata.directories.user_cache_dir,
-            application_name = auxdata.distribution.name ) )
-    if appendages: return base.joinpath( *appendages )
-    return base
-
-
-def provide_data_location( auxdata, *appendages ):
-    ''' Provides data location from configuration. '''
-    spec = auxdata.configuration.get( 'locations', { } ).get( 'data' )
-    if not spec: base = auxdata.directories.user_data_path
-    else:
-        base = Path( spec.format(
-            user_data = auxdata.directories.user_data_dir,
-            application_name = auxdata.distribution.name ) )
-    if appendages: return base.joinpath( *appendages )
-    return base
-
-
-def provide_state_location( auxdata, *appendages ):
-    ''' Provides state location from configuration. '''
-    spec = auxdata.configuration.get( 'locations', { } ).get( 'state' )
-    if not spec: base = auxdata.directories.user_state_path
-    else:
-        base = Path( spec.format(
-            user_state = auxdata.directories.user_state_dir,
-            application_name = auxdata.distribution.name ) )
-    if appendages: return base.joinpath( *appendages )
-    return base
 
 
 async def _gather_async_permissive(

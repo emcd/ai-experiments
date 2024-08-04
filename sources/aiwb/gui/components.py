@@ -33,8 +33,7 @@ async def prepare( auxdata: _core.Globals ):
 
 _icons_cache = __.AccretiveDictionary( )
 async def _prepare_icons_cache( auxdata ):
-    # TODO: Use importlib.resources as necessary.
-    directory = auxdata.distribution.location / 'data/icons'
+    directory = auxdata.distribution.provide_data_location( 'icons' )
     files = tuple( directory.glob( '*.svg' ) )
     icons = await __.read_files_async( *files )
     _icons_cache.update( zip( ( file.stem for file in files ), icons ) )

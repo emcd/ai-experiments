@@ -62,15 +62,36 @@ class DistributionInformation:
             name = name,
             publisher = publisher )
 
+    def provide_data_location( self, *appendages: str ) -> __.Path:
+        ''' Provides location of distribution data. '''
+        base = self.location / 'data'
+        if appendages: return base.joinpath( *appendages )
+        return base
+
+
+class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Possible species for locations. '''
+
+    Cache = 'cache'
+    Data = 'data'
+    State = 'state'
+
+
+class ScribeModes( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Possible modes for logging output. '''
+
+    Null = __.enum.auto( )
+    Rich = __.enum.auto( )
+
 
 @__.dataclass( frozen = True, kw_only = True, slots = True )
 class Globals:
     ''' Immutable global data. Required by many library functions. '''
 
     contexts: __.Contexts # TODO? Make accretive.
-    distribution: DistributionInformation
-    directories: __.PlatformDirs
     configuration: __.AccretiveDictionary
+    directories: __.PlatformDirs
+    distribution: DistributionInformation
     notifications: __.SimpleQueue
 
     @classmethod
@@ -97,12 +118,32 @@ class Globals:
             distribution = distribution,
             notifications = notifications )
 
+    def provide_cache_location( self, *appendages: str ) -> __.Path:
+        ''' Provides cache location from configuration. '''
+        return self.provide_location( LocationSpecies.Cache, *appendages )
 
-class ScribeModes( __.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Possible modes for logging output. '''
+    def provide_data_location( self, *appendages: str ) -> __.Path:
+        ''' Provides data location from configuration. '''
+        return self.provide_location( LocationSpecies.Data, *appendages )
 
-    Null = __.enum.auto( )
-    Rich = __.enum.auto( )
+    def provide_state_location( self, *appendages: str ) -> __.Path:
+        ''' Provides state location from configuration. '''
+        return self.provide_location( LocationSpecies.State, *appendages )
+
+    def provide_location(
+        self, species: LocationSpecies, *appendages: str
+    ) -> __.Path:
+        ''' Provides particular species of location from configuration. '''
+        species = species.value
+        base = getattr( self.directories, f"user_{species}_path" )
+        if spec := self.configuration.get( 'locations', { } ).get( species ):
+            args = {
+                f"user_{species}": base,
+                'application_name': self.distribution.name,
+            }
+            base = __.Path( spec.format( **args ) )
+        if appendages: return base.joinpath( *appendages )
+        return base
 
 
 async def acquire_configuration(
@@ -118,9 +159,9 @@ async def acquire_configuration(
     from tomli import loads
     location = directories.user_config_path / 'general.toml'
     if not location.exists( ):
-        # TODO: Use importlib.resources as appropriate.
         copyfile(
-            str( distribution.location / 'data/configuration/general.toml' ),
+            str( distribution.provide_data_location(
+                'configuration', 'general.toml' ) ),
             str( location ) )
     async with open_( location ) as file:
         return __.AccretiveDictionary( loads( await file.read( ) ) )

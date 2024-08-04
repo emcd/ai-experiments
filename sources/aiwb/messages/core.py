@@ -24,50 +24,40 @@
 from . import base as __
 
 
-@__.dataclass
+@__.dataclass( frozen = True, slots = True )
 class DirectoryManager:
 
-    auxdata: __.SimpleNamespace
+    auxdata: __.AccretiveNamespace
 
     _mkdir_nomargs_default = __.DictionaryProxy( dict(
         exist_ok = True, parents = True ) )
 
     def assert_content_directory( self, identity ):
         distributary = identity[ : 4 ]
-        location = (
-            self._provide_state_location( 'contents' )
-            .joinpath( distributary, identity ) )
+        location = self.auxdata.provide_state_location(
+            'contents', distributary, identity )
         if not location.exists( ): raise FileNotFoundError( location )
         return location
 
     def assert_conversation_directory( self, identity ):
-        location = (
-            self._provide_state_location( 'conversations' ) / identity )
+        location = self.auxdata.provide_state_location(
+            'conversations', identity )
         if not location.exists( ): raise FileNotFoundError( location )
         return location
 
     def create_content_directory( self, identity, mkdir_nomargs = None ):
         distributary = identity[ : 4 ]
-        location = (
-            self._provide_state_location( 'contents' )
-            .joinpath( distributary, identity ) )
+        location = self.auxdata.provide_state_location(
+            'contents', distributary, identity )
         mkdir_nomargs = mkdir_nomargs or self._mkdir_nomargs_default
         location.mkdir( **mkdir_nomargs )
         return location
 
     def create_conversation_directory( self, identity, mkdir_nomargs = None ):
-        location = (
-            self._provide_state_location( 'conversations' ) / identity )
+        location = self.auxdata.provide_state_location(
+            'conversations', identity )
         mkdir_nomargs = mkdir_nomargs or self._mkdir_nomargs_default
         location.mkdir( **mkdir_nomargs )
-        return location
-
-    def _provide_state_location( self, dirname = None ):
-        configuration = self.auxdata.configuration
-        directories = self.auxdata.directories
-        location = __.Path( configuration[ 'locations' ][ 'state' ].format(
-            user_state = directories.user_state_path ) )
-        if dirname: return location / dirname
         return location
 
 

@@ -99,8 +99,8 @@ async def _acquire_descriptors( auxdata ):
     from itertools import chain
     from tomli import loads
     scribe = __.acquire_scribe( __package__ )
-    # TODO: Use importlib.resources as necessary.
-    distribution_directory_base = auxdata.distribution.location / 'data'
+    distribution_directory_base = (
+        auxdata.distribution.provide_data_location( ) )
     suffix = 'prompts/descriptors'
     directories = tuple(
         directory for directory_base
@@ -124,7 +124,8 @@ async def _acquire_descriptors( auxdata ):
 
 
 def _acquire_fragment( auxdata, filename ):
-    distribution_directory_base = auxdata.distribution.location / 'data'
+    distribution_directory_base = (
+        auxdata.distribution.provide_data_location( ) )
     suffix = 'prompts/fragments'
     for directory in (
         distribution_directory_base / suffix,
@@ -140,7 +141,8 @@ def _acquire_fragment( auxdata, filename ):
 
 def _acquire_template( auxdata, identifier ):
     from mako.template import Template
-    distribution_directory_base = auxdata.distribution.location / 'data'
+    distribution_directory_base = (
+        auxdata.distribution.provide_data_location( ) )
     suffix = 'prompts/templates'
     for directory in (
         distribution_directory_base / suffix,

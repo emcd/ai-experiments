@@ -62,8 +62,7 @@ async def _prepare_favicon( auxdata: Globals ):
     # https://news.ycombinator.com/item?id=30347043
     from base64 import b64encode
     from aiofiles import open as open_
-    # TODO: Use importlib.resources as appropriate.
-    path = auxdata.distribution.location / 'data/icons/favicon-32.png'
+    path = auxdata.distribution.provide_data_location( 'icons/favicon-32.png' )
     async with open_( path, 'rb' ) as stream:
         icon = await stream.read( )
     icon_b64 = b64encode( icon ).decode( )

@@ -42,7 +42,7 @@ from types import (
 
 from .. import _annotations as _a # TODO: a
 from .. import _generics as g
-from ..__ import gather_async, provide_cache_location
+from ..__ import gather_async
 from ..messages.core import Canister
 
 

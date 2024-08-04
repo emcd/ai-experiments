@@ -187,8 +187,8 @@ def select_default_model( models, auxdata ):
 async def _cache_acquire_models( auxdata ):
     from json import dumps, loads
     from aiofiles import open as open_
-    path = __.provide_cache_location(
-        auxdata, 'providers', Provider.name, 'models.json' )
+    path = auxdata.provide_cache_location(
+        'providers', Provider.name, 'models.json' )
     if path.is_file( ):
         # TODO: Get cache expiration interval from configuration.
         interval = __.TimeDelta( seconds = 4 * 60 * 60 ) # 4 hours
