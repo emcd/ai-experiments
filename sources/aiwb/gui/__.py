@@ -100,12 +100,15 @@ def calculate_conversations_path( gui ):
 
 def extract_invocation_requests( gui, component = None ):
     # TODO: Move to aiwb.gui.invocables.
+    from dataclasses import fields
     if None is component: component = gui.column_conversation_history[ -1 ]
     canister = component.gui__.canister__
     # TODO: Use selected multichoice values instead of all possible.
     ai_functions = gui.auxdata__.invocables
     auxdata = SimpleNamespace(
-        controls = package_controls( gui ), **gui.auxdata__.__dict__ )
+        controls = package_controls( gui ),
+        **{ field.name: getattr( gui.auxdata__, field.name )
+            for field in fields( gui.auxdata__ ) } )
     provider = access_ai_provider_current( gui )
     return provider.extract_invocation_requests(
         canister, auxdata, ai_functions )

@@ -139,6 +139,7 @@ class Globals:
         if spec := self.configuration.get( 'locations', { } ).get( species ):
             args = {
                 f"user_{species}": base,
+                'user_home': __.Path.home( ),
                 'application_name': self.distribution.name,
             }
             base = __.Path( spec.format( **args ) )
@@ -150,21 +151,42 @@ async def acquire_configuration(
     distribution: DistributionInformation, directories: __.PlatformDirs
 ) -> __.AccretiveDictionary:
     ''' Loads configuration as dictionary. '''
-    # TODO? Use base configuraton to load common configuration
-    #       from another location specified in 'locations' entry.
-    #       Helpful for provider configurations, etc... in cross-host shared
-    #       directories.
     from shutil import copyfile
     from aiofiles import open as open_
     from tomli import loads
     location = directories.user_config_path / 'general.toml'
     if not location.exists( ):
         copyfile(
-            str( distribution.provide_data_location(
-                'configuration', 'general.toml' ) ),
-            str( location ) )
+            distribution.provide_data_location(
+                'configuration', 'general.toml' ), location )
+    # TODO: Raise error if location is not file.
     async with open_( location ) as file:
-        return __.AccretiveDictionary( loads( await file.read( ) ) )
+        configuration = loads( await( file.read( ) ) )
+    includes = await _acquire_configuration_includes(
+        distribution, directories, configuration.get( 'includes', ( ) ) )
+    for include in includes: configuration.update( include )
+    return __.AccretiveDictionary( configuration )
+
+
+async def _acquire_configuration_includes(
+    distribution: DistributionInformation,
+    directories: __.PlatformDirs,
+    specs: tuple[ str ]
+) -> __.AbstractSequence[ dict ]:
+    from itertools import chain
+    from tomli import loads
+    locations = tuple(
+        __.Path( spec.format(
+            user_configuration = directories.user_config_path,
+            application_name = distribution.name ) )
+        for spec in specs )
+    iterables = tuple(
+        ( location.glob( '*.toml' ) if location.is_dir( ) else ( location, ) )
+        for location in locations )
+    includes = await __.read_files_async(
+        *( file for file in chain.from_iterable( iterables ) ),
+        deserializer = loads )
+    return includes
 
 
 def configure_icecream( mode: ScribeModes ):
@@ -229,17 +251,22 @@ async def prepare(
 
 async def update_environment( auxdata: Globals ):
     ''' Updates process environment from dot files. '''
-    from io import StringIO
-    from aiofiles import open as open_
-    from dotenv import load_dotenv
     locations = auxdata.configuration.get( 'locations', { } )
-    path = __.Path( ) / '.env'
-    if not path.exists( ) and auxdata.distribution.editable:
-        path = __.Path( auxdata.distribution.location ) / '.env'
-    if not path.exists( ) and 'environment-file' in locations:
-        path = __.Path( locations[ 'environment-file' ].format(
-            user_configuration = auxdata.directories.user_config_path ) )
-    if not path.exists( ): return
-    async with open_( path ) as file:
-        stream = StringIO( await file.read( ) )
-        load_dotenv( stream = stream )
+    location = __.Path( ) / '.env'
+    if not location.exists( ) and auxdata.distribution.editable:
+        location = __.Path( auxdata.distribution.location ) / '.env'
+    if not location.exists( ) and 'environment' in locations:
+        location = __.Path( locations[ 'environment' ].format(
+            user_configuration = auxdata.directories.user_config_path,
+            user_home = __.Path.home( ) ) )
+    if not location.exists( ): return
+    files = (
+        location.glob( '*.env' ) if location.is_dir( ) else ( location, ) )
+    await __.read_files_async(
+        *( file for file in files ), deserializer = _inject_dotenv_data )
+
+
+def _inject_dotenv_data( data: str ) -> dict:
+    from io import StringIO
+    from dotenv import load_dotenv
+    return load_dotenv( stream = StringIO( data ) )

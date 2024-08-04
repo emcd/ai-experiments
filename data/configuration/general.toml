@@ -1,33 +1,46 @@
 format-version = 1
 
+
+## Examples: Includes
+
+#includes = [ '{user_configuration}/vectorstores.toml' ]
+
+#includes = [ '{user_home}/Dropbox/common/configuration/{application_name}/providers' ]
+
+
 maintenance-mode = false
 
 [locations]
 cache = '{user_cache}'
 data = '{user_data}'
 state = '{user_state}'
-environment-file = '{user_configuration}/environment'
+environment = '{user_configuration}/environment'
 
-# Example: Alternative Locations
-#data = '/home/me/Dropbox/common/data/{application_name}'
-#state = '/home/me/Dropbox/common/state/{application_name}'
+
+## Examples: Custom Locations
+
+#[locations]
+#data = '{user_home}/Dropbox/common/data/{application_name}'
+#state = '{user_home}/Dropbox/common/state/{application_name}'
+#environment = '{user_configuration}/environment'
+
 
 [providers.'openai']
 enable = true
 #default-model = 'gpt-4o'
 
 
-# Examples: Vectorstores
+## Examples: Vectorstores
 
-#[[stores]]
-#name = 'Python LLM Documentation'
+#[[vectorstores]]
+#name = 'Github REST API Documentation'
 #provider = 'faiss'
-#location = 'file:///{user_data}/github-api.pypickle'
+#location = 'file:///{custom_data}/github-api.pypickle'
 #format = 'python-pickle'
 
-#[[stores]]
-#name = 'Python SDK Documentation'
+#[[vectorstores]]
+#name = 'Langchain Documentation'
 #provider = 'chroma'
-#location = 'file:///{user_data}/chromadb'
+#location = 'file:///{custom_data}/chromadb'
 #format = 'duckdb+parquet'
 #arguments = { collection = 'langchain-documentation' }

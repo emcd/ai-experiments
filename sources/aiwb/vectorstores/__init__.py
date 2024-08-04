@@ -48,18 +48,11 @@ class StoreDescriptor:
 async def prepare( auxdata: _libcore.Globals ) -> __.AccretiveDictionary:
     ''' Ensures requested providers exist and returns vectorstore futures. '''
     # TODO: https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
-    from aiofiles import open as open_
-    from tomli import loads
     scribe = __.acquire_scribe( __package__ )
     registry = __.AccretiveDictionary( )
-    # TODO: Vectorstore descriptors as part of general configuration.
-    path = auxdata.directories.user_config_path / 'vectorstores.toml'
-    if not path.exists( ): return registry
-    async with open_( path ) as stream:
-        manifest = loads( await stream.read( ) )
     stores = tuple(
         StoreDescriptor.from_dictionary( data )
-        for data in manifest.get( 'stores', ( ) ) )
+        for data in auxdata.configuration.get( 'vectorstores', ( ) ) )
     results = await __.gather_async(
         *( store.provider.restore( auxdata, store ) for store in stores ),
         return_exceptions = True )

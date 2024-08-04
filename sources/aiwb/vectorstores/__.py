@@ -34,4 +34,5 @@ def derive_vectorstores_location(
 ) -> Path:
     ''' Derives vectorstore location from configuration and URL. '''
     return Path( location_info.path.format(
-        user_data = auxdata.provide_data_location( 'vectorstores' ) ) )
+        custom_data = auxdata.provide_data_location( ),
+        user_data = auxdata.directories.user_data_path ) ) / 'vectorstores'
