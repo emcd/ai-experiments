@@ -28,15 +28,11 @@
       (Borrow from 'accretive' package.)
     - Rework GUI to pass immutable global state through functions
       instead of GUI components namespace.
-    - Wrap PlatformDirs object with configuration-based accessor.
-    - Accessor for distribution data which will use local filesystem
-      when distribution is editable and importlib.resources otherwise.
-      (Or, Traversable.asfile to dump the distribution to a directory.)
+    - More asynchronous calls in GUI, especially for conversation I/O.
     - Process configuration includes.
 
 * General
 
-    - Licensing information for Tabler SVG files.
     - Decouple widgets from data in conversation save/restore.
     - Support hosting conversation-related resources as relative URLs.
       Allows abstraction from local file system.
