@@ -72,6 +72,12 @@ async def prepare( auxdata: _libcore.Globals ) -> __.AccretiveDictionary:
                 scribe.error( summary )
                 auxdata.notifications.put( error )
             case __.g.Value( future ):
-                registry[ store.name ] = future # TODO: Implement futures.
+                # TODO: Implement futures.
+                store_data = dict(
+                    name = store.name,
+                    data = store.data,
+                    instance = future,
+                )
+                registry[ store.name ] = store_data
     # TODO? Notify if empty registry.
     return registry

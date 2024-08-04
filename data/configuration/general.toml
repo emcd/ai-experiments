@@ -8,9 +8,26 @@ data = '{user_data}'
 state = '{user_state}'
 environment-file = '{user_configuration}/environment'
 
+# Example: Alternative Locations
 #data = '/home/me/Dropbox/common/data/{application_name}'
 #state = '/home/me/Dropbox/common/state/{application_name}'
 
 [providers.'openai']
 enable = true
 #default-model = 'gpt-4o'
+
+
+# Examples: Vectorstores
+
+#[[stores]]
+#name = 'Python LLM Documentation'
+#provider = 'faiss'
+#location = 'file:///{user_data}/github-api.pypickle'
+#format = 'python-pickle'
+
+#[[stores]]
+#name = 'Python SDK Documentation'
+#provider = 'chroma'
+#location = 'file:///{user_data}/chromadb'
+#format = 'duckdb+parquet'
+#arguments = { collection = 'langchain-documentation' }

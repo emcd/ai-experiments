@@ -12,26 +12,27 @@ requires-python = '>= 3.10'
 dependencies = [
   'accretive',
   'aiofiles',
-  'anthropic', # TODO: Install in environment context as needed.
   'exceptiongroup', # TODO: Python 3.11: Remove.
   'fastapi[standard]',
   'gitignorefile',
   'icecream',
   'importlib-resources', # TODO: Python 3.12: Remove.
   'jsonschema', # TODO: Remove once on Pydantic models.
-  'langchain', # TODO: Remove.
   'mako', # TODO? Replace with Jinja2.
-  'openai', # TODO: Install in environment context as needed.
   'panel ~= 1.4',
   'platformdirs',
   'python-dotenv',
   'python-magic',
   'rich',
-  'tiktoken', # TODO: Install in environment context as needed.
   'tomli',
   'tomli-w', # TODO? Remove. Use pretty JSON for machine-generated files.
   'typing-extensions',
-  'unstructured', # TODO? Move to 'experiments' option group.
+  'unstructured',
+
+  # TODO: Install in environment context as needed.
+  'anthropic',
+  'openai',
+  'tiktoken',
 ]
 classifiers = [ # https://pypi.org/classifiers
   'Development Status :: 3 - Alpha',
@@ -50,10 +51,18 @@ keywords = [ 'ai', 'llm', 'workbench', 'conversation' ]
 [project.gui-scripts]
 aiwb = 'aiwb.gui:main'
 [project.optional-dependencies]
-chromadb = [ 'chromadb ~= 0.3.29' ]
-faiss-cpu = [ 'faiss-cpu' ]
+chromadb = [
+  'chromadb',
+  'langchain-chroma',
+  'langchain-openai', # Embeddings, for now.
+]
+faiss-cpu = [
+  'faiss-cpu',
+  'langchain-community',
+  'langchain-openai', # Embeddings, for now.
+]
 experiments = [
-  'aiwb[chromadb,faiss-cpu,web-scraper]',
+  'aiwb[faiss-cpu,web-scraper]',
   'notebook',
   'pytesseract',
 ]
@@ -95,6 +104,13 @@ dependencies = [
   'coverage[toml]',
   'pylint',
   'pytest',
+
+  # TODO: Install in environment context as needed.
+  'chromadb',
+  'faiss-cpu',
+  'langchain-chroma',
+  'langchain-community',
+  'langchain-openai', # Embeddings, for now.
 ]
 [tool.hatch.version]
 path = 'sources/aiwb/__init__.py'

@@ -24,21 +24,24 @@
 from . import __
 
 
+# TODO: 'prepare' function for provider
+#       Install dependencies in isolated environment.
+
+
 async def restore( auxdata, store ):
-    # TODO: Adapt to new Langchain interface or remove Langchain dependency.
-    #       https://python.langchain.com/docs/modules/data_connection/vectorstores/#get-started
+    # https://python.langchain.com/v0.2/docs/integrations/text_embedding/openai/
+    # https://python.langchain.com/v0.2/docs/integrations/vectorstores/faiss/
+    # https://api.python.langchain.com/en/latest/vectorstores/langchain_community.vectorstores.faiss.FAISS.html
+    # TODO? Remove dependency on Langchain.
     # TODO: Configurable embedding function.
-    from langchain.embeddings.openai import OpenAIEmbeddings
-    from langchain.vectorstores import ( # pylint: disable=no-name-in-module
-        FAISS,
-    )
+    from langchain_community.vectorstores import FAISS
+    from langchain_openai import OpenAIEmbeddings
     embedder = OpenAIEmbeddings( )
     data = store.data
     arguments = data.get( 'arguments', { } )
     location_info = __.urlparse( data[ 'location' ] )
     if 'file' == location_info.scheme:
-        location = __.Path( location_info.path.format(
-            **__.derive_standard_file_paths( auxdata ) ) )
+        location = __.derive_vectorstores_location( auxdata, location_info )
         return FAISS.load_local(
             folder_path = str( location ),
             embeddings = embedder,

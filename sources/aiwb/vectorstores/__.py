@@ -23,17 +23,15 @@
 # pylint: disable=unused-import
 
 
-from urllib.parse import urlparse
+from urllib.parse import ParseResult as UrlParseResult, urlparse
 
+from .. import libcore as _libcore
 from ..__ import *
 
 
-def derive_standard_file_paths( auxdata ):
-    # TODO: Use auxdata.locations.provide_user_data.
-    configuration = auxdata.configuration
-    directories = auxdata.directories
-    return dict(
-        data_path = Path(
-            configuration[ 'locations' ][ 'data' ].format(
-                user_data = directories.user_data_path ) ) / 'vectorstores',
-    )
+def derive_vectorstores_location(
+    auxdata: _libcore.Globals, location_info: UrlParseResult
+) -> Path:
+    ''' Derives vectorstore location from configuration and URL. '''
+    return Path( location_info.path.format(
+        user_data = auxdata.provide_data_location( 'vectorstores' ) ) )

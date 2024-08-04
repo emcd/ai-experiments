@@ -24,24 +24,31 @@
 from . import __
 
 
+# TODO: 'prepare' function for provider
+#       Install dependencies in isolated environment.
+
+
 async def restore( auxdata, store ):
-    # TODO: Adapt to new Langchain interface or remove Langchain dependency.
-    #       https://python.langchain.com/docs/modules/data_connection/vectorstores/#get-started
+    # https://python.langchain.com/v0.2/docs/integrations/text_embedding/openai/
+    # https://python.langchain.com/v0.2/docs/integrations/vectorstores/chroma/
+    # https://docs.trychroma.com/reference/py-client
+    # TODO? Remove dependency on Langchain.
     # TODO: Configurable embedding function.
-    from langchain.embeddings.openai import OpenAIEmbeddings
-    from langchain.vectorstores import ( # pylint: disable=no-name-in-module
-        Chroma,
-    )
+    from chromadb import PersistentClient
+    from langchain_chroma import Chroma
+    from langchain_openai import OpenAIEmbeddings
     embedder = OpenAIEmbeddings( )
     data = store.data
     arguments = data.get( 'arguments', { } )
+    collection_name = arguments[ 'collection' ]
     location_info = __.urlparse( data[ 'location' ] )
     if 'file' == location_info.scheme:
-        location = __.Path( location_info.path.format(
-            **__.derive_standard_file_paths( auxdata ) ) )
+        location = __.derive_vectorstores_location( auxdata, location_info )
+        client = PersistentClient( path = str( location ) )
+        client.get_or_create_collection( collection_name )
         return Chroma(
-            collection_name = arguments[ 'collection' ],
-            embedding_function = embedder,
-            persist_directory = str( location ) )
+            client = client,
+            collection_name = collection_name,
+            embedding_function = embedder )
     # TODO: Run local server containers, where relevant.
     # TODO: Setup clients for server connections, where relevant.

@@ -71,7 +71,11 @@ def assimilate_canister_dto_from_gui( canister_gui ):
             behaviors.append( behavior )
     dto.attributes.behaviors = behaviors
     # TODO: Implement full array support.
-    dto[ 0 ].data = canister_gui.text_message.object
+    data = (
+        canister_gui.text_message.object
+        if hasattr( canister_gui.text_message, 'object' )
+        else canister_gui.text_message.value )
+    dto[ 0 ].data = data
 
 
 def assimilate_canister_dto_to_gui( canister_gui ):

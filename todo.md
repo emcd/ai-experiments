@@ -4,6 +4,7 @@
 
 * AI: Functions
 
+    - Use Pydantic for data models.
     - Detection of environment, executables, and libraries for functions.
     - Improve callbacks to record intermediate AI assistant outputs.
     - Tool to recursively list directories (without reading files).
@@ -23,7 +24,6 @@
 
 * Architecture and Design
 
-    - Drop or adapt Langchain dependency for vectorstores.
     - Visibility functions for wildcard exports of modules.
       (Borrow from 'accretive' package.)
     - Rework GUI to pass immutable global state through functions
