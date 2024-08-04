@@ -21,7 +21,7 @@
 ''' Collection of AI functions related to probability. '''
 
 
-from . import base as __
+from . import __
 
 
 @__.register_function( {

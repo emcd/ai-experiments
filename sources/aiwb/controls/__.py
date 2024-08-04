@@ -23,17 +23,6 @@
 # pylint: disable=unused-import
 
 
-import typing as typ
+import typing as typ # TODO: Replace with _annotations.
 
-from abc import (
-    ABCMeta as ABCFactory,
-    abstractmethod as abstract_function,
-)
-from collections.abc import (
-    Collection as AbstractCollection,
-    MutableMapping as AbstractMutableDictionary,
-    MutableSequence as AbstractMutableSequence,
-    Sequence as AbstractSequence,
-)
-from dataclasses import dataclass, field as dataclass_declare
-from types import MappingProxyType as DictionaryProxy, SimpleNamespace
+from ..__ import *

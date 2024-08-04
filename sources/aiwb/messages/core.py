@@ -21,7 +21,7 @@
 ''' Core classes for messages. '''
 
 
-from . import base as __
+from . import __
 
 
 @__.dataclass( frozen = True, slots = True )

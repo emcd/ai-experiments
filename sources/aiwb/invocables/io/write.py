@@ -21,7 +21,7 @@
 ''' AI functionality for writing files. '''
 
 
-from . import base as __
+from . import __
 
 
 @__.register_function( {

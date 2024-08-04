@@ -18,24 +18,37 @@
 #============================================================================#
 
 
-''' Foundation for AI functions for I/O. '''
+''' Common utilities for AI functions. '''
 
 # pylint: disable=unused-import
 
 
-from pathlib import Path
-from types import SimpleNamespace
-from ..base import register_function
+from ..__ import *
 
 
-def render_prompt( auxdata, control, content, mime_type ):
-    from .prompts import select_default_instructions
-    control = control or { }
-    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
-    instructions = control.get( 'instructions', '' )
-    if control.get( 'mode', 'supplement' ):
-        instructions = ' '.join( filter( None, (
-            select_default_instructions( mime_type ), instructions ) ) )
-    return provider.render_data(
-        dict( content = content, instructions = instructions ),
-        auxdata.controls )
+_registry = AccretiveDictionary( )
+
+
+def register_function( schema ):
+    from json import dumps
+    from jsonschema.validators import Draft202012Validator as Validator
+    _trim_descriptions( schema )
+    Validator.check_schema( schema )
+    def register( function ):
+        function.__doc__ = dumps( schema, indent = 2 )
+        _registry[ schema[ 'name' ] ] = function
+        return function
+    return register
+
+
+def survey_functions( ): return DictionaryProxy( _registry )
+
+
+def _trim_descriptions( schema ):
+    from inspect import cleandoc
+    for entry_name, entry in schema.items( ):
+        if isinstance( entry, AbstractDictionary ):
+            _trim_descriptions( entry )
+        if 'description' != entry_name: continue
+        if not isinstance( entry, str ): continue
+        schema[ 'description' ] = cleandoc( entry )

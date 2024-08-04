@@ -23,19 +23,27 @@
 
 import enum
 
+from abc import (
+    ABCMeta as ABCFactory,
+    abstractmethod as abstract_function,
+)
 from collections.abc import (
     Awaitable as AbstractAwaitable,
+    Collection as AbstractCollection,
     Iterable as AbstractIterable,
+    Mapping as AbstractDictionary,
+    MutableMapping as AbstractMutableDictionary,
+    MutableSequence as AbstractMutableSequence,
     Sequence as AbstractSequence,
 )
 from contextlib import ExitStack as Contexts
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dataclass_declare
 from enum import Enum
 from logging import getLogger as acquire_scribe
 from os import PathLike
 from pathlib import Path
 from queue import SimpleQueue
-from types import MappingProxyType as DictionaryProxy
+from types import MappingProxyType as DictionaryProxy, SimpleNamespace
 
 from accretive.qaliases import AccretiveDictionary, AccretiveNamespace
 from platformdirs import PlatformDirs

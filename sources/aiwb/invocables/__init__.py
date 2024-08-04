@@ -24,5 +24,5 @@
 async def prepare( auxdata ):
     from . import io, probability
     # TODO: Prepare functions: check for dependencies, environment, etc....
-    from .base import survey_functions
+    from .__ import survey_functions
     return survey_functions( )

@@ -21,7 +21,7 @@
 ''' Core classes for controls. '''
 
 
-from . import base as __
+from . import __
 
 
 class DefinitionBase( metaclass = __.ABCFactory ):
