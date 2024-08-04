@@ -21,7 +21,7 @@
 ''' User actions in Holoviz Panel GUI. '''
 
 
-from . import base as __
+from . import __
 
 
 def _update_conversation_status_on_error( invocable ):
@@ -144,7 +144,7 @@ def _add_message( gui, canister ):
 
 def _chat( gui ):
     from ..providers import ChatCallbacks
-    from .base import access_ai_provider_current
+    from .__ import access_ai_provider_current
     messages = __.package_messages( gui )
     controls = __.package_controls( gui )
     special_data = __.package_special_data( gui )
@@ -173,7 +173,7 @@ def _generate_conversation_title( gui ):
     from ..codecs.json import loads
     from ..messages.core import Canister
     from ..providers import chat_callbacks_minimal
-    from .base import access_ai_provider_current
+    from .__ import access_ai_provider_current
     provider = access_ai_provider_current( gui )
     controls = __.package_controls( gui )
     provider_format_name = provider.provide_format_name( controls )
@@ -213,7 +213,7 @@ def _update_conversation_progress( gui, message ):
 
 
 def _update_gui_on_chat( gui, canister_gui ):
-    from .base import assimilate_canister_dto_to_gui
+    from .__ import assimilate_canister_dto_to_gui
     from .updaters import autoscroll_document
     assimilate_canister_dto_to_gui( canister_gui )
     #setattr(

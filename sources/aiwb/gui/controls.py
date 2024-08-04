@@ -21,7 +21,7 @@
 ''' Management of control widgets for Holoviz Panel GUI. '''
 
 
-from . import base as __
+from . import __
 
 
 class ComponentManager( metaclass = __.ABCFactory ):

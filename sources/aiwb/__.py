@@ -25,8 +25,9 @@ import enum
 
 from abc import (
     ABCMeta as ABCFactory,
-    abstractmethod as abstract_function,
+    abstractmethod as abstract_member_function,
 )
+from collections import namedtuple # TODO: Replace with dataclass.
 from collections.abc import (
     Awaitable as AbstractAwaitable,
     Collection as AbstractCollection,
@@ -36,14 +37,29 @@ from collections.abc import (
     MutableSequence as AbstractMutableSequence,
     Sequence as AbstractSequence,
 )
-from contextlib import ExitStack as Contexts
+from contextlib import (
+    ExitStack as Contexts,
+    contextmanager as produce_context_manager,
+)
 from dataclasses import dataclass, field as dataclass_declare
+from datetime import (
+    datetime as DateTime,
+    timedelta as TimeDelta,
+    timezone as TimeZone,
+)
 from enum import Enum
+from functools import partial as partial_function
 from logging import getLogger as acquire_scribe
 from os import PathLike
 from pathlib import Path
 from queue import SimpleQueue
-from types import MappingProxyType as DictionaryProxy, SimpleNamespace
+from time import time_ns
+from types import (
+    MappingProxyType as DictionaryProxy,
+    ModuleType as Module,
+    SimpleNamespace,
+)
+from uuid import uuid4
 
 from accretive.qaliases import AccretiveDictionary, AccretiveNamespace
 from platformdirs import PlatformDirs

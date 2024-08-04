@@ -31,7 +31,7 @@ import param
 from panel.layout import Row
 from panel.reactive import ReactiveHTML
 
-from . import base as __
+from . import __
 
 
 # Applying stylesheets from native Panel widgets to custom widgets is not
@@ -446,11 +446,11 @@ class ConversationDescriptor:
         __.dataclass_declare( default_factory = lambda: __.uuid4( ).hex ) )
     timestamp: int = (
         __.dataclass_declare( default_factory = __.time_ns ) )
-    title: __.typ.Optional[ str ] = None
+    title: __.a.Optional[ str ] = None
     labels: __.AbstractMutableSequence[ str ] = (
         __.dataclass_declare( default_factory = list ) )
-    gui: __.typ.Optional[ __.SimpleNamespace ] = None
-    indicator: __.typ.Optional[ Row ] = None
+    gui: __.a.Optional[ __.SimpleNamespace ] = None
+    indicator: __.a.Optional[ Row ] = None
 
 
 class ConversationIndicator( ReactiveHTML ):

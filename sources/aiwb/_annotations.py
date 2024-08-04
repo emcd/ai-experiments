@@ -31,6 +31,7 @@ from typing_extensions import (
     Doc,
     Generic,
     Never,
+    Optional, # Prefer to <type> | None.
     Self,
     TypeAlias,
     TypeVar,

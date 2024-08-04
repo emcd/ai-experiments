@@ -24,7 +24,7 @@
 # pylint: disable=cyclic-import
 
 
-from . import base as __
+from . import __
 
 
 def collect_conversation( gui ):
@@ -160,7 +160,7 @@ def save_conversation( gui ):
 
 def save_conversation_messages( gui, column_name ):
     from ..messages.core import DirectoryManager
-    from .base import assimilate_canister_dto_from_gui
+    from .__ import assimilate_canister_dto_from_gui
     manager = DirectoryManager( gui.auxdata__ )
     state = [ ]
     for canister in getattr( gui, column_name ):

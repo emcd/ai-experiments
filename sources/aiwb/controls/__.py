@@ -23,6 +23,4 @@
 # pylint: disable=unused-import
 
 
-import typing as typ # TODO: Replace with _annotations.
-
 from ..__ import *

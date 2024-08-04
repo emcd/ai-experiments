@@ -51,7 +51,7 @@ class DefinitionBase( metaclass = __.ABCFactory ):
         return class_( **nomargs )
 
     @classmethod
-    @__.abstract_function
+    @__.abstract_member_function
     def produce_default( class_, descriptor ):
         raise NotImplementedError # TODO: Fill out error.
 
@@ -69,7 +69,7 @@ class DefinitionBase( metaclass = __.ABCFactory ):
     def deserialize( self, data ):
         return self.create_control( data )
 
-    @__.abstract_function
+    @__.abstract_member_function
     def validate_value( self, value ):
         raise NotImplementedError # TODO: Fill out error.
 

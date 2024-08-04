@@ -23,22 +23,9 @@
 # pylint: disable=unused-import
 
 
-from collections.abc import (
-    Mapping as AbstractDictionary,
-)
-from dataclasses import dataclass
-from pathlib import Path
-from types import (
-    MappingProxyType as DictionaryProxy,
-    ModuleType as Module,
-)
 from urllib.parse import urlparse
 
-from accretive.qaliases import AccretiveDictionary
-
-from .. import _annotations as a
-from .. import _generics as g
-from ..__ import acquire_scribe, gather_async
+from ..__ import *
 
 
 def derive_standard_file_paths( auxdata ):

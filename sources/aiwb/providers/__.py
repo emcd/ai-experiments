@@ -23,26 +23,7 @@
 # pylint: disable=unused-import
 
 
-from collections.abc import (
-    Mapping as AbstractDictionary,
-    Sequence as AbstractSequence,
-)
-from dataclasses import dataclass
-from datetime import (
-    datetime as DateTime,
-    timedelta as TimeDelta,
-    timezone as TimeZone,
-)
-from functools import partial as partial_function
-from logging import getLogger as acquire_scribe
-from types import (
-    MappingProxyType as DictionaryProxy,
-    SimpleNamespace,
-)
-
-from .. import _annotations as _a # TODO: a
-from .. import _generics as g
-from ..__ import gather_async
+from ..__ import *
 from ..messages.core import Canister
 
 
@@ -53,17 +34,17 @@ class ChatCompletionError( Exception ): pass
 class ChatCallbacks:
     ''' Callbacks for AI provider to correspond with caller. '''
 
-    allocator: _a.Callable[ [ Canister ], _a.Any ] = (
+    allocator: a.Callable[ [ Canister ], a.Any ] = (
         lambda canister: canister )
-    deallocator: _a.Callable[ [ _a.Any ], None ] = (
+    deallocator: a.Callable[ [ a.Any ], None ] = (
         lambda handle: None )
-    failure_notifier: _a.Callable[ [ str ], None ] = (
+    failure_notifier: a.Callable[ [ str ], None ] = (
         lambda status: None )
-    progress_notifier: _a.Callable[ [ int ], None ] = (
+    progress_notifier: a.Callable[ [ int ], None ] = (
         lambda tokens_count: None )
-    success_notifier: _a.Callable[ [ _a.Any ], None ] = (
+    success_notifier: a.Callable[ [ a.Any ], None ] = (
         lambda status: None )
-    updater: _a.Callable[ [ _a.Any, str ], None ] = (
+    updater: a.Callable[ [ a.Any, str ], None ] = (
         lambda handle: None )
 
 

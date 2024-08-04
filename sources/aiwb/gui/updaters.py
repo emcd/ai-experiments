@@ -21,7 +21,7 @@
 ''' Populators and value updaters for Holoviz Panel GUI. '''
 
 
-from . import base as __
+from . import __
 
 
 def add_conversation_indicator( gui, descriptor, position = 0 ):
@@ -194,7 +194,7 @@ def populate_conversation( gui ):
 
 
 async def populate_dashboard( auxdata ):
-    from .base import generate_component
+    from .__ import generate_component
     from .classes import ConversationDescriptor
     from .layouts import conversations_manager_layout, dashboard_layout
     from .persistence import restore_conversations_index
