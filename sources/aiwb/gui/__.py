@@ -91,11 +91,7 @@ def assimilate_canister_dto_to_gui( canister_gui ):
 
 def calculate_conversations_path( gui ):
     # TODO: Use aiwb.messages.DirectoryManager instead.
-    configuration = gui.auxdata__.configuration
-    directories = gui.auxdata__.directories
-    state_path = Path( configuration[ 'locations' ][ 'state' ].format(
-        user_state = directories.user_state_path ) )
-    return state_path / 'conversations'
+    return gui.auxdata__.provide_state_location( 'conversations' )
 
 
 def extract_invocation_requests( gui, component = None ):
