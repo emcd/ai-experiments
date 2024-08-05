@@ -22,9 +22,10 @@
 
 
 from . import __
+from . import core as _core
 
 
-class Provider( __.Provider ):
+class Provider( _core.Provider ):
     ''' Model management, etc... '''
 
     name = 'openai' # TODO: Derive from subpackage.
@@ -208,6 +209,7 @@ def _chat( messages, special_data, controls, callbacks ):
     # TODO? Remove rate limit handling, since newer client does this.
     from time import sleep
     from openai import OpenAI, OpenAIError, RateLimitError
+    from .core import ChatCompletionError
     client = OpenAI( ) # TODO: Use async client.
     attempts_limit = 3
     for attempts_count in range( attempts_limit ):
@@ -220,8 +222,8 @@ def _chat( messages, special_data, controls, callbacks ):
             sleep( 30 ) # TODO: Use retry value from exception.
             continue
         except OpenAIError as exc:
-            raise __.ChatCompletionError( f"Error: {exc}" ) from exc
-    raise __.ChatCompletionError(
+            raise ChatCompletionError( f"Error: {exc}" ) from exc
+    raise ChatCompletionError(
         f"Exhausted {attempts_limit} retries with OpenAI API." )
 
 
@@ -473,13 +475,14 @@ def _process_iterative_chat_response( response, callbacks ):
     # TODO: Handle response arrays.
     from openai import OpenAIError
     from itertools import chain
+    from .core import ChatCompletionError
     handle = None
     try:
         chunks = [ ]
         while True:
             try: chunk = next( response )
             except StopIteration as exc:
-                raise __.ChatCompletionError(
+                raise ChatCompletionError(
                     'Error: Empty response from AI.' ) from exc
             chunks.append( chunk )
             delta = chunk.choices[ 0 ].delta
@@ -495,7 +498,7 @@ def _process_iterative_chat_response( response, callbacks ):
         else: _stream_content_chunks( canister, response_, handle, callbacks )
     except OpenAIError as exc:
         if handle: callbacks.deallocator( handle )
-        raise __.ChatCompletionError( f"Error: {exc}" ) from exc
+        raise ChatCompletionError( f"Error: {exc}" ) from exc
     return handle
 
 

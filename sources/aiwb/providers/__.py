@@ -18,46 +18,10 @@
 #============================================================================#
 
 
-''' Common classes and functions for AI providers. '''
+''' Internal imports for AI providers. '''
 
 # pylint: disable=unused-import
 
 
 from ..__ import *
 from ..messages.core import Canister
-
-
-class ChatCompletionError( Exception ): pass
-
-
-@dataclass
-class ChatCallbacks:
-    ''' Callbacks for AI provider to correspond with caller. '''
-
-    allocator: a.Callable[ [ Canister ], a.Any ] = (
-        lambda canister: canister )
-    deallocator: a.Callable[ [ a.Any ], None ] = (
-        lambda handle: None )
-    failure_notifier: a.Callable[ [ str ], None ] = (
-        lambda status: None )
-    progress_notifier: a.Callable[ [ int ], None ] = (
-        lambda tokens_count: None )
-    success_notifier: a.Callable[ [ a.Any ], None ] = (
-        lambda status: None )
-    updater: a.Callable[ [ a.Any, str ], None ] = (
-        lambda handle: None )
-
-
-class Provider:
-    ''' Base for AI providers. '''
-
-
-chat_callbacks_minimal = ChatCallbacks( )
-
-
-# TODO: Automatically populate with all classes and functions
-#       where their __module__ attribute is __name__ of this module.
-__all__ = (
-    'ChatCallbacks', 'ChatCompletionError', 'Provider',
-    'chat_callbacks_minimal',
-)

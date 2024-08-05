@@ -21,34 +21,6 @@
 ''' Functionality for various AI providers. '''
 
 
-from . import __
+from . import core
 
-from .__ import * # TODO: Import public interface from 'core' instead.
-
-
-async def prepare( auxdata ):
-    ''' Prepare desired AI providers. '''
-    from importlib import import_module
-    from accretive.qaliases import AccretiveDictionary
-    scribe = __.acquire_scribe( __package__ )
-    # TODO: Determine providers from configuration and only load those.
-    names = ( 'openai', )
-    registry = AccretiveDictionary( )
-    # TODO: Build provider specs from configuration and load modules there.
-    #       See vectorstores subpackage for example.
-    modules = tuple(
-        import_module( f".{name}", package = __package__ ) for name in names )
-    results = await __.gather_async(
-        *( module.prepare( auxdata ) for module in modules ),
-        return_exceptions = True )
-    for name, module, result in zip( names, modules, results ):
-        match result:
-            case __.g.Error( error ):
-                summary = f"Could not prepare AI provider {name!r}."
-                scribe.error( summary, exc_info = error )
-                auxdata.notifications.put( error )
-            case __.g.Value( provider ):
-                # TODO: Register provider future rather than module.
-                registry[ provider.proper_name ] = module
-    # TODO? Notify if empty registry.
-    return registry
+from .core import *
