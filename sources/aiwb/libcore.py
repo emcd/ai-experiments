@@ -178,6 +178,7 @@ async def _acquire_configuration_includes(
     locations = tuple(
         __.Path( spec.format(
             user_configuration = directories.user_config_path,
+            user_home = __.Path.home( ),
             application_name = distribution.name ) )
         for spec in specs )
     iterables = tuple(
