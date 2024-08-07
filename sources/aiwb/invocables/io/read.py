@@ -157,9 +157,10 @@ def _analyze_file( auxdata, path, control = None ):
     provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
     provider_format_name = provider.provide_format_name( auxdata.controls )
     summarization_prompt = (
-        auxdata.prompts[ 'Concatenate: AI Responses' ].create_prompt( ) )
+        auxdata.prompts.definitions[ 'Concatenate: AI Responses' ]
+        .create_prompt( ) )
     supervisor_prompt = (
-        auxdata.prompts[ 'Automation: File Analysis' ]
+        auxdata.prompts.definitions[ 'Automation: File Analysis' ]
         .create_prompt( values = { 'format': provider_format_name } ) )
     chunk_reader, mime_type = _determine_chunk_reader( path )
     for chunk in chunk_reader( auxdata, path ):
@@ -214,7 +215,7 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
     provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
     provider_format_name = provider.provide_format_name( auxdata.controls )
     prompt = (
-        auxdata.prompts[ 'Discriminate Directory Entries' ]
+        auxdata.prompts.definitions[ 'Discriminate Directory Entries' ]
         .create_prompt( values = { 'format': provider_format_name } ) )
     supervisor_message = prompt.render( auxdata )
     complete_result = [ ]

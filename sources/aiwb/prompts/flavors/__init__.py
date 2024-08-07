@@ -18,27 +18,9 @@
 #============================================================================#
 
 
-''' Standard annotations across Python versions. '''
-
-# ruff: noqa: F401
-# pylint: disable=unused-import
+''' Prompt accessor modules. '''
 
 
-from typing_extensions import (
-    Annotated as Annotation,
-    Any,
-    Callable,
-    Doc,
-    Generic,
-    Never,
-    Optional, # Prefer to <type> | None.
-    Protocol,
-    Self,
-    TypeAlias,
-    TypeVar,
-    cast,
-    runtime_checkable,
-)
-
-
-__all__ = ( )
+from . import native
+# TODO? Fabric: https://github.com/danielmiessler/fabric/tree/main/patterns
+# TODO? LangChain Hub: https://smith.langchain.com/hub

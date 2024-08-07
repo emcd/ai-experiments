@@ -18,9 +18,10 @@
 #============================================================================#
 
 
-''' Common declarations and utilities for prompts. '''
+''' Internal imports and utilities for prompts. '''
 
 # pylint: disable=unused-import
 
 
 from ..__ import *
+from ..libcore import Globals

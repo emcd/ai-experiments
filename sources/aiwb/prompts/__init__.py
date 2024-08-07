@@ -22,8 +22,6 @@
 
 
 from . import core
+from . import flavors
 
-
-async def prepare( auxdata ):
-    ''' Loads prompt definitions. '''
-    return await core.prepare( auxdata )
+from .core import *

@@ -77,6 +77,63 @@ class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
     State = 'state'
 
 
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class _NotificationBase:
+    ''' Common base for notifications. '''
+
+    summary: str
+
+
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class ErrorNotification( _NotificationBase ):
+    ''' Summary and exception associated with error. '''
+
+    error: Exception
+
+
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class NotificationsQueue:
+    ''' Queue for notifications to be consumed by application. '''
+
+    # TODO: Hide queue attribute.
+    queue: __.SimpleQueue = __.dataclass_declare(
+        default_factory = __.SimpleQueue )
+
+    # TODO: enqueue_admonition
+
+    def enqueue_error(
+        self,
+        error: Exception,
+        summary: str,
+        append_reason: bool = True,
+        scribe: __.Scribe = None
+    ) -> __.a.Self:
+        ''' Enqueues error notification, optionally logging it. '''
+        if append_reason: summary = f"{summary} Reason: {error}"
+        if scribe: scribe.error( summary, exc_info = error )
+        return self._enqueue(
+            ErrorNotification( error = error, summary = summary ) )
+
+    # TODO: enqueue_future
+
+    @__.produce_context_manager
+    def enqueue_on_error(
+        self,
+        summary: str,
+        append_reason: bool = True,
+        scribe: __.Scribe = None
+    ):
+        ''' Produces context manager which enqueues errors. '''
+        try: yield
+        except Exception as exc:
+            self.enqueue_error(
+                exc, summary, append_reason = append_reason, scribe = scribe )
+
+    def _enqueue( self, notification: _NotificationBase ) -> __.a.Self:
+        self.queue.put( notification )
+        return self
+
+
 class ScribeModes( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Possible modes for logging output. '''
 
@@ -92,7 +149,7 @@ class Globals:
     configuration: __.AccretiveDictionary
     directories: __.PlatformDirs
     distribution: DistributionInformation
-    notifications: __.SimpleQueue
+    notifications: NotificationsQueue
 
     @classmethod
     async def prepare(
@@ -110,7 +167,7 @@ class Globals:
             distribution.name, distribution.publisher, ensure_exists = True )
         configuration = (
             await acquire_configuration( distribution, directories ) )
-        notifications = __.SimpleQueue( )
+        notifications = NotificationsQueue( )
         return selfclass(
             configuration = configuration,
             contexts = contexts,

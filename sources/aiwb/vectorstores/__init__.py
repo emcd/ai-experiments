@@ -59,11 +59,9 @@ async def prepare( auxdata: _libcore.Globals ) -> __.AccretiveDictionary:
     for store, result in zip( stores, results ):
         match result:
             case __.g.Error( error ):
-                summary = (
-                    f"Could not load vectorstore {store.name!r}. "
-                    f"Reason: {error}" )
-                scribe.error( summary )
-                auxdata.notifications.put( error )
+                summary = f"Could not load vectorstore {store.name!r}."
+                auxdata.notifications.enqueue_error(
+                    error, summary, scribe = scribe )
             case __.g.Value( future ):
                 # TODO: Implement futures.
                 store_data = dict(

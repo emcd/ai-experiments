@@ -70,8 +70,8 @@ async def prepare( auxdata ):
         match result:
             case __.g.Error( error ):
                 summary = f"Could not prepare AI provider {name!r}."
-                scribe.error( summary, exc_info = error )
-                auxdata.notifications.put( error )
+                auxdata.notifications.enqueue_error(
+                    error, summary, scribe = scribe )
             case __.g.Value( provider ):
                 # TODO: Register provider future rather than module.
                 registry[ provider.proper_name ] = module

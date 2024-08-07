@@ -18,27 +18,9 @@
 #============================================================================#
 
 
-''' Standard annotations across Python versions. '''
+''' Internal imports and utilities for prompt accessors. '''
 
-# ruff: noqa: F401
 # pylint: disable=unused-import
 
 
-from typing_extensions import (
-    Annotated as Annotation,
-    Any,
-    Callable,
-    Doc,
-    Generic,
-    Never,
-    Optional, # Prefer to <type> | None.
-    Protocol,
-    Self,
-    TypeAlias,
-    TypeVar,
-    cast,
-    runtime_checkable,
-)
-
-
-__all__ = ( )
+from ..__ import *

@@ -243,7 +243,7 @@ def populate_prompt_variables( gui, species, data = None ):
     name = selector.value
     if name not in selector.options:
         selector.value = name = next( iter( selector.options ) )
-    definition = gui.auxdata__.prompts[ name ]
+    definition = gui.auxdata__.prompts.definitions[ name ]
     prompts_cache = selector.auxdata__.prompts_cache
     if None is not data: prompts_cache[ name ] = definition.deserialize( data )
     prompt = prompts_cache.get( name )
@@ -281,7 +281,8 @@ def postpopulate_system_prompt_variables( gui ):
     # TODO: Fix bug where canned prompt variables are not selected on init.
     can_update = hasattr( gui.selector_canned_prompt, 'auxdata__' )
     # If there is a canned prompt preference, then update accordingly.
-    definition = gui.auxdata__.prompts[ gui.selector_system_prompt.value ]
+    definition = (
+        gui.auxdata__.prompts.definitions[ gui.selector_system_prompt.value ] )
     attributes = definition.attributes
     user_prompt_preference = attributes.get( 'user-prompt-preference' )
     if can_update and None is not user_prompt_preference:
@@ -427,7 +428,7 @@ def update_functions_prompt( gui ):
         gui.selector_model.value ][ 'supports-functions' ]
     gui.row_functions_prompt.visible = supports_functions
     if supports_functions:
-        attributes = gui.auxdata__.prompts[
+        attributes = gui.auxdata__.prompts.definitions[
             gui.selector_system_prompt.value ].attributes
         associated_functions = attributes.get( 'functions', { } )
     else: associated_functions = { }
@@ -461,7 +462,7 @@ def update_search_button( gui ):
 
 def update_summarization_toggle( gui ):
     prompt_name = gui.selector_canned_prompt.value
-    attributes = gui.auxdata__.prompts[ prompt_name ].attributes
+    attributes = gui.auxdata__.prompts.definitions[ prompt_name ].attributes
     summarizes = attributes.get( 'summarizes', False )
     gui.toggle_summarize.value = (
         'canned' == gui.selector_user_prompt_class.value and summarizes )
@@ -506,7 +507,7 @@ def _populate_prompts_selector( gui, species ):
     selector = getattr( gui, f"selector_{template_class}_prompt" )
     names = list( sorted( # Panel explicitly needs a list or dict.
         name for name, definition
-        in gui.auxdata__.prompts.items( )
+        in gui.auxdata__.prompts.definitions.items( )
         if      species == definition.species
             and not definition.attributes.get( 'conceal', False ) ) )
     selector.options = names

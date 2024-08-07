@@ -21,153 +21,148 @@
 ''' Core functions for prompts. '''
 
 
+from __future__ import annotations
+
 from . import __
 
 
-class Definition:
+@__.a.runtime_checkable
+class Definition( __.a.Protocol ):
+
+    @__.a.runtime_checkable
+    @__.dataclass( kw_only = True, slots = True )
+    #@__.dataclass( frozen = True, kw_only = True, slots = True )
+    class Instance( __.a.Protocol ):
+
+        definition: Definition
+
+        def render( self, auxdata: __.Globals ) -> str:
+            ''' Renders prompt as string. '''
+            raise NotImplementedError
+
+        def serialize( self ) -> dict:
+            ''' Serializes prompt as dictionary. '''
+            raise NotImplementedError
 
     @classmethod
-    def instantiate_descriptor( class_, descriptor ):
-        return class_( **descriptor )
-
-    def __init__(
-        self, name, species, templates,
-        attributes = None, fragments = None, variables = ( )
+    def instantiate_descriptor(
+        selfclass,
+        manager: Manager,
+        location: __.Location,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ]
     ):
-        from ..controls.core import descriptor_to_definition
+        return selfclass( manager, location, **descriptor )
+
+    def __init__( self, manager, location, name ):
         self.name = name
-        self.species = species # TODO: Validate. Dispatch to subclass?
-        self.templates = templates # TODO: Validate.
-        self.attributes = attributes or __.DictionaryProxy( { } )
-        # TODO: Validate fragments. Bucket by MIME type?
-        self.fragments = fragments or { }
-        self.variables = __.DictionaryProxy( {
-            variable[ 'name' ]: descriptor_to_definition( variable )
-            for variable in variables } )
+        self.manager = manager
+        self.location = location
 
     def create_prompt( self, values = None ):
-        return Instance( self, values = values )
+        ''' Produces prompt instance. '''
+        # TODO? Rename to 'produce_prompt'.
+        return self.Instance( definition = self, values = values )
 
     def deserialize( self, data ):
-        return Instance( self, values = data )
+        ''' Deserializes prompt instance from initial values. '''
+        return self.Instance( definition = self, values = data )
 
 
-class Instance:
+@__.a.runtime_checkable
+class Manager( __.a.Protocol ):
+    ''' Manages prompts in store. '''
 
-    def __init__( self, definition, values = None ):
-        self.definition = definition
-        values = values or { }
-        self.controls = __.DictionaryProxy( {
-            name: (
-                variable.create_control( values[ name ] ) if name in values
-                else variable.create_control_default( ) )
-            for name, variable in definition.variables.items( ) } )
+    @classmethod
+    @__.abstract_member_function
+    async def prepare( selfclass, auxdata: __.Globals ) -> __.a.Self:
+        raise NotImplementedError
 
-    # TODO: Cache result.
-    def render( self, auxdata ):
-        # TODO: Immutable namespace for variables.
-        variables = __.SimpleNamespace( **self.serialize( ) )
-        templates = tuple(
-            _acquire_template( auxdata, template_id )
-            for template_id in self.definition.templates )
-        fragments = __.SimpleNamespace( **{ # TODO: Immutable namespace.
-            name: _acquire_fragment( auxdata, filename )
-            for name, filename in self.definition.fragments.items( ) } )
-        # TODO: Additional context, such as current model provider and name.
-        text = '\n\n'.join( # TODO: Configurable delimiter.
-            template.render( variables = variables, fragments = fragments )
-            for template in templates )
-        if not text: raise ValueError( 'Empty prompt rendered.' )
-        return text
+    @__.abstract_member_function
+    async def acquire_definitions(
+        self,
+        auxdata: __.Globals,
+        location: __.Location,
+    ) -> __.AbstractDictionary[ str, Definition ]:
+        ''' Loads prompt definitions from store. '''
+        raise NotImplementedError
 
-    def serialize( self ):
-        from ..controls.core import serialize_dictionary
-        return serialize_dictionary( self.controls )
+
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class Store:
+    ''' Record for prompt store. '''
+
+    name: str
+    manager: Manager
+    location: __.Location
+    definitions: __.AbstractDictionary[ str, Definition ]
+
+    @classmethod
+    async def prepare(
+        selfclass,
+        auxdata: __.Globals,
+        descriptor: dict[ str, __.a.Any ]
+    ) -> __.a.Self:
+        ''' Converts descriptor dictionary into record. '''
+        distribution = auxdata.distribution
+        name = descriptor[ 'name' ]
+        manager = await produce_manager(
+            auxdata, descriptor.get( 'manager', 'native' ) )
+        location = __.parse_url( descriptor[ 'location' ].format(
+            application_name = distribution.name,
+            custom_data = auxdata.provide_data_location( ),
+            distribution_data = distribution.provide_data_location( ),
+            user_data = auxdata.directories.user_data_path,
+            user_home = __.Path.home( ) ) )
+        definitions = await manager.acquire_definitions( auxdata, location )
+        return selfclass(
+            name = name,
+            manager = manager,
+            location = location,
+            definitions = definitions )
+
+
+async def acquire_promptstores( auxdata ):
+    ''' Load configured promptstores. '''
+    scribe = __.acquire_scribe( __package__ )
+    descriptors = auxdata.configuration.get( 'promptstores', ( ) )
+    results = await __.gather_async(
+        *(  Store.prepare( auxdata, descriptor )
+            for descriptor in descriptors ),
+        return_exceptions = True )
+    stores = { }
+    for result in results:
+        match result:
+            case __.g.Error( error ):
+                summary = f"Could not load prompt store."
+                auxdata.notifications.enqueue_error(
+                    error, summary, scribe = scribe )
+            case __.g.Value( store ):
+                stores[ store.name ] = store
+    return __.DictionaryProxy( stores )
 
 
 async def prepare( auxdata ):
-    ''' Load prompt definitions. '''
-    descriptors = await _acquire_descriptors( auxdata )
+    ''' Load prompt stores and definitions. '''
+    stores = await acquire_promptstores( auxdata )
     definitions = __.DictionaryProxy( {
-        name: Definition.instantiate_descriptor( descriptor )
-        for name, descriptor in descriptors.items( ) } )
-    return definitions
+        definition.name: definition
+        for store in stores.values( )
+        for definition in store.definitions.values( ) } )
+    return __.AccretiveNamespace( stores = stores, definitions = definitions )
 
 
-async def _acquire_descriptors( auxdata ):
-    # TODO: Support configurable prompt locations.
-    from itertools import chain
-    from tomli import loads
+# TODO: @__.memoize
+#       May need custom caching because auxdata contains dictionaries
+#       which do not hash.
+async def produce_manager(
+    auxdata: __.Globals,
+    name: str
+) -> Manager:
+    ''' Creates prompts manager if it does not already exist. '''
+    from importlib import import_module
     scribe = __.acquire_scribe( __package__ )
-    distribution_directory_base = (
-        auxdata.distribution.provide_data_location( ) )
-    suffix = 'prompts/descriptors'
-    directories = tuple(
-        directory for directory_base
-        in ( distribution_directory_base, auxdata.directories.user_data_path )
-        if ( directory := directory_base / suffix ).exists( ) )
-    files = tuple( chain.from_iterable(
-        directory.resolve( strict = True ).glob( '*.toml' )
-        for directory in directories ) )
-    results = await __.read_files_async(
-        *files, deserializer = loads, return_exceptions = True )
-    descriptors = { }
-    for file, result in zip( files, results ):
-        match result:
-            case __.g.Error( error ):
-                summary = f"Could not load prompt descriptor at: {file}"
-                scribe.error( summary, exc_info = error )
-                auxdata.notifications.put( error )
-            case __.g.Value( record ):
-                descriptors[ record[ 'name' ] ] = record
-    return __.DictionaryProxy( descriptors )
-
-
-def _acquire_fragment( auxdata, filename ):
-    distribution_directory_base = (
-        auxdata.distribution.provide_data_location( ) )
-    suffix = 'prompts/fragments'
-    for directory in (
-        distribution_directory_base / suffix,
-        auxdata.directories.user_data_path / suffix,
+    with auxdata.notifications.enqueue_on_error(
+        f"Could not create prompts manager {name!r}.", scribe = scribe
     ):
-        if not directory.exists( ): continue
-        path = directory / filename
-        if not path.exists( ): continue
-        # TODO: Use LRU cache.
-        with path.open( ) as stream: return stream.read( )
-    raise FileNotFoundError( filename ) # TODO: Improve.
-
-
-def _acquire_template( auxdata, identifier ):
-    from mako.template import Template
-    distribution_directory_base = (
-        auxdata.distribution.provide_data_location( ) )
-    suffix = 'prompts/templates'
-    for directory in (
-        distribution_directory_base / suffix,
-        auxdata.directories.user_data_path / suffix,
-    ):
-        if not directory.exists( ): continue
-        path = directory / f"{identifier}.md.mako"
-        if not path.exists( ): continue
-        # TODO: Use 'module_directory' argument for caching.
-        return Template(
-            filename = str( path ),
-            error_handler = _report_template_error,
-        )
-    raise FileNotFoundError( identifier ) # TODO: Improve.
-
-
-def _extract_control_value( control ):
-    from ..controls.core import FlexArray, InstanceBase
-    if isinstance( control, FlexArray.Instance ):
-        return tuple(
-            _extract_control_value( element ) for element in control )
-    if isinstance( control, InstanceBase ): return control.value
-    raise ValueError # TODO: Fill out.
-
-
-def _report_template_error( context, exc ):
-    ic( context )
-    ic( exc )
+        module = import_module( f".flavors.{name}", __package__ )
+        return await module.prepare( auxdata )

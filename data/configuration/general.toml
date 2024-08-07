@@ -1,6 +1,9 @@
 format-version = 1
 
 
+maintenance-mode = false
+
+
 ## Examples: Includes
 
 #includes = [ '{user_configuration}/vectorstores.toml' ]
@@ -8,7 +11,7 @@ format-version = 1
 #includes = [ '{user_home}/Dropbox/common/configuration/{application_name}/providers' ]
 
 
-maintenance-mode = false
+## Examples: Custom Base Locations
 
 [locations]
 cache = '{user_cache}'
@@ -16,21 +19,42 @@ data = '{user_data}'
 state = '{user_state}'
 environment = '{user_configuration}/environment'
 
-
-## Examples: Custom Locations
-
 #[locations]
 #data = '{user_home}/Dropbox/common/data/{application_name}'
 #state = '{user_home}/Dropbox/common/state/{application_name}'
 #environment = '{user_configuration}/environment'
 
 
+### Prompt Stores
+
+[[promptstores]]
+name = 'Distribution Data'
+location = 'file:///{distribution_data}/prompts'
+
+[[promptstores]]
+name = 'Custom Data'
+location = 'file:///{custom_data}/prompts'
+
+## Examples
+
+#[[promptstores]]
+#name = 'User Data'
+#location = 'file:///{user_data}/prompts'
+
+#[[promptstores]]
+#name = 'Github: Fabric'
+#location = 'github://danielmiessler/fabric/tree/main/patterns'
+#accessor = 'fabric-pattern' # NOTE: Not implemented yet.
+
+
+## Examples: Providers
+
 [providers.'openai']
 enable = true
 #default-model = 'gpt-4o'
 
 
-## Examples: Vectorstores
+## Examples: Vector Stores
 
 #[[vectorstores]]
 #name = 'Github REST API Documentation'

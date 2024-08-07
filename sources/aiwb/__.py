@@ -41,15 +41,25 @@ from contextlib import (
     ExitStack as Contexts,
     contextmanager as produce_context_manager,
 )
-from dataclasses import dataclass, field as dataclass_declare
+from dataclasses import (
+    InitVar,
+    dataclass,
+    field as dataclass_declare,
+)
 from datetime import (
     datetime as DateTime,
     timedelta as TimeDelta,
     timezone as TimeZone,
 )
 from enum import Enum
-from functools import partial as partial_function
-from logging import getLogger as acquire_scribe
+from functools import (
+    cache as memoize,
+    partial as partial_function,
+)
+from logging import (
+    Logger as Scribe,
+    getLogger as acquire_scribe,
+)
 from os import PathLike
 from pathlib import Path
 from queue import SimpleQueue
@@ -59,6 +69,7 @@ from types import (
     ModuleType as Module,
     SimpleNamespace,
 )
+from urllib.parse import ParseResult as UrlParts
 from uuid import uuid4
 
 from accretive.qaliases import AccretiveDictionary, AccretiveNamespace
@@ -66,6 +77,14 @@ from platformdirs import PlatformDirs
 
 from . import _annotations as a
 from . import _generics as g
+
+
+class Location( metaclass = ABCFactory ):
+    ''' Dynamically-registered superclass for location types. '''
+    # Note: Not a Protocol class because there is no common protocol.
+    #       We just want issubclass support.
+
+Location.register( Path )
 
 
 async def gather_async(
@@ -111,6 +130,42 @@ async def intercept_error_async( awaitable: AbstractAwaitable ) -> g.Result:
     '''
     try: return g.Value( await awaitable )
     except Exception as exc: return g.Error( exc )
+
+
+def _create_url_accessor_registry( ):
+    # Registry is singleton, therefore no object class.
+    # TODO: Use module-level accretive dictionary, which validates keys and
+    #       values, instead of registration closure.
+    registry = AccretiveDictionary( )
+
+    def parse( url: str ) -> Location:
+        ''' Parses URL and creates an appropriate accessor for location. '''
+        from urllib.parse import urlparse
+        parts = urlparse( url )
+        scheme = parts.scheme
+        if not scheme or 'file' == scheme:
+            if '.' == parts.netloc: location = Path( ) / parts.path
+            elif parts.netloc:
+                raise NotImplmentedError(
+                    f"Shares not supported in file URLs. URL: {url}" )
+            else: location = Path( parts.path )
+        elif scheme in registry: location = registry[ scheme ]( parts )
+        else:
+            raise NotImplementedError(
+                f"URL scheme {scheme!r} not supported. URL: {url}" )
+        # Cast because we do not have a common protocol.
+        return a.cast( Location, location )
+
+    def register(
+        scheme: str,
+        accessor_factory: a.Callable[ [ UrlParts ], a.Callable ]
+    ):
+        ''' Associates location accessor factory to URL scheme. '''
+        registry[ scheme ] = accessor_factory
+
+    return parse, register
+
+parse_url, register_url_accessor = _create_url_accessor_registry( )
 
 
 async def read_files_async(
