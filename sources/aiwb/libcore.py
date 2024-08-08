@@ -82,6 +82,7 @@ class _NotificationBase:
     ''' Common base for notifications. '''
 
     summary: str
+    details: __.a.Any
 
 
 @__.dataclass( frozen = True, kw_only = True, slots = True )
@@ -104,30 +105,42 @@ class NotificationsQueue:
     def enqueue_error(
         self,
         error: Exception,
-        summary: str,
+        summary: str, *,
         append_reason: bool = True,
-        scribe: __.Scribe = None
+        details: __.a.Any = None,
+        inscribe_trace: bool = False,
+        scribe: __.Scribe = None,
     ) -> __.a.Self:
         ''' Enqueues error notification, optionally logging it. '''
         if append_reason: summary = f"{summary} Reason: {error}"
-        if scribe: scribe.error( summary, exc_info = error )
+        if scribe:
+            scribe_args = { }
+            if inscribe_trace: scribe_args[ 'exc_info' ] = error
+            scribe.error( summary, **scribe_args )
         return self._enqueue(
-            ErrorNotification( error = error, summary = summary ) )
+            ErrorNotification(
+                error = error, summary = summary, details = details ) )
 
     # TODO: enqueue_future
 
     @__.produce_context_manager
     def enqueue_on_error(
         self,
-        summary: str,
+        summary: str, *,
         append_reason: bool = True,
+        details: __.a.Any = None,
+        inscribe_trace: bool = False,
         scribe: __.Scribe = None
     ):
         ''' Produces context manager which enqueues errors. '''
         try: yield
         except Exception as exc:
             self.enqueue_error(
-                exc, summary, append_reason = append_reason, scribe = scribe )
+                exc, summary,
+                append_reason = append_reason,
+                details = details,
+                inscribe_trace = inscribe_trace,
+                scribe = scribe )
 
     def _enqueue( self, notification: _NotificationBase ) -> __.a.Self:
         self.queue.put( notification )

@@ -29,7 +29,6 @@
     - Rework GUI to pass immutable global state through functions
       instead of GUI components namespace.
     - More asynchronous calls in GUI, especially for conversation I/O.
-    - Multiple prompt sources, including URLs.
 
 * General
 
