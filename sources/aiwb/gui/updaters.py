@@ -248,7 +248,7 @@ def populate_prompt_variables( gui, species, data = None ):
     if None is not data: prompts_cache[ name ] = definition.deserialize( data )
     prompt = prompts_cache.get( name )
     if None is prompt:
-        prompts_cache[ name ] = prompt = definition.create_prompt( )
+        prompts_cache[ name ] = prompt = definition.produce_prompt( )
     callback = ( lambda event: _update_prompt_text( gui, species = species ) )
     row = getattr( gui, row_name )
     ContainerManager( row, prompt.controls.values( ), callback )

@@ -225,28 +225,6 @@ async def acquire_configuration(
     return __.AccretiveDictionary( configuration )
 
 
-async def _acquire_configuration_includes(
-    distribution: DistributionInformation,
-    directories: __.PlatformDirs,
-    specs: tuple[ str ]
-) -> __.AbstractSequence[ dict ]:
-    from itertools import chain
-    from tomli import loads
-    locations = tuple(
-        __.Path( spec.format(
-            user_configuration = directories.user_config_path,
-            user_home = __.Path.home( ),
-            application_name = distribution.name ) )
-        for spec in specs )
-    iterables = tuple(
-        ( location.glob( '*.toml' ) if location.is_dir( ) else ( location, ) )
-        for location in locations )
-    includes = await __.read_files_async(
-        *( file for file in chain.from_iterable( iterables ) ),
-        deserializer = loads )
-    return includes
-
-
 def configure_icecream( mode: ScribeModes ):
     ''' Configures Icecream debug printing. '''
     from icecream import ic, install
@@ -322,6 +300,28 @@ async def update_environment( auxdata: Globals ):
         location.glob( '*.env' ) if location.is_dir( ) else ( location, ) )
     await __.read_files_async(
         *( file for file in files ), deserializer = _inject_dotenv_data )
+
+
+async def _acquire_configuration_includes(
+    distribution: DistributionInformation,
+    directories: __.PlatformDirs,
+    specs: tuple[ str ]
+) -> __.AbstractSequence[ dict ]:
+    from itertools import chain
+    from tomli import loads
+    locations = tuple(
+        __.Path( spec.format(
+            user_configuration = directories.user_config_path,
+            user_home = __.Path.home( ),
+            application_name = distribution.name ) )
+        for spec in specs )
+    iterables = tuple(
+        ( location.glob( '*.toml' ) if location.is_dir( ) else ( location, ) )
+        for location in locations )
+    includes = await __.read_files_async(
+        *( file for file in chain.from_iterable( iterables ) ),
+        deserializer = loads )
+    return includes
 
 
 def _inject_dotenv_data( data: str ) -> dict:

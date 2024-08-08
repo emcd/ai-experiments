@@ -79,6 +79,26 @@ from . import _annotations as a
 from . import _generics as g
 
 
+# TODO: Use accretive validator dictionary for URL accessor registry.
+#    def register(
+#        scheme: str,
+#        accessor_factory: a.Callable[ [ UrlParts ], Location ]
+#    ):
+#        ''' Associates location accessor factory to URL scheme. '''
+#        registry[ scheme ] = accessor_factory
+url_accessors = AccretiveDictionary( )
+
+def _convert_file_url_to_location( parts: UrlParts ) -> Path:
+    if '.' == parts.netloc: return Path( ) / parts.path
+    if parts.netloc:
+        raise NotImplementedError(
+            f"Shares not supported in file URLs. URL: {url}" )
+    return Path( parts.path )
+
+url_accessors[ '' ] = _convert_file_url_to_location
+url_accessors[ 'file' ] = _convert_file_url_to_location
+
+
 class Location( metaclass = ABCFactory ):
     ''' Dynamically-registered superclass for location types. '''
     # Note: Not a Protocol class because there is no common protocol.
@@ -132,40 +152,18 @@ async def intercept_error_async( awaitable: AbstractAwaitable ) -> g.Result:
     except Exception as exc: return g.Error( exc )
 
 
-def _create_url_accessor_registry( ):
-    # Registry is singleton, therefore no object class.
-    # TODO: Use module-level accretive dictionary, which validates keys and
-    #       values, instead of registration closure.
-    registry = AccretiveDictionary( )
-
-    def parse( url: str ) -> Location:
-        ''' Parses URL and creates an appropriate accessor for location. '''
-        from urllib.parse import urlparse
-        parts = urlparse( url )
-        scheme = parts.scheme
-        if not scheme or 'file' == scheme:
-            if '.' == parts.netloc: location = Path( ) / parts.path
-            elif parts.netloc:
-                raise NotImplmentedError(
-                    f"Shares not supported in file URLs. URL: {url}" )
-            else: location = Path( parts.path )
-        elif scheme in registry: location = registry[ scheme ]( parts )
-        else:
-            raise NotImplementedError(
-                f"URL scheme {scheme!r} not supported. URL: {url}" )
-        # Cast because we do not have a common protocol.
-        return a.cast( Location, location )
-
-    def register(
-        scheme: str,
-        accessor_factory: a.Callable[ [ UrlParts ], a.Callable ]
-    ):
-        ''' Associates location accessor factory to URL scheme. '''
-        registry[ scheme ] = accessor_factory
-
-    return parse, register
-
-parse_url, register_url_accessor = _create_url_accessor_registry( )
+def parse_url( url: str ) -> Location:
+    ''' Parses URL and creates an appropriate accessor for location. '''
+    from urllib.parse import urlparse
+    parts = urlparse( url )
+    scheme = parts.scheme
+    if scheme in url_accessors:
+        location = url_accessors[ scheme ]( parts )
+    else:
+        raise NotImplementedError(
+            f"URL scheme {scheme!r} not supported. URL: {url}" )
+    # Cast because we do not have a common protocol.
+    return a.cast( Location, location )
 
 
 async def read_files_async(

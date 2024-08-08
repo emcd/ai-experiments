@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Core functions for prompts. '''
+''' Core classes and functions for prompts. '''
 
 
 from __future__ import annotations
@@ -26,15 +26,31 @@ from __future__ import annotations
 from . import __
 
 
+# TODO: Use accretive validator dictionary for flavors registry.
+flavors = __.AccretiveDictionary( )
+
+
 @__.a.runtime_checkable
 class Definition( __.a.Protocol ):
+    ''' Definition of prompt. Produces prompt instances. '''
+    # TODO: Immutability of class and instances.
+
+    name: str
+    store: Store
+
+    __slots__ = ( 'name', 'store', )
 
     @__.a.runtime_checkable
-    @__.dataclass( kw_only = True, slots = True )
-    #@__.dataclass( frozen = True, kw_only = True, slots = True )
     class Instance( __.a.Protocol ):
+        ''' Renderable instance of prompt. '''
+        # TODO: Immutability of class and instances.
+
+        __slots__ = ( 'definition', )
 
         definition: Definition
+
+        def __init__( self, definition: Definition ):
+            self.definition = definition
 
         def render( self, auxdata: __.Globals ) -> str:
             ''' Renders prompt as string. '''
@@ -47,20 +63,17 @@ class Definition( __.a.Protocol ):
     @classmethod
     def instantiate_descriptor(
         selfclass,
-        manager: Manager,
-        location: __.Location,
+        store: Store,
         descriptor: __.AbstractDictionary[ str, __.a.Any ]
     ):
-        return selfclass( manager, location, **descriptor )
+        return selfclass( store, **descriptor )
 
-    def __init__( self, manager, location, name ):
+    def __init__( self, store: Store, name: str ):
         self.name = name
-        self.manager = manager
-        self.location = location
+        self.store = store
 
-    def create_prompt( self, values = None ):
+    def produce_prompt( self, values = None ):
         ''' Produces prompt instance. '''
-        # TODO? Rename to 'produce_prompt'.
         return self.Instance( definition = self, values = values )
 
     def deserialize( self, data ):
@@ -69,71 +82,90 @@ class Definition( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-class Manager( __.a.Protocol ):
-    ''' Manages prompts in store. '''
-
-    @classmethod
-    @__.abstract_member_function
-    async def prepare( selfclass, auxdata: __.Globals ) -> __.a.Self:
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def acquire_definitions(
-        self,
-        auxdata: __.Globals,
-        location: __.Location,
-    ) -> __.AbstractDictionary[ str, Definition ]:
-        ''' Loads prompt definitions from store. '''
-        raise NotImplementedError
-
-
 @__.dataclass( frozen = True, kw_only = True, slots = True )
-class Store:
+class Store( __.a.Protocol ):
     ''' Record for prompt store. '''
 
     name: str
-    manager: Manager
     location: __.Location
-    definitions: __.AbstractDictionary[ str, Definition ]
 
     @classmethod
     async def prepare(
         selfclass,
         auxdata: __.Globals,
-        descriptor: dict[ str, __.a.Any ]
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
-        ''' Converts descriptor dictionary into record. '''
+        args = selfclass.descriptor_to_base_init_args( auxdata, descriptor )
+        return selfclass( **args )
+
+    @classmethod
+    def descriptor_to_base_init_args(
+        selfclass,
+        auxdata: __.Globals,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AccretiveDictionary:
         distribution = auxdata.distribution
         name = descriptor[ 'name' ]
-        manager = await produce_manager(
-            auxdata, descriptor.get( 'manager', 'native' ) )
         location = __.parse_url( descriptor[ 'location' ].format(
             application_name = distribution.name,
             custom_data = auxdata.provide_data_location( ),
             distribution_data = distribution.provide_data_location( ),
             user_data = auxdata.directories.user_data_path,
             user_home = __.Path.home( ) ) )
-        definitions = await manager.acquire_definitions( auxdata, location )
-        return selfclass(
-            name = name,
-            manager = manager,
-            location = location,
-            definitions = definitions )
+        return __.AccretiveDictionary( name = name, location = location )
+
+    @__.abstract_member_function
+    async def acquire_definitions(
+        self,
+        auxdata: __.Globals,
+    ) -> __.AbstractDictionary[ str, Definition ]:
+        raise NotImplementedError
 
 
-async def acquire_promptstores( auxdata ):
-    ''' Load configured promptstores. '''
+async def acquire_definitions(
+    auxdata: __.Globals,
+    stores: __.AbstractDictionary[ str, Store ],
+) -> __.AbstractDictionary[ str, Definition ]:
+    ''' Loads prompt definitions from stores. '''
+    scribe = __.acquire_scribe( __package__ )
+    results = await __.gather_async(
+        *(  store.acquire_definitions( auxdata )
+            for store in stores.values( ) ),
+        return_exceptions = True )
+    definitions = { }
+    for result in results:
+        match result:
+            case __.g.Error( error ):
+                summary = f"Could not load prompt definition."
+                auxdata.notifications.enqueue_error(
+                    error, summary, scribe = scribe )
+            case __.g.Value( definitions_ ):
+                definitions.update( definitions_ )
+    return __.DictionaryProxy( definitions )
+
+
+async def acquire_stores(
+    auxdata: __.Globals,
+) -> __.AbstractDictionary[ str, Store ]:
+    ''' Loads configured promptstores. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = auxdata.configuration.get( 'promptstores', ( ) )
-    results = await __.gather_async(
-        *(  Store.prepare( auxdata, descriptor )
-            for descriptor in descriptors ),
-        return_exceptions = True )
+    preparers = [ ]
+    for descriptor in descriptors:
+        flavor = descriptor.get( 'flavor', 'native' )
+        with auxdata.notifications.enqueue_on_error(
+            f"Could not load prompts store.",
+            scribe = scribe
+            # TODO: Add descriptor as detail.
+        ):
+            preparers.append(
+                flavors[ flavor ].prepare( auxdata, descriptor ) )
+    results = await __.gather_async( *preparers, return_exceptions = True )
     stores = { }
     for result in results:
         match result:
             case __.g.Error( error ):
-                summary = f"Could not load prompt store."
+                summary = f"Could not load prompts store."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
             case __.g.Value( store ):
@@ -143,26 +175,6 @@ async def acquire_promptstores( auxdata ):
 
 async def prepare( auxdata ):
     ''' Load prompt stores and definitions. '''
-    stores = await acquire_promptstores( auxdata )
-    definitions = __.DictionaryProxy( {
-        definition.name: definition
-        for store in stores.values( )
-        for definition in store.definitions.values( ) } )
+    stores = await acquire_stores( auxdata )
+    definitions = await acquire_definitions( auxdata, stores )
     return __.AccretiveNamespace( stores = stores, definitions = definitions )
-
-
-# TODO: @__.memoize
-#       May need custom caching because auxdata contains dictionaries
-#       which do not hash.
-async def produce_manager(
-    auxdata: __.Globals,
-    name: str
-) -> Manager:
-    ''' Creates prompts manager if it does not already exist. '''
-    from importlib import import_module
-    scribe = __.acquire_scribe( __package__ )
-    with auxdata.notifications.enqueue_on_error(
-        f"Could not create prompts manager {name!r}.", scribe = scribe
-    ):
-        module = import_module( f".flavors.{name}", __package__ )
-        return await module.prepare( auxdata )

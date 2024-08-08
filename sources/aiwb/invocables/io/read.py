@@ -158,10 +158,10 @@ def _analyze_file( auxdata, path, control = None ):
     provider_format_name = provider.provide_format_name( auxdata.controls )
     summarization_prompt = (
         auxdata.prompts.definitions[ 'Concatenate: AI Responses' ]
-        .create_prompt( ) )
+        .produce_prompt( ) )
     supervisor_prompt = (
         auxdata.prompts.definitions[ 'Automation: File Analysis' ]
-        .create_prompt( values = { 'format': provider_format_name } ) )
+        .produce_prompt( values = { 'format': provider_format_name } ) )
     chunk_reader, mime_type = _determine_chunk_reader( path )
     for chunk in chunk_reader( auxdata, path ):
         messages = [
@@ -216,7 +216,7 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
     provider_format_name = provider.provide_format_name( auxdata.controls )
     prompt = (
         auxdata.prompts.definitions[ 'Discriminate Directory Entries' ]
-        .create_prompt( values = { 'format': provider_format_name } ) )
+        .produce_prompt( values = { 'format': provider_format_name } ) )
     supervisor_message = prompt.render( auxdata )
     complete_result = [ ]
     # TODO: Python 3.12: itertools.batches

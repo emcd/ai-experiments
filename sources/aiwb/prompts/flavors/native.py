@@ -18,7 +18,10 @@
 #============================================================================#
 
 
-''' Native prompt definitions, instances, and managers. '''
+''' Native prompt definitions, instances, and stores. '''
+
+
+from __future__ import annotations
 
 
 from .. import core as _core
@@ -27,15 +30,19 @@ from . import __
 
 class Definition( _core.Definition ):
 
-
-    @__.dataclass( kw_only = True, slots = True )
-    #@__.dataclass( frozen = True, kw_only = True, slots = True )
     class Instance( _core.Definition.Instance ):
+        # TODO: Immutability of class and instances.
 
-        values: __.InitVar[ __.AbstractDictionary[ str, __.a.Any ] ] = None
-        controls: __.a.Any = __.dataclass_declare( init = False )
+        __slots__ = ( 'controls', )
 
-        def __post_init__( self, values ):
+        controls: __.a.Any # TODO: Correct type for controls.
+
+        def __init__(
+            self,
+            definition: Definition,
+            values: __.AbstractDictionary[ str, __.a.Any ] = None
+        ):
+            super( ).__init__( definition )
             values = values or { }
             self.controls = __.DictionaryProxy( {
                 name: (
@@ -50,11 +57,10 @@ class Definition( _core.Definition ):
             definition = self.definition
             variables = __.AccretiveNamespace( **self.serialize( ) )
             templates = tuple(
-                _acquire_template( auxdata, definition.manager, template_id )
+                acquire_template( auxdata, template_id )
                 for template_id in self.definition.templates )
             fragments = __.AccretiveNamespace( **{
-                name: _acquire_fragment(
-                    auxdata, definition.manager, filename )
+                name: acquire_fragment( auxdata, filename )
                 for name, filename in definition.fragments.items( ) } )
             # TODO: Additional context, such as current provider and model.
             text = '\n\n'.join( # TODO: Configurable delimiter.
@@ -68,11 +74,11 @@ class Definition( _core.Definition ):
             return serialize_dictionary( self.controls )
 
     def __init__(
-        self, manager, location, name, species, templates,
+        self, location, name, species, templates,
         attributes = None, fragments = None, variables = ( )
     ):
         from ...controls.core import descriptor_to_definition
-        super( ).__init__( manager, location, name )
+        super( ).__init__( location, name )
         self.species = species
         self.templates = templates # TODO: Validate.
         self.attributes = attributes or __.DictionaryProxy( { } )
@@ -83,24 +89,22 @@ class Definition( _core.Definition ):
             for variable in variables } )
 
 
-class Manager( _core.Manager ):
-
-    @classmethod
-    async def prepare( selfclass, auxdata: __.Globals ) -> __.a.Self:
-        return selfclass( )
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class Store( _core.Store ):
 
     async def acquire_definitions(
         self,
         auxdata: __.Globals,
-        location: __.Location,
     ) -> __.AbstractDictionary[ str, Definition ]:
+        location = self.location
         match location:
             case __.Path( ): pass
             case _: raise NotImplementedError
-        location_ = location / 'descriptors' # TODO: Rename to 'definitions'.
-        files = tuple( location_.resolve( strict = True ).glob( '*.toml' ) )
+        # TODO: Rename 'descriptors' to 'definitions'.
+        location = location / 'descriptors'
+        files = tuple( location.resolve( strict = True ).glob( '*.toml' ) )
         deserializer = __.partial_function(
-            _deserialize_definition_data, manager = self, location = location )
+            _deserialize_definition_data, store = self )
         results = await __.read_files_async(
             *files, deserializer = deserializer, return_exceptions = True )
         definitions = { }
@@ -114,45 +118,23 @@ class Manager( _core.Manager ):
                     definitions[ definition.name ] = definition
         return __.DictionaryProxy( definitions )
 
-
-async def prepare( auxdata: __.Globals ) -> Manager:
-    return await Manager.prepare( auxdata )
+_core.flavors[ 'native' ] = Store
 
 
-def _acquire_fragment(
-    auxdata: __.Globals, manager: Manager, filename: str
-) -> str:
+def acquire_fragment( auxdata: __.Globals, filename: str ) -> str:
     # TODO: Async execution.
-    locations = tuple(
-        store.location / 'fragments'
-        for store in auxdata.prompts.stores.values( )
-        if manager is store.manager )
-    # Last match wins.
-    files = tuple( location / filename for location in reversed( locations ) )
-    for file in files:
-        if not file.exists( ): continue
-        break
-    else: raise FileNotFoundError( filename ) # TODO: Improve.
+    file = discover_file_from_stores( auxdata, f"fragments/{filename}" )
     # TODO: Use LRU cache.
     with file.open( ) as stream: return stream.read( )
 
 
-def _acquire_template(
-    auxdata: __.Globals, manager: Manager, identifier: str
-):
+def acquire_template( auxdata: __.Globals, identifier: str ):
+    ''' Returns template object if identifier located in relevant store. '''
+    # TODO: Return type.
     # TODO: Async execution.
     from mako.template import Template
-    filename = f"{identifier}.md.mako"
-    locations = tuple(
-        store.location / 'templates'
-        for store in auxdata.prompts.stores.values( )
-        if manager is store.manager )
-    # Last match wins.
-    files = tuple( location / filename for location in reversed( locations ) )
-    for file in files:
-        if not file.exists( ): continue
-        break
-    else: raise FileNotFoundError( filename ) # TODO: Improve.
+    file = discover_file_from_stores(
+        auxdata, f"templates/{identifier}.md.mako" )
     # TODO: Use 'module_directory' argument for caching.
     return Template(
         filename = str( file ),
@@ -160,13 +142,27 @@ def _acquire_template(
     )
 
 
-def _deserialize_definition_data(
-    data: str, manager: Manager, location: __.Location
-) -> Definition:
+def discover_file_from_stores( auxdata: __.Globals, name: str ) -> __.Path:
+    ''' Returns path to file if it exists in any store.
+
+        Stores are searched in reverse order, under the assumption that
+        custom prompt stores come later than default prompt stores and should
+        override them.
+    '''
+    files = tuple(
+        ( store.location / name ).resolve( strict = True )
+        for store in reversed( auxdata.prompts.stores.values( ) )
+        if isinstance( store, Store ) )
+    for file in files:
+        if not file.exists( ): continue
+        return file
+    raise FileNotFoundError( filename ) # TODO: Improve.
+
+
+def _deserialize_definition_data( data: str, store: Store ) -> Definition:
     ''' Converts definition data into definition. '''
     from tomli import loads
-    return Definition.instantiate_descriptor(
-        manager, location, loads( data ) )
+    return Definition.instantiate_descriptor( store, loads( data ) )
 
 
 def _report_template_error( context, exc ):
