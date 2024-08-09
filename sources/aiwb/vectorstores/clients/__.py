@@ -18,10 +18,9 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for vectorstores. '''
+''' Internal imports and utilities for vectorstore clients. '''
 
 # pylint: disable=unused-import
 
 
 from ..__ import *
-from ..libcore import Globals

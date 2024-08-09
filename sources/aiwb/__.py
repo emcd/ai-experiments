@@ -69,7 +69,10 @@ from types import (
     ModuleType as Module,
     SimpleNamespace,
 )
-from urllib.parse import ParseResult as UrlParts
+from urllib.parse import (
+    ParseResult as UrlParts,
+    urlparse,
+)
 from uuid import uuid4
 
 from accretive.qaliases import AccretiveDictionary, AccretiveNamespace

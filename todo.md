@@ -24,8 +24,8 @@
 
 * Architecture and Design
 
-    - Visibility functions for wildcard exports of modules.
-      (Borrow from 'accretive' package.)
+    - Declare AI providers registries on module load.
+    - Split AI providers subpackage into clients and servers subpackages.
     - Rework GUI to pass immutable global state through functions
       instead of GUI components namespace.
     - More asynchronous calls in GUI, especially for conversation I/O.

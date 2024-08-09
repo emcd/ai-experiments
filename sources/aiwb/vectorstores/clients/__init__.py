@@ -18,10 +18,8 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for vectorstores. '''
-
-# pylint: disable=unused-import
+''' Vectorstore clients, including standalone in-memory databases. '''
 
 
-from ..__ import *
-from ..libcore import Globals
+from . import chroma
+from . import faiss

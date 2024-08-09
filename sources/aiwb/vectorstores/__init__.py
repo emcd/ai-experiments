@@ -18,57 +18,10 @@
 #============================================================================#
 
 
-''' Functionality for various vectorstores. '''
+''' Standardized interfaces for vectorstores. '''
 
 
-from .. import libcore as _libcore
-from . import __
+from . import clients
+from . import core
 
-
-@__.dataclass( frozen = True, kw_only = True, slots = True )
-class StoreDescriptor:
-    ''' Vectorstore name and data, including provider. '''
-
-    name: str
-    data: dict
-    provider: __.Module
-
-    @classmethod
-    def from_dictionary( selfclass, data: __.AbstractDictionary ):
-        ''' Constructs store descriptor from dictionary, loading provider. '''
-        from importlib import import_module
-        name = data[ 'name' ]
-        data = data
-        # TODO? Cache module imports to avoid redundant imports.
-        provider = import_module(
-            ".{name}".format( name = data[ 'provider' ] ), __package__ )
-        return selfclass( name = name, data = data, provider = provider )
-
-
-async def prepare( auxdata: _libcore.Globals ) -> __.AccretiveDictionary:
-    ''' Ensures requested providers exist and returns vectorstore futures. '''
-    # TODO: https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
-    scribe = __.acquire_scribe( __package__ )
-    registry = __.AccretiveDictionary( )
-    stores = tuple(
-        StoreDescriptor.from_dictionary( data )
-        for data in auxdata.configuration.get( 'vectorstores', ( ) ) )
-    results = await __.gather_async(
-        *( store.provider.restore( auxdata, store ) for store in stores ),
-        return_exceptions = True )
-    for store, result in zip( stores, results ):
-        match result:
-            case __.g.Error( error ):
-                summary = f"Could not load vectorstore {store.name!r}."
-                auxdata.notifications.enqueue_error(
-                    error, summary, scribe = scribe )
-            case __.g.Value( future ):
-                # TODO: Implement futures.
-                store_data = dict(
-                    name = store.name,
-                    data = store.data,
-                    instance = future,
-                )
-                registry[ store.name ] = store_data
-    # TODO? Notify if empty registry.
-    return registry
+from .core import *

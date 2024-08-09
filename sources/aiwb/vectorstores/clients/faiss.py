@@ -21,28 +21,41 @@
 ''' Implementation of interface to FAISS. '''
 
 
+from .. import core as _core
 from . import __
 
 
-# TODO: 'prepare' function for provider
-#       Install dependencies in isolated environment.
+async def prepare( auxdata: __.Globals ):
+    ''' Installs dependencies and returns environment context manager. '''
+    # TODO: Install dependencies in isolated environment, if necessary.
+    return Provider( )
+
+_core.client_preparers[ 'faiss' ] = prepare
 
 
-async def restore( auxdata, store ):
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class Provider( _core.Provider ):
     # https://python.langchain.com/v0.2/docs/integrations/text_embedding/openai/
     # https://python.langchain.com/v0.2/docs/integrations/vectorstores/faiss/
     # https://api.python.langchain.com/en/latest/vectorstores/langchain_community.vectorstores.faiss.FAISS.html
-    # TODO? Remove dependency on Langchain.
-    # TODO: Configurable embedding function.
-    from langchain_community.vectorstores import FAISS
-    from langchain_openai import OpenAIEmbeddings
-    embedder = OpenAIEmbeddings( )
-    data = store.data
-    arguments = data.get( 'arguments', { } )
-    location_info = __.urlparse( data[ 'location' ] )
-    if 'file' == location_info.scheme:
-        location = __.derive_vectorstores_location( auxdata, location_info )
-        return FAISS.load_local(
-            folder_path = str( location ),
-            embeddings = embedder,
-            index_name = arguments[ 'index' ] )
+
+    # TODO: Wrap in decorator to execute with isolated imports context.
+    async def client_from_descriptor(
+        self,
+        auxdata: __.Globals,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ]
+    ):
+        # TODO: Return future.
+        # TODO? Remove dependency on Langchain.
+        # TODO: Configurable embedding function.
+        from langchain_community.vectorstores import FAISS
+        from langchain_openai import OpenAIEmbeddings
+        embedder = OpenAIEmbeddings( )
+        arguments = descriptor.get( 'arguments', { } )
+        location = _core.derive_vectorstores_location(
+            auxdata, descriptor[ 'location' ] )
+        if isinstance( location, __.Path ):
+            return FAISS.load_local(
+                folder_path = str( location ),
+                embeddings = embedder,
+                index_name = arguments[ 'index' ] )
