@@ -226,9 +226,12 @@ def populate_models_selector( gui ):
 
 def populate_providers_selector( gui ):
     providers = gui.auxdata__.providers
-    gui.selector_provider.options = list( providers.keys( ) )
     # TODO: Drop this auxdata and rely on main GUI auxdata instead.
     gui.selector_provider.auxdata__ = providers
+    gui.selector_provider.value = None
+    names = list( providers.keys( ) )
+    gui.selector_provider.options = names
+    gui.selector_provider.value = next( iter( names ) )
 
 
 def populate_prompt_variables( gui, species, data = None ):

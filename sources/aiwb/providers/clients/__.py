@@ -18,10 +18,9 @@
 #============================================================================#
 
 
-''' Functionality for various AI providers. '''
+''' Internal imports and utilities for AI provider clients. '''
+
+# pylint: disable=unused-import
 
 
-from . import clients
-from . import core
-
-from .core import *
+from ..__ import *

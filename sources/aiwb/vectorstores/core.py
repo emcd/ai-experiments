@@ -26,22 +26,23 @@ from __future__ import annotations
 from . import __
 
 
-# TODO: Use accretive validator dictionaries for registries.
-client_preparers = __.AccretiveDictionary( )
-server_preparers = __.AccretiveDictionary( )
-
-
 @__.a.runtime_checkable
 @__.dataclass( frozen = True, kw_only = True, slots = True )
-class Provider( __.a.Protocol ):
+class Factory( __.a.Protocol ):
+    ''' Produces clients. '''
 
     @__.abstract_member_function
     async def client_from_descriptor(
         self,
         auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ]
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ):
+        ''' Produces client from descriptor dictionary. '''
         raise NotImplementedError
+
+
+# TODO: Use accretive validator dictionary for preparers registry.
+preparers = __.AccretiveDictionary( )
 
 
 def derive_vectorstores_location( auxdata: __.Globals, url: str ) -> __.Path:
@@ -57,27 +58,47 @@ def derive_vectorstores_location( auxdata: __.Globals, url: str ) -> __.Path:
         case _: raise NotImplementedError
 
 
+def descriptors_from_configuration(
+    auxdata: __.Globals
+) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+    ''' Validates and returns descriptors from configuration. '''
+    scribe = __.acquire_scribe( __package__ )
+    descriptors = [ ]
+    for descriptor in auxdata.configuration.get( 'vectorstores', ( ) ):
+        if 'name' not in descriptor:
+            auxdata.notifications.enqueue_error(
+                ValueError( "Descriptor missing name." ),
+                "Could not load vectorstore from configuration.",
+                details = descriptor,
+                scribe = scribe )
+            continue
+        if not descriptor.get( 'enable', False ): continue
+        descriptors.append( descriptor )
+    return tuple( descriptors )
+
+
 async def prepare( auxdata: __.Globals ) -> __.AccretiveDictionary:
-    ''' Ensures requested providers exist and returns vectorstore futures. '''
-    client_providers = await prepare_client_providers( auxdata )
-    return await prepare_clients( auxdata, client_providers )
+    ''' Prepares clients from configuration and returns futures to them. '''
+    factories = await prepare_factories( auxdata )
+    return await prepare_clients( auxdata, factories )
 
 
 async def prepare_clients(
-    auxdata: __.Globals, providers: __.AccretiveDictionary
+    auxdata: __.Globals, factories: __.AccretiveDictionary
 ):
-    ''' Prepares clients, including in-memory stores. '''
+    ''' Prepares clients from configuration. '''
     # TODO: Return futures for background loading.
     #       https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
     scribe = __.acquire_scribe( __package__ )
-    registry = __.AccretiveDictionary( )
-    descriptors = auxdata.configuration.get( 'vectorstores', ( ) )
+    clients = __.AccretiveDictionary( )
+    descriptors = descriptors_from_configuration( auxdata )
     names = tuple( descriptor[ 'name' ] for descriptor in descriptors )
-    providers_ = tuple(
-        providers[ descriptor[ 'provider' ] ] for descriptor in descriptors )
+    factories_per_client = tuple(
+        factories[ descriptor[ 'factory' ] ] for descriptor in descriptors )
     results = await __.gather_async(
-        *(  provider.client_from_descriptor( auxdata, descriptor )
-            for provider, descriptor in zip( providers_, descriptors ) ),
+        *(  factory.client_from_descriptor( auxdata, descriptor )
+            for factory, descriptor
+            in zip( factories_per_client, descriptors ) ),
         return_exceptions = True )
     for name, descriptor, result in zip( names, descriptors, results ):
         match result:
@@ -86,30 +107,30 @@ async def prepare_clients(
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
             case __.g.Value( future ):
-                registry[ name ] = dict(
+                clients[ name ] = dict(
                     name = name, data = descriptor, instance = future )
-    return registry
+    return clients
 
 
-async def prepare_client_providers( auxdata: __.Globals ):
-    ''' Prepares client providers. '''
+async def prepare_factories(
+    auxdata: __.Globals
+) -> __.AbstractDictionary[ str, Factory ]:
+    ''' Prepares factories from configuration. '''
     scribe = __.acquire_scribe( __package__ )
-    descriptors = auxdata.configuration.get( 'vectorstores', ( ) )
+    descriptors = descriptors_from_configuration( auxdata )
     names = frozenset(
-        descriptor[ 'provider' ] for descriptor in descriptors )
-    preparers = __.DictionaryProxy(
-        { name: client_preparers[ name ]( auxdata ) for name in names } )
+        descriptor[ 'factory' ] for descriptor in descriptors )
+    preparers_ = __.DictionaryProxy(
+        { name: preparers[ name ]( auxdata ) for name in names } )
     results = await __.gather_async(
-        *preparers.values( ), return_exceptions = True )
-    providers = { }
-    for name, result in zip( preparers.keys( ), results ):
+        *preparers_.values( ), return_exceptions = True )
+    factories = { }
+    for name, result in zip( preparers_.keys( ), results ):
         match result:
             case __.g.Error( error ):
-                summary = (
-                    "Could not prepare vectorstore client provider "
-                    f"{name!r}." )
+                summary = "Could not prepare vectorstore factory {name!r}."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
-            case __.g.Value( provider ):
-                providers[ name ] = provider
-    return providers
+            case __.g.Value( factory ):
+                factories[ name ] = factory
+    return factories

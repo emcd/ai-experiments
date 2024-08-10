@@ -26,15 +26,15 @@ from . import __
 
 
 async def prepare( auxdata: __.Globals ):
-    ''' Installs dependencies and returns environment context manager. '''
+    ''' Installs dependencies and returns factory. '''
     # TODO: Install dependencies in isolated environment, if necessary.
-    return Provider( )
+    return Factory( )
 
-_core.client_preparers[ 'chroma' ] = prepare
+_core.preparers[ 'chroma' ] = prepare
 
 
 @__.dataclass( frozen = True, kw_only = True, slots = True )
-class Provider( _core.Provider ):
+class Factory( _core.Factory ):
     # https://python.langchain.com/v0.2/docs/integrations/text_embedding/openai/
     # https://python.langchain.com/v0.2/docs/integrations/vectorstores/chroma/
     # https://docs.trychroma.com/reference/py-client

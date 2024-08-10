@@ -625,8 +625,8 @@ conversation_control_layout = {
         component_class = Select,
         component_arguments = dict(
             name = 'Provider',
-            options = [ 'OpenAI' ],
-            value = 'OpenAI',
+            #options = [ 'OpenAI' ],
+            #value = 'OpenAI',
         ),
         populator_function = 'populate_providers_selector',
     ),

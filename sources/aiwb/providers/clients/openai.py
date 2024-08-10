@@ -18,18 +18,82 @@
 #============================================================================#
 
 
-''' Implemenation of OpenAI AI provider. '''
+''' Implementation of interface to OpenAI. '''
 
 
+from .. import core as _core
 from . import __
-from . import core as _core
 
 
-class Provider( _core.Provider ):
-    ''' Model management, etc... '''
+async def prepare( auxdata: __.Globals ):
+    ''' Installs dependencies and returns factory. '''
+    # TODO: Install dependencies in isolated environment, if necessary.
+    return Factory( )
 
-    name = 'openai' # TODO: Derive from subpackage.
-    proper_name = 'OpenAI'
+_core.preparers[ 'openai' ] = prepare
+
+
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class Client( _core.Client ):
+
+    module: __.Module # TEMP: Hack until we can use object rather than module.
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        auxdata: __.Globals,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        from sys import modules
+        args = (
+            super( Client, Client )
+            .init_args_from_descriptor( auxdata, descriptor ) )
+        args.update( module = modules[ __name__ ] )
+        return args
+
+
+# TODO: AzureClient
+
+
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class OpenAIClient( Client ):
+
+    @classmethod
+    async def assert_environment(
+        selfclass,
+        auxdata: __.Globals,
+    ):
+        from os import environ
+        if 'OPENAI_API_KEY' not in environ:
+            raise LookupError( "Missing 'OPENAI_API_KEY'." )
+        # TODO: Warn on missing 'OPENAI_ORG_ID' and 'OPENAI_PROJECT_ID'.
+
+    @classmethod
+    async def prepare(
+        selfclass,
+        auxdata: __.Globals,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        await selfclass.assert_environment( auxdata )
+        # TODO: Return future which acquires models in background.
+        _models.update( await _cache_acquire_models( auxdata ) )
+        return selfclass(
+            **super( OpenAIClient, OpenAIClient )
+            .init_args_from_descriptor( auxdata, descriptor ) )
+
+
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class Factory( _core.Factory ):
+
+    async def client_from_descriptor(
+        self,
+        auxdata: __.Globals,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ]
+    ):
+        variant = descriptor.get( 'variant' )
+        # TODO: Produce Azure variant, if requested.
+        # TODO: Return future.
+        return await OpenAIClient.prepare( auxdata, descriptor )
 
 
 # TODO: Maintain models with ModelsManager class.
@@ -89,7 +153,7 @@ def count_text_tokens( text, model_name ):
 
 
 def extract_invocation_requests( canister, auxdata, ai_functions ):
-    from ..codecs.json import loads
+    from ...codecs.json import loads
     try: requests = loads( canister[ 0 ].data )
     except Exception as exc:
         raise ValueError( 'Malformed JSON payload in message.' ) from exc
@@ -115,7 +179,7 @@ def extract_invocation_requests( canister, auxdata, ai_functions ):
 
 
 def invoke_function( request, controls ):
-    from ..messages.core import Canister
+    from ...messages.core import Canister
     request_context = request[ 'context__' ]
     result = request[ 'invocable__' ]( )
     if 'id' in request_context:
@@ -130,15 +194,6 @@ def invoke_function( request, controls ):
     canister.add_content( message, mimetype = mimetype )
     canister.attributes.model_context = result_context
     return canister
-
-
-async def prepare( auxdata ):
-    from os import environ
-    if 'OPENAI_API_KEY' not in environ:
-        raise LookupError( "Missing 'OPENAI_API_KEY'." )
-    # TODO: Warn on missing 'OPENAI_ORG_ID' and 'OPENAI_PROJECT_ID'.
-    _models.update( await _cache_acquire_models( auxdata ) )
-    return Provider( )
 
 
 def provide_chat_models( ):
@@ -158,7 +213,7 @@ def provide_format_name( controls ): return 'JSON'
 def parse_data( content, controls ):
     mime_type = provide_format_mime_type( controls )
     if 'application/json' == mime_type:
-        from ..codecs.json import loads
+        from ...codecs.json import loads
         text = loads( content )
     else: raise NotImplementedError( f"Cannot parse '{mime_type}'." )
     return text
@@ -177,8 +232,9 @@ def select_default_model( models, auxdata ):
     configuration = auxdata.configuration
     # TODO: Merge configuration on provider instantiation.
     try:
+        # TEMP HACK
         return (
-            configuration[ 'providers' ][ Provider.name ][ 'default-model' ] )
+            next( iter( configuration[ 'providers' ] ) )[ 'default-model' ] )
     except KeyError: pass
     for model_name in ( 'gpt-4o', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', ):
         if model_name in models: return model_name
@@ -189,7 +245,7 @@ async def _cache_acquire_models( auxdata ):
     from json import dumps, loads
     from aiofiles import open as open_
     path = auxdata.provide_cache_location(
-        'providers', Provider.name, 'models.json' )
+        'providers', 'openai', 'models.json' )
     if path.is_file( ):
         # TODO: Get cache expiration interval from configuration.
         interval = __.TimeDelta( seconds = 4 * 60 * 60 ) # 4 hours
@@ -209,7 +265,6 @@ def _chat( messages, special_data, controls, callbacks ):
     # TODO? Remove rate limit handling, since newer client does this.
     from time import sleep
     from openai import OpenAI, OpenAIError, RateLimitError
-    from .core import ChatCompletionError
     client = OpenAI( ) # TODO: Use async client.
     attempts_limit = 3
     for attempts_count in range( attempts_limit ):
@@ -222,13 +277,13 @@ def _chat( messages, special_data, controls, callbacks ):
             sleep( 30 ) # TODO: Use retry value from exception.
             continue
         except OpenAIError as exc:
-            raise ChatCompletionError( f"Error: {exc}" ) from exc
-    raise ChatCompletionError(
+            raise _core.ChatCompletionError( f"Error: {exc}" ) from exc
+    raise _core.ChatCompletionError(
         f"Exhausted {attempts_limit} retries with OpenAI API." )
 
 
 def _create_canister_from_response( response ):
-    from ..messages.core import Canister
+    from ...messages.core import Canister
     attributes = __.SimpleNamespace( behaviors = [ ] )
     if response.content: mimetype = 'text/markdown'
     else:
@@ -478,14 +533,13 @@ def _process_iterative_chat_response( response, callbacks ):
     # TODO: Handle response arrays.
     from openai import OpenAIError
     from itertools import chain
-    from .core import ChatCompletionError
     handle = None
     try:
         chunks = [ ]
         while True:
             try: chunk = next( response )
             except StopIteration as exc:
-                raise ChatCompletionError(
+                raise _core.ChatCompletionError(
                     'Error: Empty response from AI.' ) from exc
             chunks.append( chunk )
             delta = chunk.choices[ 0 ].delta
@@ -501,7 +555,7 @@ def _process_iterative_chat_response( response, callbacks ):
         else: _stream_content_chunks( canister, response_, handle, callbacks )
     except OpenAIError as exc:
         if handle: callbacks.deallocator( handle )
-        raise ChatCompletionError( f"Error: {exc}" ) from exc
+        raise _core.ChatCompletionError( f"Error: {exc}" ) from exc
     return handle
 
 

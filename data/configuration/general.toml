@@ -47,14 +47,26 @@ location = 'file:///{custom_data}/prompts'
 #accessor = 'fabric-pattern' # NOTE: Not implemented yet.
 
 
-## Examples: Providers
+### AI Providers
 
-[providers.'openai']
+## Examples
+
+[[providers]]
+name = 'OpenAI'
+factory = 'openai'
 enable = true
 #default-model = 'gpt-4o'
 
+#[[providers]]
+#name = 'OpenAI (Azure)'
+#factory = 'openai'
+#variant = 'azure'
+#enable = true
 
-## Examples: Vector Stores
+
+### Vector Stores
+
+## Examples
 
 #[[vectorstores]]
 #name = 'Github REST API Documentation'

@@ -18,10 +18,7 @@
 #============================================================================#
 
 
-''' Functionality for various AI providers. '''
+''' AI provider clients, including locally-hosted providers. '''
 
 
-from . import clients
-from . import core
-
-from .core import *
+from . import openai
