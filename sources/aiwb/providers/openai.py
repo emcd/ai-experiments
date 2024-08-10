@@ -250,7 +250,7 @@ _function_support_models = frozenset( (
     'gpt-4-32k-0613',
     'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
     'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
-    'gpt-4o-2024-05-13',
+    'gpt-4o-2024-05-13', 'gpt-4o-2024-08-06',
 ) )
 _multifunction_support_models = frozenset( (
     'gpt-3.5.-turbo', 'gpt-4-turbo', 'gpt-4o',
@@ -258,8 +258,9 @@ _multifunction_support_models = frozenset( (
     'gpt-4-1106-preview', 'gpt-4-0125-preview',
     'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
     'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
-    'gpt-4o-2024-05-13',
+    'gpt-4o-2024-05-13', 'gpt-4o-2024-08-06',
 ) )
+# TODO: Multifunction support by model family.
 # https://platform.openai.com/docs/models
 _model_family_context_window_sizes = __.DictionaryProxy( {
     'gpt-3.5-turbo': 16_385,
@@ -274,6 +275,8 @@ _model_context_window_sizes = {
     'gpt-3.5-turbo-0301': 4_096,
     'gpt-3.5-turbo-0613': 4_096,
 }
+# TODO: Track support for JSON output and StructuredOutput.
+# TODO? Track model response size limits.
 async def _discover_models_from_api( ):
     from operator import attrgetter
     from accretive import ProducerDictionary
