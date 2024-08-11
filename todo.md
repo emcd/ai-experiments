@@ -24,11 +24,10 @@
 
 * Architecture and Design
 
-    - Declare AI providers registries on module load.
-    - Split AI providers subpackage into clients and servers subpackages.
     - Rework GUI to pass immutable global state through functions
       instead of GUI components namespace.
     - More asynchronous calls in GUI, especially for conversation I/O.
+    - Create 'vectorizers' subpackage for embeddings.
 
 * General
 
@@ -111,6 +110,11 @@
       https://github.com/emcd/emcd.github.io/blob/source/themes/mine/assets/css/theme.css
       https://material-theme.com/docs/reference/color-palette/
     - Button titles in sans serif font of sufficient weight.
+
+* Messages
+
+    - Cohorts: Parallel responses from one or more AIs.
+    - Clusters: Rounds of conversations.
 
 * Prompts
 
