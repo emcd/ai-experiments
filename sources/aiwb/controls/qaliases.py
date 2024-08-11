@@ -18,12 +18,20 @@
 #============================================================================#
 
 
-''' Internal imports for AI providers. '''
+''' Qualified aliases to controls.
 
+    Useful for avoiding namespace collisions from attribute imports.
+'''
+
+# ruff: noqa: F401
 # pylint: disable=unused-import
 
 
-from ..__ import *
-from ..libcore import Globals
-from ..controls.qaliases import Control
-from ..messages.qaliases import MessageCanister
+from .core import (
+    Boolean as BooleanControl,
+    DefinitionBase as Control,
+    DiscreteInterval as DiscreteIntervalControl,
+    FlexArray as FlexArrayControl,
+    Options as OptionsControl,
+    Text as TextControl,
+)

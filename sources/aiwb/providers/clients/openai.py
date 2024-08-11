@@ -179,7 +179,6 @@ def extract_invocation_requests( canister, auxdata, ai_functions ):
 
 
 def invoke_function( request, controls ):
-    from ...messages.core import Canister
     request_context = request[ 'context__' ]
     result = request[ 'invocable__' ]( )
     if 'id' in request_context:
@@ -190,7 +189,7 @@ def invoke_function( request, controls ):
         )
     else: result_context = dict( name = request[ 'name' ], role = 'function' )
     mimetype, message = render_data( result, controls )
-    canister = Canister( 'Function' )
+    canister = __.MessageCanister( 'Function' )
     canister.add_content( message, mimetype = mimetype )
     canister.attributes.model_context = result_context
     return canister
@@ -283,13 +282,12 @@ def _chat( messages, special_data, controls, callbacks ):
 
 
 def _create_canister_from_response( response ):
-    from ...messages.core import Canister
     attributes = __.SimpleNamespace( behaviors = [ ] )
     if response.content: mimetype = 'text/markdown'
     else:
         mimetype = 'application/json'
         attributes.response_class = 'invocation'
-    return Canister(
+    return __.MessageCanister(
         role = 'AI', attributes = attributes ).add_content(
             '', mimetype = mimetype )
 

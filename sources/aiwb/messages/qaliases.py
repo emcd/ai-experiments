@@ -18,12 +18,17 @@
 #============================================================================#
 
 
-''' Internal imports for AI providers. '''
+''' Qualified aliases to message data structures.
 
+    Useful for avoiding namespace collisions from attribute imports.
+'''
+
+# ruff: noqa: F401
 # pylint: disable=unused-import
 
 
-from ..__ import *
-from ..libcore import Globals
-from ..controls.qaliases import Control
-from ..messages.qaliases import MessageCanister
+from .core import (
+    Canister as MessageCanister,
+    DirectoryManager as MessagesDirectoryManager,
+    Content as TextualMessageContent,
+)

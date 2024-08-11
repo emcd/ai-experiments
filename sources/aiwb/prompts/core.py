@@ -26,10 +26,6 @@ from __future__ import annotations
 from . import __
 
 
-# TODO: Use accretive validator dictionary for flavors registry.
-flavors = __.AccretiveDictionary( )
-
-
 @__.a.runtime_checkable
 class Definition( __.a.Protocol ):
     ''' Definition of prompt. Produces prompt instances. '''
@@ -95,15 +91,15 @@ class Store( __.a.Protocol ):
         auxdata: __.Globals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
-        args = selfclass.descriptor_to_base_init_args( auxdata, descriptor )
+        args = selfclass.init_args_from_descriptor( auxdata, descriptor )
         return selfclass( **args )
 
     @classmethod
-    def descriptor_to_base_init_args(
+    def init_args_from_descriptor(
         selfclass,
         auxdata: __.Globals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AccretiveDictionary:
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
         distribution = auxdata.distribution
         name = descriptor[ 'name' ]
         location = __.parse_url( descriptor[ 'location' ].format(
@@ -120,6 +116,10 @@ class Store( __.a.Protocol ):
         auxdata: __.Globals,
     ) -> __.AbstractDictionary[ str, Definition ]:
         raise NotImplementedError
+
+
+# TODO: Use accretive validator dictionary for flavors registry.
+flavors = __.AccretiveDictionary( )
 
 
 async def acquire_definitions(
@@ -149,28 +149,50 @@ async def acquire_stores(
 ) -> __.AbstractDictionary[ str, Store ]:
     ''' Loads configured promptstores. '''
     scribe = __.acquire_scribe( __package__ )
-    descriptors = auxdata.configuration.get( 'promptstores', ( ) )
-    preparers = [ ]
-    for descriptor in descriptors:
-        flavor = descriptor.get( 'flavor', 'native' )
-        with auxdata.notifications.enqueue_on_error(
-            f"Could not load prompts store.",
-            scribe = scribe
-            # TODO: Add descriptor as detail.
-        ):
-            preparers.append(
-                flavors[ flavor ].prepare( auxdata, descriptor ) )
+    descriptors = descriptors_from_configuration( auxdata )
+    names = tuple( descriptor[ 'name' ] for descriptor in descriptors )
+    preparers = tuple(
+        flavors[ descriptor.get( 'flavor', 'native' ) ]
+        .prepare( auxdata, descriptor )
+        for descriptor in descriptors )
     results = await __.gather_async( *preparers, return_exceptions = True )
     stores = { }
-    for result in results:
+    for name, descriptor, result in zip( names, descriptors, results ):
         match result:
             case __.g.Error( error ):
-                summary = f"Could not load prompts store."
+                summary = f"Could not load prompts store {name!r}."
                 auxdata.notifications.enqueue_error(
-                    error, summary, scribe = scribe )
+                    error, summary, details = descriptor, scribe = scribe )
             case __.g.Value( store ):
                 stores[ store.name ] = store
     return __.DictionaryProxy( stores )
+
+
+def descriptors_from_configuration(
+    auxdata: __.Globals
+) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+    ''' Validates and returns descriptors from configuration. '''
+    scribe = __.acquire_scribe( __package__ )
+    descriptors = [ ]
+    for descriptor in auxdata.configuration.get( 'promptstores', ( ) ):
+        if 'name' not in descriptor:
+            auxdata.notifications.enqueue_error(
+                ValueError( "Descriptor missing name." ),
+                "Could not load prompts store from configuration.",
+                details = descriptor,
+                scribe = scribe )
+            continue
+        if not descriptor.get( 'enable', True ): continue
+        flavor = descriptor.get( 'flavor', 'native' )
+        if flavor not in flavors:
+            auxdata.notifications.enqueue_error(
+                ValueError( f"Unknown flavor: {flavor}" ),
+                "Could not load prompts store {name!r}.",
+                details = descriptor,
+                scribe = scribe )
+            continue
+        descriptors.append( descriptor )
+    return tuple( descriptors )
 
 
 async def prepare( auxdata ):

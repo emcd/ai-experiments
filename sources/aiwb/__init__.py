@@ -31,3 +31,6 @@ from . import libcore
 from . import messages
 from . import prompts
 from . import providers
+
+from .controls.qaliases import *
+from .messages.qaliases import *

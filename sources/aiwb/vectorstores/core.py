@@ -72,7 +72,7 @@ def descriptors_from_configuration(
                 details = descriptor,
                 scribe = scribe )
             continue
-        if not descriptor.get( 'enable', False ): continue
+        if not descriptor.get( 'enable', True ): continue
         descriptors.append( descriptor )
     return tuple( descriptors )
 

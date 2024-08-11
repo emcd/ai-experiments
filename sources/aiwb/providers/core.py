@@ -39,6 +39,7 @@ class Client( __.a.Protocol ):
         auxdata: __.Globals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
         return __.AccretiveDictionary( name = descriptor[ 'name' ] )
 
     @classmethod
@@ -76,6 +77,15 @@ class Factory( __.a.Protocol ):
         raise NotImplementedError
 
 
+@__.a.runtime_checkable
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class Model( __.a.Protocol ):
+    ''' Represents an AI model. '''
+
+    name: str
+    provider: Client
+
+
 class ChatCompletionError( Exception ): pass
 
 
@@ -83,7 +93,7 @@ class ChatCompletionError( Exception ): pass
 class ChatCallbacks:
     ''' Callbacks for AI provider to correspond with caller. '''
 
-    allocator: __.a.Callable[ [ __.Canister ], __.a.Any ] = (
+    allocator: __.a.Callable[ [ __.MessageCanister ], __.a.Any ] = (
         lambda canister: canister )
     deallocator: __.a.Callable[ [ __.a.Any ], None ] = (
         lambda handle: None )
@@ -116,7 +126,7 @@ def descriptors_from_configuration(
                 details = descriptor,
                 scribe = scribe )
             continue
-        if not descriptor.get( 'enable', False ): continue
+        if not descriptor.get( 'enable', True ): continue
         descriptors.append( descriptor )
     return tuple( descriptors )
 

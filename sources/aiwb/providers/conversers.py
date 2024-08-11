@@ -18,12 +18,25 @@
 #============================================================================#
 
 
-''' Internal imports for AI providers. '''
-
-# pylint: disable=unused-import
+''' Base converser classes and functions for AI providers. '''
 
 
-from ..__ import *
-from ..libcore import Globals
-from ..controls.qaliases import Control
-from ..messages.qaliases import MessageCanister
+from __future__ import annotations
+
+from . import __
+from . import core as _core
+
+
+@__.dataclass( frozen = True, kw_only = True, slots = True )
+class ConverserModel( _core.Model ):
+    ''' Represents an AI chat model. '''
+
+    @__.abstract_member_function
+    async def converse(
+        messages: __.AbstractSequence[ __.MessageCanister ],
+        controls: __.AbstractDictionary[ __.Control ],
+        specials, # TODO: Annotate.
+        callbacks, # TODO: Annotate.
+    ): # TODO: Annotate return value.
+        ''' Interacts with model to complete a round of conversation. '''
+        raise NotImplementedError
