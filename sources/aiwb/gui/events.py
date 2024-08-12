@@ -82,22 +82,22 @@ def on_click_copy_message( gui, event ):
     gui.parent__.text_clipboard_export.value = str( gui.text_message.object )
 
 
-def on_click_create_conversation( gui, event ):
+async def on_click_create_conversation( components, event ):
     from .updaters import create_and_display_conversation
-    create_and_display_conversation( gui )
+    await create_and_display_conversation( components )
 
 
-def on_click_delete_conversation( gui, event ):
+async def on_click_delete_conversation( components, event ):
     from .updaters import delete_conversation
-    conversations = gui.parent__.column_conversations_indicators
-    identity = gui.rehtml_indicator.identity__
+    conversations = components.parent__.column_conversations_indicators
+    identity = components.rehtml_indicator.identity__
     descriptor = conversations.descriptors__[ identity ]
-    delete_conversation( gui.parent__, descriptor )
+    await delete_conversation( components.parent__, descriptor )
 
 
-def on_click_fork_conversation( gui, event ):
+async def on_click_fork_conversation( components, event ):
     from .updaters import fork_conversation
-    fork_conversation( gui.parent__, gui.index__ )
+    await fork_conversation( components.parent__, components.index__ )
 
 
 def on_click_invoke_function( gui, event ):

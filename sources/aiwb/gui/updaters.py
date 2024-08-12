@@ -22,6 +22,7 @@
 
 
 from . import __
+from . import core as _core
 
 
 def add_conversation_indicator( gui, descriptor, position = 0 ):
@@ -81,12 +82,14 @@ def configure_message_interface( canister_gui, dto ):
         getattr( canister_gui, f"toggle_{behavior}" ).value = True
 
 
-def create_and_display_conversation( gui, state = None ):
+async def create_and_display_conversation( components, state = None ):
+    ''' Creates new conversation in memory and displays it. '''
     from .classes import ConversationDescriptor
     descriptor = ConversationDescriptor( )
-    create_conversation( gui, descriptor, state = state )
-    update_conversation_hilite( gui, new_descriptor = descriptor )
-    display_conversation( gui, descriptor )
+    create_conversation( components, descriptor, state = state )
+    # TODO: Async lock conversations index.
+    update_conversation_hilite( components, new_descriptor = descriptor )
+    display_conversation( components, descriptor )
 
 
 def create_conversation( gui, descriptor, state = None ):
@@ -130,12 +133,14 @@ def create_message( gui, dto ):
     return gui_
 
 
-def delete_conversation( gui, descriptor ):
+async def delete_conversation( components, descriptor ):
+    ''' Removes conversation from index and flushes it. '''
     # TODO: Confirmation modal dialog.
     from .persistence import save_conversations_index
-    conversations = gui.column_conversations_indicators
+    conversations = components.column_conversations_indicators
     if descriptor is conversations.current_descriptor__:
-        create_and_display_conversation( gui )
+        await create_and_display_conversation( components )
+    # TODO: Async lock conversations index.
     conversations.descriptors__.pop( descriptor.identity )
     descriptor.gui = None # break possible GC cycles
     indicators = [
@@ -143,10 +148,10 @@ def delete_conversation( gui, descriptor ):
         if indicator.identity__ != descriptor.identity ]
     conversations.objects = indicators
     descriptor.indicator = None # break possible GC cycles
-    path = __.calculate_conversations_path( gui ).joinpath(
+    path = __.calculate_conversations_path( components ).joinpath(
         f"{descriptor.identity}.json" )
     if path.exists( ): path.unlink( )
-    save_conversations_index( gui )
+    save_conversations_index( components ) # TODO: async
 
 
 def determine_message_layout( dto ):
@@ -173,12 +178,13 @@ def display_conversation( gui, descriptor ):
     autoscroll_document( descriptor.gui )
 
 
-def fork_conversation( gui, index ):
+async def fork_conversation( components, index: int ):
+    ''' Copies messages history up to index into new conversation. '''
     from .persistence import collect_conversation
-    state = collect_conversation( gui )
+    state = collect_conversation( components )
     state[ 'column_conversation_history' ] = (
         state[ 'column_conversation_history' ][ 0 : index + 1 ] )
-    create_and_display_conversation( gui, state = state )
+    await create_and_display_conversation( components, state = state )
 
 
 def populate_conversation( gui ):
@@ -193,13 +199,13 @@ def populate_conversation( gui ):
     update_conversation_postpopulate( gui )
 
 
-async def populate_dashboard( auxdata ):
-    from .__ import generate_component
+async def populate_dashboard( auxdata: _core.Globals ):
+    ''' Populates entire conversations dashboard. '''
     from .classes import ConversationDescriptor
     from .layouts import conversations_manager_layout, dashboard_layout
     from .persistence import restore_conversations_index
     components = auxdata.gui.components
-    generate_component( components, dashboard_layout, 'dashboard' )
+    __.generate_component( components, dashboard_layout, 'dashboard' )
     conversations = components.column_conversations_indicators
     conversations.descriptors__ = { }
     conversations.current_descriptor__ = ConversationDescriptor( )
@@ -210,7 +216,7 @@ async def populate_dashboard( auxdata ):
         components,
         conversations_manager_layout,
         'column_conversations_manager' )
-    create_and_display_conversation( components ) # TODO: async
+    await create_and_display_conversation( components )
 
 
 def populate_models_selector( gui ):

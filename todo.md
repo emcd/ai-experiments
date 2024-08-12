@@ -24,10 +24,13 @@
 
 * Architecture and Design
 
-    - Rework GUI to pass immutable global state through functions
-      instead of GUI components namespace.
+    - Rework GUI to pass immutable conversation object through functions
+      instead of components namespace. Cannot pass GUI globals object, since
+      each conversation has a mutated copy of the conversation-related
+      components.
     - More asynchronous calls in GUI, especially for conversation I/O.
     - Create 'vectorizers' subpackage for embeddings.
+    - Reclassify modules as accretive.
 
 * General
 
