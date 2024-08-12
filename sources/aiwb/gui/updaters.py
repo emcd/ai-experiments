@@ -151,7 +151,7 @@ async def delete_conversation( components, descriptor ):
     path = __.calculate_conversations_path( components ).joinpath(
         f"{descriptor.identity}.json" )
     if path.exists( ): path.unlink( )
-    save_conversations_index( components ) # TODO: async
+    await save_conversations_index( components.auxdata__ )
 
 
 def determine_message_layout( dto ):
@@ -358,11 +358,16 @@ def update_and_save_conversation( gui ):
     save_conversation( gui )
 
 
-def update_and_save_conversations_index( gui ):
+def update_and_save_conversations_index( components ):
     from .persistence import save_conversations_index
-    update_conversation_timestamp( gui )
-    update_conversation_hilite( gui )
-    save_conversations_index( gui )
+    update_conversation_timestamp( components )
+    update_conversation_hilite( components )
+    # TEMP HACK: Remove once this caller is async.
+    from asyncio import get_running_loop
+    from time import sleep
+    task = get_running_loop( ).create_task(
+        save_conversations_index( components ) )
+    #while not task.done( ): sleep( 0.1 )
 
 
 def update_canned_prompt_text( gui ):

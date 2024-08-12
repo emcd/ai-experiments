@@ -25,6 +25,7 @@
 
 
 from . import __
+from . import core as _core
 
 
 def collect_conversation( gui ):
@@ -105,7 +106,7 @@ def restore_conversation_messages( gui, column_name, state ):
         add_message( gui, canister )
 
 
-async def restore_conversations_index( auxdata ):
+async def restore_conversations_index( auxdata: _core.Globals ):
     from aiofiles import open as open_
     from tomli import loads
     from .classes import ConversationDescriptor
@@ -117,7 +118,7 @@ async def restore_conversations_index( auxdata ):
     conversations_path = __.calculate_conversations_path( components )
     index_path = conversations_path / 'index.toml'
     if not index_path.exists( ):
-        return save_conversations_index( components ) # TODO: async
+        return await save_conversations_index( components )
     async with open_( index_path ) as file:
         descriptors = loads( await file.read( ) )[ 'descriptors' ]
     # TODO: Check conversation indicators concurrently.
@@ -133,7 +134,7 @@ async def restore_conversations_index( auxdata ):
             ConversationDescriptor( **descriptor ),
             position = 'END' )
     sort_conversations_index( components ) # extra sanity
-    save_conversations_index( components ) # TODO: async
+    return await save_conversations_index( components )
 
 
 def restore_prompt_variables( gui, row_name, state, species ):
@@ -170,12 +171,14 @@ def save_conversation_messages( gui, column_name ):
     return { column_name: state }
 
 
-def save_conversations_index( gui ):
-    conversations_path = __.calculate_conversations_path( gui )
+async def save_conversations_index( components ):
+    from aiofiles import open as open_
+    from tomli_w import dumps
+    conversations_path = __.calculate_conversations_path( components )
     conversations_path.mkdir( exist_ok = True, parents = True )
-    index_path = conversations_path / 'index.toml'
-    conversations = gui.column_conversations_indicators
-    # Do not serialize GUI.
+    index_file = conversations_path / 'index.toml'
+    conversations = components.column_conversations_indicators
+    # Do not serialize GUI components with index.
     descriptors = [
         dict(
             identity = descriptor.identity,
@@ -185,9 +188,9 @@ def save_conversations_index( gui ):
         )
         for descriptor in conversations.descriptors__.values( )
     ]
-    from tomli_w import dump
-    with index_path.open( 'wb' ) as file:
-        dump( { 'format-version': 1, 'descriptors': descriptors }, file )
+    async with open_( index_file, 'w' ) as stream:
+        await stream.write( dumps(
+            { 'format-version': 1, 'descriptors': descriptors } ) )
 
 
 def save_prompt_variables( gui, row_name, species ):
