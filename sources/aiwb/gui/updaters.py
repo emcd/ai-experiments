@@ -86,28 +86,30 @@ async def create_and_display_conversation( components, state = None ):
     ''' Creates new conversation in memory and displays it. '''
     from .classes import ConversationDescriptor
     descriptor = ConversationDescriptor( )
-    create_conversation( components, descriptor, state = state )
+    await create_conversation( components, descriptor, state = state )
     # TODO: Async lock conversations index.
     update_conversation_hilite( components, new_descriptor = descriptor )
     display_conversation( components, descriptor )
 
 
-def create_conversation( gui, descriptor, state = None ):
+async def create_conversation( components, descriptor, state = None ):
+    ''' Creates new conversation, populating its components. '''
     from . import layouts
     from .layouts import conversation_container_names
     from .persistence import inject_conversation
     # TODO: Restrict GUI namespace to conversation components.
-    pane_gui = __.SimpleNamespace( **gui.__dict__ )
+    components_ = __.SimpleNamespace( **components.__dict__ )
     for component_name in conversation_container_names:
         layout = getattr( layouts, f"{component_name}_layout" )
-        __.generate_component( pane_gui, layout, f"column_{component_name}" )
-    pane_gui.auxdata__ = gui.auxdata__
-    pane_gui.identity__ = descriptor.identity
-    pane_gui.parent__ = gui
-    descriptor.gui = pane_gui
-    populate_conversation( pane_gui )
-    if state: inject_conversation( pane_gui, state )
-    return pane_gui
+        __.generate_component(
+            components_, layout, f"column_{component_name}" )
+    components_.auxdata__ = components.auxdata__
+    components_.identity__ = descriptor.identity
+    components_.parent__ = components
+    descriptor.gui = components_
+    populate_conversation( components_ ) # TODO: async
+    if state: inject_conversation( components_, state ) # TODO: async
+    return components_
 
 
 def create_message( gui, dto ):
@@ -301,18 +303,20 @@ def postpopulate_system_prompt_variables( gui ):
             data = user_prompt_preference.get( 'defaults', { } ) )
 
 
-def select_conversation( gui, identity ):
-    conversations = gui.column_conversations_indicators
+async def select_conversation( components, identity ):
+    ''' Displays selected conversation, creating it if necessary. '''
+    conversations = components.column_conversations_indicators
     old_descriptor = conversations.current_descriptor__
     new_descriptor = conversations.descriptors__[ identity ]
     if old_descriptor.identity == identity: return
     from .persistence import restore_conversation
     if None is new_descriptor.gui:
-        new_pane_gui = create_conversation( gui, new_descriptor )
-        restore_conversation( new_pane_gui )
-        new_descriptor.gui = new_pane_gui
-    update_conversation_hilite( gui, new_descriptor = new_descriptor )
-    display_conversation( gui, new_descriptor )
+        components_ = await create_conversation( components, new_descriptor )
+        restore_conversation( components_ )
+        new_descriptor.gui = components_
+    # TODO: Async lock conversations index.
+    update_conversation_hilite( components, new_descriptor = new_descriptor )
+    display_conversation( components, new_descriptor )
 
 
 def sort_conversations_index( gui ):
@@ -352,28 +356,17 @@ def update_active_functions( gui ):
     update_token_count( gui )
 
 
-def update_and_save_conversation( gui ):
+async def update_and_save_conversation( components ):
     from .persistence import save_conversation
-    update_token_count( gui )
-    save_conversation( gui )
+    update_token_count( components ) # TODO? async lock
+    save_conversation( components ) # TODO: async
 
 
-def update_and_save_conversations_index( components ):
+async def update_and_save_conversations_index( components ):
     from .persistence import save_conversations_index
     update_conversation_timestamp( components )
     update_conversation_hilite( components )
-    # TEMP HACK: Remove once this caller is async.
-    from asyncio import get_running_loop
-    from time import sleep
-    task = get_running_loop( ).create_task(
-        save_conversations_index( components ) )
-    #while not task.done( ): sleep( 0.1 )
-
-
-def update_canned_prompt_text( gui ):
-    _update_prompt_text( gui, species = 'user' )
-    if 'canned' == gui.selector_user_prompt_class.value:
-        update_and_save_conversation( gui )
+    await save_conversations_index( components )
 
 
 def update_chat_button( gui ):
@@ -480,12 +473,6 @@ def update_summarization_toggle( gui ):
     summarizes = attributes.get( 'summarizes', False )
     gui.toggle_summarize.value = (
         'canned' == gui.selector_user_prompt_class.value and summarizes )
-
-
-def update_system_prompt_text( gui ):
-    _update_prompt_text( gui, species = 'supervisor' )
-    if gui.toggle_system_prompt_active.value:
-        update_and_save_conversation( gui )
 
 
 def update_token_count( gui ):

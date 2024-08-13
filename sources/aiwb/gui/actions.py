@@ -40,34 +40,35 @@ def _update_conversation_status_on_error( invocable ):
 
 
 @_update_conversation_status_on_error
-def chat( gui ):
+async def chat( components ):
     from ..messages.core import Canister
     from .updaters import (
         update_and_save_conversation,
         update_and_save_conversations_index,
         update_messages_post_summarization,
     )
-    summarization = gui.toggle_summarize.value
-    if 'canned' == gui.selector_user_prompt_class.value:
-        prompt = gui.text_canned_prompt.object
-        gui.selector_user_prompt_class.value = 'freeform'
+    summarization = components.toggle_summarize.value
+    if 'canned' == components.selector_user_prompt_class.value:
+        prompt = components.text_canned_prompt.object
+        components.selector_user_prompt_class.value = 'freeform'
     else:
-        prompt = gui.text_freeform_prompt.value
-        gui.text_freeform_prompt.value = ''
+        prompt = components.text_freeform_prompt.value
+        components.text_freeform_prompt.value = ''
     if prompt:
         canister = Canister( role = 'Human' ).add_content( prompt )
-        _add_message( gui, canister )
-    with _update_conversation_progress( gui, 'Generating AI response...' ):
-        canister_gui = _chat( gui )
-    canister_gui.canister__.attributes.behaviors = [ 'active' ]
-    __.assimilate_canister_dto_to_gui( canister_gui )
-    _add_conversation_indicator_if_necessary( gui )
-    update_and_save_conversations_index( gui )
+        _add_message( components, canister )
+    with _update_conversation_progress(
+        components, 'Generating AI response...'
+    ): canister_components = _chat( components )
+    canister_components.canister__.attributes.behaviors = [ 'active' ]
+    __.assimilate_canister_dto_to_gui( canister_components )
+    _add_conversation_indicator_if_necessary( components )
+    await update_and_save_conversations_index( components )
     if summarization:
-        update_messages_post_summarization( gui )
-        gui.toggle_summarize.value = False
-    update_and_save_conversation( gui )
-    _invoke_functions_if_desirable( gui, canister_gui )
+        update_messages_post_summarization( components )
+        components.toggle_summarize.value = False
+    await update_and_save_conversation( components )
+    _invoke_functions_if_desirable( components, canister_components )
 
 
 @_update_conversation_status_on_error
@@ -94,27 +95,29 @@ def invoke_functions( gui, index ):
 
 
 @_update_conversation_status_on_error
-def search( gui ):
+async def search( components ):
     from ..messages.core import Canister
     from .updaters import update_and_save_conversation
-    prompt = gui.text_freeform_prompt.value
-    gui.text_freeform_prompt.value = ''
+    prompt = components.text_freeform_prompt.value
+    components.text_freeform_prompt.value = ''
     canister = Canister( role = 'Human' ).add_content( prompt )
-    _add_message( gui, canister )
-    documents_count = gui.slider_documents_count.value
-    vectorstore = gui.auxdata__.vectorstores[
-        gui.selector_vectorstore.value ][ 'instance' ]
+    _add_message( components, canister )
+    documents_count = components.slider_documents_count.value
+    vectorstore = components.auxdata__.vectorstores[
+        components.selector_vectorstore.value ][ 'instance' ]
     # TODO: Error handling on vector database query failure.
     # TODO: Configurable query method.
-    with _update_conversation_progress( gui, 'Querying vector database...' ):
+    with _update_conversation_progress(
+        components, 'Querying vector database...'
+    ):
         documents = vectorstore.similarity_search(
             prompt, k = documents_count )
     for document in documents:
         mimetype = document.metadata.get( 'mime_type', 'text/plain' )
         canister = Canister( role = 'Document' ).add_content(
             document.page_content, mimetype = mimetype )
-        _add_message( gui, canister )
-    update_and_save_conversation( gui )
+        _add_message( components, canister )
+    await update_and_save_conversation( components )
 
 
 def _add_conversation_indicator_if_necessary( gui ):

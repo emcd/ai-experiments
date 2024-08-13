@@ -70,9 +70,9 @@ def on_change_freeform_prompt( gui, event ):
     update_search_button( gui )
 
 
-def on_click_chat( gui, event ):
+async def on_click_chat( components, event ):
     from .actions import chat
-    chat( gui )
+    await chat( components )
 
 
 def on_click_copy_message( gui, event ):
@@ -105,9 +105,9 @@ def on_click_invoke_function( gui, event ):
     invoke_functions( gui.parent__, gui.index__ )
 
 
-def on_click_search( gui, event ):
+async def on_click_search( components, event ):
     from .actions import search
-    search( gui )
+    await search( components )
 
 
 def on_click_uncan_prompt( gui, event ):
@@ -125,9 +125,14 @@ def on_select_canned_prompt( gui, event ):
     populate_prompt_variables( gui, species = 'user' )
 
 
-def on_select_conversation( gui, event ):
+def on_select_conversation( components, event ):
+    # TODO: async, after fix for https://github.com/holoviz/panel/issues/7142
     from .updaters import select_conversation
-    select_conversation( gui, event.obj.identity__ )
+    #await select_conversation( components, event.obj.identity__ )
+    # TEMP HACK
+    from asyncio import get_running_loop
+    get_running_loop( ).create_task(
+        select_conversation( components, event.obj.identity__ ) )
 
 
 def on_select_functions( gui, event ):
@@ -146,48 +151,57 @@ def on_select_system_prompt( gui, event ):
     update_functions_prompt( gui )
 
 
-def on_select_user_prompt_class( gui, event ):
+def on_select_user_prompt_class( components, event ):
+    # TODO: async, after fix for https://github.com/holoviz/panel/issues/7142
     from .updaters import (
         update_and_save_conversation,
         update_chat_button,
         update_summarization_toggle,
     )
-    freeform = 'freeform' == gui.selector_user_prompt_class.value
-    gui.column_canned_prompt.visible = False
-    gui.column_freeform_prompt.visible = False
-    gui.column_canned_prompt.visible = not freeform
-    gui.column_freeform_prompt.visible = freeform
-    update_chat_button( gui )
-    update_summarization_toggle( gui )
-    update_and_save_conversation( gui )
+    freeform = 'freeform' == components.selector_user_prompt_class.value
+    components.column_canned_prompt.visible = False
+    components.column_freeform_prompt.visible = False
+    components.column_canned_prompt.visible = not freeform
+    components.column_freeform_prompt.visible = freeform
+    update_chat_button( components )
+    update_summarization_toggle( components )
+    #await update_and_save_conversation( components )
+    # TEMP HACK
+    from asyncio import get_running_loop
+    get_running_loop( ).create_task(
+        update_and_save_conversation( components ) )
 
 
-def on_submit_freeform_prompt( gui, event ):
-    source = gui.text_freeform_prompt
+def on_submit_freeform_prompt( components, event ):
+    # TODO: async, after fix for https://github.com/holoviz/panel/issues/7142
+    source = components.text_freeform_prompt
     if not source.submission_value: return
     source.submission_value = ''
     from .actions import chat
-    chat( gui )
+    # await chat( components )
+    # TEMP HACK
+    from asyncio import get_running_loop
+    get_running_loop( ).create_task( chat( components ) )
 
 
 def on_toggle_canned_prompt_display( gui, event ):
     gui.text_canned_prompt.visible = gui.toggle_canned_prompt_display.value
 
 
-def on_toggle_functions_active( gui, event ):
+async def on_toggle_functions_active( components, event ):
     from .updaters import update_and_save_conversation
-    update_and_save_conversation( gui )
+    await update_and_save_conversation( components )
 
 
 def on_toggle_functions_display( gui, event ):
     gui.column_functions_json.visible = gui.toggle_functions_display.value
 
 
-def on_toggle_message_active( message_gui, event ):
+async def on_toggle_message_active( message_components, event ):
     from .updaters import update_and_save_conversation
-    if not message_gui.toggle_active.value:
-        message_gui.toggle_pinned.value = False
-    update_and_save_conversation( message_gui.parent__ )
+    if not message_components.toggle_active.value:
+        message_components.toggle_pinned.value = False
+    await update_and_save_conversation( message_components.parent__ )
 
 
 def on_toggle_message_pinned( message_gui, event ):
@@ -195,9 +209,9 @@ def on_toggle_message_pinned( message_gui, event ):
         message_gui.toggle_active.value = True
 
 
-def on_toggle_system_prompt_active( gui, event ):
+async def on_toggle_system_prompt_active( components, event ):
     from .updaters import update_and_save_conversation
-    update_and_save_conversation( gui )
+    await update_and_save_conversation( components )
 
 
 def on_toggle_system_prompt_display( gui, event ):
