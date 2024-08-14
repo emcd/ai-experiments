@@ -100,9 +100,9 @@ async def on_click_fork_conversation( components, event ):
     await fork_conversation( components.parent__, components.index__ )
 
 
-def on_click_invoke_function( gui, event ):
+async def on_click_invoke_function( components, event ):
     from .actions import invoke_functions
-    invoke_functions( gui.parent__, gui.index__ )
+    await invoke_functions( components.parent__, components.index__ )
 
 
 async def on_click_search( components, event ):

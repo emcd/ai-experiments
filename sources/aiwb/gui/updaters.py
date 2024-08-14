@@ -107,8 +107,8 @@ async def create_conversation( components, descriptor, state = None ):
     components_.identity__ = descriptor.identity
     components_.parent__ = components
     descriptor.gui = components_
-    populate_conversation( components_ ) # TODO: async
-    if state: inject_conversation( components_, state ) # TODO: async
+    populate_conversation( components_ )
+    if state: await inject_conversation( components_, state )
     return components_
 
 
@@ -183,7 +183,7 @@ def display_conversation( gui, descriptor ):
 async def fork_conversation( components, index: int ):
     ''' Copies messages history up to index into new conversation. '''
     from .persistence import collect_conversation
-    state = collect_conversation( components )
+    state = await collect_conversation( components )
     state[ 'column_conversation_history' ] = (
         state[ 'column_conversation_history' ][ 0 : index + 1 ] )
     await create_and_display_conversation( components, state = state )
@@ -312,7 +312,7 @@ async def select_conversation( components, identity ):
     from .persistence import restore_conversation
     if None is new_descriptor.gui:
         components_ = await create_conversation( components, new_descriptor )
-        restore_conversation( components_ )
+        await restore_conversation( components_ )
         new_descriptor.gui = components_
     # TODO: Async lock conversations index.
     update_conversation_hilite( components, new_descriptor = new_descriptor )
@@ -357,9 +357,10 @@ def update_active_functions( gui ):
 
 
 async def update_and_save_conversation( components ):
+    ''' Updates conversation state and then saves it. '''
     from .persistence import save_conversation
     update_token_count( components ) # TODO? async lock
-    save_conversation( components ) # TODO: async
+    await save_conversation( components )
 
 
 async def update_and_save_conversations_index( components ):

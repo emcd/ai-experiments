@@ -28,7 +28,8 @@ from . import __
 from . import core as _core
 
 
-def collect_conversation( gui ):
+async def collect_conversation( components ):
+    ''' Collects state to save from current conversation. '''
     from . import layouts
     from .layouts import conversation_container_names
     layout = { }
@@ -37,8 +38,8 @@ def collect_conversation( gui ):
     state = { }
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
-        if not hasattr( gui, name ): continue
-        component = getattr( gui, name )
+        if not hasattr( components, name ): continue
+        component = getattr( components, name )
         if hasattr( component, 'on_click' ): continue
         if hasattr( component, 'objects' ):
             if 'persistence_functions' not in data: continue
@@ -47,7 +48,7 @@ def collect_conversation( gui ):
                 saver_name, saver_extras = saver_data, { }
             else: saver_name, saver_extras = saver_data
             saver = globals( )[ saver_name ]
-            state.update( saver( gui, name, **saver_extras ) )
+            state.update( await saver( components, name, **saver_extras ) )
         elif hasattr( component, 'value' ):
             state[ name ] = dict( value = component.value )
         elif hasattr( component, 'object' ):
@@ -56,7 +57,8 @@ def collect_conversation( gui ):
     return state
 
 
-def inject_conversation( gui, state ):
+async def inject_conversation( components, state ):
+    ''' Injects saved state into current conversation. '''
     from . import layouts
     from .layouts import conversation_container_names
     from .updaters import update_token_count
@@ -66,8 +68,8 @@ def inject_conversation( gui, state ):
     for name, data in layout.items( ):
         if not data.get( 'persist', True ): continue
         if name not in state: continue # allows new UI features
-        if not hasattr( gui, name ): continue
-        component = getattr( gui, name )
+        if not hasattr( components, name ): continue
+        component = getattr( components, name )
         if hasattr( component, 'on_click' ): continue
         if hasattr( component, 'objects' ):
             if 'persistence_functions' not in data: continue
@@ -76,37 +78,45 @@ def inject_conversation( gui, state ):
                 restorer_name, restorer_extras = restorer_data, { }
             else: restorer_name, restorer_extras = restorer_data
             restorer = globals( )[ restorer_name ]
-            restorer( gui, name, state, **restorer_extras )
+            await restorer( components, name, state, **restorer_extras )
         elif hasattr( component, 'value' ):
             component.value = state[ name ][ 'value' ]
         elif hasattr( component, 'object' ):
             component.object = state[ name ][ 'value' ]
         else: continue
-    update_token_count( gui )
+    update_token_count( components )
 
 
-def restore_conversation( gui ):
-    from json import load
-    path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
-    with path.open( ) as file: state = load( file )
-    inject_conversation( gui, state )
+async def restore_conversation( components ):
+    ''' Restores contents of conversation from persistent storage. '''
+    from json import loads
+    from aiofiles import open as open_
+    file = (
+        __.calculate_conversations_path( components )
+        / f"{components.identity__}.json" )
+    async with open_( file ) as stream:
+        state = loads( await stream.read( ) )
+    await inject_conversation( components, state )
 
 
-def restore_conversation_messages( gui, column_name, state ):
+async def restore_conversation_messages( components, column_name, state ):
+    ''' Restores conversation messages from persistent storage. '''
     from ..messages.core import DirectoryManager, restore_canister
     from .updaters import add_message
-    column = getattr( gui, column_name )
+    column = getattr( components, column_name )
     column.clear( )
+    # TODO: Async parallel fanout.
     for canister_state in state.get( column_name, [ ] ):
         if 'mime-type' in canister_state:
             canister = _restore_conversation_message_v0( canister_state )
         else:
-            manager = DirectoryManager( gui.auxdata__ )
+            manager = DirectoryManager( components.auxdata__ )
             canister = restore_canister( manager, canister_state )
-        add_message( gui, canister )
+        add_message( components, canister )
 
 
 async def restore_conversations_index( auxdata: _core.Globals ):
+    ''' Restores index of conversations from persistent storage. '''
     from aiofiles import open as open_
     from tomli import loads
     from .classes import ConversationDescriptor
@@ -137,41 +147,51 @@ async def restore_conversations_index( auxdata: _core.Globals ):
     return await save_conversations_index( components )
 
 
-def restore_prompt_variables( gui, row_name, state, species ):
+async def restore_prompt_variables( components, row_name, state, species ):
+    ''' Restores prompt variables from loaded state. '''
     from .updaters import populate_prompt_variables
     container_state = state.get( row_name )
     if not isinstance( container_state, __.AbstractDictionary ):
         container_state = _restore_prompt_variables_v0(
-            gui, container_state, species = species )
-    populate_prompt_variables( gui, species = species, data = container_state )
+            components, container_state, species = species )
+    populate_prompt_variables(
+        components, species = species, data = container_state )
 
 
-def save_conversation( gui ):
-    conversations = gui.column_conversations_indicators
+async def save_conversation( components ):
+    ''' Saves contents of conversation to persistent storage. '''
+    from json import dumps
+    from aiofiles import open as open_
+    conversations = components.column_conversations_indicators
     descriptor = conversations.current_descriptor__
     # Do not save conversation before first chat completion.
     if descriptor.identity not in conversations.descriptors__: return
     # Do not save conversation while populating it.
-    if descriptor.identity != gui.identity__: return
-    from json import dump
-    state = collect_conversation( gui )
-    path = __.calculate_conversations_path( gui ) / f"{gui.identity__}.json"
-    with path.open( 'w' ) as file: dump( state, file, indent = 2 )
+    if descriptor.identity != components.identity__: return
+    state = await collect_conversation( components )
+    file = (
+        __.calculate_conversations_path( components )
+        / f"{components.identity__}.json" )
+    async with open_( file, 'w' ) as stream:
+        await stream.write( dumps( state, indent = 2 ) )
 
 
-def save_conversation_messages( gui, column_name ):
+async def save_conversation_messages( components, column_name ):
+    ''' Saves conversation messages to persistent storage. '''
     from ..messages.core import DirectoryManager
     from .__ import assimilate_canister_dto_from_gui
-    manager = DirectoryManager( gui.auxdata__ )
+    manager = DirectoryManager( components.auxdata__ )
     state = [ ]
-    for canister in getattr( gui, column_name ):
-        canister_gui = canister.gui__
-        assimilate_canister_dto_from_gui( canister_gui )
-        state.append( canister_gui.canister__.save( manager ) )
+    # TODO: Async parallel fanout.
+    for canister in getattr( components, column_name ):
+        canister_components = canister.gui__
+        assimilate_canister_dto_from_gui( canister_components )
+        state.append( canister_components.canister__.save( manager ) )
     return { column_name: state }
 
 
 async def save_conversations_index( components ):
+    ''' Saves index of conversations to persistent storage. '''
     from aiofiles import open as open_
     from tomli_w import dumps
     conversations_path = __.calculate_conversations_path( components )
@@ -193,13 +213,14 @@ async def save_conversations_index( components ):
             { 'format-version': 1, 'descriptors': descriptors } ) )
 
 
-def save_prompt_variables( gui, row_name, species ):
+async def save_prompt_variables( components, row_name, species ):
+    ''' Records prompt variables into state to be saved. '''
     # TEMP HACK: Use selector name as key until cutover to unified dict.
     template_class = 'system' if 'supervisor' == species else 'canned'
-    selector = getattr( gui, f"selector_{template_class}_prompt" )
+    selector = getattr( components, f"selector_{template_class}_prompt" )
     prompt_name = selector.value
     prompt = selector.auxdata__.prompts_cache[ prompt_name ]
-    container = getattr( gui, row_name )
+    container = getattr( components, row_name )
     container.auxdata__.manager.assimilate( )
     return { row_name: prompt.serialize( ) }
 

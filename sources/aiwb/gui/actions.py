@@ -68,25 +68,26 @@ async def chat( components ):
         update_messages_post_summarization( components )
         components.toggle_summarize.value = False
     await update_and_save_conversation( components )
-    _invoke_functions_if_desirable( components, canister_components )
+    await _invoke_functions_if_desirable( components, canister_components )
 
 
 @_update_conversation_status_on_error
-def invoke_functions( gui, index ):
+async def invoke_functions( components, index ):
+    ''' Runs invocables via current AI provider for context. '''
     from .updaters import truncate_conversation
-    truncate_conversation( gui, index )
-    provider = __.access_ai_provider_current( gui )
-    controls = __.package_controls( gui )
+    truncate_conversation( components, index )
+    provider = __.access_ai_provider_current( components )
+    controls = __.package_controls( components )
     # TODO: Async parallel fanout.
-    requests = __.extract_invocation_requests( gui )
+    requests = __.extract_invocation_requests( components )
     for request in requests:
-        with _update_conversation_progress( gui, 'Executing AI function...' ):
+        with _update_conversation_progress( components, 'Invoking tool...' ):
             canister = provider.invoke_function( request, controls )
-        _add_message( gui, canister )
-    chat( gui )
+        _add_message( components, canister )
+    await chat( components )
     # Elide invocation requests and results, if desired.
-    if gui.checkbox_elide_function_history.value:
-        history = gui.column_conversation_history
+    if components.checkbox_elide_function_history.value:
+        history = components.column_conversation_history
         results_count = len( requests )
         # TODO? Only elide results when function advises elision.
         for i in range( -results_count - 2, -1 ):
@@ -197,15 +198,15 @@ def _generate_conversation_title( gui ):
     return response[ 'title' ], response[ 'labels' ]
 
 
-def _invoke_functions_if_desirable( gui, message_gui ):
-    if 'AI' != message_gui.canister__.role: return
-    if not message_gui.toggle_active.value: return
-    if not gui.checkbox_auto_functions.value: return
-    try: __.extract_invocation_requests( gui )
+async def _invoke_functions_if_desirable( components, message_components ):
+    if 'AI' != message_components.canister__.role: return
+    if not message_components.toggle_active.value: return
+    if not components.checkbox_auto_functions.value: return
+    try: __.extract_invocation_requests( components )
     except Exception as exc:
         ic( exc )
         return
-    invoke_functions( gui, message_gui.index__ )
+    await invoke_functions( components, message_components.index__ )
 
 
 @__.produce_context_manager
