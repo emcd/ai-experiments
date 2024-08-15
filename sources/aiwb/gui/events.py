@@ -120,7 +120,7 @@ async def on_click_uncan_prompt( components, event ):
 
 async def on_click_upgrade_conversations( components, event ):
     from .persistence import upgrade_conversations
-    upgrade_conversations( components )
+    await upgrade_conversations( components )
 
 
 async def on_select_canned_prompt( components, event ):

@@ -74,22 +74,22 @@ class TextualContent( Content ):
         __.dataclass_declare( default_factory = __.time_ns ) )
     mimetype: str = 'text/markdown'
 
-    def save( self, manager ):
-        from tomli_w import dump
-        # TODO: Async open and write.
+    async def save( self, manager ):
+        from aiofiles import open as open_
+        from tomli_w import dumps
         location = manager.create_content_directory( self.identity )
         # TODO? Handle URL for content source.
         descriptor = dict(
             mimetype = self.mimetype, timestamp = self.timestamp )
         descriptor[ 'format-version' ] = 1
         descriptor_location = location / 'descriptor.toml'
-        with descriptor_location.open( 'wb' ) as descriptor_file:
-            dump( descriptor, descriptor_file )
+        async with open_( descriptor_location, 'w' ) as descriptor_stream:
+            await descriptor_stream.write( dumps( descriptor ) )
         data_location = location.joinpath(
             translate_mimetype_to_filename( 'data', self.mimetype ) )
         # TODO: Only write if timestamp newer than conversation timestamp.
-        with data_location.open( 'w' ) as data_file:
-            data_file.write( self.data )
+        async with open_( data_location, 'w' ) as data_stream:
+            await data_stream.write( self.data )
         return self.identity
 
 
@@ -109,12 +109,10 @@ class Canister:
         self.contents.append( create_content( data, **descriptor ) )
         return self
 
-    def save( self, manager ):
+    async def save( self, manager ):
         state = dict( role = self.role )
-        # TODO: Async scatter contents.
-        contents_identifiers = [ ]
-        for content in self:
-            contents_identifiers.append( content.save( manager ) )
+        savers = tuple( content.save( manager ) for content in self )
+        contents_identifiers = await __.gather_async( *savers )
         state[ 'contents' ] = contents_identifiers
         attributes = self.attributes.__dict__
         if attributes: state[ 'attributes' ] = attributes
@@ -158,35 +156,38 @@ def create_content( data, /, **descriptor ):
     raise NotImplementedError( f"MIME type not implemented: {mimetype}" )
 
 
-def restore_canister( manager, canister_state ):
+async def restore_canister( manager, canister_state ):
     role = canister_state[ 'role' ]
     nomargs = { }
     attributes = canister_state.get( 'attributes' )
     if attributes:
         nomargs[ 'attributes' ] = __.SimpleNamespace( **attributes )
     canister = Canister( role, **nomargs )
-    # TODO: Async gather contents.
-    for content_identity in canister_state[ 'contents' ]:
-        canister.contents.append(
-            restore_content( manager, content_identity ) )
+    restorers = tuple(
+        restore_content( manager, content_identity )
+        for content_identity in canister_state.get( 'contents', ( ) ) )
+    contents = await __.gather_async( *restorers )
+    for content in contents:
+        canister.contents.append( content )
     return canister
 
 
-def restore_content( manager, identity ):
-    from tomli import load
-    # TODO: Async open and read.
+async def restore_content( manager, identity ):
+    from aiofiles import open as open_
+    from tomli import loads
     # TODO: Maintain and check cache, since content may be shared
     #       across canisters and even conversations.
     location = manager.assert_content_directory( identity )
-    descriptor_location = location / 'descriptor.toml'
-    with descriptor_location.open( 'rb' ) as descriptor_file:
-        descriptor = load( descriptor_file )
+    descriptor_file = location / 'descriptor.toml'
+    async with open_( descriptor_file ) as descriptor_stream:
+        descriptor = loads( await descriptor_stream.read( ) )
     version = descriptor.pop( 'format-version', 1 )
     mimetype = descriptor[ 'mimetype' ]
     # TODO? Handle URL for content source.
-    data_location = location.joinpath(
+    data_file = location.joinpath(
         translate_mimetype_to_filename( 'data', mimetype ) )
-    with data_location.open( 'rb' ) as data_file: data = data_file.read( )
+    async with open_( data_file ) as data_stream:
+        data = await data_stream.read( )
     return create_content( data, **descriptor )
 
 

@@ -103,15 +103,16 @@ async def restore_conversation_messages( components, column_name, state ):
     ''' Restores conversation messages from persistent storage. '''
     from ..messages.core import DirectoryManager, restore_canister
     from .updaters import add_message
+    manager = DirectoryManager( components.auxdata__ )
     column = getattr( components, column_name )
+    canister_states = state.get( column_name, ( ) )
+    restorers = tuple(
+        restore_canister( manager, canister_state )
+        for canister_state in canister_states )
+    canisters = await __.gather_async( *restorers )
+    # TODO: Prepare messages en masse and then swap .objects on column.
     column.clear( )
-    # TODO: Async parallel fanout.
-    for canister_state in state.get( column_name, [ ] ):
-        if 'mime-type' in canister_state:
-            canister = _restore_conversation_message_v0( canister_state )
-        else:
-            manager = DirectoryManager( components.auxdata__ )
-            canister = restore_canister( manager, canister_state )
+    for canister in canisters:
         add_message( components, canister )
 
 
@@ -179,14 +180,16 @@ async def save_conversation( components ):
 async def save_conversation_messages( components, column_name ):
     ''' Saves conversation messages to persistent storage. '''
     from ..messages.core import DirectoryManager
-    from .__ import assimilate_canister_dto_from_gui
     manager = DirectoryManager( components.auxdata__ )
-    state = [ ]
-    # TODO: Async parallel fanout.
-    for canister in getattr( components, column_name ):
-        canister_components = canister.gui__
-        assimilate_canister_dto_from_gui( canister_components )
-        state.append( canister_components.canister__.save( manager ) )
+    canisters_components = tuple(
+        canister.gui__
+        for canister in getattr( components, column_name, ( ) ) )
+    for canister_components in canisters_components:
+        __.assimilate_canister_dto_from_gui( canister_components )
+    savers = tuple(
+        canister_components.canister__.save( manager )
+        for canister_components in canisters_components )
+    state = await __.gather_async( *savers )
     return { column_name: state }
 
 
@@ -225,62 +228,50 @@ async def save_prompt_variables( components, row_name, species ):
     return { row_name: prompt.serialize( ) }
 
 
-def upgrade_conversation( gui, identity ):
-    import json
+async def upgrade_conversation( components, identity ):
+    ''' Upgrades conversation from older formats to latest format. '''
+    from json import JSONDecodeError, dumps, loads
+    from aiofiles import open as open_
     from ..messages.core import DirectoryManager, restore_canister
-    directory_manager = DirectoryManager( gui.auxdata__ )
+    directory_manager = DirectoryManager( components.auxdata__ )
     # TODO: Use directory manager for conversation location.
-    conversations_path = __.calculate_conversations_path( gui )
-    path = conversations_path / f"{identity}.json"
+    conversations_location = __.calculate_conversations_path( components )
+    file = conversations_location / f"{identity}.json"
     # Conversation may have disappeared for some reason.
-    if not path.exists( ): return
-    ic( path )
-    with path.open( ) as file:
-        try: state = json.load( file )
-        except json.JSONDecodeError: state = None
+    if not file.exists( ): return
+    ic( file )
+    async with open_( file ) as stream:
+        try: state = loads( await stream.read( ) )
+        except JSONDecodeError: state = None
     if None is state:
-        path.unlink( )
+        file.unlink( )
         return
     # TODO: Consider format version.
-    history_original = state.get( 'column_conversation_history', [ ] )
-    history_upgrade = [ ]
-    for canister_state in history_original:
-        if 'mime-type' in canister_state:
-            canister = _restore_conversation_message_v0( canister_state )
-        else: canister = restore_canister( directory_manager, canister_state )
-        history_upgrade.append( canister.save( directory_manager ) )
+    restorers = tuple(
+        restore_canister( directory_manager, canister_state )
+        for canister_state in state.get( 'column_conversation_history', ( ) )
+    canisters = await __.gather_async( *restorers )
+    savers = tuple(
+        canister.save( directory_manager ) for canister in canisters )
+    history_upgrade = await __.gather_async( *savers )
     state[ 'column_conversation_history' ] = history_upgrade
-    with path.open( 'w' ) as file: json.dump( state, file, indent = 2 )
+    async with open_( file, 'w' ) as stream:
+        await stream.write( dumps( state, indent = 2 ) )
 
 
-def upgrade_conversations( gui ):
-    conversations_path = __.calculate_conversations_path( gui )
-    index_path = conversations_path / 'index.toml'
-    from tomli import load
-    with index_path.open( 'rb' ) as file: index = load( file )
+async def upgrade_conversations( components ):
+    ''' Upgrades conversations from older formats to latest format. '''
+    from aiofiles import open as open_
+    from tomli import loads
+    conversations_location = __.calculate_conversations_path( components )
+    index_file = conversations_location / 'index.toml'
+    async with open_( index_file ) as stream:
+        index = loads( await stream.read( ) )
     # TODO: Consider format version.
-    for descriptor in index[ 'descriptors' ]:
-        identity = descriptor[ 'identity' ]
-        upgrade_conversation( gui, identity )
-
-
-def _restore_conversation_message_v0( canister_state ):
-    from ..messages.core import Canister
-    role = canister_state[ 'role' ]
-    attributes = __.SimpleNamespace(
-        behaviors = canister_state[ 'behaviors' ] )
-    context = canister_state.get( 'context', { } )
-    if 'actor-name' in canister_state: # Deprecated field.
-        context[ 'name' ] = canister_state[ 'actor-name' ]
-    if 'AI' == role:
-        content, extra_context = _standardize_invocation_requests_v0(
-            canister_state )
-        if extra_context: attributes.response_class = 'invocation'
-        context.update( extra_context )
-    else: content = canister_state[ 'content' ]
-    if context: attributes.model_context = context
-    return Canister( role, attributes = attributes ).add_content(
-        content, mimetype = canister_state[ 'mime-type' ] )
+    upgraders = tuple(
+        upgrade_conversation( components, descriptor[ 'identity' ] )
+        for descriptor in index[ 'descriptors' ] )
+    await __.gather_async( *upgraders )
 
 
 def _restore_prompt_variables_v0( gui, state, species ):
