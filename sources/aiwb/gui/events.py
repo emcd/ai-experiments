@@ -28,9 +28,9 @@
 _document_autoscroller_code = '''
 if (component.value == 'scrolling')
     window.scrollTo(0, document.body.scrollHeight);'''
-def generate_document_autoscroller( gui, layout, component_name ):
-    if not hasattr( gui, component_name ): return
-    component = getattr( gui, component_name )
+def generate_document_autoscroller( components, layout, component_name ):
+    if not hasattr( components, component_name ): return
+    component = getattr( components, component_name )
     return dict(
         value = _document_autoscroller_code,
         args = dict( component = component ) )
@@ -43,31 +43,32 @@ navigator.clipboard.writeText(component.value).then(function() {
 }, function(err) {
     console.error('Error in copying text: ', err);
 });'''
-def generate_message_copier( gui, layout, component_name ):
+def generate_message_copier( components, layout, component_name ):
     # Note: We use a Javascript callback rather than Python library,
     #       because we want to use the clipboard of the browser's host OS
     #       and not the clipboard of the OS under which the Python code
     #       is running. E.g., consider the Windows Subsystem for Linux case:
     #       no X server and no direct access to Windows API.
-    if not hasattr( gui, component_name ): return
-    component = getattr( gui, component_name )
+    if not hasattr( components, component_name ): return
+    component = getattr( components, component_name )
     return dict(
         value = _message_copier_code,
         args = dict( component = component ) )
 
 
-def on_adjust_documents_count( gui, event ):
+async def on_adjust_documents_count( components, event ):
     from .updaters import update_search_button
-    update_search_button( gui )
+    update_search_button( components )
 
 
-def on_change_freeform_prompt( gui, event ):
+def on_change_freeform_prompt( components, event ):
+    # TODO: async, after fix for https://github.com/holoviz/panel/issues/7142
     from .updaters import (
         update_search_button,
         update_token_count,
     )
-    update_token_count( gui )
-    update_search_button( gui )
+    update_token_count( components )
+    update_search_button( components )
 
 
 async def on_click_chat( components, event ):
@@ -75,11 +76,12 @@ async def on_click_chat( components, event ):
     await chat( components )
 
 
-def on_click_copy_message( gui, event ):
+async def on_click_copy_message( components, event ):
     # TODO: Handle non-text data.
     # Layer of convolution because not all panes have a value parameter
     # that is registered as a JS-serializable Parameter object.
-    gui.parent__.text_clipboard_export.value = str( gui.text_message.object )
+    components.parent__.text_clipboard_export.value = (
+        str( components.text_message.object ) )
 
 
 async def on_click_create_conversation( components, event ):
@@ -110,19 +112,20 @@ async def on_click_search( components, event ):
     await search( components )
 
 
-def on_click_uncan_prompt( gui, event ):
-    gui.text_freeform_prompt.value = str( gui.text_canned_prompt.object )
-    gui.selector_user_prompt_class.value = 'freeform'
+async def on_click_uncan_prompt( components, event ):
+    components.text_freeform_prompt.value = (
+        str( components.text_canned_prompt.object ) )
+    components.selector_user_prompt_class.value = 'freeform'
 
 
-def on_click_upgrade_conversations( gui, event ):
+async def on_click_upgrade_conversations( components, event ):
     from .persistence import upgrade_conversations
-    upgrade_conversations( gui )
+    upgrade_conversations( components )
 
 
-def on_select_canned_prompt( gui, event ):
+async def on_select_canned_prompt( components, event ):
     from .updaters import populate_prompt_variables
-    populate_prompt_variables( gui, species = 'user' )
+    populate_prompt_variables( components, species = 'user' )
 
 
 def on_select_conversation( components, event ):
@@ -135,20 +138,20 @@ def on_select_conversation( components, event ):
         select_conversation( components, event.obj.identity__ ) )
 
 
-def on_select_functions( gui, event ):
+async def on_select_functions( components, event ):
     from .updaters import update_active_functions
-    update_active_functions( gui )
+    update_active_functions( components )
 
 
-def on_select_model( gui, event ):
+async def on_select_model( components, event ):
     from .updaters import update_functions_prompt
-    update_functions_prompt( gui )
+    update_functions_prompt( components )
 
 
-def on_select_system_prompt( gui, event ):
+async def on_select_system_prompt( components, event ):
     from .updaters import populate_prompt_variables, update_functions_prompt
-    populate_prompt_variables( gui, species = 'supervisor' )
-    update_functions_prompt( gui )
+    populate_prompt_variables( components, species = 'supervisor' )
+    update_functions_prompt( components )
 
 
 def on_select_user_prompt_class( components, event ):
@@ -184,8 +187,9 @@ def on_submit_freeform_prompt( components, event ):
     get_running_loop( ).create_task( chat( components ) )
 
 
-def on_toggle_canned_prompt_display( gui, event ):
-    gui.text_canned_prompt.visible = gui.toggle_canned_prompt_display.value
+async def on_toggle_canned_prompt_display( components, event ):
+    components.text_canned_prompt.visible = (
+        components.toggle_canned_prompt_display.value )
 
 
 async def on_toggle_functions_active( components, event ):
@@ -193,8 +197,9 @@ async def on_toggle_functions_active( components, event ):
     await update_and_save_conversation( components )
 
 
-def on_toggle_functions_display( gui, event ):
-    gui.column_functions_json.visible = gui.toggle_functions_display.value
+async def on_toggle_functions_display( components, event ):
+    components.column_functions_json.visible = (
+        components.toggle_functions_display.value )
 
 
 async def on_toggle_message_active( message_components, event ):
@@ -204,9 +209,9 @@ async def on_toggle_message_active( message_components, event ):
     await update_and_save_conversation( message_components.parent__ )
 
 
-def on_toggle_message_pinned( message_gui, event ):
-    if message_gui.toggle_pinned.value:
-        message_gui.toggle_active.value = True
+async def on_toggle_message_pinned( message_components, event ):
+    if message_components.toggle_pinned.value:
+        message_components.toggle_active.value = True
 
 
 async def on_toggle_system_prompt_active( components, event ):
@@ -214,5 +219,6 @@ async def on_toggle_system_prompt_active( components, event ):
     await update_and_save_conversation( components )
 
 
-def on_toggle_system_prompt_display( gui, event ):
-    gui.text_system_prompt.visible = gui.toggle_system_prompt_display.value
+async def on_toggle_system_prompt_display( components, event ):
+    components.text_system_prompt.visible = (
+        components.toggle_system_prompt_display.value )
