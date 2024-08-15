@@ -86,8 +86,15 @@ class _NotificationBase:
 
 
 @__.dataclass( frozen = True, kw_only = True, slots = True )
+class ApprisalNotification( _NotificationBase ):
+    ''' Notification for recoverable error or similar condition. '''
+
+    exception: BaseException = None
+
+
+@__.dataclass( frozen = True, kw_only = True, slots = True )
 class ErrorNotification( _NotificationBase ):
-    ''' Summary and exception associated with error. '''
+    ''' Notification for non-recoverable error. '''
 
     error: Exception
 
@@ -100,7 +107,25 @@ class NotificationsQueue:
     queue: __.SimpleQueue = __.dataclass_declare(
         default_factory = __.SimpleQueue )
 
-    # TODO: enqueue_admonition
+    # TODO? enqueue_admonition
+
+    def enqueue_apprisal(
+        self,
+        summary: str, *,
+        details: __.a.Any = None,
+        exception: BaseException = None,
+        inscribe_trace: bool = False,
+        scribe: __.Scribe = None,
+    ) -> __.a.Self:
+        ''' Enqueues apprisal notification, optionally logging it. '''
+        if scribe:
+            scribe_args = { }
+            if exception and inscribe_trace:
+                scribe_args[ 'exc_info' ] = exception
+            scribe.warn( summary, **scribe_args )
+        return self._enqueue(
+            ApprisalNotification(
+                summary = summary, details = details, exception = exception ) )
 
     def enqueue_error(
         self,
