@@ -29,6 +29,7 @@ from abc import (
 )
 from collections import namedtuple # TODO: Replace with dataclass.
 from collections.abc import (
+    AsyncIterable as AbstractIterableAsync,
     Awaitable as AbstractAwaitable,
     Collection as AbstractCollection,
     Iterable as AbstractIterable,
@@ -113,6 +114,15 @@ class Location( metaclass = ABCFactory ):
     #       We just want issubclass support.
 
 Location.register( Path )
+
+
+async def chain_async( *iterables: AbstractIterable | AbstractIterableAsync ):
+    ''' Chains items from iterables in sequence and asynchronously. '''
+    for iterable in iterables:
+        if isinstance( iterable, AbstractIterableAsync ):
+            async for item in iterable: yield item
+        else:
+            for item in iterable: yield item
 
 
 async def gather_async(

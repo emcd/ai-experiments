@@ -59,10 +59,10 @@ async def chat( components ):
         _add_message( components, canister )
     with _update_conversation_progress(
         components, 'Generating AI response...'
-    ): canister_components = _chat( components )
+    ): canister_components = await _chat( components )
     canister_components.canister__.attributes.behaviors = [ 'active' ]
     __.assimilate_canister_dto_to_gui( canister_components )
-    _add_conversation_indicator_if_necessary( components )
+    await _add_conversation_indicator_if_necessary( components )
     await update_and_save_conversations_index( components )
     if summarization:
         update_messages_post_summarization( components )
@@ -121,22 +121,22 @@ async def search( components ):
     await update_and_save_conversation( components )
 
 
-def _add_conversation_indicator_if_necessary( gui ):
+async def _add_conversation_indicator_if_necessary( components ):
     from .updaters import (
         add_conversation_indicator,
         update_conversation_hilite,
     )
-    conversations = gui.column_conversations_indicators
+    conversations = components.column_conversations_indicators
     descriptor = conversations.current_descriptor__
     if descriptor.identity in conversations.descriptors__: return
     # Do not proceed if we are in a function invocation. Wait for result.
     # Also, some models (e.g., GPT-4) are confused by the invocation.
-    if not _detect_ai_completion( gui ): return
-    title, labels = _generate_conversation_title( gui )
+    if not _detect_ai_completion( components ): return
+    title, labels = await _generate_conversation_title( components )
     descriptor.title = title
     descriptor.labels = labels
-    add_conversation_indicator( gui, descriptor  )
-    update_conversation_hilite( gui, new_descriptor = descriptor )
+    add_conversation_indicator( components, descriptor  )
+    update_conversation_hilite( components, new_descriptor = descriptor )
 
 
 def _add_message( gui, canister ):
@@ -146,22 +146,24 @@ def _add_message( gui, canister ):
     return message_gui
 
 
-def _chat( gui ):
+async def _chat( components ):
     from ..providers import ChatCallbacks
     from .__ import access_ai_provider_current
-    messages = __.package_messages( gui )
-    controls = __.package_controls( gui )
-    special_data = __.package_special_data( gui )
+    messages = __.package_messages( components )
+    controls = __.package_controls( components )
+    special_data = __.package_special_data( components )
     callbacks = ChatCallbacks(
         allocator = (
-            lambda canister: _add_message( gui, canister ) ),
+            lambda canister: _add_message( components, canister ) ),
         deallocator = (
-            lambda canister_gui: gui.column_conversation_history.pop( -1 ) ),
+            lambda canister_gui:
+                components.column_conversation_history.pop( -1 ) ),
         updater = (
-            lambda canister_gui: _update_gui_on_chat( gui, canister_gui ) ),
+            lambda canister_components:
+                _update_gui_on_chat( components, canister_components ) ),
     )
-    provider = access_ai_provider_current( gui )
-    return provider.chat( messages, special_data, controls, callbacks )
+    provider = access_ai_provider_current( components )
+    return await provider.chat( messages, special_data, controls, callbacks )
 
 
 def _detect_ai_completion( gui, component = None ):
@@ -173,24 +175,24 @@ def _detect_ai_completion( gui, component = None ):
         attributes, 'response_class', 'completion' )
 
 
-def _generate_conversation_title( gui ):
+async def _generate_conversation_title( components ):
     from ..codecs.json import loads
     from ..messages.core import Canister
     from ..providers import chat_callbacks_minimal
     from .__ import access_ai_provider_current
-    provider = access_ai_provider_current( gui )
-    controls = __.package_controls( gui )
+    provider = access_ai_provider_current( components )
+    controls = __.package_controls( components )
     provider_format_name = provider.provide_format_name( controls )
     prompt = (
-        gui.auxdata__.prompts.definitions[ 'Title + Labels' ]
+        components.auxdata__.prompts.definitions[ 'Title + Labels' ]
         .produce_prompt( values = { 'format': provider_format_name } ) )
     canister = Canister( role = 'Human' ).add_content(
-        prompt.render( gui.auxdata__ ) )
-    messages = [ *__.package_messages( gui )[ 1 : ], canister ]
+        prompt.render( components.auxdata__ ) )
+    messages = [ *__.package_messages( components )[ 1 : ], canister ]
     with _update_conversation_progress(
-        gui, 'Generating conversation title...'
+        components, 'Generating conversation title...'
     ):
-        ai_canister = provider.chat(
+        ai_canister = await provider.chat(
             messages, { }, controls, chat_callbacks_minimal )
     response = ai_canister[ 0 ].data
     __.scribe.info( f"New conversation title: {response}" )

@@ -105,13 +105,13 @@ def access_model_data( model_name, data_name ):
     return _models[ model_name ][ data_name ]
 
 
-def chat( messages, special_data, controls, callbacks ):
+async def chat( messages, special_data, controls, callbacks ):
     messages = _nativize_messages( messages, controls[ 'model' ] )
     special_data = _nativize_special_data( special_data, controls )
     controls = _nativize_controls( controls )
-    response = _chat( messages, special_data, controls, callbacks )
+    response = await _chat( messages, special_data, controls, callbacks )
     if controls.get( 'stream', True ):
-        return _process_iterative_chat_response( response, callbacks )
+        return await _process_iterative_chat_response( response, callbacks )
     return _process_complete_chat_response( response, callbacks )
 
 
@@ -259,26 +259,14 @@ async def _cache_acquire_models( auxdata ):
     return models
 
 
-def _chat( messages, special_data, controls, callbacks ):
-    # TODO: Operate asynchronously.
-    # TODO? Remove rate limit handling, since newer client does this.
-    from time import sleep
-    from openai import OpenAI, OpenAIError, RateLimitError
-    client = OpenAI( ) # TODO: Use async client.
-    attempts_limit = 3
-    for attempts_count in range( attempts_limit ):
-        try:
-            return client.chat.completions.create(
-                messages = messages, **special_data, **controls )
-        except RateLimitError as exc:
-            ic( exc )
-            ic( dir( exc ) )
-            sleep( 30 ) # TODO: Use retry value from exception.
-            continue
-        except OpenAIError as exc:
-            raise _core.ChatCompletionError( f"Error: {exc}" ) from exc
-    raise _core.ChatCompletionError(
-        f"Exhausted {attempts_limit} retries with OpenAI API." )
+async def _chat( messages, special_data, controls, callbacks ):
+    from openai import AsyncOpenAI, OpenAIError
+    client = AsyncOpenAI( )
+    try:
+        return await client.chat.completions.create(
+            messages = messages, **special_data, **controls )
+    except OpenAIError as exc:
+        raise _core.ChatCompletionError( f"Error: {exc}" ) from exc
 
 
 def _create_canister_from_response( response ):
@@ -373,10 +361,12 @@ async def _discover_models_from_api( ):
     }
 
 
-def _gather_tool_call_chunks_legacy( canister, response, handle, callbacks ):
+async def _gather_tool_call_chunks_legacy(
+    canister, response, handle, callbacks
+):
     from collections import defaultdict
     tool_call = defaultdict( str )
-    for chunk in response:
+    async for chunk in response:
         delta = chunk.choices[ 0 ].delta
         if not delta: break # TODO: Look for non-null finish reason.
         if not delta.function_call: break
@@ -389,12 +379,14 @@ def _gather_tool_call_chunks_legacy( canister, response, handle, callbacks ):
     callbacks.updater( handle )
 
 
-def _gather_tool_calls_chunks( canister, response, handle, callbacks ):
+async def _gather_tool_calls_chunks(
+    canister, response, handle, callbacks
+):
     from collections import defaultdict
     tool_calls = [ ]
     index = 0
     start = True # TODO: Look for non-null finish reason.
-    for chunk in response:
+    async for chunk in response:
         delta = chunk.choices[ 0 ].delta # TODO: Handle array of responses.
         if not delta: break
         if not delta.tool_calls:
@@ -527,30 +519,32 @@ def _process_complete_chat_response( response, callbacks ):
     return handle
 
 
-def _process_iterative_chat_response( response, callbacks ):
+async def _process_iterative_chat_response( response, callbacks ):
     # TODO: Handle response arrays.
     from openai import OpenAIError
-    from itertools import chain
     handle = None
     try:
         chunks = [ ]
         while True:
-            try: chunk = next( response )
+            try: chunk = await anext( response )
             except StopIteration as exc:
                 raise _core.ChatCompletionError(
                     'Error: Empty response from AI.' ) from exc
             chunks.append( chunk )
             delta = chunk.choices[ 0 ].delta
             if delta.content or delta.function_call or delta.tool_calls: break
-        response_ = chain( chunks, response )
+        response_ = __.chain_async( chunks, response )
         canister = _create_canister_from_response( delta )
         handle = callbacks.allocator( canister )
         if delta.tool_calls:
-            _gather_tool_calls_chunks( canister, response_, handle, callbacks )
-        elif delta.function_call:
-            _gather_tool_call_chunks_legacy(
+            await _gather_tool_calls_chunks(
                 canister, response_, handle, callbacks )
-        else: _stream_content_chunks( canister, response_, handle, callbacks )
+        elif delta.function_call:
+            await _gather_tool_call_chunks_legacy(
+                canister, response_, handle, callbacks )
+        else:
+            await _stream_content_chunks(
+                canister, response_, handle, callbacks )
     except OpenAIError as exc:
         if handle: callbacks.deallocator( handle )
         raise _core.ChatCompletionError( f"Error: {exc}" ) from exc
@@ -577,9 +571,11 @@ def _reconstitute_invocations( invocations ):
     return dumps( invocations_ )
 
 
-def _stream_content_chunks( canister, response, handle, callbacks ):
+async def _stream_content_chunks(
+    canister, response, handle, callbacks
+):
     # TODO: Handle content arrays.
-    for chunk in response:
+    async for chunk in response:
         delta = chunk.choices[ 0 ].delta
         # TODO: Detect finish reason.
         if not delta: break
