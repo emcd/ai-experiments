@@ -21,4 +21,8 @@
 ''' Conversation message classes and utilities. '''
 
 
+from . import __
 from . import core
+
+
+__.reclassify_modules( globals( ) )

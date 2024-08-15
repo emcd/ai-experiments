@@ -21,8 +21,14 @@
 ''' Collection of AI functions. '''
 
 
+from . import __
+
+
 async def prepare( auxdata ):
     from . import io, probability
     # TODO: Prepare functions: check for dependencies, environment, etc....
     from .__ import survey_functions
     return survey_functions( )
+
+
+__.reclassify_modules( globals( ) )

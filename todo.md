@@ -32,11 +32,10 @@
       tool calls.
     - Async queuing in GUI for actions.
     - Create 'vectorizers' subpackage for embeddings.
-    - Reclassify modules as accretive.
+    - Finish decoupling widgets from data in conversation save/restore.
 
 * General
 
-    - Decouple widgets from data in conversation save/restore.
     - Support hosting conversation-related resources as relative URLs.
       Allows abstraction from local file system.
       (FastAPI server implemented. Still need to implement routes.)

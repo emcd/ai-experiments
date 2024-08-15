@@ -75,7 +75,12 @@ from urllib.parse import (
 )
 from uuid import uuid4
 
-from accretive.qaliases import AccretiveDictionary, AccretiveNamespace
+from accretive import reclassify_modules
+from accretive.qaliases import (
+    AccretiveDictionary,
+    AccretiveModule,
+    AccretiveNamespace,
+)
 from platformdirs import PlatformDirs
 
 from . import _annotations as a

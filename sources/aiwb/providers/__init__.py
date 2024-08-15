@@ -21,7 +21,11 @@
 ''' Functionality for various AI providers. '''
 
 
+from . import __
 from . import clients
 from . import core
 
 from .core import *
+
+
+__.reclassify_modules( globals( ) )

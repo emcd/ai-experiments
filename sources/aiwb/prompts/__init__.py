@@ -21,7 +21,11 @@
 ''' Prompt classes and utilities. '''
 
 
+from . import __
 from . import core
 from . import flavors
 
 from .core import *
+
+
+__.reclassify_modules( globals( ) )

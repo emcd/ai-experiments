@@ -24,6 +24,7 @@
 __version__ = '1.0a202404271857'
 
 
+from . import __
 from . import appcore
 from . import controls
 from . import invocables
@@ -31,6 +32,11 @@ from . import libcore
 from . import messages
 from . import prompts
 from . import providers
+from . import vectorstores
 
 from .controls.qaliases import *
 from .messages.qaliases import *
+
+
+__.reclassify_modules( globals( ) )
+__class__ = __.AccretiveModule

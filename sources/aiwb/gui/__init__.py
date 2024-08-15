@@ -71,4 +71,8 @@ def main( ):
 #            api.thread.join( )
 
 
+__.reclassify_modules( globals( ) )
+__class__ = __.AccretiveModule
+
+
 if '__main__' == __name__: main( )
