@@ -107,6 +107,11 @@ async def on_click_invoke_function( components, event ):
     await invoke_functions( components.parent__, components.index__ )
 
 
+async def on_click_remove_orphans( components, event ):
+    from .persistence import remove_orphans
+    await remove_orphans( components )
+
+
 async def on_click_search( components, event ):
     from .actions import search
     await search( components )

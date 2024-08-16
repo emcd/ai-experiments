@@ -171,6 +171,7 @@ conversations_manager_layout = {
         contains = [
             'button_create_conversation',
             'button_upgrade_conversations',
+            'button_remove_orphans',
             'column_conversations_indicators',
         ],
         interpolant_id = 'left',
@@ -193,6 +194,16 @@ conversations_manager_layout = {
             **_action_button_attributes,
         ),
         event_functions = dict( on_click = 'on_click_upgrade_conversations' ),
+    ),
+    'button_remove_orphans': dict(
+        component_class = Button,
+        component_arguments = dict(
+            name = '🔃 Remove Orphans',
+            button_type = 'light',
+            visible = False,
+            **_action_button_attributes,
+        ),
+        event_functions = dict( on_click = 'on_click_remove_orphans' ),
     ),
     'column_conversations_indicators': dict(
         component_class = Column,

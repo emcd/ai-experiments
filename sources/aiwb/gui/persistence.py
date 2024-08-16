@@ -87,6 +87,61 @@ async def inject_conversation( components, state ):
     update_token_count( components )
 
 
+async def remove_orphans( components ):
+    ''' Removes orphan messages from contents store. '''
+    from itertools import chain
+    from shutil import rmtree
+    from aiofiles import open as open_
+    from tomli import loads
+    auxdata = components.auxdata__
+    conversations_location = auxdata.provide_state_location( 'conversations' )
+    index_file = conversations_location / 'index.toml'
+    async with open_( index_file ) as stream:
+        index = loads( await stream.read( ) )
+    conversations_locations = tuple(
+        conversations_location / "{}.json".format( descriptor[ 'identity' ] )
+        for descriptor in index[ 'descriptors' ] )
+    # TODO: Delete orphan conversations.
+    # TODO: Consider format version.
+    collectors = tuple(
+        _collect_content_ids_from_conversation( components, location )
+        for location in conversations_locations )
+    extant_ids = frozenset( chain.from_iterable(
+        await __.gather_async( *collectors ) ) )
+    extant_ids_prefixes = frozenset(
+        identity[ : 4 ] for identity in extant_ids )
+    ic( len( extant_ids_prefixes ) )
+    contents_location = auxdata.provide_state_location( 'contents' )
+    actual_ids_prefixes = frozenset(
+        location.stem for location in contents_location.iterdir( )
+        if location.is_dir( ) and not location.stem.startswith( '.' ) )
+    ic( len( actual_ids_prefixes ) )
+    orphan_ids_prefixes = actual_ids_prefixes - extant_ids_prefixes
+    ic( len( orphan_ids_prefixes ) )
+    assert not orphan_ids_prefixes & extant_ids_prefixes
+    for id_prefix in orphan_ids_prefixes:
+        location = contents_location / id_prefix
+        ic( location )
+        try: rmtree( location )
+        except Exception as exc: continue
+    actual_ids = frozenset(
+        location.stem
+        for id_prefix in actual_ids_prefixes
+        for location in ( contents_location / id_prefix ).iterdir( )
+        if ( contents_location / id_prefix ).is_dir( )
+        and location.is_dir( ) and not location.stem.startswith( '.' ) )
+    ic( len( extant_ids ) )
+    ic( len( actual_ids ) )
+    orphan_ids = actual_ids - extant_ids
+    ic( len( orphan_ids ) )
+    assert not orphan_ids & extant_ids
+    for identity in orphan_ids:
+        location = contents_location / identity[ : 4 ] / identity
+        ic( location )
+        try: rmtree( location )
+        except Exception as exc: continue
+
+
 async def restore_conversation( components ):
     ''' Restores contents of conversation from persistent storage. '''
     from json import loads
@@ -249,7 +304,7 @@ async def upgrade_conversation( components, identity ):
     # TODO: Consider format version.
     restorers = tuple(
         restore_canister( directory_manager, canister_state )
-        for canister_state in state.get( 'column_conversation_history', ( ) )
+        for canister_state in state.get( 'column_conversation_history', ( ) ) )
     canisters = await __.gather_async( *restorers )
     savers = tuple(
         canister.save( directory_manager ) for canister in canisters )
@@ -272,6 +327,20 @@ async def upgrade_conversations( components ):
         upgrade_conversation( components, descriptor[ 'identity' ] )
         for descriptor in index[ 'descriptors' ] )
     await __.gather_async( *upgraders )
+
+
+async def _collect_content_ids_from_conversation(
+    components, conversation_location
+):
+    from itertools import chain
+    from json import loads
+    from aiofiles import open as open_
+    auxdata = components.auxdata__
+    async with open_( conversation_location ) as stream:
+        state = loads( await( stream.read( ) ) )
+    return tuple( chain.from_iterable(
+        canister.get( 'contents', ( ) )
+        for canister in state.get( 'column_conversation_history' ) ) )
 
 
 def _restore_prompt_variables_v0( gui, state, species ):

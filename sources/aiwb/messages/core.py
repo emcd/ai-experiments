@@ -182,6 +182,7 @@ async def restore_content( manager, identity ):
     async with open_( descriptor_file ) as descriptor_stream:
         descriptor = loads( await descriptor_stream.read( ) )
     version = descriptor.pop( 'format-version', 1 )
+    descriptor[ 'identity' ] = identity
     mimetype = descriptor[ 'mimetype' ]
     # TODO? Handle URL for content source.
     data_file = location.joinpath(

@@ -153,7 +153,7 @@ async def delete_conversation( components, descriptor ):
     path = __.calculate_conversations_path( components ).joinpath(
         f"{descriptor.identity}.json" )
     if path.exists( ): path.unlink( )
-    await save_conversations_index( components.auxdata__ )
+    await save_conversations_index( components )
 
 
 def determine_message_layout( dto ):
@@ -213,6 +213,7 @@ async def populate_dashboard( auxdata: _core.Globals ):
     conversations.current_descriptor__ = ConversationDescriptor( )
     await restore_conversations_index( auxdata )
     if auxdata.configuration.get( 'maintenance-mode', False ):
+        components.button_remove_orphans.visible = True
         components.button_upgrade_conversations.visible = True
     __.register_event_callbacks(
         components,
