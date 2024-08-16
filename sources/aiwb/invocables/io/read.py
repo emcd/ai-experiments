@@ -65,16 +65,14 @@ Analysis instructions for AI. Should not be empty in replace mode. '''
         'required': [ 'source' ],
     },
 } )
-def analyze( auxdata, /, source, control = None ):
+async def analyze( auxdata, /, source, control = None ):
     operators = __.SimpleNamespace(
-        from_directory = (
-            lambda *posargs, **nomargs:
-            [ _list_directory( *posargs, **nomargs) ] ),
+        from_directory = _list_directory_as_cell,
         from_file = _analyze_file,
         from_http = _analyze_http,
         tokens_counter = None,
     )
-    return _operate( auxdata, source, operators, control = None )
+    return await _operate( auxdata, source, operators, control = None )
 
 
 @__.register_function( {
@@ -120,24 +118,20 @@ Analysis instructions for AI. Should not be empty in replace mode. '''
         'required': [ 'source' ],
     },
 } )
-def read( auxdata, /, source, control = None ):
+async def read( auxdata, /, source, control = None ):
     operators = __.SimpleNamespace(
         from_directory = _read_recursive,
-        from_file = (
-            lambda auxdata_, path, **nomargs:
-            _read_file( auxdata_, dict( location = str( path ) ) ) ),
-        from_http = (
-            lambda auxdata_, url, **nomargs:
-            _read_http( auxdata_, url ) ),
+        from_file = _read_file_at_location,
+        from_http = _read_http_wrapped,
         tokens_counter = _count_tokens,
     )
-    return _operate( auxdata, source, operators, control = control )
+    return await _operate( auxdata, source, operators, control = control )
 
 
-def _read_recursive( auxdata, path, control = None ):
+async def _read_recursive( auxdata, path, control = None ):
     results = [ ]
-    for dirent in _list_directory( auxdata, path, control = control ):
-        result = _read_file( auxdata, dirent )
+    for dirent in await _list_directory( auxdata, path, control = control ):
+        result = await _read_file( auxdata, dirent )
         if isinstance( result, str ):
             results.append( dict( error = result, **dirent ) )
         else: results.append( result )
@@ -150,7 +144,7 @@ def _access_tokens_limit( auxdata ):
     return provider.access_model_data( model_name, 'tokens-limit' )
 
 
-def _analyze_file( auxdata, path, control = None ):
+async def _analyze_file( auxdata, path, control = None ):
     from ...messages.core import Canister
     from ...providers import chat_callbacks_minimal
     ai_messages = [ ]
@@ -176,16 +170,16 @@ def _analyze_file( auxdata, path, control = None ):
                 '\n\n'.join( ai_messages ) ) )
         _, content = __.render_prompt( auxdata, control, chunk, mime_type )
         messages.append( Canister( role = 'Human' ).add_content( content ) )
-        ai_canister = provider.chat(
+        ai_canister = await provider.chat(
             messages, { }, auxdata.controls, chat_callbacks_minimal )
         # TODO: Handle combination of analysis and metadata.
         ai_messages.append( ai_canister[ 0 ].data )
     return ai_messages
 
 
-def _analyze_http( auxdata, url, control = None ):
+async def _analyze_http( auxdata, url, control = None ):
     file_name = _read_http_core( auxdata, url )
-    return _analyze_file( auxdata, file_name, control = control )
+    return await _analyze_file( auxdata, file_name, control = control )
 
 
 def _count_tokens( auxdata, content ):
@@ -209,7 +203,7 @@ def _determine_chunk_reader( path, mime_type = None ):
     return reader, mime_type
 
 
-def _discriminate_dirents( auxdata, dirents, control = None ):
+async def _discriminate_dirents( auxdata, dirents, control = None ):
     from ...messages.core import Canister
     from ...providers import chat_callbacks_minimal
     provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
@@ -231,7 +225,7 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
         _, content = __.render_prompt(
             auxdata, control, dirents_batch, 'directory-entries' )
         messages.append( Canister( role = 'Human' ).add_content( content ) )
-        ai_canister = provider.chat(
+        ai_canister = await provider.chat(
             messages, { }, auxdata.controls, chat_callbacks_minimal )
         #ic( ai_canister[ 0 ].data )
         result = provider.parse_data( ai_canister[ 0 ].data, auxdata.controls )
@@ -240,7 +234,7 @@ def _discriminate_dirents( auxdata, dirents, control = None ):
     return complete_result
 
 
-def _list_directory( auxdata, path, control = None ):
+async def _list_directory( auxdata, path, control = None ):
     # TODO: Configurable filter behavior.
     from os import walk # TODO: Python 3.12: Use 'Pathlib.walk'.
     from gitignorefile import Cache
@@ -259,10 +253,14 @@ def _list_directory( auxdata, path, control = None ):
             dirents.append( dict(
                 location = dirent_fqname,
                 mime_type = from_file( dirent, mime = True ) ) )
-    return _discriminate_dirents( auxdata, dirents, control = control )
+    return await _discriminate_dirents( auxdata, dirents, control = control )
 
 
-def _operate( auxdata, source, operators, control = None ):
+async def _list_directory_as_cell( *posargs, **nomargs ):
+    return [ await _list_directory( *posargs, **nomargs ) ]
+
+
+async def _operate( auxdata, source, operators, control = None ):
     # TODO: Support wildcards.
     from urllib.parse import urlparse
     tokens_total = 0
@@ -278,7 +276,7 @@ def _operate( auxdata, source, operators, control = None ):
         elif path.is_dir( ): operator = operators.from_directory
         # TODO: Handle symlinks, named pipes, etc....
         else: return f"Error: Type of entity at '{path}' not supported."
-        result = operator( auxdata, path, control = control )
+        result = await operator( auxdata, path, control = control )
         if operators.tokens_counter:
             tokens_total += operators.tokens_counter( auxdata, result )
             if tokens_total > tokens_max:
@@ -287,7 +285,7 @@ def _operate( auxdata, source, operators, control = None ):
                     f"which exceeds the safe limit, {tokens_max}." )
         return result
     if components.scheme in ( 'http', 'https', ):
-        return operators.from_http( auxdata, source, control = control )
+        return await operators.from_http( auxdata, source, control = control )
     return f"Error: URL scheme, '{components.scheme}', not supported."
 
 
@@ -334,7 +332,7 @@ def _read_chunks_naively( auxdata, path ):
     yield dict( content = ''.join( lines ), hint = 'last chunk' )
 
 
-def _read_file( auxdata, dirent ):
+async def _read_file( auxdata, dirent ):
     path = __.Path( dirent[ 'location' ] )
     try:
         with path.open( ) as file: contents = file.read( )
@@ -347,7 +345,11 @@ def _read_file( auxdata, dirent ):
         return dict( error = f"{exc_type}: {exc}", **dirent )
 
 
-def _read_http( auxdata, url ):
+async def _read_file_at_location( auxdata, location, **nomargs ):
+    return await _read_file( auxdata, dict( location = str( location ) ) )
+
+
+async def _read_http( auxdata, url ):
     dirent = dict( location = url )
     try:
         file_name = _read_http_core( auxdata, url )
@@ -372,3 +374,7 @@ def _read_http_core( auxdata, url ):
         with urlopen( request ) as response:
             copyfileobj( response, file )
     return file.name
+
+
+async def _read_http_wrapped( auxdata, url, **nomargs ):
+    return await _read_http( auxdata, url )

@@ -64,7 +64,7 @@ of 0. '''
         'required': [ 'specs' ],
     }
 } )
-def roll_dice( context__, /, specs ):
+async def roll_dice( context__, /, specs ):
     results = [ ]
     for spec in specs:
         results.append( { spec[ 'name' ]: _roll_dice( spec[ 'dice' ] ) } )

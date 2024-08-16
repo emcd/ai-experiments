@@ -82,7 +82,7 @@ async def invoke_functions( components, index ):
     requests = __.extract_invocation_requests( components )
     for request in requests:
         with _update_conversation_progress( components, 'Invoking tool...' ):
-            canister = provider.invoke_function( request, controls )
+            canister = await provider.invoke_function( request, controls )
         _add_message( components, canister )
     await chat( components )
     # Elide invocation requests and results, if desired.

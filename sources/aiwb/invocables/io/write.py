@@ -48,6 +48,6 @@ written. ''',
         'required': [ 'path', 'contents' ],
     },
 } )
-def write_file( auxdata, /, path, contents, mode = 'truncate' ):
+async def write_file( auxdata, /, path, contents, mode = 'truncate' ):
     with open( path, { 'append': 'a', 'truncate': 'w' }[ mode] ) as file:
         return file.write( contents )

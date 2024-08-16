@@ -178,9 +178,9 @@ def extract_invocation_requests( canister, auxdata, ai_functions ):
     return requests
 
 
-def invoke_function( request, controls ):
+async def invoke_function( request, controls ):
     request_context = request[ 'context__' ]
-    result = request[ 'invocable__' ]( )
+    result = await request[ 'invocable__' ]( )
     if 'id' in request_context:
         result_context = dict(
             name = request_context[ 'function' ][ 'name' ],
