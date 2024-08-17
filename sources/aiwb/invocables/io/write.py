@@ -49,5 +49,7 @@ written. ''',
     },
 } )
 async def write_file( auxdata, /, path, contents, mode = 'truncate' ):
-    with open( path, { 'append': 'a', 'truncate': 'w' }[ mode] ) as file:
-        return file.write( contents )
+    from aiofiles import open as open_
+    mode_ = { 'append': 'a', 'truncate': 'w' }[ mode ]
+    async with open_( path, mode_ ) as stream:
+        return await stream.write( contents )

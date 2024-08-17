@@ -78,12 +78,13 @@ async def invoke_functions( components, index ):
     truncate_conversation( components, index )
     provider = __.access_ai_provider_current( components )
     controls = __.package_controls( components )
-    # TODO: Async parallel fanout.
     requests = __.extract_invocation_requests( components )
-    for request in requests:
-        with _update_conversation_progress( components, 'Invoking tool...' ):
-            canister = await provider.invoke_function( request, controls )
-        _add_message( components, canister )
+    invokers = tuple(
+        provider.invoke_function( request, controls )
+        for request in requests )
+    with _update_conversation_progress( components, 'Invoking tools...' ):
+        canisters = await __.gather_async( *invokers )
+    for canister in canisters: _add_message( components, canister )
     await chat( components )
     # Elide invocation requests and results, if desired.
     if components.checkbox_elide_function_history.value:

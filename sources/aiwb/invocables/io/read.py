@@ -333,9 +333,11 @@ def _read_chunks_naively( auxdata, path ):
 
 
 async def _read_file( auxdata, dirent ):
-    path = __.Path( dirent[ 'location' ] )
+    from aiofiles import open as open_
+    file = __.Path( dirent[ 'location' ] )
     try:
-        with path.open( ) as file: contents = file.read( )
+        async with open_( file ) as stream:
+            contents = await stream.read( )
         if 'mime_type' not in dirent:
             from magic import from_buffer
             dirent[ 'mime_type' ] = from_buffer( contents, mime = True )
@@ -353,7 +355,8 @@ async def _read_http( auxdata, url ):
     dirent = dict( location = url )
     try:
         file_name = _read_http_core( auxdata, url )
-        with open( file_name ) as file: contents = file.read( )
+        async with open_( file_name ) as stream:
+            contents = await stream.read( )
         from magic import from_buffer
         dirent[ 'mime_type' ] = from_buffer( contents, mime = True )
         return dict( contents = contents, **dirent )
@@ -363,6 +366,7 @@ async def _read_http( auxdata, url ):
 
 
 def _read_http_core( auxdata, url ):
+    # TODO: async - aiohttp
     from shutil import copyfileobj
     from tempfile import NamedTemporaryFile
     from urllib.request import Request, urlopen

@@ -28,8 +28,6 @@
       instead of components namespace. Cannot pass GUI globals object, since
       each conversation has a mutated copy of the conversation-related
       components.
-    - More asynchronous calls in GUI, especially for conversation I/O and for
-      tool calls.
     - Async queuing in GUI for actions.
     - Create 'vectorizers' subpackage for embeddings.
     - Finish decoupling widgets from data in conversation save/restore.
