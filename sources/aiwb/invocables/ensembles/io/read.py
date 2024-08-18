@@ -24,7 +24,44 @@
 from . import __
 
 
-@__.register_function( {
+instructions_mode_model = {
+    'type': 'string',
+    'description': '''
+Replace or supplement default instructions of AI agent with given
+instructions? ''',
+    'enum': [ 'replace', 'supplement' ],
+    'default': 'supplement',
+}
+
+instructions_model = {
+    'type': 'object',
+    'description': '''
+Special instructions to AI agent to replace or supplement its default
+instructions. If not supplied, the agent will use only its default
+instructions. ''',
+    'properties': {
+        'mode': instructions_mode_model,
+        'instructions': {
+            'type': 'string',
+            'description': '''
+Analysis instructions for AI. Should not be empty in replace mode. '''
+        },
+    },
+}
+
+read_parameters_model = {
+    'type': 'object',
+    'properties': {
+        'source': {
+            'type': 'string',
+            'description': 'URL or local filesystem path to be read.'
+        },
+        'control': instructions_model,
+    },
+    'required': [ 'source' ],
+}
+
+analyze_model = {
     'name': 'analyze',
     'description': '''
 Reads a URL or local filesystem path and passes its contents to an AI agent to
@@ -32,39 +69,24 @@ analyze according to a given set of instructions. Returns an analysis of the
 contents as a list of one or more chunks, depending on the size of the entity
 to be analyzed.
 ''',
-    'parameters': {
-        'type': 'object',
-        'properties': {
-            'source': {
-                'type': 'string',
-                'description': 'URL or local filesystem path to be read.'
-            },
-            'control': {
-                'type': 'object',
-                'description': '''
-Special instructions to AI agent to replace or supplement its default
-instructions. If not supplied, the agent will use only its default
-instructions. ''',
-                'properties': {
-                    'mode': {
-                        'type': 'string',
-                        'description': '''
-Replace or supplement default instructions of AI agent with given
-instructions? ''',
-                        'enum': [ 'replace', 'supplement' ],
-                        'default': 'supplement',
-                    },
-                    'instructions': {
-                        'type': 'string',
-                        'description': '''
-Analysis instructions for AI. Should not be empty in replace mode. '''
-                    },
-                },
-            },
-        },
-        'required': [ 'source' ],
-    },
-} )
+    'parameters': read_parameters_model,
+}
+
+read_model = {
+    'name': 'read',
+    'description': '''
+Reads a URL or local file system path and returns the path, its MIME type, and
+contents. If the location is a directory, then all of its entries are
+recursively scanned and their relevance is determined by an AI agent. All
+relevant entries will be returned as list of mappings, having location, MIME
+type, and content triples. Custom instructions may optionally be supplied to
+the AI agent which determines the relevance of directory entries.
+''',
+    'parameters': read_parameters_model,
+}
+
+
+@__.register_function( analyze_model )
 async def analyze( auxdata, /, source, control = None ):
     operators = __.SimpleNamespace(
         from_directory = _list_directory_as_cell,
@@ -75,49 +97,7 @@ async def analyze( auxdata, /, source, control = None ):
     return await _operate( auxdata, source, operators, control = None )
 
 
-@__.register_function( {
-    'name': 'read',
-    'description': '''
-Reads a URL or local file system path and returns the path, its MIME type, and
-contents. If the location is a directory, then all of its entries are
-recursively scanned and their relevance is determined by an AI agent. All
-relevant entries will be returned as list of mappings, having location, MIME
-type, and content triples. Custom instructions may optionally be supplied to
-the AI agent which determines the relevance of directory entries.
-''',
-    'parameters': {
-        'type': 'object',
-        'properties': {
-            'source': {
-                'type': 'string',
-                'description': 'URL or local filesystem path to be read.'
-            },
-            'control': {
-                'type': 'object',
-                'description': '''
-Special instructions to AI agent to replace or supplement its default
-instructions. If not supplied, the agent will use only its default
-instructions. ''',
-                'properties': {
-                    'mode': {
-                        'type': 'string',
-                        'description': '''
-Replace or supplement default instructions of AI agent with given
-instructions? ''',
-                        'enum': [ 'replace', 'supplement' ],
-                        'default': 'supplement',
-                    },
-                    'instructions': {
-                        'type': 'string',
-                        'description': '''
-Analysis instructions for AI. Should not be empty in replace mode. '''
-                    },
-                },
-            },
-        },
-        'required': [ 'source' ],
-    },
-} )
+@__.register_function( read_model )
 async def read( auxdata, /, source, control = None ):
     operators = __.SimpleNamespace(
         from_directory = _read_recursive,

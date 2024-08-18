@@ -26,27 +26,139 @@ from __future__ import annotations
 from . import __
 
 
+ModelClass: __.a.TypeAlias = type[ __.pydantic.BaseModel ]
+#Model = __.a.TypeVar( 'Model', bound = __.pydantic.BaseModel )
+
+
+@__.a.runtime_checkable
+@__.standard_dataclass
+class Ensemble( __.a.Protocol ):
+    ''' Ensemble of invokers for related tools. '''
+
+    name: str
+
+    @__.abstract_member_function
+    async def prepare_invokers(
+        self, auxdata: __.Globals
+    ) -> __.AbstractDictionary[ str, Invoker ]:
+        raise NotImplementedError
+
+
+@__.standard_dataclass
+class Invoker:
+    ''' Calls tool registered to it. '''
+
+    name: str
+    ensemble: Ensemble
+    invocable: __.a.Callable # TODO: Proper signature for async coroutine.
+    model: ModelClass
+
+    @classmethod
+    def from_invocable(
+        selfclass, /,
+        ensemble: Ensemble,
+        invocable: __.a.Callable, # TODO: Proper signature for async coroutine.
+        model: ModelClass,
+    ) -> __.a.Self:
+        name = invocable.__name__ # TODO? Get name from model.
+        return selfclass(
+            name = name,
+            ensemble = ensemble,
+            invocable = invocable,
+            model = model )
+
+    async def __call__(
+        self, auxdata: __.Globals, dto: __.pydantic.BaseModel
+    ) -> __.a.Any:
+        return await self.invocable( auxdata, dto )
+
+
 # TODO: Use accretive validator dictionary for preparers registry.
 preparers = __.AccretiveDictionary( )
 
 
-async def prepare( auxdata ):
-    ''' Prepares ensembles of invocables. '''
+def descriptors_from_configuration(
+    auxdata: __.Globals,
+    defaults: __.AbstractDictionary[ str, __.a.Any ] = None,
+) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+    ''' Validates and returns descriptors from configuration. '''
     scribe = __.acquire_scribe( __package__ )
+    defaults_ = dict( defaults or { } )
+    descriptors = [ ]
+    for descriptor in auxdata.configuration.get( 'invocables', ( ) ):
+        if 'name' not in descriptor:
+            auxdata.notifications.enqueue_error(
+                ValueError( "Descriptor missing name." ),
+                "Could not load ensemble of invocables from configuration.",
+                details = descriptor,
+                scribe = scribe )
+            continue
+        if not descriptor.get( 'enable', True ): continue
+        descriptors.append( descriptor )
+        name = descriptor[ 'name' ]
+        if name in defaults_: defaults_.pop( name )
+    return tuple( list( defaults_.values( ) ) + descriptors )
+
+
+async def prepare( auxdata ):
+    ''' Prepares invokers from defaults and configuration. '''
+    ensembles = await prepare_ensembles( auxdata )
+    invokers = await prepare_invokers( auxdata, ensembles )
+    return survey_functions( ) # TODO: Accretive namespace.
+
+
+async def prepare_ensembles( auxdata ):
+    ''' Prepares ensembles of invokers from defaults and configuration. '''
+    scribe = __.acquire_scribe( __package__ )
+    descriptors = __.DictionaryProxy( {
+        descriptor[ 'name' ]: descriptor
+        for descriptor in descriptors_from_configuration(
+            auxdata, defaults = _default_ensemble_descriptors ) } )
+    preparers_ = __.DictionaryProxy( {
+        name: preparers[ name ]( auxdata, descriptor )
+        for name, descriptor in descriptors.items( ) } )
     results = await __.gather_async(
-        *preparers.values( ), return_exceptions = True )
-    invocables = { }
-    for name, result in zip( preparers.keys( ), results ):
+        *preparers_.values( ), return_exceptions = True )
+    ensembles = __.AccretiveDictionary( )
+    for name, result in zip( preparers_.keys( ), results ):
         match result:
             case __.g.Error( error ):
-                summary = "Could not prepare invocables ensemble {name!r}."
+                summary = "Could not prepare invokers ensemble {name!r}."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
             case __.g.Value( ensemble ):
-                # TODO: Collect ensembles.
-                invocables.update( ensemble )
-    #return __.DictionaryProxy( invocables )
-    return survey_functions( )
+                ensembles[ name ] = ensemble
+    return ensembles
+
+
+async def prepare_invokers(
+    auxdata: __.Globals,
+    ensembles: __.AbstractDictionary[ str, Ensemble ],
+) -> __.AbstractDictionary[ str, Invoker ]:
+    ''' Prepares invokers from ensembles. '''
+    scribe = __.acquire_scribe( __package__ )
+    results = await __.gather_async(
+        *(  ensemble.prepare_invokers( auxdata )
+            for ensemble in ensembles.values( ) ),
+        return_exceptions = True )
+    invokers = { }
+    for result in results:
+        match result:
+            case __.g.Error( error ):
+                summary = f"Could not prepare invoker."
+                auxdata.notifications.enqueue_error(
+                    error, summary, scribe = scribe )
+            case __.g.Value( invokers_ ):
+                invokers.update( invokers_ )
+    return __.DictionaryProxy( invokers )
+
+
+_default_ensemble_descriptors = __.DictionaryProxy( {
+    'io':
+        __.DictionaryProxy( { 'name': 'io', 'enable': True } ),
+    'probability':
+        __.DictionaryProxy( { 'name': 'probability', 'enable': True } ),
+} )
 
 
 # TODO: Produce registrations from ensembles.

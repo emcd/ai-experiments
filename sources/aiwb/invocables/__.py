@@ -24,3 +24,4 @@
 
 
 from ..__ import *
+from ..libcore import Globals

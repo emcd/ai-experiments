@@ -23,8 +23,7 @@
 
 from . import __
 
-
-@__.register_function( {
+write_file_model = {
     'name': 'write_file',
     'description': '''
 Writes provided contents to the given file. Returns the number of characters
@@ -47,7 +46,9 @@ written. ''',
         },
         'required': [ 'path', 'contents' ],
     },
-} )
+}
+
+@__.register_function( write_file_model )
 async def write_file( auxdata, /, path, contents, mode = 'truncate' ):
     from aiofiles import open as open_
     mode_ = { 'append': 'a', 'truncate': 'w' }[ mode ]

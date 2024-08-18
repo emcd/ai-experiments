@@ -21,6 +21,7 @@ dependencies = [
   'mako', # TODO? Replace with Jinja2.
   'panel ~= 1.4',
   'platformdirs',
+  'pydantic',
   'python-dotenv',
   'python-magic',
   'rich',
@@ -39,8 +40,6 @@ classifiers = [ # https://pypi.org/classifiers
   'Intended Audience :: Developers',
   'License :: OSI Approved :: Apache Software License',
   'Programming Language :: Python :: 3 :: Only',
-  'Programming Language :: Python :: 3.8',
-  'Programming Language :: Python :: 3.9',
   'Programming Language :: Python :: 3.10',
   'Programming Language :: Python :: 3.11',
   'Programming Language :: Python :: 3.12',

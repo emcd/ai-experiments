@@ -21,49 +21,91 @@
 ''' Standard ensemble for probability. '''
 
 
+from __future__ import annotations
+
 from . import __
 
 
-@__.register_function( {
-    'name': 'roll_dice',
+_name = __name__.replace( f"{__package__}.", '' )
+
+
+async def prepare(
+    auxdata: __.Globals,
+    descriptor: __.AbstractDictionary[ str, __.a.Any ],
+) -> Ensemble:
+    ''' Returns ensemble. '''
+    return Ensemble( name = _name )
+
+
+__.preparers[ _name ] = prepare
+
+
+@__.standard_dataclass
+class Ensemble( __.Ensemble ):
+
+    async def prepare_invokers(
+        self, auxdata: __.Globals
+    ) -> __.AbstractDictionary[ str, __.Invoker ]:
+        # TODO: Use any filter information from descriptor for registration.
+        invokers = (
+            __.Invoker.from_invocable(
+                ensemble = self, invocable = invocable, model = model )
+            for invocable, model in _invocables )
+        return __.DictionaryProxy( {
+            invoker.name: invoker for invoker in invokers } )
+
+
+dice_spec_model = {
+    'type': 'string',
     'description': '''
-Given a list of name and specification pairs for dice rolls,
-returns a list with the results of each roll, associated with its name. ''',
-    'parameters': {
-        'type': 'object',
-        'properties': {
-            'specs': {
-                'type': 'array',
-                'items': {
-                    'type': 'object',
-                    'properties': {
-                        'name': {
-                            'type': 'string',
-                            'description': '''
-Name of the dice roll. Note that this may be duplicate across list items. This
-allows for scenarios, like D&D ability scores, where more than one independent
-roll may be used to determine the same score. '''
-                        },
-                        'dice': {
-                            'type': 'string',
-                            'description': '''
 A dice specification, such as '1d10' or '3d6+2'. The pattern comprises the
 number of dice, the type of dice (i.e., the number of sides, which must be even
 and greater than 3), and an optional offset which can be positive or negative.
 The offset is added to the total roll of the dice and does not have an upper
 limit, but a negative offset must not reduce the total roll to less than 1. For
 instance, '1d4-1' is illegal because a roll of 1 would result in a total value
-of 0. '''
-                        },
-                    },
-                    'required': [ 'name', 'dice' ],
-                },
-                'minItems': 1,
-            }
+of 0.
+''',
+}
+
+named_dice_spec_model = {
+    'type': 'object',
+    'properties': {
+        'name': {
+            'type': 'string',
+            'description': '''
+Name of the dice roll. Note that this may be duplicate across list items. This
+allows for scenarios, like D&D ability scores, where more than one independent
+roll may be used to determine the same score.
+''',
         },
-        'required': [ 'specs' ],
-    }
-} )
+        'dice': dice_spec_model,
+    },
+    'required': [ 'name', 'dice' ],
+}
+
+named_dice_specs_model = {
+    'type': 'object',
+    'properties': {
+        'specs': {
+            'type': 'array',
+            'items': named_dice_spec_model,
+            'minItems': 1,
+        }
+    },
+    'required': [ 'specs' ],
+}
+
+roll_dice_model = {
+    'name': 'roll_dice',
+    'description': '''
+Given a list of name and specification pairs for dice rolls,
+returns a list with the results of each roll, associated with its name.
+''',
+    'parameters': named_dice_specs_model,
+}
+
+@__.register_function( roll_dice_model )
 async def roll_dice( context__, /, specs ):
     results = [ ]
     for spec in specs:
@@ -85,3 +127,8 @@ def _roll_dice( dice ):
     if number < 1 or sides < 4 or sides % 2 == 1 or number + offset < 1:
         raise ValueError( f"Invalid dice spec, '{dice}'." )
     return sum( randint( 1, sides ) for _ in range( number ) ) + offset
+
+
+_invocables = (
+    ( roll_dice, roll_dice_model ),
+)

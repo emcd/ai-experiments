@@ -43,7 +43,6 @@ from contextlib import (
     contextmanager as produce_context_manager,
 )
 from dataclasses import (
-    InitVar,
     dataclass,
     field as dataclass_declare,
 )
@@ -76,6 +75,8 @@ from urllib.parse import (
 )
 from uuid import uuid4
 
+import pydantic
+
 from accretive import reclassify_modules
 from accretive.qaliases import (
     AccretiveDictionary,
@@ -86,6 +87,9 @@ from platformdirs import PlatformDirs
 
 from . import _annotations as a
 from . import _generics as g
+
+
+standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
 
 
 # TODO: Use accretive validator dictionary for URL accessor registry.
