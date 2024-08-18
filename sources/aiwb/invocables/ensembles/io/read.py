@@ -145,8 +145,8 @@ def _access_tokens_limit( auxdata ):
 
 
 async def _analyze_file( auxdata, path, control = None ):
-    from ...messages.core import Canister
-    from ...providers import chat_callbacks_minimal
+    from ....messages import Canister
+    from ....providers import chat_callbacks_minimal
     ai_messages = [ ]
     provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
     provider_format_name = provider.provide_format_name( auxdata.controls )
@@ -204,8 +204,8 @@ def _determine_chunk_reader( path, mime_type = None ):
 
 
 async def _discriminate_dirents( auxdata, dirents, control = None ):
-    from ...messages.core import Canister
-    from ...providers import chat_callbacks_minimal
+    from ....messages import Canister
+    from ....providers import chat_callbacks_minimal
     provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
     provider_format_name = provider.provide_format_name( auxdata.controls )
     prompt = (

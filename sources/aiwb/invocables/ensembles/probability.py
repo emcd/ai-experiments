@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Collection of AI functions related to probability. '''
+''' Standard ensemble for probability. '''
 
 
 from . import __

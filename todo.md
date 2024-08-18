@@ -30,6 +30,7 @@
       components.
     - Async queuing in GUI for actions.
     - Create 'vectorizers' subpackage for embeddings.
+    - ConversationsIndex and Conversations classes.
     - Finish decoupling widgets from data in conversation save/restore.
 
 * General

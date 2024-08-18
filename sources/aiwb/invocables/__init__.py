@@ -22,13 +22,10 @@
 
 
 from . import __
+from . import core
+from . import ensembles
 
-
-async def prepare( auxdata ):
-    from . import io, probability
-    # TODO: Prepare functions: check for dependencies, environment, etc....
-    from .__ import survey_functions
-    return survey_functions( )
+from .core import *
 
 
 __.reclassify_modules( globals( ) )

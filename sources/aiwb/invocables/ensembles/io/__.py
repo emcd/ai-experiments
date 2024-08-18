@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Foundation for AI functions for I/O. '''
+''' Foundation for I/O invocables. '''
 
 # pylint: disable=unused-import
 
