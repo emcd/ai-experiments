@@ -26,8 +26,10 @@ from __future__ import annotations
 from . import __
 
 
-#ModelClass: __.a.TypeAlias = type[ __.pydantic.BaseModel ]
-#Model = __.a.TypeVar( 'Model', bound = __.pydantic.BaseModel )
+Arguments: __.a.TypeAlias = __.DictionaryProxy[ str, __.a.Any ]
+#Arguments = __.a.TypeVar( 'Arguments', bound = __.pydantic.BaseModel )
+ArgumentsModel: __.a.TypeAlias = __.DictionaryProxy[ str, __.a.Any ]
+#ArgumentsModel: __.a.TypeAlias = type[ __.pydantic.BaseModel ]
 
 
 @__.a.runtime_checkable
@@ -43,6 +45,18 @@ class Ensemble( __.a.Protocol ):
     ) -> __.AbstractDictionary[ str, Invoker ]:
         raise NotImplementedError
 
+    def produce_invokers_from_registry(
+        self, auxdata: __.Globals, registry
+    ) -> __.AbstractDictionary[ str, Invoker ]:
+        # TODO: Handle pair-wise iterable or dictionary.
+        # TODO: Use standard filter information.
+        invokers = (
+            Invoker.from_invocable(
+                ensemble = self, invocable = invocable, argschema = argschema )
+            for invocable, argschema in registry )
+        return __.DictionaryProxy( {
+            invoker.name: invoker for invoker in invokers } )
+
 
 @__.standard_dataclass
 class Invoker:
@@ -50,29 +64,39 @@ class Invoker:
 
     name: str
     ensemble: Ensemble
-    invocable: __.a.Callable # TODO: Proper signature for async coroutine.
-    specification: str
+    invocable: Invocable
+    argschema: ArgumentsModel # TODO: Transform/validate on init.
 
     @classmethod
     def from_invocable(
-        selfclass, /,
+        selfclass,
         ensemble: Ensemble,
-        invocable: __.a.Callable, # TODO: Proper signature for async coroutine.
-        specification: str,
+        invocable: Invocable,
+        argschema: ArgumentsModel,
     ) -> __.a.Self:
-        name = invocable.__name__ # TODO? Get name from model.
+        ''' Produces invoker from invocable and arguments model.
+
+            The name of the invocable is used as the name of the invoker
+            and the arguments model is validated. '''
         return selfclass(
-            name = name,
+            name = invocable.__name__,
             ensemble = ensemble,
             invocable = invocable,
-            specification = specification )
+            argschema = _validate_argschema( argschema ) )
 
     async def __call__(
         self,
         auxdata: __.Globals,
-        arguments: __.AbstractDictionary[ str, __.a.Any ],
+        arguments: Arguments, *,
+        context: __.AccretiveDictionary = None,
     ) -> __.a.Any:
-        return await self.invocable( auxdata, arguments )
+        return await self.invocable( auxdata, self, arguments, context )
+
+
+Invocable: __.a.TypeAlias = (
+    __.a.Callable[
+        [ __.Globals, Invoker, Arguments, __.AccretiveNamespace ],
+        __.AbstractCoroutine[ __.a.Any, __.a.Any, __.a.Any ] ] )
 
 
 # TODO: Use accretive validator dictionary for preparers registry.
@@ -106,7 +130,8 @@ async def prepare( auxdata ):
     ''' Prepares invokers from defaults and configuration. '''
     ensembles = await prepare_ensembles( auxdata )
     invokers = await prepare_invokers( auxdata, ensembles )
-    return survey_functions( ) # TODO: Accretive namespace.
+    # TODO: Return accessor object instead of accretive namespace.
+    return __.AccretiveNamespace( ensembles = ensembles, invokers = invokers )
 
 
 async def prepare_ensembles( auxdata ):
@@ -163,25 +188,6 @@ _default_ensemble_descriptors = __.DictionaryProxy( {
 } )
 
 
-# TODO: Produce registrations from ensembles.
-_registry = __.AccretiveDictionary( )
-
-
-def register_function( schema ):
-    from json import dumps
-    from jsonschema.validators import Draft202012Validator as Validator
-    _trim_descriptions( schema )
-    Validator.check_schema( schema )
-    def register( function ):
-        function.__doc__ = dumps( schema, indent = 2 )
-        _registry[ schema[ 'name' ] ] = function
-        return function
-    return register
-
-
-def survey_functions( ): return __.DictionaryProxy( _registry )
-
-
 def _trim_descriptions( schema ):
     from inspect import cleandoc
     for entry_name, entry in schema.items( ):
@@ -190,3 +196,10 @@ def _trim_descriptions( schema ):
         if 'description' != entry_name: continue
         if not isinstance( entry, str ): continue
         schema[ 'description' ] = cleandoc( entry )
+
+
+def _validate_argschema( schema ):
+    from jsonschema.validators import Draft202012Validator as Validator
+    _trim_descriptions( schema )
+    Validator.check_schema( schema )
+    return schema

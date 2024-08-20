@@ -29,7 +29,7 @@ from . import libcore as _libcore
 class Globals( _libcore.Globals ):
     ''' Immutable global data. Required by many application functions. '''
 
-    invocables: __.DictionaryProxy
+    invocables: __.AccretiveNamespace
     prompts: __.DictionaryProxy
     providers: __.AccretiveDictionary
     vectorstores: dict

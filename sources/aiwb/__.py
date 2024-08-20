@@ -32,6 +32,7 @@ from collections.abc import (
     AsyncIterable as AbstractIterableAsync,
     Awaitable as AbstractAwaitable,
     Collection as AbstractCollection,
+    Coroutine as AbstractCoroutine,
     Iterable as AbstractIterable,
     Mapping as AbstractDictionary,
     MutableMapping as AbstractMutableDictionary,

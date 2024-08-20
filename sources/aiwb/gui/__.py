@@ -94,22 +94,6 @@ def calculate_conversations_path( gui ):
     return gui.auxdata__.provide_state_location( 'conversations' )
 
 
-def extract_invocation_requests( gui, component = None ):
-    # TODO: Move to aiwb.gui.invocables.
-    from dataclasses import fields
-    if None is component: component = gui.column_conversation_history[ -1 ]
-    canister = component.gui__.canister__
-    # TODO: Use selected multichoice values instead of all possible.
-    ai_functions = gui.auxdata__.invocables
-    auxdata = SimpleNamespace(
-        controls = package_controls( gui ),
-        **{ field.name: getattr( gui.auxdata__, field.name )
-            for field in fields( gui.auxdata__ ) } )
-    provider = access_ai_provider_current( gui )
-    return provider.extract_invocation_requests(
-        canister, auxdata, ai_functions )
-
-
 def generate_component( gui, layout, component_name ):
     # TODO: Move to aiwb.gui.components.
     entry = layout[ component_name ]
@@ -157,14 +141,16 @@ def package_messages( gui ):
     return canisters
 
 
-def package_special_data( gui ):
-    # TODO: Move to aiwb.gui.invocables.
+def package_special_data( components ):
+    ''' Packages special data from GUI to ship to AI provider. '''
+    # TODO? Move to aiwb.gui.controls.
+    from .invocables import provide_active_invocables
     special_data = { }
-    supports_functions = gui.selector_model.auxdata__[
-        gui.selector_model.value ][ 'supports-functions' ]
+    supports_functions = components.selector_model.auxdata__[
+        components.selector_model.value ][ 'supports-functions' ]
     if supports_functions:
-        ai_functions = _provide_active_ai_functions( gui )
-        if ai_functions: special_data[ 'ai-functions' ] = ai_functions
+        invocables = provide_active_invocables( components )
+        if invocables: special_data[ 'invocables' ] = invocables
     return special_data
 
 
@@ -199,17 +185,3 @@ def register_event_callbacks( gui, layout, component_name ):
     if function_name:
         cb_generator = getattr( registry, function_name )
         component.jscallback( **cb_generator( gui, layout, component_name ) )
-
-
-def _provide_active_ai_functions( gui ):
-    # TODO: Move to aiwb.gui.invocables.
-    from json import loads
-    # TODO: Remove visibility restriction once fill of system prompt
-    #       is implemented for non-functions-supporting models.
-    if not gui.row_functions_prompt.visible: return [ ]
-    if not gui.toggle_functions_active.value: return [ ]
-    if not gui.multichoice_functions.value: return [ ]
-    return [
-        loads( function.__doc__ )
-        for name, function in gui.auxdata__.invocables.items( )
-        if name in gui.multichoice_functions.value ]

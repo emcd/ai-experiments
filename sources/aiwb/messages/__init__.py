@@ -24,5 +24,7 @@
 from . import __
 from . import core
 
+from .core import *
+
 
 __.reclassify_modules( globals( ) )

@@ -62,6 +62,7 @@ def autoscroll_document( gui ):
 
 
 def configure_message_interface( canister_gui, dto ):
+    from .invocables import extract_invocation_requests
     gui = canister_gui.parent__
     canister = canister_gui.row_canister
     behaviors = dto.attributes.behaviors
@@ -71,7 +72,10 @@ def configure_message_interface( canister_gui, dto ):
     canister_gui.toggle_active.name = __.roles_emoji[ role ]
     if 'AI' == role:
         canister_gui.button_fork.visible = True
-        try: __.extract_invocation_requests( gui, component = canister )
+        try:
+            requests = (
+                extract_invocation_requests(
+                    gui, component = canister, close_invokers = True ) )
         except: pass
         else: canister_gui.button_invoke.visible = True
     elif 'Document' == role:
@@ -339,20 +343,21 @@ def truncate_conversation( gui, index ):
 
 
 def update_active_functions( gui ):
-    available_functions = gui.auxdata__.invocables
+    # TODO: Rename: update_active_invocables
+    invokers = gui.auxdata__.invocables.invokers
     # TODO: Construct components from layout.
     from panel.pane import JSON
     from .layouts import _message_column_width_attributes, sizes
     gui.column_functions_json.objects = [
         JSON(
-            function.__doc__,
+            invoker.argschema,
             depth = -1, theme = 'light',
             height_policy = 'auto', width_policy = 'max',
             margin = sizes.standard_margin,
             styles = { 'overflow': 'auto' },
             **_message_column_width_attributes,
         )
-        for name, function in available_functions.items( )
+        for name, invoker in invokers.items( )
         if name in gui.multichoice_functions.value ]
     update_token_count( gui )
 
@@ -441,14 +446,14 @@ def update_functions_prompt( gui ):
             gui.selector_system_prompt.value ].attributes
         associated_functions = attributes.get( 'functions', { } )
     else: associated_functions = { }
-    available_functions = gui.auxdata__.invocables
+    invokers = gui.auxdata__.invocables.invokers
     gui.multichoice_functions.value = [ ]
     gui.multichoice_functions.options = [
-        function_name for function_name in available_functions.keys( )
-        if function_name in associated_functions ]
+        name for name in invokers.keys( )
+        if name in associated_functions ]
     gui.multichoice_functions.value = [
-        function_name for function_name in available_functions.keys( )
-        if associated_functions.get( function_name, False ) ]
+        name for name in invokers.keys( )
+        if associated_functions.get( name, False ) ]
     update_active_functions( gui )
 
 

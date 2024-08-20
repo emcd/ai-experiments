@@ -138,8 +138,11 @@ def count_conversation_tokens( messages, special_data, controls ):
             value_ = value if isinstance( value, str ) else dumps( value )
             tokens_count += count_text_tokens( value_, model_name )
             if 'name' == index: tokens_count += tokens_per_name
-    for function in special_data.get( 'ai-functions', [ ] ):
-        tokens_count += count_text_tokens( dumps( function ), model_name )
+    for invoker in special_data.get( 'invocables', ( ) ):
+        tokens_count += (
+            count_text_tokens(
+                dumps( _nativize_invocable( invoker, model_name ) ),
+                model_name ) )
         # TODO: Determine if metadata from multifunctions adds more tokens.
     return tokens_count
 
@@ -152,35 +155,36 @@ def count_text_tokens( text, model_name ):
     return len( encoding.encode( text ) )
 
 
-def extract_invocation_requests( canister, auxdata, ai_functions ):
+def extract_invocation_requests( canister, auxdata, invocables ):
+    ''' Converts tool use requests into invoker coroutines. '''
     from ...codecs.json import loads
     try: requests = loads( canister[ 0 ].data )
     except Exception as exc:
         raise ValueError( 'Malformed JSON payload in message.' ) from exc
     if not isinstance( requests, __.AbstractSequence ):
-        raise ValueError( 'Function invocation requests is not sequence.' )
+        raise ValueError( 'Tool use requests is not sequence.' )
+    invokers = invocables.invokers
     model_context = getattr( canister.attributes, 'model_context', { } )
     tool_calls = model_context.get( 'tool_calls' )
+    # TODO? Build new list of requests.
     for i, request in enumerate( requests ):
         if not isinstance( request, __.AbstractDictionary ):
-            raise ValueError(
-                'Function invocation request is not dictionary.' )
+            raise ValueError( 'Tool use request is not dictionary.' )
         if 'name' not in request:
-            raise ValueError(
-                'Function name is absent from invocation request.' )
+            raise ValueError( 'Name is missing from tool use request.' )
         name = request[ 'name' ]
-        if name not in ai_functions:
-            raise ValueError( 'Function name in request is not available.' )
+        if name not in invokers:
+            raise ValueError( f"Tool {name!r} is not available." )
         arguments = request.get( 'arguments', { } )
-        request[ 'invocable__' ] = __.partial_function(
-            ai_functions[ name ], auxdata, **arguments )
+        # TODO: Pass extra context to invocable.
+        request[ 'invocable__' ] = invokers[ name ]( auxdata, arguments )
         if tool_calls: request[ 'context__' ] = tool_calls[ i ]
     return requests
 
 
 async def invoke_function( request, controls ):
     request_context = request[ 'context__' ]
-    result = await request[ 'invocable__' ]( )
+    result = await request[ 'invocable__' ]
     if 'id' in request_context:
         result_context = dict(
             name = request_context[ 'function' ][ 'name' ],
@@ -453,6 +457,13 @@ def _nativize_controls( controls ):
     return nomargs
 
 
+def _nativize_invocable( invoker, model_name ):
+    return dict(
+        name = invoker.name,
+        description = invoker.invocable.__doc__,
+        parameters = invoker.argschema )
+
+
 def _nativize_messages( canisters, model_name ):
     messages = [ ]
     for canister in canisters:
@@ -503,13 +514,16 @@ def _nativize_multifunction_invocation_contingent( canister ):
 def _nativize_special_data( data, controls ):
     model_name = controls[ 'model' ]
     nomargs = { }
-    if 'ai-functions' in data:
+    if 'invocables' in data:
         if access_model_data( model_name, 'supports-multifunctions' ):
             nomargs[ 'tools' ] = [
-                { 'type': 'function', 'function': function }
-                for function in data[ 'ai-functions' ] ]
+                {   'type': 'function',
+                    'function': _nativize_invocable( invoker, model_name ) }
+                for invoker in data[ 'invocables' ] ]
         elif access_model_data( model_name, 'supports-functions' ):
-            nomargs[ 'functions' ] = data[ 'ai-functions' ]
+            nomargs[ 'functions' ] = [
+                _nativize_invocable( invoker, model_name )
+                for invoker in data[ 'invocables' ] ]
     return nomargs
 
 

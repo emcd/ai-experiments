@@ -25,8 +25,8 @@
 
 from ..__ import *
 from ..core import (
+    Arguments,
     Ensemble,
     Invoker,
     preparers,
-    register_function, # TODO: Remove.
 )

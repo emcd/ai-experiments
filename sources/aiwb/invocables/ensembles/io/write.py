@@ -23,34 +23,39 @@
 
 from . import __
 
-write_file_model = {
-    'name': 'write_file',
-    'description': '''
-Writes provided contents to the given file. Returns the number of characters
-written. ''',
-    'parameters': {
-        'type': 'object',
-        'properties': {
-            'path': {
-                'type': 'string',
-                'description': 'Path to the file to be written.'
-            },
-            'contents': {
-                'type': 'string',
-            },
-            'mode': {
-                'type': 'string',
-                'enum': [ 'append', 'truncate' ],
-                'default': 'truncate',
-            },
+file_update_argschema = {
+    'type': 'object',
+    'properties': {
+        'location': {
+            'type': 'string',
+            'description': 'Location of the file to be written.'
         },
-        'required': [ 'path', 'contents' ],
+        'contents': {
+            'type': 'string',
+        },
+        'mode': {
+            'type': 'string',
+            'enum': [ 'append', 'truncate' ],
+            'default': 'truncate',
+        },
     },
+    # TODO? Require 'mode' for OpenAI strict schema.
+    'required': [ 'location', 'contents' ],
 }
 
-@__.register_function( write_file_model )
-async def write_file( auxdata, /, path, contents, mode = 'truncate' ):
+
+async def write_file(
+    auxdata: __.Globals,
+    invoker: __.Invoker,
+    arguments: __.Arguments,
+    context: __.AccretiveNamespace,
+) -> int:
+    ''' Writes contents to file location.
+
+        Returns number of characters written. '''
     from aiofiles import open as open_
-    mode_ = { 'append': 'a', 'truncate': 'w' }[ mode ]
-    async with open_( path, mode_ ) as stream:
-        return await stream.write( contents )
+    mode = { 'append': 'a', 'truncate': 'w' }[
+        arguments.get( mode, 'truncate' ) ]
+    location = __.Path( arguments[ 'location' ] )
+    async with open_( path, mode ) as stream:
+        return await stream.write( arguments[ 'contents' ] )

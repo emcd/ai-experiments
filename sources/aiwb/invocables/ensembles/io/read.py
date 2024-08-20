@@ -24,7 +24,7 @@
 from . import __
 
 
-instructions_mode_model = {
+instructions_mode_argschema = {
     'type': 'string',
     'description': '''
 Replace or supplement default instructions of AI agent with given
@@ -33,14 +33,14 @@ instructions? ''',
     'default': 'supplement',
 }
 
-instructions_model = {
+instructions_argschema = {
     'type': 'object',
     'description': '''
 Special instructions to AI agent to replace or supplement its default
 instructions. If not supplied, the agent will use only its default
 instructions. ''',
     'properties': {
-        'mode': instructions_mode_model,
+        'mode': instructions_mode_argschema,
         'instructions': {
             'type': 'string',
             'description': '''
@@ -49,63 +49,71 @@ Analysis instructions for AI. Should not be empty in replace mode. '''
     },
 }
 
-read_parameters_model = {
+retrieve_location_argschema = {
     'type': 'object',
     'properties': {
         'source': {
             'type': 'string',
             'description': 'URL or local filesystem path to be read.'
         },
-        'control': instructions_model,
+        'control': instructions_argschema,
     },
     'required': [ 'source' ],
 }
 
-analyze_model = {
-    'name': 'analyze',
-    'description': '''
-Reads a URL or local filesystem path and passes its contents to an AI agent to
-analyze according to a given set of instructions. Returns an analysis of the
-contents as a list of one or more chunks, depending on the size of the entity
-to be analyzed.
-''',
-    'parameters': read_parameters_model,
-}
 
-read_model = {
-    'name': 'read',
-    'description': '''
-Reads a URL or local file system path and returns the path, its MIME type, and
-contents. If the location is a directory, then all of its entries are
-recursively scanned and their relevance is determined by an AI agent. All
-relevant entries will be returned as list of mappings, having location, MIME
-type, and content triples. Custom instructions may optionally be supplied to
-the AI agent which determines the relevance of directory entries.
-''',
-    'parameters': read_parameters_model,
-}
+async def analyze(
+    auxdata: __.Globals,
+    invoker: __.Invoker,
+    arguments: __.Arguments,
+    context: __.AccretiveNamespace,
+) -> __.AbstractSequence:
+    ''' Reads URL or filesystem path and analyzes contents with an AI agent.
 
-
-@__.register_function( analyze_model )
-async def analyze( auxdata, /, source, control = None ):
+        AI agent analyzes contents according to instructions and returns
+        analysis as a list of one or more chunks, depending on size of entity
+        to be analyzed.
+    '''
     operators = __.SimpleNamespace(
         from_directory = _list_directory_as_cell,
         from_file = _analyze_file,
         from_http = _analyze_http,
         tokens_counter = None,
     )
-    return await _operate( auxdata, source, operators, control = None )
+    return await _operate(
+        auxdata,
+        arguments[ 'source' ],
+        operators,
+        control = arguments.get( 'control' ) )
 
 
-@__.register_function( read_model )
-async def read( auxdata, /, source, control = None ):
+async def read(
+    auxdata: __.Globals,
+    invoker: __.Invoker,
+    arguments: __.Arguments,
+    context: __.AccretiveNamespace,
+) -> __.AbstractSequence:
+    ''' Reads URL or filesystem path and returns contents and metadata.
+
+        Metadata includes location and MIME type.
+
+        If location is directory, then all of its entries are recursively
+        scanned and their relevance is determined by an AI classifier. All
+        relevant entries will be returned as a list of triples, consisting of
+        location, MIME type, and content. Custom instructions may optionally be
+        supplied to the classifier for directory entries.
+    '''
     operators = __.SimpleNamespace(
         from_directory = _read_recursive,
         from_file = _read_file_at_location,
         from_http = _read_http_wrapped,
         tokens_counter = _count_tokens,
     )
-    return await _operate( auxdata, source, operators, control = control )
+    return await _operate(
+        auxdata,
+        arguments[ 'source' ],
+        operators,
+        control = arguments.get( 'control' ) )
 
 
 async def _read_recursive( auxdata, path, control = None ):

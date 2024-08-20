@@ -45,16 +45,14 @@ class Ensemble( __.Ensemble ):
     async def prepare_invokers(
         self, auxdata: __.Globals
     ) -> __.AbstractDictionary[ str, __.Invoker ]:
-        # TODO: Use any filter information from descriptor for registration.
-        invokers = (
-            __.Invoker.from_invocable(
-                ensemble = self,
-                invocable = invocable,
-                specification = specification )
-            for invocable, specification in _invocables )
-        return __.DictionaryProxy( {
-            invoker.name: invoker for invoker in invokers } )
+        return self.produce_invokers_from_registry( auxdata, _invocables )
 
+
+_dice_name_description = '''
+Name of the dice roll. Note that this may be duplicate across list items. This
+allows for scenarios, like D&D ability scores, where more than one independent
+roll may be used to determine the same score.
+'''
 
 _dice_spec_description = '''
 A dice specification, such as '1d10' or '3d6+2'. The pattern comprises the
@@ -66,56 +64,47 @@ instance, '1d4-1' is illegal because a roll of 1 would result in a total value
 of 0.
 '''
 
-_dice_name_description = '''
-Name of the dice roll. Note that this may be duplicate across list items. This
-allows for scenarios, like D&D ability scores, where more than one independent
-roll may be used to determine the same score.
-'''
-
-dice_spec_model = {
+dice_spec_argschema = {
+    # TODO? Split into number, sides, and offset.
     'type': 'string',
     'description': _dice_spec_description,
 }
 
-named_dice_spec_model = {
+named_dice_spec_argschema = {
     'type': 'object',
     'properties': {
         'name': {
             'type': 'string',
             'description': _dice_name_description,
         },
-        'dice': dice_spec_model,
+        'dice': dice_spec_argschema,
     },
     'required': [ 'name', 'dice' ],
 }
 
-named_dice_specs_model = {
+named_dice_specs_argschema = {
     'type': 'object',
     'properties': {
         'specs': {
             'type': 'array',
-            'items': named_dice_spec_model,
+            'items': named_dice_spec_argschema,
             'minItems': 1,
         }
     },
     'required': [ 'specs' ],
 }
 
-roll_dice_model = {
-    'name': 'roll_dice',
-    'description': '''
-Given a list of name and specification pairs for dice rolls,
-returns a list with the results of each roll, associated with its name.
-''',
-    'parameters': named_dice_specs_model,
-}
 
-@__.register_function( roll_dice_model )
-async def roll_dice( context__, /, specs ):
-    results = [ ]
-    for spec in specs:
-        results.append( { spec[ 'name' ]: _roll_dice( spec[ 'dice' ] ) } )
-    return results
+async def roll_dice(
+    auxdata: __.Globals,
+    invoker: __.Invoker,
+    arguments: __.Arguments,
+    context: __.AccretiveNamespace,
+) -> __.AbstractSequence:
+    ''' Returns results of rolls for each named dice specification. '''
+    return tuple(
+        { spec[ 'name' ]: _roll_dice( spec[ 'dice' ] ) }
+        for spec in arguments[ 'specs' ] )
 
 
 def _roll_dice( dice ):
@@ -135,5 +124,5 @@ def _roll_dice( dice ):
 
 
 _invocables = (
-    ( roll_dice, roll_dice_model ),
+    ( roll_dice, named_dice_specs_argschema ),
 )

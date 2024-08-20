@@ -72,13 +72,24 @@ async def chat( components ):
 
 
 @_update_conversation_status_on_error
-async def invoke_functions( components, index ):
+async def invoke_functions(
+    components,
+    index,
+    silent_extraction_failure = False,
+):
     ''' Runs invocables via current AI provider for context. '''
+    from .invocables import extract_invocation_requests
     from .updaters import truncate_conversation
     truncate_conversation( components, index )
     provider = __.access_ai_provider_current( components )
     controls = __.package_controls( components )
-    requests = __.extract_invocation_requests( components )
+    try: requests = extract_invocation_requests( components )
+    # TODO: Catch special exception for empty requests.
+    except Exception as exc:
+        if silent_extraction_failure:
+            ic( exc )
+            return
+        raise
     invokers = tuple(
         provider.invoke_function( request, controls )
         for request in requests )
@@ -205,11 +216,9 @@ async def _invoke_functions_if_desirable( components, message_components ):
     if 'AI' != message_components.canister__.role: return
     if not message_components.toggle_active.value: return
     if not components.checkbox_auto_functions.value: return
-    try: __.extract_invocation_requests( components )
-    except Exception as exc:
-        ic( exc )
-        return
-    await invoke_functions( components, message_components.index__ )
+    await invoke_functions(
+        components, message_components.index__,
+        silent_extraction_failure = True )
 
 
 @__.produce_context_manager

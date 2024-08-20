@@ -34,6 +34,8 @@
     - Create 'vectorizers' subpackage for embeddings.
     - ConversationsIndex and Conversations classes.
     - Finish decoupling widgets from data in conversation save/restore.
+    - Use `absent__` object instead of `None` for optional arguments
+      with no default.
 
 * General
 

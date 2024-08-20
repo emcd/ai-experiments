@@ -24,8 +24,8 @@
 from __future__ import annotations
 
 from . import __
-from .read import analyze, analyze_model, read, read_model
-from .write import write_file, write_file_model
+from .read import analyze, read, retrieve_location_argschema
+from .write import file_update_argschema, write_file
 
 
 _name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
@@ -49,19 +49,11 @@ class Ensemble( __.Ensemble ):
     async def prepare_invokers(
         self, auxdata: __.Globals
     ) -> __.AbstractDictionary[ str, __.Invoker ]:
-        # TODO: Use any filter information from descriptor for registration.
-        invokers = (
-            __.Invoker.from_invocable(
-                ensemble = self,
-                invocable = invocable,
-                specification = specification )
-            for invocable, specification in _invocables )
-        return __.DictionaryProxy( {
-            invoker.name: invoker for invoker in invokers } )
+        return self.produce_invokers_from_registry( auxdata, _invocables )
 
 
 _invocables = (
-    ( analyze, analyze_model ),
-    ( read, read_model ),
-    ( write_file, write_file_model ),
+    ( analyze, retrieve_location_argschema ),
+    ( read, retrieve_location_argschema ),
+    ( write_file, file_update_argschema ),
 )
