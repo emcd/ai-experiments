@@ -26,7 +26,7 @@ from __future__ import annotations
 from . import __
 
 
-ModelClass: __.a.TypeAlias = type[ __.pydantic.BaseModel ]
+#ModelClass: __.a.TypeAlias = type[ __.pydantic.BaseModel ]
 #Model = __.a.TypeVar( 'Model', bound = __.pydantic.BaseModel )
 
 
@@ -51,26 +51,28 @@ class Invoker:
     name: str
     ensemble: Ensemble
     invocable: __.a.Callable # TODO: Proper signature for async coroutine.
-    model: ModelClass
+    specification: str
 
     @classmethod
     def from_invocable(
         selfclass, /,
         ensemble: Ensemble,
         invocable: __.a.Callable, # TODO: Proper signature for async coroutine.
-        model: ModelClass,
+        specification: str,
     ) -> __.a.Self:
         name = invocable.__name__ # TODO? Get name from model.
         return selfclass(
             name = name,
             ensemble = ensemble,
             invocable = invocable,
-            model = model )
+            specification = specification )
 
     async def __call__(
-        self, auxdata: __.Globals, dto: __.pydantic.BaseModel
+        self,
+        auxdata: __.Globals,
+        arguments: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Any:
-        return await self.invocable( auxdata, dto )
+        return await self.invocable( auxdata, arguments )
 
 
 # TODO: Use accretive validator dictionary for preparers registry.

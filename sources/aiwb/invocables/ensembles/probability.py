@@ -36,7 +36,6 @@ async def prepare(
     ''' Returns ensemble. '''
     return Ensemble( name = _name )
 
-
 __.preparers[ _name ] = prepare
 
 
@@ -49,15 +48,15 @@ class Ensemble( __.Ensemble ):
         # TODO: Use any filter information from descriptor for registration.
         invokers = (
             __.Invoker.from_invocable(
-                ensemble = self, invocable = invocable, model = model )
-            for invocable, model in _invocables )
+                ensemble = self,
+                invocable = invocable,
+                specification = specification )
+            for invocable, specification in _invocables )
         return __.DictionaryProxy( {
             invoker.name: invoker for invoker in invokers } )
 
 
-dice_spec_model = {
-    'type': 'string',
-    'description': '''
+_dice_spec_description = '''
 A dice specification, such as '1d10' or '3d6+2'. The pattern comprises the
 number of dice, the type of dice (i.e., the number of sides, which must be even
 and greater than 3), and an optional offset which can be positive or negative.
@@ -65,7 +64,17 @@ The offset is added to the total roll of the dice and does not have an upper
 limit, but a negative offset must not reduce the total roll to less than 1. For
 instance, '1d4-1' is illegal because a roll of 1 would result in a total value
 of 0.
-''',
+'''
+
+_dice_name_description = '''
+Name of the dice roll. Note that this may be duplicate across list items. This
+allows for scenarios, like D&D ability scores, where more than one independent
+roll may be used to determine the same score.
+'''
+
+dice_spec_model = {
+    'type': 'string',
+    'description': _dice_spec_description,
 }
 
 named_dice_spec_model = {
@@ -73,11 +82,7 @@ named_dice_spec_model = {
     'properties': {
         'name': {
             'type': 'string',
-            'description': '''
-Name of the dice roll. Note that this may be duplicate across list items. This
-allows for scenarios, like D&D ability scores, where more than one independent
-roll may be used to determine the same score.
-''',
+            'description': _dice_name_description,
         },
         'dice': dice_spec_model,
     },

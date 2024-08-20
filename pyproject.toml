@@ -21,7 +21,6 @@ dependencies = [
   'mako', # TODO? Replace with Jinja2.
   'panel ~= 1.4',
   'platformdirs',
-  'pydantic',
   'python-dotenv',
   'python-magic',
   'rich',

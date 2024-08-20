@@ -75,8 +75,6 @@ from urllib.parse import (
 )
 from uuid import uuid4
 
-import pydantic
-
 from accretive import reclassify_modules
 from accretive.qaliases import (
     AccretiveDictionary,

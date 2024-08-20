@@ -52,8 +52,10 @@ class Ensemble( __.Ensemble ):
         # TODO: Use any filter information from descriptor for registration.
         invokers = (
             __.Invoker.from_invocable(
-                ensemble = self, invocable = invocable, model = model )
-            for invocable, model in _invocables )
+                ensemble = self,
+                invocable = invocable,
+                specification = specification )
+            for invocable, specification in _invocables )
         return __.DictionaryProxy( {
             invoker.name: invoker for invoker in invokers } )
 

@@ -21,6 +21,8 @@
 
     - Environment and executables detection for supported providers.
     - Support local models via Llama.cpp, Ollama, or Vllm.
+    - OpenAI: Add usage reporting:
+      https://cookbook.openai.com/examples/how_to_stream_completions#4-how-to-get-token-usage-data-for-streamed-chat-completion-response
 
 * Architecture and Design
 
