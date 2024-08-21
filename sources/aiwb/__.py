@@ -29,15 +29,15 @@ from abc import (
 )
 from collections import namedtuple # TODO: Replace with dataclass.
 from collections.abc import (
-    AsyncIterable as AbstractIterableAsync,
-    Awaitable as AbstractAwaitable,
-    Collection as AbstractCollection,
-    Coroutine as AbstractCoroutine,
-    Iterable as AbstractIterable,
-    Mapping as AbstractDictionary,
-    MutableMapping as AbstractMutableDictionary,
-    MutableSequence as AbstractMutableSequence,
-    Sequence as AbstractSequence,
+    Awaitable as        AbstractAwaitable,
+    Collection as       AbstractCollection,
+    Coroutine as        AbstractCoroutine,
+    Mapping as          AbstractDictionary,
+    Iterable as         AbstractIterable,
+    AsyncIterable as    AbstractIterableAsync,
+    MutableMapping as   AbstractMutableDictionary,
+    MutableSequence as  AbstractMutableSequence,
+    Sequence as         AbstractSequence,
 )
 from contextlib import (
     ExitStack as Contexts,
@@ -78,9 +78,11 @@ from uuid import uuid4
 
 from accretive import reclassify_modules
 from accretive.qaliases import (
+    AccretiveClass,
     AccretiveDictionary,
     AccretiveModule,
     AccretiveNamespace,
+    AccretiveObject,
 )
 from platformdirs import PlatformDirs
 
@@ -88,27 +90,19 @@ from . import _annotations as a
 from . import _generics as g
 
 
-standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
+class Falsifier( AccretiveObject, metaclass = AccretiveClass ):
+    ''' Produces falsey objects.
 
+        :py:class:`object` produces truthy objects.
+        :py:class:`NoneType` "produces" the ``None`` singleton.
+    '''
+    # TODO: Immutable class attributes.
 
-# TODO: Use accretive validator dictionary for URL accessor registry.
-#    def register(
-#        scheme: str,
-#        accessor_factory: a.Callable[ [ UrlParts ], Location ]
-#    ):
-#        ''' Associates location accessor factory to URL scheme. '''
-#        registry[ scheme ] = accessor_factory
-url_accessors = AccretiveDictionary( )
+    def __bool__( self ): return False
 
-def _convert_file_url_to_location( parts: UrlParts ) -> Path:
-    if '.' == parts.netloc: return Path( ) / parts.path
-    if parts.netloc:
-        raise NotImplementedError(
-            f"Shares not supported in file URLs. URL: {url}" )
-    return Path( parts.path )
+    def __eq__( self, other ): return self is other
 
-url_accessors[ '' ] = _convert_file_url_to_location
-url_accessors[ 'file' ] = _convert_file_url_to_location
+    def __ne__( self, other ): return self is not other
 
 
 class Location( metaclass = ABCFactory ):
@@ -117,6 +111,19 @@ class Location( metaclass = ABCFactory ):
     #       We just want issubclass support.
 
 Location.register( Path )
+
+
+class Omniexception(
+    AccretiveObject, BaseException,
+    metaclass = AccretiveClass,
+):
+    ''' Base for exceptions raised by package API. '''
+
+
+absent = Falsifier( ) # Indicates option with no default value.
+standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
+# TODO: Use accretive validator dictionary for URL accessor registry.
+url_accessors = AccretiveDictionary( )
 
 
 async def chain_async( *iterables: AbstractIterable | AbstractIterableAsync ):
@@ -215,6 +222,17 @@ async def read_files_async(
             ignore_nonawaitables = return_exceptions )
     if deserializer: return tuple( transformer( datum ) for datum in data )
     return data
+
+
+def _convert_file_url_to_location( parts: UrlParts ) -> Path:
+    if '.' == parts.netloc: return Path( ) / parts.path
+    if parts.netloc:
+        raise NotImplementedError(
+            f"Shares not supported in file URLs. URL: {url}" )
+    return Path( parts.path )
+
+url_accessors[ '' ] = _convert_file_url_to_location
+url_accessors[ 'file' ] = _convert_file_url_to_location
 
 
 async def _gather_async_permissive(
