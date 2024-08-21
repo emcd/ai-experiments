@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Collection of AI functions. '''
+''' Support for AI use of tools. '''
 
 
 from . import __

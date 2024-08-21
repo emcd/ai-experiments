@@ -18,10 +18,13 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for AI provider clients. '''
-
-# pylint: disable=unused-import
+''' Exception classes for AI providers. '''
 
 
-from ..__ import *
-from ..exceptions import *
+from __future__ import annotations
+
+from . import __
+
+
+class InvocationFormatError( __.Omniexception, ValueError ):
+    ''' Invalid format for invocation request. '''

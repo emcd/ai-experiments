@@ -24,8 +24,10 @@
 from . import __
 from . import clients
 from . import core
+from . import exceptions
 
 from .core import *
+from .exceptions import *
 
 
 __.reclassify_modules( globals( ) )

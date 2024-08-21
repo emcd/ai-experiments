@@ -158,23 +158,24 @@ def count_text_tokens( text, model_name ):
 def extract_invocation_requests( canister, auxdata, invocables ):
     ''' Converts tool use requests into invoker coroutines. '''
     from ...codecs.json import loads
+    Error = __.InvocationFormatError
     try: requests = loads( canister[ 0 ].data )
     except Exception as exc:
-        raise ValueError( 'Malformed JSON payload in message.' ) from exc
+        raise Error( str( exc ) ) from exc
     if not isinstance( requests, __.AbstractSequence ):
-        raise ValueError( 'Tool use requests is not sequence.' )
+        raise Error( 'Tool use requests is not sequence.' )
     invokers = invocables.invokers
     model_context = getattr( canister.attributes, 'model_context', { } )
     tool_calls = model_context.get( 'tool_calls' )
     # TODO? Build new list of requests.
     for i, request in enumerate( requests ):
         if not isinstance( request, __.AbstractDictionary ):
-            raise ValueError( 'Tool use request is not dictionary.' )
+            raise Error( 'Tool use request is not dictionary.' )
         if 'name' not in request:
-            raise ValueError( 'Name is missing from tool use request.' )
+            raise Error( 'Name is missing from tool use request.' )
         name = request[ 'name' ]
         if name not in invokers:
-            raise ValueError( f"Tool {name!r} is not available." )
+            raise Error( f"Tool {name!r} is not available." )
         arguments = request.get( 'arguments', { } )
         # TODO: Pass extra context to invocable.
         request[ 'invocable__' ] = invokers[ name ]( auxdata, arguments )

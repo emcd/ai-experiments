@@ -78,17 +78,15 @@ async def invoke_functions(
     silent_extraction_failure = False,
 ):
     ''' Runs invocables via current AI provider for context. '''
+    from ..providers import InvocationFormatError
     from .invocables import extract_invocation_requests
     from .updaters import truncate_conversation
     truncate_conversation( components, index )
     provider = __.access_ai_provider_current( components )
     controls = __.package_controls( components )
     try: requests = extract_invocation_requests( components )
-    # TODO: Catch special exception for empty requests.
-    except Exception as exc:
-        if silent_extraction_failure:
-            ic( exc )
-            return
+    except InvocationFormatError as exc:
+        if silent_extraction_failure: return
         raise
     invokers = tuple(
         provider.invoke_function( request, controls )

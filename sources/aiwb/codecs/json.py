@@ -21,9 +21,12 @@
 ''' Robust JSON handling. '''
 
 
+from . import __
+
+
 def loads( string ):
     from json import JSONDecodeError, loads as loads_
-    # LLMs can sometimes wrap JSON with code fences.
+    # Language models can sometimes wrap JSON with Markdown code fences.
     if string.startswith( '```json' ) and string.endswith( '```' ):
         string = string[ 7 : -3 ]
     elif string.startswith( '```' ) and string.endswith( '```' ):
@@ -31,17 +34,18 @@ def loads( string ):
     try: return loads_( string )
     except JSONDecodeError:
         # On failure, try to find JSON array or object at end of string,
-        # since LLMs can sometimes be chatty even when asked not to be.
+        # since models can sometimes be chatty even when asked not to be.
         # Also, handles case when LLM is front-loading function calls.
         # Not perfect, since bracket asymmetry may occur inside of strings.
         curly_counter = square_counter = 0
         start_index = end_index = len( string ) - 1
         for i in range( end_index, -1, -1 ):
             char = string[ i ]
-            if '}' == char: curly_counter += 1
-            elif '{' == char: curly_counter -= 1
-            if ']' == char: square_counter += 1
-            elif '[' == char: square_counter -= 1
+            match char:
+                case '}': curly_counter += 1
+                case '{': curly_counter -= 1
+                case ']': square_counter += 1
+                case '[': square_counter -= 1
             if 0 > curly_counter or 0 > square_counter: raise
             if 0 == curly_counter and 0 == square_counter:
                 start_index = i

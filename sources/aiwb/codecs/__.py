@@ -18,10 +18,9 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for AI provider clients. '''
+''' Internal imports and utilities for codecs. '''
 
 # pylint: disable=unused-import
 
 
 from ..__ import *
-from ..exceptions import *
