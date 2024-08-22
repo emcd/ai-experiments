@@ -72,22 +72,34 @@ web-scraper = [
 [[project.authors]]
 name = 'Eric McDonald'
 email = 'emcd@users.noreply.github.com'
-# TODO: [project.urls]
+[project.urls]
+'Homepage' = 'https://github.com/emcd/aiwb'
+# TODO: 'Documentation' = 'https://emcd.github.io/aiwb'
+'Source Code' = 'https://github.com/emcd/aiwb'
+# TODO: 'Download' = 'https://pypi.org/project/aiwb/#files'
+'Issue Tracker' = 'https://github.com/emcd/aiwb/issues'
+
+[tool.SELF]
+year-of-origin = 2023
+
+[tool.bandit]
+exclude_dirs = [ 'tests' ]
 
 # https://coverage.readthedocs.io/en/latest/config.html
 [tool.coverage.run]
 branch = true
 command_line = '-m pytest'
-data_file = '.local/caches/pytest/coverage.sqlite3'
+data_file = '.auxiliary/caches/pytest/coverage.sqlite3'
 parallel = true
+source = [ 'sources', 'tests' ]
 [tool.coverage.html]
-directory = '.local/artifacts/coverage-pytest'
+directory = '.auxiliary/artifacts/coverage-pytest'
 [tool.coverage.xml]
-output = '.local/artifacts/coverage-pytest/coverage.xml'
+output = '.auxiliary/artifacts/coverage-pytest/coverage.xml'
 
 # https://hatch.pypa.io/latest/config/metadata/
 [tool.hatch.build]
-directory = '.local/artifacts'
+directory = '.auxiliary/artifacts/hatch-build'
 [tool.hatch.build.targets.sdist]
 only-include = [ 'sources/aiwb', 'data' ]
 [tool.hatch.build.targets.wheel]
@@ -100,9 +112,13 @@ python = '3.10'
 [tool.hatch.envs.develop]
 description = ''' Development environment. '''
 dependencies = [
+  'bandit',
   'coverage[toml]',
   'pylint',
   'pytest',
+  'ruff',
+  'semgrep',
+  'tryceratops',
 
   # TODO: Install in environment context as needed.
   'chromadb',
@@ -111,8 +127,47 @@ dependencies = [
   'langchain-community',
   'langchain-openai', # Embeddings, for now.
 ]
+[tool.hatch.envs.develop.scripts]
+linters = [
+  'ruff check --quiet sources documentation tests',
+  'bandit --configfile pyproject.toml --quiet --recursive sources',
+  'tryceratops sources',
+  'mypy sources',
+  'pylint sources documentation tests',
+  'semgrep --config p/python --error --quiet --skip-unknown-extensions sources',
+]
+packagers = [
+  'hatch build',
+  # TODO? Sign packages.
+]
+testers = [
+  'coverage erase',
+  'coverage run',
+  'coverage combine',
+  'coverage report --skip-covered',
+  'coverage html',
+  'coverage xml',
+]
+make-all = [
+  'linters',
+  'testers',
+  'packagers',
+#  'docsgen',
+]
+[tool.hatch.envs.qa]
+description = ''' Quality assurance environment. '''
+template = 'develop'
+[[tool.hatch.envs.qa.matrix]]
+python = [ '3.10', '3.11', '3.12' ]
 [tool.hatch.version]
 path = 'sources/aiwb/__init__.py'
+
+[tool.mypy]
+cache_dir = '.auxiliary/caches/mypy'
+disable_error_code = [ 'attr-defined', 'name-defined' ]
+implicit_optional = true
+pretty = true
+#strict = true
 
 # https://pylint.pycqa.org/en/latest/user_guide/configuration/index.html
 [tool.pylint.main]
@@ -149,11 +204,14 @@ include-naming-hint = true
 [tool.pylint.classes]
 defining-attr-methods = [ '__init__', '__new__', '__post_init__' ]
 exclude-protected = [ ]
-valid-classmethod-first-arg = [ 'kind', 'class_' ]
+valid-classmethod-first-arg = [ 'selfclass' ]
 valid-metaclass-classmethod-first-arg = [ 'maker', 'factory' ]
 [tool.pylint.design]
 # TODO: exclude-too-few-public-methods: Consider exception hierarchies.
-ignored-parents = [ 'panel.reactive.ReactiveHTML', 'panel.template.base.Template' ]
+ignored-parents = [
+  'panel.reactive.ReactiveHTML',
+  'panel.template.base.Template',
+]
 max-args = 5
 max-attributes = 7
 max-bool-expr = 3
@@ -199,7 +257,7 @@ never-returning-functions = [ 'sys.exit', 'argparse.parse_error' ]
 [tool.pylint.reports]
 msg-template = '{path} {line:3d},{column:2d} [{symbol}] {msg}'
 output-format = 'colorized'
-reports = true
+reports = false
 score = true
 [tool.pylint.similarities]
 ignore-comments = true
@@ -233,10 +291,18 @@ ignored-argument-names = '''_.*'''
 redefining-builtins-modules = [ 'builtins', 'io' ]
 
 [tool.pytest.ini_options]
+# Note: Cannot run doctests from Pytest, because Pytest tries to update '_'
+#       attribute on protected modules. Instead, we use Sphinx to run doctests.
 minversion = '8.1'
-addopts = '--exitfirst -rA --doctest-modules --doctest-glob="*.rst"'
+addopts = '--capture=no --exitfirst -rfE'
 testpaths = [ 'tests', 'sources' ]
 python_files = [ '*.py' ]
 python_functions = [ 'test_[0-9][0-9][0-9]_*' ]
-cache_dir = '.local/caches/pytest'
-filterwarnings = [ 'ignore::DeprecationWarning' ]
+cache_dir = '.auxiliary/caches/pytest'
+
+[tool.ruff]
+cache-dir = '.auxiliary/caches/ruff'
+[tool.ruff.lint]
+ignore = [
+  'E701', # Multiple statements on one line
+]

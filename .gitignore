@@ -1,11 +1,6 @@
-*.swp
+.*.swp
 .env
 .ipynb_checkpoints/
-.local/artifacts/
-.local/environments/
-.local/installations/
-.local/state/
-.local/utilities/
 .tool-versions
 __pycache__/
 bug-reports/
