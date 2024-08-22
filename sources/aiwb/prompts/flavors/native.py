@@ -96,6 +96,7 @@ class Store( _core.Store ):
         self,
         auxdata: __.Globals,
     ) -> __.AbstractDictionary[ str, Definition ]:
+        scribe = __.acquire_scribe( __package__ )
         location = self.location
         match location:
             case __.Path( ): pass
@@ -156,7 +157,7 @@ def discover_file_from_stores( auxdata: __.Globals, name: str ) -> __.Path:
     for file in files:
         if not file.exists( ): continue
         return file
-    raise FileNotFoundError( filename ) # TODO: Improve.
+    raise FileNotFoundError( f"Could not find prompt {name!r}." )
 
 
 def _deserialize_definition_data( data: str, store: Store ) -> Definition:

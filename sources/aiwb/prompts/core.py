@@ -136,7 +136,7 @@ async def acquire_definitions(
     for result in results:
         match result:
             case __.g.Error( error ):
-                summary = f"Could not load prompt definition."
+                summary = "Could not load prompt definition."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
             case __.g.Value( definitions_ ):

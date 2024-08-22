@@ -20,5 +20,8 @@
 
 ''' AI provider clients, including locally-hosted providers. '''
 
+# ruff: noqa: F401
+# pylint: disable=unused-import
+
 
 from . import openai

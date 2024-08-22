@@ -20,6 +20,9 @@
 
 ''' Base functionality to support AI workbench. '''
 
+# ruff: noqa: F401
+# pylint: disable=unused-import
+
 
 import enum
 
@@ -182,7 +185,6 @@ async def intercept_error_async( awaitable: AbstractAwaitable ) -> g.Result:
 
 def parse_url( url: str ) -> Location:
     ''' Parses URL and creates an appropriate accessor for location. '''
-    from urllib.parse import urlparse
     parts = urlparse( url )
     scheme = parts.scheme
     if scheme in url_accessors:
@@ -228,7 +230,7 @@ def _convert_file_url_to_location( parts: UrlParts ) -> Path:
     if '.' == parts.netloc: return Path( ) / parts.path
     if parts.netloc:
         raise NotImplementedError(
-            f"Shares not supported in file URLs. URL: {url}" )
+            f"Shares not supported in file URLs. URL: {parts}" )
     return Path( parts.path )
 
 url_accessors[ '' ] = _convert_file_url_to_location

@@ -123,7 +123,7 @@ async def remove_orphans( components ):
         location = contents_location / id_prefix
         ic( location )
         try: rmtree( location )
-        except Exception as exc: continue
+        except Exception: continue
     actual_ids = frozenset(
         location.stem
         for id_prefix in actual_ids_prefixes
@@ -139,7 +139,7 @@ async def remove_orphans( components ):
         location = contents_location / identity[ : 4 ] / identity
         ic( location )
         try: rmtree( location )
-        except Exception as exc: continue
+        except Exception: continue
 
 
 async def restore_conversation( components ):
@@ -335,7 +335,6 @@ async def _collect_content_ids_from_conversation(
     from itertools import chain
     from json import loads
     from aiofiles import open as open_
-    auxdata = components.auxdata__
     async with open_( conversation_location ) as stream:
         state = loads( await( stream.read( ) ) )
     return tuple( chain.from_iterable(
@@ -365,7 +364,7 @@ def _standardize_invocation_requests_v0( canister_state ):
     from json import dumps, loads
     content = canister_state[ 'content' ]
     try: extra_context = loads( content )
-    except: return content, { }
+    except Exception: return content, { }
     requests = [ ]
     if 'tool_calls' in extra_context:
         for tool_call in extra_context[ 'tool_calls' ]:

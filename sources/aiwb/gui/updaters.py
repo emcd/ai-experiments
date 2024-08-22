@@ -31,8 +31,7 @@ def add_conversation_indicator( gui, descriptor, position = 0 ):
     from .layouts import conversation_indicator_layout as layout
     container_gui = __.SimpleNamespace(
         parent__ = gui, identity__ = descriptor.identity )
-    container = __.generate_component(
-        container_gui, layout, 'column_indicator' )
+    __.generate_component( container_gui, layout, 'column_indicator' )
     container_gui.rehtml_indicator = indicator = (
         ConversationIndicator( container_gui ) )
     container_gui.text_title.object = descriptor.title
@@ -73,10 +72,9 @@ def configure_message_interface( canister_gui, dto ):
     if 'AI' == role:
         canister_gui.button_fork.visible = True
         try:
-            requests = (
-                extract_invocation_requests(
-                    gui, component = canister, close_invokers = True ) )
-        except: pass
+            extract_invocation_requests(
+                gui, component = canister, close_invokers = True )
+        except Exception: pass
         else: canister_gui.button_invoke.visible = True
     elif 'Document' == role:
         canister_gui.button_delete.visible = True
@@ -254,7 +252,6 @@ def populate_prompt_variables( gui, species, data = None ):
     template_class = 'system' if 'supervisor' == species else 'canned'
     row_name = f"row_{template_class}_prompt_variables"
     selector_name = f"selector_{template_class}_prompt"
-    text_prompt_name = f"text_{template_class}_prompt"
     selector = getattr( gui, selector_name )
     name = selector.value
     if name not in selector.options:
@@ -265,9 +262,10 @@ def populate_prompt_variables( gui, species, data = None ):
     prompt = prompts_cache.get( name )
     if None is prompt:
         prompts_cache[ name ] = prompt = definition.produce_prompt( )
-    callback = ( lambda event: _update_prompt_text( gui, species = species ) )
     row = getattr( gui, row_name )
-    ContainerManager( row, prompt.controls.values( ), callback )
+    ContainerManager(
+        row, prompt.controls.values( ),
+        lambda event: _update_prompt_text( gui, species = species ) )
     _update_prompt_text( gui, species = species )
     if 'user' == species: postpopulate_canned_prompt_variables( gui )
     elif 'supervisor' == species: postpopulate_system_prompt_variables( gui )

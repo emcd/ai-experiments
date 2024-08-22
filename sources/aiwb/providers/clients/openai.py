@@ -90,7 +90,7 @@ class Factory( _core.Factory ):
         auxdata: __.Globals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ]
     ):
-        variant = descriptor.get( 'variant' )
+        #variant = descriptor.get( 'variant' )
         # TODO: Produce Azure variant, if requested.
         # TODO: Return future.
         return await OpenAIClient.prepare( auxdata, descriptor )

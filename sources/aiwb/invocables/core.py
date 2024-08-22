@@ -172,7 +172,7 @@ async def prepare_invokers(
     for result in results:
         match result:
             case __.g.Error( error ):
-                summary = f"Could not prepare invoker."
+                summary = "Could not prepare invoker."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
             case __.g.Value( invokers_ ):

@@ -33,10 +33,10 @@ from typing import ClassVar, Dict
 
 import param
 
-from panel.config import config
+#from panel.config import config
 from panel.template.base import Template
 from panel.theme import Design
-from panel.theme.base import THEMES
+#from panel.theme.base import THEMES
 from panel.theme.native import Native
 
 

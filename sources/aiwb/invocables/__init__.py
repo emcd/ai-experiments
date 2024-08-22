@@ -20,6 +20,9 @@
 
 ''' Support for AI use of tools. '''
 
+# ruff: noqa: F401,F403
+# pylint: disable=unused-import
+
 
 from . import __
 from . import core

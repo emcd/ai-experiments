@@ -303,6 +303,7 @@ async def _read_file_at_location( auxdata, location, **nomargs ):
 
 
 async def _read_http( auxdata, url ):
+    from aiofiles import open as open_
     dirent = dict( location = url )
     try:
         file_name = _read_http_core( auxdata, url )

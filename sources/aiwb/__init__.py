@@ -20,6 +20,9 @@
 
 ''' Support for interactions with generative artificial intelligences. '''
 
+# ruff: noqa: F401,F403
+# pylint: disable=unused-import
+
 
 __version__ = '1.0a202404271857'
 

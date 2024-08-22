@@ -181,7 +181,7 @@ async def restore_content( manager, identity ):
     descriptor_file = location / 'descriptor.toml'
     async with open_( descriptor_file ) as descriptor_stream:
         descriptor = loads( await descriptor_stream.read( ) )
-    version = descriptor.pop( 'format-version', 1 )
+    descriptor.pop( 'format-version', 1 )
     descriptor[ 'identity' ] = identity
     mimetype = descriptor[ 'mimetype' ]
     # TODO? Handle URL for content source.

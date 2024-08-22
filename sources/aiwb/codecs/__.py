@@ -20,6 +20,7 @@
 
 ''' Internal imports and utilities for codecs. '''
 
+# ruff: noqa: F403
 # pylint: disable=unused-import
 
 

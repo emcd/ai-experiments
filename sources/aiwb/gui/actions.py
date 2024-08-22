@@ -85,7 +85,7 @@ async def invoke_functions(
     provider = __.access_ai_provider_current( components )
     controls = __.package_controls( components )
     try: requests = extract_invocation_requests( components )
-    except InvocationFormatError as exc:
+    except InvocationFormatError:
         if silent_extraction_failure: return
         raise
     invokers = tuple(
@@ -186,7 +186,6 @@ def _detect_ai_completion( gui, component = None ):
 
 
 async def _generate_conversation_title( components ):
-    from ..codecs.json import loads
     from ..messages.core import Canister
     from ..providers import chat_callbacks_minimal
     from .__ import access_ai_provider_current
