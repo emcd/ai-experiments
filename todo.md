@@ -2,9 +2,8 @@
     - Programming Agents: orchestrator, designer, programmer, reviewer
     - Role-playing Game Agents: orchestrator, master, player, character
 
-* AI: Functions
+* AI: Invocables (aka. "functions" or "tools")
 
-    - Use Pydantic for data models.
     - Detection of environment, executables, and libraries for functions.
     - Improve callbacks to record intermediate AI assistant outputs.
     - Tool to recursively list directories (without reading files).
@@ -31,10 +30,10 @@
       each conversation has a mutated copy of the conversation-related
       components.
     - Async queuing in GUI for actions.
-    - Create 'vectorizers' subpackage for embeddings.
-    - ConversationsIndex and Conversations classes.
+    - Create `vectorizers` subpackage for embeddings.
+    - `ConversationsIndex` and `Conversation` classes.
     - Finish decoupling widgets from data in conversation save/restore.
-    - Use `absent__` object instead of `None` for optional arguments
+    - Use `absent` object instead of `None` for optional arguments
       with no default.
 
 * General

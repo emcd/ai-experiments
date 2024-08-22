@@ -24,44 +24,6 @@
 from . import __
 
 
-instructions_mode_argschema = {
-    'type': 'string',
-    'description': '''
-Replace or supplement default instructions of AI agent with given
-instructions? ''',
-    'enum': [ 'replace', 'supplement' ],
-    'default': 'supplement',
-}
-
-instructions_argschema = {
-    'type': 'object',
-    'description': '''
-Special instructions to AI agent to replace or supplement its default
-instructions. If not supplied, the agent will use only its default
-instructions. ''',
-    'properties': {
-        'mode': instructions_mode_argschema,
-        'instructions': {
-            'type': 'string',
-            'description': '''
-Analysis instructions for AI. Should not be empty in replace mode. '''
-        },
-    },
-}
-
-retrieve_location_argschema = {
-    'type': 'object',
-    'properties': {
-        'source': {
-            'type': 'string',
-            'description': 'URL or local filesystem path to be read.'
-        },
-        'control': instructions_argschema,
-    },
-    'required': [ 'source' ],
-}
-
-
 async def analyze(
     auxdata: __.Globals,
     invoker: __.Invoker,

@@ -23,26 +23,6 @@
 
 from . import __
 
-file_update_argschema = {
-    'type': 'object',
-    'properties': {
-        'location': {
-            'type': 'string',
-            'description': 'Location of the file to be written.'
-        },
-        'contents': {
-            'type': 'string',
-        },
-        'mode': {
-            'type': 'string',
-            'enum': [ 'append', 'truncate' ],
-            'default': 'truncate',
-        },
-    },
-    # TODO? Require 'mode' for OpenAI strict schema.
-    'required': [ 'location', 'contents' ],
-}
-
 
 async def write_file(
     auxdata: __.Globals,

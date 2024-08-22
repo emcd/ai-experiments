@@ -15,16 +15,17 @@ dependencies = [
   'exceptiongroup', # TODO: Python 3.11: Remove.
   'fastapi[standard]',
   'gitignorefile',
+  'httpx',
   'icecream',
   'importlib-resources', # TODO: Python 3.12: Remove.
-  'jsonschema', # TODO: Remove once on Pydantic models.
+  'jsonschema',
   'mako', # TODO? Replace with Jinja2.
-  'panel ~= 1.4',
+  'panel', # ~= 1.4 (if necessary)
   'platformdirs',
   'python-dotenv',
   'python-magic',
   'rich',
-  'tomli',
+  'tomli', # TODO: Python 3.11: Remove.
   'tomli-w', # TODO? Remove. Use pretty JSON for machine-generated files.
   'typing-extensions',
   'unstructured',
