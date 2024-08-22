@@ -55,7 +55,7 @@ async def write_file(
         Returns number of characters written. '''
     from aiofiles import open as open_
     mode = { 'append': 'a', 'truncate': 'w' }[
-        arguments.get( mode, 'truncate' ) ]
+        arguments.get( 'mode', 'truncate' ) ]
     location = __.Path( arguments[ 'location' ] )
-    async with open_( path, mode ) as stream:
+    async with open_( location, mode ) as stream:
         return await stream.write( arguments[ 'contents' ] )

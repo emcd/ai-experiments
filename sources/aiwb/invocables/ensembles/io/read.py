@@ -156,7 +156,8 @@ async def _analyze_file( auxdata, path, control = None ):
                 summarization_prompt.render( auxdata ) ) )
             messages.append( Canister( role = 'AI' ).add_content(
                 '\n\n'.join( ai_messages ) ) )
-        _, content = __.render_prompt( auxdata, control, chunk, mime_type )
+        _, content = _render_analysis_prompt(
+            auxdata, control, chunk, mime_type )
         messages.append( Canister( role = 'Human' ).add_content( content ) )
         ai_canister = await provider.chat(
             messages, { }, auxdata.controls, chat_callbacks_minimal )
@@ -210,7 +211,7 @@ async def _discriminate_dirents( auxdata, dirents, control = None ):
         messages = [
             Canister( role = 'Supervisor' ).add_content( supervisor_message )
         ]
-        _, content = __.render_prompt(
+        _, content = _render_analysis_prompt(
             auxdata, control, dirents_batch, 'directory-entries' )
         messages.append( Canister( role = 'Human' ).add_content( content ) )
         ai_canister = await provider.chat(
@@ -370,3 +371,19 @@ def _read_http_core( auxdata, url ):
 
 async def _read_http_wrapped( auxdata, url, **nomargs ):
     return await _read_http( auxdata, url )
+
+
+def _render_analysis_prompt( auxdata, control, content, mime_type ):
+    control = control or { }
+    instructions = control.get( 'instructions', '' )
+    if control.get( 'mode', 'supplement' ):
+        instructions = (
+            auxdata.prompts.definitions[ 'Analyze Content' ]
+            .produce_prompt(
+                values = dict(
+                    mime_type = mime_type, instructions = instructions ) )
+            .render( auxdata ) )
+    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
+    return provider.render_data(
+        dict( content = content, instructions = instructions ),
+        auxdata.controls )

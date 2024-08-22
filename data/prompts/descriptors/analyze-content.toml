@@ -1,0 +1,18 @@
+name = 'Analyze Content'
+species = 'user'
+attributes = { conceal = true }
+templates = [ 'analyze-content' ]
+
+[[variables]]
+name = 'mime_type'
+species = 'text'
+attributes = { label = 'MIME Type' }
+
+[[variables]]
+name = 'instructions'
+species = 'flex-array'
+attributes = { label = 'Additional Instructions' }
+minimum = 0
+
+[variables.element]
+species = 'text'
