@@ -240,7 +240,7 @@ def _instantiate_splitter( info ):
 COST_PER_THOUSAND_TOKENS = 0.0001
 
 def main( ):
-    openai_credentials = provide_openai_credentials( )
+    provide_openai_credentials( )
     manifest_path = 'data-sources/manifest.toml'
     repositories = load_manifest_file( manifest_path )
     # TODO: One vectorstore per repo.

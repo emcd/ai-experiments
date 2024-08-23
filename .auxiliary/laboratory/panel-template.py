@@ -40,7 +40,7 @@ def prepare( ):
 
 
 def prepare_gui( configuration, directories ):
-    from panel.layout import Column, Row
+    from panel.layout import Column
     from panel.widgets import Button
     from chatter.gui.templates.default import DefaultTemplate
     template = DefaultTemplate( )

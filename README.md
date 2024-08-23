@@ -31,15 +31,27 @@ steps:
    pipx install hatch
    ```
 
+If you intend to develop on this project, then additionally perform these
+steps:
+1. Ensure that you have installed [pre-commit](https://pre-commit.com/) via
+   Pipx:
+   ```
+   pipx install pre-commit
+   ```
+1. Install Git pre-commit and pre-push hooks:
+   ```
+   pre-commit install --config .auxiliary/configuration/pre-commit.yaml
+   ```
+
 ## Installation Updates
 
 1. Run:
    ```
    git pull
    ```
-1. Remove the `default` virtual environment:
+1. Remove possibly-stale virtual environments:
    ```
-   hatch env remove default
+   hatch env prune
    ```
 
 The `default` virtual environment will be automatically rebuilt next time the
