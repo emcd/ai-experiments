@@ -2,8 +2,6 @@
 # See https://pre-commit.com/hooks.html for more hooks
 
 default_install_hook_types: [ 'pre-commit', 'pre-push' ]
-#default_language_version:
-#  python: python3.10
 
 repos:
 
@@ -27,19 +25,19 @@ repos:
   - id: mixed-line-ending
     name: 'Check: Detect Mixed Line Endings'
     args: [ '--fix', 'no' ]
-#  - id: check-ast # TODO: Ensure Python 3.10.
-#    name: 'Validate: Python Files'
-#    fail_fast: true
+  - id: check-ast
+    name: 'Validate: Python Files'
+    fail_fast: true
   - id: check-json
     name: 'Validate: JSON Files'
   - id: check-toml
     name: 'Validate: TOML Files'
   - id: check-yaml
     name: 'Validate: YAML Files'
-#  - id: check-docstring-first # TODO: Ensure Python 3.10.
-#    name: 'Check: Docstring First (Python)'
-#  - id: debug-statements # TODO: Ensure Python 3.10.
-#    name: 'Check: Debug Statements (Python)'
+  - id: check-docstring-first
+    name: 'Check: Docstring First (Python)'
+  - id: debug-statements
+    name: 'Check: Debug Statements (Python)'
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.4.4

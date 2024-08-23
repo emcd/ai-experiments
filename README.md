@@ -31,16 +31,14 @@ steps:
    pipx install hatch
    ```
 
-If you intend to develop on this project, then additionally perform these
-steps:
-1. Ensure that you have installed [pre-commit](https://pre-commit.com/) via
-   Pipx:
-   ```
-   pipx install pre-commit
-   ```
+If you intend to develop on this project, then additionally perform:
 1. Install Git pre-commit and pre-push hooks:
    ```
-   pre-commit install --config .auxiliary/configuration/pre-commit.yaml
+   hatch --env develop run pre-commit install --config .auxiliary/configuration/pre-commit.yaml
+   ```
+   and validate the installation with:
+   ```
+   hatch --env develop run pre-commit run --config .auxiliary/configuration/pre-commit.yaml --all-files
    ```
 
 ## Installation Updates
@@ -55,7 +53,9 @@ steps:
    ```
 
 The `default` virtual environment will be automatically rebuilt next time the
-application is run via Hatch.
+application is run via Hatch. You may need to run something in the `develop`
+virtual environment to rebuild it too, if you have installed Git hooks which
+rely upon it.
 
 # Configuration
 

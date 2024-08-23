@@ -114,6 +114,7 @@ description = ''' Development environment. '''
 dependencies = [
   'bandit',
   'coverage[toml]',
+  'pre-commit',
   'pylint',
   'pytest',
   'ruff',
