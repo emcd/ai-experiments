@@ -114,12 +114,16 @@ description = ''' Development environment. '''
 dependencies = [
   'bandit',
   'coverage[toml]',
+  'mypy',
   'pre-commit',
   'pylint',
   'pytest',
   'ruff',
   'semgrep',
   'tryceratops',
+
+  'types-aiofiles',
+  'types-jsonschema',
 
   # TODO: Install in environment context as needed.
   'chromadb',
@@ -165,7 +169,7 @@ path = 'sources/aiwb/__init__.py'
 
 [tool.mypy]
 cache_dir = '.auxiliary/caches/mypy'
-disable_error_code = [ 'attr-defined', 'name-defined' ]
+disable_error_code = [ 'attr-defined', 'import-untyped', 'name-defined' ]
 implicit_optional = true
 pretty = true
 #strict = true

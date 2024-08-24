@@ -26,9 +26,9 @@ from __future__ import annotations
 from . import _annotations as _a
 
 
-T = _a.TypeVar( 'Generic' )
-U = _a.TypeVar( 'Generic' )
-E = _a.TypeVar( 'Error', bound = Exception )
+T = _a.TypeVar( 'T' ) # generic
+U = _a.TypeVar( 'U' ) # generic
+E = _a.TypeVar( 'E', bound = Exception ) # error
 
 
 class Result( _a.Generic[ T ] ):
@@ -49,7 +49,9 @@ class Result( _a.Generic[ T ] ):
         if isinstance( self, Value ): return self.value
         raise self.error
 
-    def transform( self, function: _a.Callable[ [ T ], U ] ) -> Result[ U ]:
+    def transform(
+        self, function: _a.Callable[ [ T ], U ]
+    ) -> _a.Self | Result[ U ]:
         ''' Transforms value in value result. Ignores error result. '''
         # Like Result.map in Rust.
         if isinstance( self, Value ): return Value( function( self.value ) )
