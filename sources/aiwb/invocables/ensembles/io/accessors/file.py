@@ -18,48 +18,49 @@
 #============================================================================#
 
 
-''' Standard ensemble for I/O. '''
+''' Implementation of filesystem I/O operations. '''
 
-# ruff: noqa: F401,F403
-# pylint: disable=unused-import
-
-
-from __future__ import annotations
 
 from . import __
-from . import accessors
-# TODO: Fold other imports into accessors.
-from .argschemata import file_update_argschema, retrieve_location_argschema
-from .read import analyze, read
-from .write import write_file
-
-
-_name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
-
-
-async def prepare(
-    auxdata: __.Globals,
-    descriptor: __.AbstractDictionary[ str, __.a.Any ],
-) -> Ensemble:
-    ''' Installs dependencies and returns ensemble. '''
-    # TODO: Install dependencies: github, etc....
-    return Ensemble( name = _name )
-
-
-__.preparers[ _name ] = prepare
 
 
 @__.standard_dataclass
-class Ensemble( __.Ensemble ):
+class Accessor( __.Accessor ):
 
-    async def prepare_invokers(
-        self, auxdata: __.Globals
-    ) -> __.AbstractDictionary[ str, __.Invoker ]:
-        return self.produce_invokers_from_registry( auxdata, _invocables )
+    location: __.Path
+
+    @classmethod
+    def from_url_parts( selfclass, parts: __.UrlParts ) -> __.a.Self:
+        if '.' == parts.netloc: location = __.Path( ) / parts.path
+        elif parts.netloc:
+            raise NotImplementedError(
+                f"Shares not supported in file URLs. URL: {parts}" )
+        else: location = __.Path( parts.path )
+        return selfclass( location )
+
+    async def list_folder(
+        self, context: __.Context, arguments: __.SurveyDirectoryArguments,
+    ) -> __.AbstractDictionary:
+        return await survey_directory( context, arguments )
+
+    async def read(
+        self, context: __.Context, arguments: __.AcquireContentArguments,
+    ) -> __.AbstractDictionary:
+        # TODO: Implement.
+        raise NotImplementedError
+
+    async def write(
+        self, context: __.Context, arguments: __.UpdateContentArguments,
+    ) -> __.AbstractDictionary:
+        # TODO: Implement.
+        raise NotImplementedError
+
+__.accessors[ '' ] = Accessor
+__.accessors[ 'file' ] = Accessor
 
 
-_invocables = (
-    ( analyze, retrieve_location_argschema ),
-    ( read, retrieve_location_argschema ),
-    ( write_file, file_update_argschema ),
-)
+async def survey_directory(
+    context: __.Context, arguments: __.SurveyDirectoryArguments
+) -> __.AbstractDictionary:
+    # TODO: Implement.
+    pass

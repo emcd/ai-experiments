@@ -18,10 +18,18 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for I/O invocables. '''
+''' Internal imports and utilities for I/O accessors. '''
 
 # ruff: noqa: F401,F403
 # pylint: disable=unused-import
 
 
 from ..__ import *
+from ..operations import (
+    Accessor,
+    AcquireContentArguments,
+    Context,
+    SurveyDirectoryArguments,
+    UpdateContentArguments,
+    accessors,
+)

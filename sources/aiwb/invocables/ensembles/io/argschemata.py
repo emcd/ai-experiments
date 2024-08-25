@@ -21,6 +21,22 @@
 ''' Argument schemata for I/O operations. '''
 
 
+_directory_filter_description = '''
+Filter to apply on directory listing.
+
+Choices:
+* gitignore: Removes entries not allowed by relevant '.gitignore' files.
+* vcs: Removes entries related to VCS configuration, like the '.git' directory.
+'''
+
+_directory_recursion_description = '''
+Recursively list subdirectories?
+
+If this flag is set, then it is recommended to also enable filters like
+'gitignore' and 'vcs' to prevent unnecessary results from being returned.
+'''
+
+
 file_update_argschema = {
     'type': 'object',
     'properties': {
@@ -64,6 +80,30 @@ instructions. ''',
 Analysis instructions for AI. Should not be empty in replace mode. '''
         },
     },
+}
+
+list_folder_argschema = {
+    'type': 'object',
+    'properties': {
+        'location': {
+            'type': 'string',
+            'description': 'URL or local path of directory to be listed.'
+        },
+        'recursive': {
+            'type': 'boolean',
+            'description': _directory_recursion_description,
+        },
+        'filters': {
+            'type': 'array',
+            'items': {
+                'type': 'string',
+                'description': _directory_filter_description,
+                'enum': [ 'gitignore', 'vcs' ]
+            },
+            'default': [ ],
+        },
+    },
+    'required': [ 'location' ],
 }
 
 retrieve_location_argschema = {

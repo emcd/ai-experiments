@@ -18,10 +18,11 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for I/O invocables. '''
+''' Accessors for standard I/O ensemble. '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F401
 # pylint: disable=unused-import
 
 
-from ..__ import *
+from . import file
+# TODO: http
