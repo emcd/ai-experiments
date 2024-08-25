@@ -57,16 +57,27 @@ class AcquireContentArguments( ArgumentsBase ):
 
 @__.standard_dataclass
 class SurveyDirectoryArguments( ArgumentsBase ):
+    ''' Valid arguments for the 'survey_directory' operation. '''
 
-    recursive: bool
+    #file_size_maximum: int
     filters: __.AbstractSequence[ str ]
+    recursive: bool
+    return_directories: bool
+    return_special_entities: bool
+    return_symlinks: bool
 
     @classmethod
     def from_dictionary( selfclass, arguments: __.Arguments ) -> __.a.Self:
         # TODO? Validate filters.
+        # TODO: Use defaults from schema or class attributes.
         return selfclass(
-            recursive = arguments.get( 'recursive', False ),
-            filters = arguments.get( 'filters', ( ) ) )
+            #file_size_maximum = arguments.get( 'file_size_maximum', 40000 ),
+            filters = arguments.get( 'filters', ( 'gitignore', 'vcs' ) ),
+            recursive = arguments.get( 'recursive', True ),
+            return_directories = arguments.get( 'return_directories', True ),
+            return_special_entities = arguments.get(
+                'return_special_entities', True ),
+            return_symlinks = arguments.get( 'return_symlinks', True ) )
 
 
 @__.standard_dataclass

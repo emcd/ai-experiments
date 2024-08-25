@@ -24,6 +24,7 @@
 # pylint: disable=unused-import
 
 
+from os import DirEntry
 from ..__ import *
 from ..operations import (
     Accessor,

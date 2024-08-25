@@ -36,27 +36,6 @@ If this flag is set, then it is recommended to also enable filters like
 'gitignore' and 'vcs' to prevent unnecessary results from being returned.
 '''
 
-
-file_update_argschema = {
-    'type': 'object',
-    'properties': {
-        'location': {
-            'type': 'string',
-            'description': 'Location of the file to be written.'
-        },
-        'contents': {
-            'type': 'string',
-        },
-        'mode': {
-            'type': 'string',
-            'enum': [ 'append', 'truncate' ],
-            'default': 'truncate',
-        },
-    },
-    # TODO? Require 'mode' for OpenAI strict schema.
-    'required': [ 'location', 'contents' ],
-}
-
 instructions_mode_argschema = {
     'type': 'string',
     'description': '''
@@ -82,31 +61,7 @@ Analysis instructions for AI. Should not be empty in replace mode. '''
     },
 }
 
-list_folder_argschema = {
-    'type': 'object',
-    'properties': {
-        'location': {
-            'type': 'string',
-            'description': 'URL or local path of directory to be listed.'
-        },
-        'recursive': {
-            'type': 'boolean',
-            'description': _directory_recursion_description,
-        },
-        'filters': {
-            'type': 'array',
-            'items': {
-                'type': 'string',
-                'description': _directory_filter_description,
-                'enum': [ 'gitignore', 'vcs' ]
-            },
-            'default': [ ],
-        },
-    },
-    'required': [ 'location' ],
-}
-
-retrieve_location_argschema = {
+acquire_contents_argschema = {
     'type': 'object',
     'properties': {
         'source': {
@@ -116,4 +71,71 @@ retrieve_location_argschema = {
         'control': instructions_argschema,
     },
     'required': [ 'source' ],
+}
+
+survey_directory_argschema = {
+    'type': 'object',
+    'properties': {
+        'location': {
+            'type': 'string',
+            'description': 'URL or local path of directory to be listed.'
+        },
+        'filters': {
+            'type': 'array',
+            'items': {
+                'type': 'string',
+                'description': _directory_filter_description,
+                'enum': [ 'gitignore', 'vcs' ]
+            },
+            'default': [ 'gitignore', 'vcs' ],
+        },
+        'recursive': {
+            'type': 'boolean',
+            'description': _directory_recursion_description,
+            'default': True
+        },
+#        'file_size_maximum': {
+#            'type': 'integer',
+#            'description':
+#                'Do not list regular files larger than this many bytes.',
+#            'default': 40000
+#        },
+        'return_directories': {
+            'type': 'boolean',
+            'description': 'Include directories in results?',
+            'default': True
+        },
+        'return_special_entities': {
+            'type': 'boolean',
+            'description':
+                'Include device nodes, named pipes, etc... in results?',
+            'default': True
+        },
+        'return_symlinks': {
+            'type': 'boolean',
+            'description': 'Include symlinks in results?',
+            'default': True
+        }
+    },
+    'required': [ 'location' ],
+}
+
+update_contents_argschema = {
+    'type': 'object',
+    'properties': {
+        'location': {
+            'type': 'string',
+            'description': 'Location of the file to be written.'
+        },
+        'contents': {
+            'type': 'string',
+        },
+        'mode': {
+            'type': 'string',
+            'enum': [ 'append', 'truncate' ],
+            'default': 'truncate',
+        },
+    },
+    # TODO? Require 'mode' for OpenAI strict schema.
+    'required': [ 'location', 'contents' ],
 }

@@ -36,21 +36,24 @@ class Accessor( __.Accessor ):
             raise NotImplementedError(
                 f"Shares not supported in file URLs. URL: {parts}" )
         else: location = __.Path( parts.path )
-        return selfclass( location )
+        return selfclass( location = location )
 
     async def list_folder(
-        self, context: __.Context, arguments: __.SurveyDirectoryArguments,
+        self, context: __.Context, arguments: __.SurveyDirectoryArguments
     ) -> __.AbstractDictionary:
-        return await survey_directory( context, arguments )
+        return await survey_directory(
+            location = self.location,
+            context = context,
+            arguments = arguments )
 
     async def read(
-        self, context: __.Context, arguments: __.AcquireContentArguments,
+        self, context: __.Context, arguments: __.AcquireContentArguments
     ) -> __.AbstractDictionary:
         # TODO: Implement.
         raise NotImplementedError
 
     async def write(
-        self, context: __.Context, arguments: __.UpdateContentArguments,
+        self, context: __.Context, arguments: __.UpdateContentArguments
     ) -> __.AbstractDictionary:
         # TODO: Implement.
         raise NotImplementedError
@@ -60,7 +63,57 @@ __.accessors[ 'file' ] = Accessor
 
 
 async def survey_directory(
-    context: __.Context, arguments: __.SurveyDirectoryArguments
+    location: __.PathLike,
+    context: __.Context,
+    arguments: __.SurveyDirectoryArguments,
 ) -> __.AbstractDictionary:
-    # TODO: Implement.
-    pass
+    ''' Lists directory at filesystem path. '''
+    from itertools import chain
+    # TODO? Python 3.12: aiopath.AsyncPath.scandir or anyio.Path.walk
+    from aiofiles.os import scandir
+    from gitignorefile import Cache as GitIgnorer
+    from magic import from_file
+    filters = frozenset( arguments.filters )
+    ignorers = { 'gitignore': GitIgnorer( ) }
+    scanners = [ ]
+    results = [ ]
+    with await scandir( location ) as dirents:
+        for dirent in dirents:
+            if filters and _decide_filter_dirent( dirent, filters, ignorers ):
+                continue
+            if dirent.is_dir( follow_symlinks = False ):
+                if arguments.recursive:
+                    scanners.append(
+                        survey_directory( dirent.path, context, arguments ) )
+                if not arguments.return_directories: continue
+                mimetype = 'inode/directory'
+            elif dirent.is_file( follow_symlinks = False ):
+                #inode = dirent.stat( follow_symlinks = False )
+                #if arguments.file_size_maximum < inode.st_size: continue
+                mimetype = from_file( dirent.path, mime = True )
+            elif dirent.is_symlink( ):
+                if not arguments.return_symlinks: continue
+                mimetype = 'inode/symlink'
+            elif arguments.return_special_entities:
+                mimetype = from_file( dirent.path, mime = True )
+            else: continue
+            results.append( dict(
+                location = dirent.path, mimetype = mimetype ) )
+        if arguments.recursive:
+            results.extend( chain.from_iterable(
+                await __.gather_async( *scanners ) ) )
+    return results
+
+
+_vcs_control_directories = frozenset( ( '.git', ) )
+def _decide_filter_dirent(
+    dirent: __.DirEntry,
+    filters: __.AbstractCollection[ str ],
+    ignorers: __.AbstractDictionary[ str, __.a.Any ],
+) -> bool:
+    if dirent.is_dir( ):
+        if 'vcs' in filters and dirent.name in _vcs_control_directories:
+            return True
+    if 'gitignore' in filters and ignorers[ 'gitignore' ]( dirent.path ):
+        return True
+    return False

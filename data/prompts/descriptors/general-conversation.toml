@@ -4,6 +4,7 @@ templates = [ 'general-conversation' ]
 
 [attributes.functions]
 analyze = false
+list_folder = true
 read = true
 roll_dice = false
 write_file = true

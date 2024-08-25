@@ -4,6 +4,7 @@ templates = [ 'pair-programmer' ]
 
 [attributes.functions]
 analyze = false
+list_folder = true
 read = true
 write_file = true
 
