@@ -28,9 +28,8 @@ from os import DirEntry
 from ..__ import *
 from ..operations import (
     Accessor,
-    AcquireContentArguments,
-    Context,
+    AcquireContentsArguments,
     SurveyDirectoryArguments,
-    UpdateContentArguments,
+    UpdateContentsArguments,
     accessors,
 )

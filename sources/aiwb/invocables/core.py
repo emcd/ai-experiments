@@ -32,6 +32,15 @@ ArgumentsModel: __.a.TypeAlias = __.DictionaryProxy[ str, __.a.Any ]
 #ArgumentsModel: __.a.TypeAlias = type[ __.pydantic.BaseModel ]
 
 
+@__.standard_dataclass
+class Context:
+    ''' Context data transfer object. '''
+
+    auxdata: __.Globals
+    invoker: __.Invoker
+    supplements: __.AccretiveNamespace
+
+
 @__.a.runtime_checkable
 @__.standard_dataclass
 class Ensemble( __.a.Protocol ):
@@ -88,9 +97,11 @@ class Invoker:
         self,
         auxdata: __.Globals,
         arguments: Arguments, *,
-        context: __.AccretiveDictionary = None,
+        supplements: __.AccretiveDictionary = None,
     ) -> __.a.Any:
-        return await self.invocable( auxdata, self, arguments, context )
+        context = Context(
+            auxdata = auxdata, invoker = self, supplements = supplements )
+        return await self.invocable( context, arguments )
 
 
 Invocable: __.a.TypeAlias = (

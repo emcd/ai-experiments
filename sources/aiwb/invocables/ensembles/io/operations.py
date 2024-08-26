@@ -24,16 +24,6 @@
 from . import __
 
 
-@__.standard_dataclass
-class Context:
-    ''' Context data transfer object. '''
-    # TODO? Hoist into invocables core.
-
-    auxdata: __.Globals
-    invoker: __.Invoker
-    extras: __.AccretiveNamespace
-
-
 @__.a.runtime_checkable
 @__.standard_dataclass
 class ArgumentsBase( __.a.Protocol ):
@@ -47,7 +37,7 @@ class ArgumentsBase( __.a.Protocol ):
 
 
 @__.standard_dataclass
-class AcquireContentArguments( ArgumentsBase ):
+class AcquireContentsArguments( ArgumentsBase ):
 
     @classmethod
     def from_dictionary( selfclass, arguments: __.Arguments ) -> __.a.Self:
@@ -81,7 +71,7 @@ class SurveyDirectoryArguments( ArgumentsBase ):
 
 
 @__.standard_dataclass
-class UpdateContentArguments( ArgumentsBase ):
+class UpdateContentsArguments( ArgumentsBase ):
 
     @classmethod
     def from_dictionary( selfclass, arguments: __.Arguments ) -> __.a.Self:
@@ -101,33 +91,33 @@ class Accessor( __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
-    async def list_folder(
-        self, context: Context, arguments: SurveyDirectoryArguments,
-    ) -> __.AbstractDictionary:
-        ''' Lists directory at URL or filesystem path. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def read(
-        self, context: Context, arguments: AcquireContentArguments,
+    async def acquire_contents(
+        self, context: __.Context, arguments: AcquireContentsArguments
     ) -> __.AbstractDictionary:
         ''' Reads contents at URL or filesystem path. '''
         raise NotImplementedError
 
     @__.abstract_member_function
-    async def write(
-        self, context: Context, arguments: UpdateContentArguments,
+    async def survey_directory(
+        self, context: __.Context, arguments: SurveyDirectoryArguments
+    ) -> __.AbstractDictionary:
+        ''' Lists directory at URL or filesystem path. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def update_contents(
+        self, context: __.Context, arguments: UpdateContentsArguments
     ) -> __.AbstractDictionary:
         ''' Writes contents at URL or filesystem path. '''
         raise NotImplementedError
 
 
-# TODO: Use accretive dictionary with validators for validators registry.
+# TODO: Use accretive dictionary with validators for argument classes registry.
 accessors = __.AccretiveDictionary( )
 arguments_classes = __.DictionaryProxy( {
-    'list_folder': SurveyDirectoryArguments,
-    'read': AcquireContentArguments,
-    'write': UpdateContentArguments,
+    'acquire_contents': AcquireContentsArguments,
+    'survey_directory': SurveyDirectoryArguments,
+    'update_contents': UpdateContentsArguments,
 } )
 
 
@@ -136,10 +126,7 @@ arguments_classes = __.DictionaryProxy( {
 
 
 async def list_folder(
-    auxdata: __.Globals,
-    invoker: __.Invoker,
-    arguments: __.Arguments,
-    extras: __.AccretiveNamespace,
+    context: __.Context, arguments: __.Arguments,
 ) -> __.AbstractDictionary:
     ''' Lists directory at URL or filesystem path.
 
@@ -147,11 +134,9 @@ async def list_folder(
         Optional filters, such as ignorefiles, may be applied.
     '''
     return await _operate(
-        opname = 'list_folder',
-        auxdata = auxdata,
-        invoker = invoker,
-        arguments = arguments,
-        extras = extras )
+        opname = 'survey_directory',
+        context = context,
+        arguments = arguments )
 
 
 # TODO: read
@@ -161,17 +146,12 @@ async def list_folder(
 
 
 async def _operate(
-    opname: str,
-    auxdata: __.Globals,
-    invoker: __.Invoker,
-    arguments: __.Arguments,
-    extras: __.AccretiveNamespace,
+    opname: str, context: __.Context, arguments: __.Arguments,
 ) -> __.AbstractDictionary:
     try: accessor = _produce_accessor( arguments[ 'location' ] )
     except NotImplementedError as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
-    context = Context( auxdata = auxdata, invoker = invoker, extras = extras )
     arguments_class = arguments_classes[ opname ]
     arguments_ = arguments_class.from_dictionary( arguments )
     return {

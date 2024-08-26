@@ -25,10 +25,7 @@ from . import __
 
 
 async def analyze(
-    auxdata: __.Globals,
-    invoker: __.Invoker,
-    arguments: __.Arguments,
-    context: __.AccretiveNamespace,
+    context: __.Context, arguments: __.Arguments
 ) -> __.AbstractSequence:
     ''' Reads URL or filesystem path and analyzes contents with an AI agent.
 
@@ -43,17 +40,14 @@ async def analyze(
         tokens_counter = None,
     )
     return await _operate(
-        auxdata,
+        context.auxdata,
         arguments[ 'source' ],
         operators,
         control = arguments.get( 'control' ) )
 
 
 async def read(
-    auxdata: __.Globals,
-    invoker: __.Invoker,
-    arguments: __.Arguments,
-    context: __.AccretiveNamespace,
+    context: __.Context, arguments: __.Arguments
 ) -> __.AbstractSequence:
     ''' Reads URL or filesystem path and returns contents and metadata.
 
@@ -72,7 +66,7 @@ async def read(
         tokens_counter = _count_tokens,
     )
     return await _operate(
-        auxdata,
+        context.auxdata,
         arguments[ 'source' ],
         operators,
         control = arguments.get( 'control' ) )

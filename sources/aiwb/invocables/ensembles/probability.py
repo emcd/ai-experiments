@@ -96,10 +96,7 @@ named_dice_specs_argschema = {
 
 
 async def roll_dice(
-    auxdata: __.Globals,
-    invoker: __.Invoker,
-    arguments: __.Arguments,
-    context: __.AccretiveNamespace,
+    context: __.Context, arguments: __.Arguments
 ) -> __.AbstractSequence:
     ''' Returns results of rolls for each named dice specification. '''
     return tuple(

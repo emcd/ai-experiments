@@ -38,7 +38,13 @@ class Accessor( __.Accessor ):
         else: location = __.Path( parts.path )
         return selfclass( location = location )
 
-    async def list_folder(
+    async def acquire_contents(
+        self, context: __.Context, arguments: __.AcquireContentsArguments
+    ) -> __.AbstractDictionary:
+        # TODO: Implement.
+        raise NotImplementedError
+
+    async def survey_directory(
         self, context: __.Context, arguments: __.SurveyDirectoryArguments
     ) -> __.AbstractDictionary:
         return await survey_directory(
@@ -46,14 +52,8 @@ class Accessor( __.Accessor ):
             context = context,
             arguments = arguments )
 
-    async def read(
-        self, context: __.Context, arguments: __.AcquireContentArguments
-    ) -> __.AbstractDictionary:
-        # TODO: Implement.
-        raise NotImplementedError
-
-    async def write(
-        self, context: __.Context, arguments: __.UpdateContentArguments
+    async def update_contents(
+        self, context: __.Context, arguments: __.UpdateContentsArguments
     ) -> __.AbstractDictionary:
         # TODO: Implement.
         raise NotImplementedError
@@ -74,6 +74,7 @@ async def survey_directory(
     from gitignorefile import Cache as GitIgnorer
     from magic import from_file
     filters = frozenset( arguments.filters )
+    # TODO: Build dictionary of ignorers from filters set.
     ignorers = { 'gitignore': GitIgnorer( ) }
     scanners = [ ]
     results = [ ]
@@ -105,7 +106,9 @@ async def survey_directory(
     return results
 
 
-_vcs_control_directories = frozenset( ( '.git', ) )
+_vcs_control_directories = frozenset( (
+    'BitKeeper', 'CVS', 'RCS', 'SCCS',
+    '_darcs', '.bzr', '.git', '.hg', '.svn' ) )
 def _decide_filter_dirent(
     dirent: __.DirEntry,
     filters: __.AbstractCollection[ str ],
