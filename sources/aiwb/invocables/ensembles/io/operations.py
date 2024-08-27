@@ -29,6 +29,8 @@ from . import __
 class ArgumentsBase( __.a.Protocol ):
     ''' Base class for I/O arguments data transfer objects. '''
 
+    location: __.Location
+
     @classmethod
     @__.abstract_member_function
     def from_dictionary( selfclass, arguments: __.Arguments ) -> __.a.Self:
@@ -61,6 +63,7 @@ class SurveyDirectoryArguments( ArgumentsBase ):
         # TODO? Validate filters.
         # TODO: Use defaults from schema or class attributes.
         return selfclass(
+            location = __.location_from_url( arguments[ 'location' ] ),
             #file_size_maximum = arguments.get( 'file_size_maximum', 40000 ),
             filters = arguments.get( 'filters', ( 'gitignore', 'vcs' ) ),
             recursive = arguments.get( 'recursive', True ),
@@ -83,12 +86,6 @@ class UpdateContentsArguments( ArgumentsBase ):
 @__.standard_dataclass
 class Accessor( __.a.Protocol ):
     ''' Interface for standard I/O operations. '''
-
-    @classmethod
-    @__.abstract_member_function
-    def from_url_parts( selfclass, parts: __.UrlParts ) -> __.a.Self:
-        ''' Constructs instance from result of URL parse. '''
-        raise NotImplementedError
 
     @__.abstract_member_function
     async def acquire_contents(
@@ -148,22 +145,22 @@ async def list_folder(
 async def _operate(
     opname: str, context: __.Context, arguments: __.Arguments,
 ) -> __.AbstractDictionary:
-    try: accessor = _produce_accessor( arguments[ 'location' ] )
-    except NotImplementedError as exc:
+    arguments_class = arguments_classes[ opname ]
+    try: arguments_ = arguments_class.from_dictionary( arguments )
+    except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
-    arguments_class = arguments_classes[ opname ]
-    arguments_ = arguments_class.from_dictionary( arguments )
+    try: accessor = _produce_accessor( arguments_.location )
+    except Exception as exc:
+        # TODO? Generate apprisal notification.
+        return { 'error': str( exc ) }
     return {
         'success': await getattr( accessor, opname )( context, arguments_ ) }
 
 
-def _produce_accessor( url: str ) -> Accessor:
-    # TODO? Unify with URL scheme parser in package base.
-    parts = __.urlparse( url )
-    scheme = parts.scheme
-    if scheme in accessors:
-        return accessors[ scheme ].from_url_parts( parts )
-    else:
-        raise NotImplementedError(
-            f"URL scheme {scheme!r} not supported. URL: {url}" )
+def _produce_accessor( location: __.Location ) -> Accessor:
+    url = location.url
+    scheme = location.url.scheme
+    if scheme in accessors: return accessors[ scheme ]( )
+    raise NotImplementedError(
+        f"URL scheme {scheme!r} not supported. URL: {url}" )

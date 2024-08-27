@@ -102,12 +102,12 @@ class Store( __.a.Protocol ):
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
         distribution = auxdata.distribution
         name = descriptor[ 'name' ]
-        location = __.parse_url( descriptor[ 'location' ].format(
+        location = __.location_from_url( descriptor[ 'location' ].format(
             application_name = distribution.name,
             custom_data = auxdata.provide_data_location( ),
             distribution_data = distribution.provide_data_location( ),
             user_data = auxdata.directories.user_data_path,
-            user_home = __.Path.home( ) ) )
+            user_home = __.Path.home( ) ) ).produce_accessor( )
         return __.AccretiveDictionary( name = name, location = location )
 
     @__.abstract_member_function

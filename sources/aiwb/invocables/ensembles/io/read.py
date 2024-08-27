@@ -207,10 +207,9 @@ async def _list_directory_as_cell( *posargs, **nomargs ):
 
 async def _operate( auxdata, source, operators, control = None ):
     # TODO: Support wildcards.
-    from urllib.parse import urlparse
     tokens_total = 0
     tokens_max = _access_tokens_limit( auxdata ) * 3 // 4
-    components = urlparse( source )
+    components = __.urlparse( source )
     has_file_scheme = not components.scheme or 'file' == components.scheme
     if has_file_scheme:
         if not components.path:

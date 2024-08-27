@@ -27,17 +27,6 @@ from . import __
 @__.standard_dataclass
 class Accessor( __.Accessor ):
 
-    location: __.Path
-
-    @classmethod
-    def from_url_parts( selfclass, parts: __.UrlParts ) -> __.a.Self:
-        if '.' == parts.netloc: location = __.Path( ) / parts.path
-        elif parts.netloc:
-            raise NotImplementedError(
-                f"Shares not supported in file URLs. URL: {parts}" )
-        else: location = __.Path( parts.path )
-        return selfclass( location = location )
-
     async def acquire_contents(
         self, context: __.Context, arguments: __.AcquireContentsArguments
     ) -> __.AbstractDictionary:
@@ -48,7 +37,7 @@ class Accessor( __.Accessor ):
         self, context: __.Context, arguments: __.SurveyDirectoryArguments
     ) -> __.AbstractDictionary:
         return await survey_directory(
-            location = self.location,
+            location = arguments.location.produce_accessor( ),
             context = context,
             arguments = arguments )
 

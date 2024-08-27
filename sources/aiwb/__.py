@@ -73,10 +73,7 @@ from types import (
     ModuleType as Module,
     SimpleNamespace,
 )
-from urllib.parse import (
-    ParseResult as UrlParts,
-    urlparse,
-)
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from accretive import reclassify_modules
@@ -108,14 +105,6 @@ class Falsifier( AccretiveObject, metaclass = AccretiveClass ):
     def __ne__( self, other ): return self is not other
 
 
-class Location( metaclass = ABCFactory ):
-    ''' Dynamically-registered superclass for location types. '''
-    # Note: Not a Protocol class because there is no common protocol.
-    #       We just want issubclass support.
-
-Location.register( Path )
-
-
 class Omniexception(
     AccretiveObject, BaseException,
     metaclass = AccretiveClass,
@@ -125,8 +114,6 @@ class Omniexception(
 
 absent = Falsifier( ) # Indicates option with no default value.
 standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
-# TODO: Use accretive validator dictionary for URL accessor registry.
-url_accessors = AccretiveDictionary( )
 
 
 async def chain_async( *iterables: AbstractIterable | AbstractIterableAsync ):
@@ -183,19 +170,6 @@ async def intercept_error_async( awaitable: AbstractAwaitable ) -> g.Result:
     except Exception as exc: return g.Error( exc )
 
 
-def parse_url( url: str ) -> Location:
-    ''' Parses URL and creates an appropriate accessor for location. '''
-    parts = urlparse( url )
-    scheme = parts.scheme
-    if scheme in url_accessors:
-        location = url_accessors[ scheme ]( parts )
-    else:
-        raise NotImplementedError(
-            f"URL scheme {scheme!r} not supported. URL: {url}" )
-    # Cast because we do not have a common protocol.
-    return a.cast( Location, location )
-
-
 async def read_files_async(
     *files: PathLike,
     deserializer: a.Callable[ [ str ], a.Any ] = None,
@@ -224,17 +198,6 @@ async def read_files_async(
             ignore_nonawaitables = return_exceptions )
     if deserializer: return tuple( transformer( datum ) for datum in data )
     return data
-
-
-def _convert_file_url_to_location( parts: UrlParts ) -> Path:
-    if '.' == parts.netloc: return Path( ) / parts.path
-    if parts.netloc:
-        raise NotImplementedError(
-            f"Shares not supported in file URLs. URL: {parts}" )
-    return Path( parts.path )
-
-url_accessors[ '' ] = _convert_file_url_to_location
-url_accessors[ 'file' ] = _convert_file_url_to_location
 
 
 async def _gather_async_permissive(
