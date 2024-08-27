@@ -61,12 +61,8 @@ async def on_adjust_documents_count( components, event ):
     update_search_button( components )
 
 
-def on_change_freeform_prompt( components, event ):
-    # TODO: async, after fix for https://github.com/holoviz/panel/issues/7142
-    from .updaters import (
-        update_search_button,
-        update_token_count,
-    )
+async def on_change_freeform_prompt( components, event ):
+    from .updaters import update_search_button, update_token_count
     update_token_count( components )
     update_search_button( components )
 
@@ -133,14 +129,9 @@ async def on_select_canned_prompt( components, event ):
     populate_prompt_variables( components, species = 'user' )
 
 
-def on_select_conversation( components, event ):
-    # TODO: async, after fix for https://github.com/holoviz/panel/issues/7142
+async def on_select_conversation( components, event ):
     from .updaters import select_conversation
-    #await select_conversation( components, event.obj.identity__ )
-    # TEMP HACK
-    from asyncio import get_running_loop
-    get_running_loop( ).create_task(
-        select_conversation( components, event.obj.identity__ ) )
+    await select_conversation( components, event.obj.identity__ )
 
 
 async def on_select_functions( components, event ):
@@ -159,8 +150,7 @@ async def on_select_system_prompt( components, event ):
     update_functions_prompt( components )
 
 
-def on_select_user_prompt_class( components, event ):
-    # TODO: async, after fix for https://github.com/holoviz/panel/issues/7142
+async def on_select_user_prompt_class( components, event ):
     from .updaters import (
         update_and_save_conversation,
         update_chat_button,
@@ -173,23 +163,15 @@ def on_select_user_prompt_class( components, event ):
     components.column_freeform_prompt.visible = freeform
     update_chat_button( components )
     update_summarization_toggle( components )
-    #await update_and_save_conversation( components )
-    # TEMP HACK
-    from asyncio import get_running_loop
-    get_running_loop( ).create_task(
-        update_and_save_conversation( components ) )
+    await update_and_save_conversation( components )
 
 
-def on_submit_freeform_prompt( components, event ):
-    # TODO: async, after fix for https://github.com/holoviz/panel/issues/7142
+async def on_submit_freeform_prompt( components, event ):
     source = components.text_freeform_prompt
     if not source.submission_value: return
     source.submission_value = ''
     from .actions import chat
-    # await chat( components )
-    # TEMP HACK
-    from asyncio import get_running_loop
-    get_running_loop( ).create_task( chat( components ) )
+    await chat( components )
 
 
 async def on_toggle_canned_prompt_display( components, event ):

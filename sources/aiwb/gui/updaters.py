@@ -25,20 +25,22 @@ from . import __
 from . import core as _core
 
 
-def add_conversation_indicator( gui, descriptor, position = 0 ):
+def add_conversation_indicator( components, descriptor, position = 0 ):
+    ''' Adds conversation indicator to conversations index. '''
     from .classes import ConversationIndicator
     from .events import on_select_conversation
     from .layouts import conversation_indicator_layout as layout
-    container_gui = __.SimpleNamespace(
-        parent__ = gui, identity__ = descriptor.identity )
-    __.generate_component( container_gui, layout, 'column_indicator' )
-    container_gui.rehtml_indicator = indicator = (
-        ConversationIndicator( container_gui ) )
-    container_gui.text_title.object = descriptor.title
+    container_components = __.SimpleNamespace(
+        parent__ = components, identity__ = descriptor.identity )
+    __.generate_component( container_components, layout, 'column_indicator' )
+    container_components.rehtml_indicator = indicator = (
+        ConversationIndicator( container_components ) )
+    container_components.text_title.object = descriptor.title
     indicator.param.watch(
-        lambda event: on_select_conversation( gui, event ), 'clicked' )
-    __.register_event_callbacks( container_gui, layout, 'column_indicator' )
-    conversations = gui.column_conversations_indicators
+        __.partial_function( on_select_conversation, components ), 'clicked' )
+    __.register_event_callbacks(
+        container_components, layout, 'column_indicator' )
+    conversations = components.column_conversations_indicators
     if 'END' == position: conversations.append( indicator )
     else: conversations.insert( position, indicator )
     conversations.descriptors__[ descriptor.identity ] = descriptor
