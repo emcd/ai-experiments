@@ -44,6 +44,11 @@
     - Support for image generation chats with OpenAI Dall-E and Leonardo.ai.
     - Option to record conversations to vector databases.
     - Import conversations from OpenAI shares or account data exports.
+    - Typer CLI for libcore.
+      Can display merged configuration.
+      Can display configured data, state, etc... directories.
+    - Typer CLI for appcore.
+      Can list prompts, vectorstores, etc....
 
 * GUI: Key Bindings
 

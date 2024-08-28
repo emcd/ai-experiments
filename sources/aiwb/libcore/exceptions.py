@@ -18,37 +18,14 @@
 #============================================================================#
 
 
-''' Core entities for use across broader library. '''
-
-# ruff: noqa: F401,F403
-# pylint: disable=unused-import
+''' Fundamental exceptions. '''
 
 
 from . import __
-from . import configuration
-from . import constants
-from . import distribution
-from . import environment
-from . import exceptions
-from . import inscription
-from . import notifications
-from . import preparation
-from . import state
-
-from .configuration import acquire as acquire_configuration
-from .constants import *
-from .distribution import Information as DistributionInformation
-from .environment import update as update_environment
-from .exceptions import *
-from .inscription import (
-    ScribeModes,
-    prepare as prepare_scribes,
-    prepare_scribe_icecream,
-    prepare_scribe_logging,
-)
-from .notifications import Queue as NotificationsQueue
-from .preparation import prepare
-from .state import Globals, LocationSpecies
 
 
-__.reclassify_modules( globals( ) )
+class Omniexception(
+    __.AccretiveObject, BaseException,
+    metaclass = __.AccretiveClass,
+):
+    ''' Base for exceptions raised by package API. '''

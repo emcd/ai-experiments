@@ -104,14 +104,6 @@ class Falsifier( AccretiveObject, metaclass = AccretiveClass ):
     def __ne__( self, other ): return self is not other
 
 
-class Omniexception(
-    AccretiveObject, BaseException,
-    metaclass = AccretiveClass,
-):
-    ''' Base for exceptions raised by package API. '''
-
-
-absent = Falsifier( ) # Indicates option with no default value.
 standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
 
 

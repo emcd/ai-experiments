@@ -25,6 +25,6 @@
 
 
 from ..__ import *
-from ..libcore import Globals
+from ..libcore import Globals, Omniexception
 from ..controls.qaliases import Control
 from ..messages.qaliases import MessageCanister
