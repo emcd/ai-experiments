@@ -84,7 +84,6 @@ from accretive.qaliases import (
     AccretiveNamespace,
     AccretiveObject,
 )
-from platformdirs import PlatformDirs
 
 from . import _annotations as a
 from . import _generics as g
