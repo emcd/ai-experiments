@@ -20,12 +20,12 @@
 
 ''' Fundamental exceptions. '''
 
+# ruff: noqa: F401,F403
+# pylint: disable=unused-import
 
-from . import __
 
-
-class Omniexception(
-    __.AccretiveObject, BaseException,
-    metaclass = __.AccretiveClass,
-):
-    ''' Base for exceptions raised by package API. '''
+from .base import Omniexception
+from .locations.core import (
+    InvalidUrlClassError,
+    NoUrlSchemeSupportError,
+)

@@ -104,6 +104,17 @@ class Falsifier( AccretiveObject, metaclass = AccretiveClass ):
     def __ne__( self, other ): return self is not other
 
 
+class Absent( Falsifier ):
+    ''' Type of the sentinel constant for option without default value. '''
+    # TODO: Immutable class and object attributes.
+    # TODO: Singleton. (Similar to NoneType.)
+
+
+# TODO: Python 3.12: Use type statement for aliases.
+Optional: a.TypeAlias = g.T | Absent
+
+
+absent = Absent( ) #: Option with no default value.
 standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
 
 

@@ -18,39 +18,33 @@
 #============================================================================#
 
 
-''' Core entities for use across broader library. '''
-
-# ruff: noqa: F401,F403
-# pylint: disable=unused-import
+''' Location access adapter with aiofiles and pathlib. '''
 
 
 from . import __
-from . import base
-from . import configuration
-from . import distribution
-from . import environment
-from . import exceptions
-from . import inscription
-from . import locations
-from . import notifications
-from . import preparation
-from . import state
-
-from .base import *
-from .configuration import acquire as acquire_configuration
-from .distribution import Information as DistributionInformation
-from .environment import update as update_environment
-from .exceptions import *
-from .inscription import (
-    ScribeModes,
-    prepare as prepare_scribes,
-    prepare_scribe_icecream,
-    prepare_scribe_logging,
-)
-from .locations.qaliases import *
-from .notifications import Queue as NotificationsQueue
-from .preparation import prepare
-from .state import Globals, LocationSpecies
 
 
-__.reclassify_modules( globals( ) )
+__.Implement.register( __.Path )
+
+
+class Adapter( __.Adapter ):
+    ''' Location access adapter with aiofiles and pathlib. '''
+    # TODO: Immutable class and object attributes.
+
+    implement: __.Path
+
+    def __init__( self, url: __.Url ):
+        # TODO: Assert file or empty scheme.
+        if url.netloc or url.params or url.query or url.fragment:
+            # TODO: Raise more specific exception.
+            raise NotImplementedError(
+                f"Only scheme and path supported in file URLs. URL: {url}" )
+        # Cast because we do not have a common protocol.
+        self.implement = __.a.cast( __.Implement, __.Path( url.path ) )
+        super( ).__init__( url = url )
+
+    def expose_implement( self ) -> __.Implement:
+        return self.implement
+
+
+__.adapters_registry[ 'pathlib+aiofiles' ] = Adapter

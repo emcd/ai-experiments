@@ -18,39 +18,15 @@
 #============================================================================#
 
 
-''' Core entities for use across broader library. '''
+''' Location access adapters. '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F401
 # pylint: disable=unused-import
 
 
 from . import __
-from . import base
-from . import configuration
-from . import distribution
-from . import environment
-from . import exceptions
-from . import inscription
-from . import locations
-from . import notifications
-from . import preparation
-from . import state
-
-from .base import *
-from .configuration import acquire as acquire_configuration
-from .distribution import Information as DistributionInformation
-from .environment import update as update_environment
-from .exceptions import *
-from .inscription import (
-    ScribeModes,
-    prepare as prepare_scribes,
-    prepare_scribe_icecream,
-    prepare_scribe_logging,
-)
-from .locations.qaliases import *
-from .notifications import Queue as NotificationsQueue
-from .preparation import prepare
-from .state import Globals, LocationSpecies
+from . import aiofiles
+# TODO: httpx
 
 
 __.reclassify_modules( globals( ) )

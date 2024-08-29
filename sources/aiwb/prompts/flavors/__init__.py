@@ -24,6 +24,10 @@
 # pylint: disable=unused-import
 
 
+from . import __
 from . import native
 # TODO? Fabric: https://github.com/danielmiessler/fabric/tree/main/patterns
 # TODO? LangChain Hub: https://smith.langchain.com/hub
+
+
+__.reclassify_modules( globals( ) )

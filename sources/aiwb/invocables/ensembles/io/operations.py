@@ -29,7 +29,7 @@ from . import __
 class ArgumentsBase( __.a.Protocol ):
     ''' Base class for I/O arguments data transfer objects. '''
 
-    location: __.Location
+    location: __.LocationImplement
 
     @classmethod
     @__.abstract_member_function
@@ -63,7 +63,8 @@ class SurveyDirectoryArguments( ArgumentsBase ):
         # TODO? Validate filters.
         # TODO: Use defaults from schema or class attributes.
         return selfclass(
-            location = __.location_from_url( arguments[ 'location' ] ),
+            location = __.location_accessor_from_url(
+                arguments[ 'location' ] ).expose_implement( ),
             #file_size_maximum = arguments.get( 'file_size_maximum', 40000 ),
             filters = arguments.get( 'filters', ( 'gitignore', 'vcs' ) ),
             recursive = arguments.get( 'recursive', True ),
@@ -158,7 +159,7 @@ async def _operate(
         'success': await getattr( accessor, opname )( context, arguments_ ) }
 
 
-def _produce_accessor( location: __.Location ) -> Accessor:
+def _produce_accessor( location: __.LocationImplement ) -> Accessor:
     url = location.url
     scheme = location.url.scheme
     if scheme in accessors: return accessors[ scheme ]( )

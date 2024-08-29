@@ -18,13 +18,15 @@
 #============================================================================#
 
 
-''' Constants for use across library. '''
+''' Location accessors. '''
+
+# ruff: noqa: F401
+# pylint: disable=unused-import
 
 
 from . import __
+from . import file
+# TODO: http
 
 
-class Absent( __.Falsifier ):
-    ''' Type of the sentinel constant for option without default value. '''
-
-absent = Absent( ) # Indicates option with no default value.
+__.reclassify_modules( globals( ) )
