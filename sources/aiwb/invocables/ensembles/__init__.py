@@ -24,5 +24,9 @@
 # pylint: disable=unused-import
 
 
+from . import __
 from . import io
 from . import probability
+
+
+__.reclassify_modules( globals( ) )

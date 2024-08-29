@@ -69,3 +69,6 @@ _invocables = (
     ( list_folder, survey_directory_argschema ),
     ( write_file, update_contents_argschema ),
 )
+
+
+__.reclassify_modules( globals( ) )

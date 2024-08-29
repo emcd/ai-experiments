@@ -24,5 +24,9 @@
 # pylint: disable=unused-import
 
 
+from . import __
 from . import file
 # TODO: http
+
+
+__.reclassify_modules( globals( ) )

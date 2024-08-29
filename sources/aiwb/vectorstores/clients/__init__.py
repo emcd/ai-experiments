@@ -24,5 +24,9 @@
 # pylint: disable=unused-import
 
 
+from . import __
 from . import chroma
 from . import faiss
+
+
+__.reclassify_modules( globals( ) )
