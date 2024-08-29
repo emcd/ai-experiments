@@ -24,5 +24,5 @@
 # pylint: disable=unused-import
 
 
-from ....locations import Location, location_from_url
+from ....libcore import Location, location_from_url
 from ..__ import *

@@ -25,5 +25,4 @@
 
 
 from ..__ import *
-from ..libcore import Globals
-from ..locations import location_from_url
+from ..libcore import Globals, location_from_url
