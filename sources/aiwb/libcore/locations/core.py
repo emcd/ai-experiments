@@ -20,6 +20,12 @@
 
 ''' Abstract base classes and factories for locations. '''
 
+# TODO: Allow configuration for 'check_access' methods.
+#       Follow symlinks. Read/write/execute.
+#       For HTTP: maybe read -> GET, write -> PUT, execute -> POST.
+#       For HTTP: maybe follow symlinks -> redirect.
+# TODO: Add symlink checking option to 'is_directory' and 'is_file' methods.
+
 
 from __future__ import annotations
 
@@ -74,9 +80,120 @@ class Accessor( __.a.Protocol ):
 
     def __str__( self ) -> str: return str( self.adapter )
 
+    @__.abstract_member_function
+    def as_directory_accessor( self ) -> DirectoryAccessor:
+        ''' Returns directory accessor for location. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def as_file_accessor( self ) -> FileAccessor:
+        ''' Returns file accessor for location. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def check_access( self ) -> bool:
+        ''' Does current process have access to location? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def check_existence( self ) -> bool:
+        ''' Does location exist? '''
+        raise NotImplementedError
+
     def expose_implement( self ) -> Implement:
         ''' Exposes concrete implement used to perform operations. '''
         return self.adapter.expose_implement( )
+
+    @__.abstract_member_function
+    async def is_directory( self ) -> bool:
+        ''' Is location a directory? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def is_file( self ) -> bool:
+        ''' Is location a regular file? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def is_symlink( self ) -> bool:
+        ''' Is location a symbolic link? '''
+        raise NotImplementedError
+
+
+@__.a.runtime_checkable
+@__.standard_dataclass
+class DirectoryAccessor( __.a.Protocol ):
+    ''' Directory accessor for location. '''
+
+    adapter: DirectoryAdapter
+
+    def __str__( self ) -> str: return str( self.adapter )
+
+    @__.abstract_member_function
+    async def check_access( self ) -> bool:
+        ''' Does current process have access to location? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def check_existence( self ) -> bool:
+        ''' Does location exist? '''
+        raise NotImplementedError
+
+    def expose_implement( self ) -> Implement:
+        ''' Exposes concrete implement used to perform operations. '''
+        return self.adapter.expose_implement( )
+
+    # TODO: survey
+
+    # TODO: create_entry
+
+    # TODO: delete_entry
+
+    # TODO: register_notifier
+
+
+@__.a.runtime_checkable
+@__.standard_dataclass
+class FileAccessor( __.a.Protocol ):
+    ''' File accessor for location. '''
+
+    adapter: FileAdapter
+
+    def __str__( self ) -> str: return str( self.adapter )
+
+    @__.abstract_member_function
+    async def check_access( self ) -> bool:
+        ''' Does current process have access to location? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def check_existence( self ) -> bool:
+        ''' Does location exist? '''
+        raise NotImplementedError
+
+    def expose_implement( self ) -> Implement:
+        ''' Exposes concrete implement used to perform operations. '''
+        return self.adapter.expose_implement( )
+
+    # TODO: report_mimetype
+
+    # TODO: acquire_content
+
+    # TODO: acquire_content_continuous
+
+    # TODO: acquire_content_bytes
+
+    # TODO: acquire_content_bytes_continuous
+
+    # TODO: update_content
+
+    # TODO: update_content_continuous
+
+    # TODO: update_content_bytes
+
+    # TODO: update_content_bytes_continuous
+
+    # TODO: register_notifier
 
 
 @__.a.runtime_checkable
@@ -91,13 +208,141 @@ class Adapter( __.a.Protocol ):
         ''' Produces adapter from URL. '''
         return selfclass( url = Url.from_url( url ) )
 
+    def __init__( self, url: Url ): self.url = url
+
     def __str__( self ) -> str: return str( self.url )
 
-    def __init__( self, url: Url ): self.url = url
+    @__.abstract_member_function
+    def as_directory_adapter( self ) -> DirectoryAdapter:
+        ''' Returns directory adapter for location. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def as_file_adapter( self ) -> FileAdapter:
+        ''' Returns file adapter for location. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def check_access( self ) -> bool:
+        ''' Does current process have access to location? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def check_existence( self ) -> bool:
+        ''' Does location exist? '''
+        raise NotImplementedError
 
     @__.abstract_member_function
     def expose_implement( self ) -> Implement:
         ''' Exposes concrete implement used to perform operations. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def is_directory( self ) -> bool:
+        ''' Is location a directory? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def is_file( self ) -> bool:
+        ''' Is location a regular file? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def is_symlink( self ) -> bool:
+        ''' Is location a symbolic link? '''
+        raise NotImplementedError
+
+
+@__.a.runtime_checkable
+class DirectoryAdapter( __.a.Protocol ):
+    ''' Directory access adapter. Wraps concrete implement for access. '''
+    # TODO: Immutable class and object attributes.
+
+    url: Url
+
+    @classmethod
+    def from_url( selfclass, url: UrlLike ) -> __.a.Self:
+        ''' Produces adapter from URL. '''
+        return selfclass( url = Url.from_url( url ) )
+
+    def __init__( self, url: Url ): self.url = url
+
+    def __str__( self ) -> str: return str( self.url )
+
+    @__.abstract_member_function
+    async def check_access( self ) -> bool:
+        ''' Does current process have access to location? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def check_existence( self ) -> bool:
+        ''' Does location exist? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def expose_implement( self ) -> Implement:
+        ''' Exposes concrete implement used to perform operations. '''
+        raise NotImplementedError
+
+    # TODO: survey
+
+    # TODO: create_entry
+
+    # TODO: delete_entry
+
+    # TODO: register_notifier
+
+
+@__.a.runtime_checkable
+class FileAdapter( __.a.Protocol ):
+    ''' File access adapter. Wraps concrete implement for access. '''
+    # TODO: Immutable class and object attributes.
+
+    url: Url
+
+    @classmethod
+    def from_url( selfclass, url: UrlLike ) -> __.a.Self:
+        ''' Produces adapter from URL. '''
+        return selfclass( url = Url.from_url( url ) )
+
+    def __init__( self, url: Url ): self.url = url
+
+    def __str__( self ) -> str: return str( self.url )
+
+    @__.abstract_member_function
+    async def check_access( self ) -> bool:
+        ''' Does current process have access to location? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def check_existence( self ) -> bool:
+        ''' Does location exist? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def expose_implement( self ) -> Implement:
+        ''' Exposes concrete implement used to perform operations. '''
+        raise NotImplementedError
+
+    # TODO: report_mimetype
+
+    # TODO: acquire_content
+
+    # TODO: acquire_content_continuous
+
+    # TODO: acquire_content_bytes
+
+    # TODO: acquire_content_bytes_continuous
+
+    # TODO: update_content
+
+    # TODO: update_content_continuous
+
+    # TODO: update_content_bytes
+
+    # TODO: update_content_bytes_continuous
+
+    # TODO: register_notifier
 
 
 class Implement( metaclass = __.ABCFactory ):

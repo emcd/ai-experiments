@@ -25,4 +25,11 @@
 
 
 from ..__ import *
-from ..core import Adapter, Implement, Url, adapters_registry
+from ..core import (
+    Adapter,
+    DirectoryAdapter,
+    FileAdapter,
+    Implement,
+    Url,
+    adapters_registry,
+)

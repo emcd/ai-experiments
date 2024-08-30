@@ -21,14 +21,15 @@
 ''' Location access adapter with aiofiles and pathlib. '''
 
 
+from __future__ import annotations
+
 from . import __
 
 
 __.Implement.register( __.Path )
 
 
-class Adapter( __.Adapter ):
-    ''' Location access adapter with aiofiles and pathlib. '''
+class _Common:
     # TODO: Immutable class and object attributes.
 
     implement: __.Path
@@ -43,8 +44,51 @@ class Adapter( __.Adapter ):
         self.implement = __.a.cast( __.Implement, __.Path( url.path ) )
         super( ).__init__( url = url )
 
+    async def check_access( self ) -> bool:
+        from os import F_OK # TODO: Use proper mode from configuration.
+        from aiofiles.os import access
+        mode = F_OK
+        return await access( self.implement, mode )
+
+    async def check_existence( self ) -> bool:
+        from aiofiles.os.path import exists
+        return await exists( self.implement )
+
     def expose_implement( self ) -> __.Implement:
         return self.implement
+
+
+class Adapter( _Common, __.Adapter ):
+    ''' Location access adapter with aiofiles and pathlib. '''
+    # TODO: Immutable class and object attributes.
+
+    def as_directory_adapter( self ) -> DirectoryAdapter:
+        return DirectoryAdapter( url = self.url )
+
+    def as_file_adapter( self ) -> FileAdapter:
+        return FileAdapter( url = self.url )
+
+    async def is_directory( self ) -> bool:
+        from aiofiles.os.path import isdir
+        return await isdir( self.implement )
+
+    async def is_file( self ) -> bool:
+        from aiofiles.os.path import isfile
+        return await isfile( self.implement )
+
+    async def is_symlink( self ) -> bool:
+        from aiofiles.os.path import islink
+        return await islink( self.implement )
+
+
+class DirectoryAdapter( _Common, __.DirectoryAdapter ):
+    ''' Directory access adapter with aiofiles and pathlib. '''
+    # TODO: Immutable class and object attributes.
+
+
+class FileAdapter( _Common, __.FileAdapter ):
+    ''' File access adapter with aiofiles and pathlib. '''
+    # TODO: Immutable class and object attributes.
 
 
 __.adapters_registry[ 'pathlib+aiofiles' ] = Adapter

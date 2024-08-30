@@ -25,4 +25,11 @@
 
 
 from ..__ import *
-from ..core import Accessor, Adapter, accessors_registry, adapters_registry
+from ..core import (
+    Accessor,
+    Adapter,
+    DirectoryAccessor,
+    FileAccessor,
+    accessors_registry,
+    adapters_registry,
+)

@@ -21,6 +21,8 @@
 ''' Local filesystem location accessor. '''
 
 
+from __future__ import annotations
+
 from . import __
 
 
@@ -32,6 +34,51 @@ class Accessor( __.Accessor ):
     @classmethod
     def provide_adapter_class( selfclass ) -> type[ __.Adapter ]:
         return __.adapters_registry[ 'pathlib+aiofiles' ]
+
+    def as_directory_accessor( self ) -> DirectoryAccessor:
+        return DirectoryAccessor(
+            adapter = self.adapter.as_directory_adapter( ) )
+
+    def as_file_accessor( self ) -> FileAccessor:
+        return FileAccessor(
+            adapter = self.adapter.as_file_adapter( ) )
+
+    async def check_access( self ) -> bool:
+        return await self.adapter.check_access( )
+
+    async def check_existence( self ) -> bool:
+        return await self.adapter.check_existence( )
+
+    async def is_directory( self ) -> bool:
+        return await self.adapter.is_directory( )
+
+    async def is_file( self ) -> bool:
+        return await self.adapter.is_file( )
+
+    async def is_symlink( self ) -> bool:
+        return await self.adapter.is_symlink( )
+
+
+@__.standard_dataclass
+class DirectoryAccessor( __.DirectoryAccessor ):
+    ''' Local filesystem directory accessor. '''
+
+    async def check_access( self ) -> bool:
+        return await self.adapter.check_access( )
+
+    async def check_existence( self ) -> bool:
+        return await self.adapter.check_existence( )
+
+
+@__.standard_dataclass
+class FileAccessor( __.FileAccessor ):
+    ''' Local filesystem file accessor. '''
+
+    async def check_access( self ) -> bool:
+        return await self.adapter.check_access( )
+
+    async def check_existence( self ) -> bool:
+        return await self.adapter.check_existence( )
 
 
 __.accessors_registry[ '' ] = Accessor
