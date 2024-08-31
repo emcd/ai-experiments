@@ -20,11 +20,37 @@
 
 ''' Abstract base classes and factories for locations. '''
 
-# TODO: Allow configuration for 'check_access' methods.
-#       Follow symlinks. Read/write/execute.
-#       For HTTP: maybe read -> GET, write -> PUT, execute -> POST.
-#       For HTTP: maybe follow symlinks -> redirect.
-# TODO: Add symlink checking option to 'is_directory' and 'is_file' methods.
+# TODO: Split into 'arguments', 'exceptions', and 'interfaces' modules.
+# TODO: Add 'via_cache' methods to accessors.
+#       Caching variant of accessors has source adapter and cache adapter and
+#       'commit_to_source', 'difference_with_source', and 'update_from_source'
+#       methods.
+#       Edits happen on cache and are only committed to source when explicitly
+#       requested. Useful for 'git', 'github', 'hg', etc... protocol schemes.
+#       AI invocables can use 'via_cache' to be safe, even with local files.
+#       Cache will be created in temporary file or directory on instantiation
+#       of caching accessor; will last lifetime of accessor which holds context
+#       manager for the temporary. Cache adapter will be provided URL to
+#       temporary.
+#       Cache can have expiry or TTL to trigger refreshes on operations
+#       or maybe async scheduled callbacks. Use for performance enhancement
+#       scenarios.
+# TODO: Filesystem information objects from accessors.
+#       For Git and other VCS schemes, provides discoverability for branches,
+#       which can be used to shape cache interactions.
+#       For Github and other VCS wrapper schemes, provides repository metadata,
+#       possibly including workflows.
+#       For local filesystems could include snapshots (ZFS, Time Machine,
+#       etc...).
+# TODO: Protocol classes for common interfaces across accessors and adapters.
+# TODO: Arguments DTO for 'check_access' methods.
+#       * pursue_indirection: (defaults to true)
+#           - local fs: follow symlinks
+#           - HTTP: follow redirects
+#       * mode bits: acquire/create/update/delete/execute
+#           - local fs: R_OK/W_OK/W_OK/W_OK/X_OK
+#           - HTTP: GET/PUT/PATCH/DELETE/POST
+# TODO: Add indirection pursuit option to 'is_directory' and 'is_file' methods.
 
 
 from __future__ import annotations
