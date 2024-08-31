@@ -28,7 +28,7 @@ from . import state as _state
 
 
 async def prepare(
-    contexts: __.Contexts,
+    exits: __.Exits,
     environment: bool = False,
     scribe_mode: _inscription.ScribeModes = _inscription.ScribeModes.Null,
 ) -> _state.Globals:
@@ -42,7 +42,7 @@ async def prepare(
         concurrently initialize other entities outside of the library, even
         though the library initialization, itself, is inherently sequential.
     '''
-    auxdata = await _state.Globals.prepare( contexts = contexts )
+    auxdata = await _state.Globals.prepare( exits = exits )
     if environment: await _environment.update( auxdata )
     _inscription.prepare( auxdata, mode = scribe_mode )
     return auxdata

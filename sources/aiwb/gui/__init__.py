@@ -33,8 +33,8 @@ def main( ):
     # TODO? aiomisc.entrypoint
     from asyncio import run
     from time import sleep
-    with __.Contexts( ) as contexts:
-        auxdata = run( core.prepare( contexts = contexts ) )
+    with __.Exits( ) as exits:
+        auxdata = run( core.prepare( exits = exits ) )
         components = auxdata.gui.components
         api = auxdata.api
         api.thread.start( )
@@ -57,8 +57,8 @@ def main( ):
 #
 #async def _main( ):
 #    from asyncio import sleep
-#    async with __.ContextsAsync( ) as contexts:
-#        auxdata = await core.prepare( contexts = contexts )
+#    async with __.ExitsAsync( ) as exits:
+#        auxdata = await core.prepare( exits = exits )
 #        components = auxdata.gui.components
 #        api = auxdata.api
 #        api.thread.start( )

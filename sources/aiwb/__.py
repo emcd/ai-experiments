@@ -43,8 +43,9 @@ from collections.abc import (
     Sequence as         AbstractSequence,
 )
 from contextlib import (
-    ExitStack as Contexts,
-    contextmanager as produce_context_manager,
+    ExitStack as        Exits,
+    AsyncExitStack as   ExitsAsync,
+    contextmanager as   produce_exit_manager,
 )
 from dataclasses import (
     dataclass,
@@ -179,7 +180,6 @@ async def read_files_async(
 ) -> AbstractSequence:
     ''' Reads files asynchronously. '''
     # TODO? Batch to prevent fd exhaustion over large file sets.
-    from contextlib import AsyncExitStack
     from aiofiles import open as open_
     if return_exceptions:
         def extractor( result ):
@@ -189,9 +189,9 @@ async def read_files_async(
     else:
         def extractor( stream ): return stream.read( )
         def transformer( datum ): return deserializer( datum )
-    async with AsyncExitStack( ) as contexts:
+    async with ExitsAsync( ) as exits:
         streams = await gather_async(
-            *(  contexts.enter_async_context( open_( file ) )
+            *(  exits.enter_async_context( open_( file ) )
                 for file in files ),
             return_exceptions = return_exceptions )
         data = await gather_async(

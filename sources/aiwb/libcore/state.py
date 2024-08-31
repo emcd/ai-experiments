@@ -39,16 +39,16 @@ class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
 class Globals:
     ''' Immutable global data. Required by many library functions. '''
 
-    contexts: __.Contexts # TODO? Make accretive.
     configuration: __.AccretiveDictionary
     directories: __.PlatformDirs
     distribution: _distribution.Information
+    exits: __.Exits # TODO? Make accretive.
     notifications: _notifications.Queue
 
     @classmethod
     async def prepare(
         selfclass,
-        contexts: __.Contexts,
+        exits: __.Exits,
         distribution: _distribution.Information = None,
     ) -> __.a.Self:
         ''' Acquires data to create DTO. '''
@@ -56,7 +56,7 @@ class Globals:
             distribution = (
                 await _distribution.Information.prepare(
                     package = __package__, publisher = 'emcd',
-                    contexts = contexts ) )
+                    exits = exits ) )
         directories = __.PlatformDirs(
             distribution.name, distribution.publisher, ensure_exists = True )
         configuration = (
@@ -64,9 +64,9 @@ class Globals:
         notifications = _notifications.Queue( )
         return selfclass(
             configuration = configuration,
-            contexts = contexts,
             directories = directories,
             distribution = distribution,
+            exits = exits,
             notifications = notifications )
 
     def provide_cache_location( self, *appendages: str ) -> __.Path:

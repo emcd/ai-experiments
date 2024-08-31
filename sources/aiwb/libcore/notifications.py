@@ -95,7 +95,7 @@ class Queue:
 
     # TODO: enqueue_future
 
-    @__.produce_context_manager
+    @__.produce_exit_manager
     def enqueue_on_error(
         self,
         summary: str, *,

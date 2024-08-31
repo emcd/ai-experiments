@@ -35,7 +35,7 @@ class Information:
 
     @classmethod
     async def prepare(
-        selfclass, package: str, publisher: str, contexts: __.Contexts
+        selfclass, package: str, publisher: str, exits: __.Exits
     ) -> __.a.Self:
         ''' Acquires information about our package distribution. '''
         from importlib.metadata import packages_distributions
@@ -55,7 +55,7 @@ class Information:
         else:
             editable = False
             # Extract package contents to temporary directory, if necessary.
-            location = contexts.enter_context( as_file( files( package ) ) )
+            location = exits.enter_context( as_file( files( package ) ) )
         return selfclass(
             editable = editable,
             location = location,
