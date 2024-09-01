@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Local filesystem location accessor. '''
+''' Simple (direct) location accessor. '''
 
 
 from __future__ import annotations
@@ -26,28 +26,47 @@ from __future__ import annotations
 from . import __
 
 
-@__.standard_dataclass
-class Accessor( __.Accessor ):
-    ''' Local filesystem location accessor. '''
-    # TODO: Immutable class and object attributes.
+class GeneralAccessor( __.GeneralAccessor ):
+    ''' Simple general location accessor. '''
+
+    adapters_registry: __.a.ClassVar[
+        __.AbstractDictionary[ str, __.GeneralAdapter ]
+    ] = __.AccretiveDictionary( )
+
+    adapter: __.GeneralAdapter
 
     @classmethod
-    def provide_adapter_class( selfclass ) -> type[ __.Adapter ]:
-        return __.adapters_registry[ 'pathlib+aiofiles' ]
+    def from_url(
+        selfclass,
+        url: __.UrlLike,
+        adapter_class: __.Optional[ type[ __.GeneralAdapter ] ] = __.absent,
+    ) -> __.a.Self:
+        adapter_class = (
+            adapter_class
+            or __.registrant_from_url(
+                registry = selfclass.adapters_registry, url = url ) )
+        return selfclass( adapter = adapter_class.from_url( url ) )
 
-    def as_directory_accessor( self ) -> DirectoryAccessor:
-        return DirectoryAccessor(
-            adapter = self.adapter.as_directory_adapter( ) )
+    def __init__( self, adapter: __.GeneralAdapter ): self.adapter = adapter
 
-    def as_file_accessor( self ) -> FileAccessor:
-        return FileAccessor(
-            adapter = self.adapter.as_file_adapter( ) )
+    async def as_specific( self ) -> __.SpecificAccessor:
+        adapter = await self.adapter.as_specific( )
+        if isinstance( adapter, __.DirectoryAdapter ):
+            return DirectoryAccessor( adapter = adapter )
+        elif isinstance( adapter, __.FileAdapter ):
+            return FileAccessor( adapter = adapter )
+        # TODO: assert
+
+    def as_url( self ): return self.adapter.as_url( )
 
     async def check_access( self ) -> bool:
         return await self.adapter.check_access( )
 
     async def check_existence( self ) -> bool:
         return await self.adapter.check_existence( )
+
+    def expose_implement( self ) -> __.Implement:
+        return self.adapter.expose_implement( )
 
     async def is_directory( self ) -> bool:
         return await self.adapter.is_directory( )
@@ -55,24 +74,41 @@ class Accessor( __.Accessor ):
     async def is_file( self ) -> bool:
         return await self.adapter.is_file( )
 
-    async def is_symlink( self ) -> bool:
-        return await self.adapter.is_symlink( )
+    async def is_indirection( self ) -> bool:
+        return await self.adapter.is_indirection( )
+
+__.accessors_registry[ 'simple' ] = GeneralAccessor
 
 
 @__.standard_dataclass
 class DirectoryAccessor( __.DirectoryAccessor ):
-    ''' Local filesystem directory accessor. '''
+    ''' Simple directory accessor. '''
+
+    adapter: __.DirectoryAdapter
+
+    def __init__( self, adapter: __.DirectoryAdapter ): self.adapter = adapter
+
+    def as_url( self ): return self.adapter.as_url( )
 
     async def check_access( self ) -> bool:
         return await self.adapter.check_access( )
 
     async def check_existence( self ) -> bool:
         return await self.adapter.check_existence( )
+
+    def expose_implement( self ) -> __.Implement:
+        return self.adapter.expose_implement( )
 
 
 @__.standard_dataclass
 class FileAccessor( __.FileAccessor ):
-    ''' Local filesystem file accessor. '''
+    ''' Simple file accessor. '''
+
+    adapter: __.FileAdapter
+
+    def __init__( self, adapter: __.FileAdapter ): self.adapter = adapter
+
+    def as_url( self ): return self.adapter.as_url( )
 
     async def check_access( self ) -> bool:
         return await self.adapter.check_access( )
@@ -80,6 +116,5 @@ class FileAccessor( __.FileAccessor ):
     async def check_existence( self ) -> bool:
         return await self.adapter.check_existence( )
 
-
-__.accessors_registry[ '' ] = Accessor
-__.accessors_registry[ 'file' ] = Accessor
+    def expose_implement( self ) -> __.Implement:
+        return self.adapter.expose_implement( )

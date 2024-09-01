@@ -21,13 +21,13 @@
 ''' Abstract base classes and factories for locations. '''
 
 # TODO: Split into 'arguments', 'exceptions', and 'interfaces' modules.
-# TODO: Add 'via_cache' methods to accessors.
-#       Caching variant of accessors has source adapter and cache adapter and
+# TODO: Caching variant of accessors has source adapter and cache adapter and
 #       'commit_to_source', 'difference_with_source', and 'update_from_source'
 #       methods.
 #       Edits happen on cache and are only committed to source when explicitly
 #       requested. Useful for 'git', 'github', 'hg', etc... protocol schemes.
-#       AI invocables can use 'via_cache' to be safe, even with local files.
+#       AI invocables can use cache accessors to be safe, even with local
+#       files.
 #       Cache will be created in temporary file or directory on instantiation
 #       of caching accessor; will last lifetime of accessor which holds context
 #       manager for the temporary. Cache adapter will be provided URL to
@@ -82,38 +82,26 @@ class NoUrlSchemeSupportError( __.Omniexception, NotImplementedError ):
 
 
 @__.a.runtime_checkable
-@__.standard_dataclass
-class Accessor( __.a.Protocol ):
-    ''' Location accessor. '''
-
-    adapter: Adapter
-
-    @classmethod
-    def from_url(
-        selfclass,
-        url: UrlLike,
-        adapter_class: __.Optional[ type[ Adapter ] ] = __.absent,
-    ) -> __.a.Self:
-        ''' Produces location accessor from URL. '''
-        adapter_class = adapter_class or selfclass.provide_adapter_class( )
-        return selfclass( adapter = adapter_class.from_url( url ) )
+class GeneralAccessor( __.a.Protocol ):
+    ''' General location accessor. '''
+    # TODO: Immutable class and object attributes.
 
     @classmethod
     @__.abstract_member_function
-    def provide_adapter_class( selfclass ) -> type[ Adapter ]:
-        ''' Provides default adapter class. '''
+    def from_url( selfclass, url: UrlLike ) -> __.a.Self:
+        ''' Produces accessor from URL. '''
         raise NotImplementedError
 
-    def __str__( self ) -> str: return str( self.adapter )
+    def __str__( self ) -> str: return str( self.as_url( ) )
 
     @__.abstract_member_function
-    def as_directory_accessor( self ) -> DirectoryAccessor:
-        ''' Returns directory accessor for location. '''
+    async def as_specific( self ) -> SpecificAccessor:
+        ''' Returns appropriate specific accessor for location. '''
         raise NotImplementedError
 
     @__.abstract_member_function
-    def as_file_accessor( self ) -> FileAccessor:
-        ''' Returns file accessor for location. '''
+    def as_url( self ) -> Url:
+        ''' Returns URL associated with location. '''
         raise NotImplementedError
 
     @__.abstract_member_function
@@ -126,9 +114,10 @@ class Accessor( __.a.Protocol ):
         ''' Does location exist? '''
         raise NotImplementedError
 
+    @__.abstract_member_function
     def expose_implement( self ) -> Implement:
         ''' Exposes concrete implement used to perform operations. '''
-        return self.adapter.expose_implement( )
+        raise NotImplementedError
 
     @__.abstract_member_function
     async def is_directory( self ) -> bool:
@@ -141,19 +130,23 @@ class Accessor( __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
-    async def is_symlink( self ) -> bool:
-        ''' Is location a symbolic link? '''
+    async def is_indirection( self ) -> bool:
+        ''' Does location provide indirection to another location? '''
         raise NotImplementedError
+
+    # TODO: stat
 
 
 @__.a.runtime_checkable
-@__.standard_dataclass
 class DirectoryAccessor( __.a.Protocol ):
     ''' Directory accessor for location. '''
 
-    adapter: DirectoryAdapter
+    def __str__( self ) -> str: return str( self.as_url( ) )
 
-    def __str__( self ) -> str: return str( self.adapter )
+    @__.abstract_member_function
+    def as_url( self ) -> Url:
+        ''' Returns URL associated with location. '''
+        raise NotImplementedError
 
     @__.abstract_member_function
     async def check_access( self ) -> bool:
@@ -165,11 +158,12 @@ class DirectoryAccessor( __.a.Protocol ):
         ''' Does location exist? '''
         raise NotImplementedError
 
+    @__.abstract_member_function
     def expose_implement( self ) -> Implement:
         ''' Exposes concrete implement used to perform operations. '''
-        return self.adapter.expose_implement( )
+        raise NotImplementedError
 
-    # TODO: survey
+    # TODO: survey_entries
 
     # TODO: create_entry
 
@@ -179,13 +173,15 @@ class DirectoryAccessor( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-@__.standard_dataclass
 class FileAccessor( __.a.Protocol ):
     ''' File accessor for location. '''
 
-    adapter: FileAdapter
+    def __str__( self ) -> str: return str( self.as_url( ) )
 
-    def __str__( self ) -> str: return str( self.adapter )
+    @__.abstract_member_function
+    def as_url( self ) -> Url:
+        ''' Returns URL associated with location. '''
+        raise NotImplementedError
 
     @__.abstract_member_function
     async def check_access( self ) -> bool:
@@ -197,9 +193,10 @@ class FileAccessor( __.a.Protocol ):
         ''' Does location exist? '''
         raise NotImplementedError
 
+    @__.abstract_member_function
     def expose_implement( self ) -> Implement:
         ''' Exposes concrete implement used to perform operations. '''
-        return self.adapter.expose_implement( )
+        raise NotImplementedError
 
     # TODO: report_mimetype
 
@@ -222,30 +219,31 @@ class FileAccessor( __.a.Protocol ):
     # TODO: register_notifier
 
 
+# TODO: Python 3.12: type statement for aliases
+SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
+
+
 @__.a.runtime_checkable
-class Adapter( __.a.Protocol ):
-    ''' Location access adapter. Wraps concrete implement for access. '''
+class GeneralAdapter( __.a.Protocol ):
+    ''' General location access adapter. '''
     # TODO: Immutable class and object attributes.
 
-    url: Url
-
     @classmethod
+    @__.abstract_member_function
     def from_url( selfclass, url: UrlLike ) -> __.a.Self:
         ''' Produces adapter from URL. '''
-        return selfclass( url = Url.from_url( url ) )
+        raise NotImplementedError
 
-    def __init__( self, url: Url ): self.url = url
-
-    def __str__( self ) -> str: return str( self.url )
+    def __str__( self ) -> str: return str( self.as_url( ) )
 
     @__.abstract_member_function
-    def as_directory_adapter( self ) -> DirectoryAdapter:
-        ''' Returns directory adapter for location. '''
+    async def as_specific( self ) -> SpecificAdapter:
+        ''' Returns appropriate specific adapter for location. '''
         raise NotImplementedError
 
     @__.abstract_member_function
-    def as_file_adapter( self ) -> FileAdapter:
-        ''' Returns file adapter for location. '''
+    def as_url( self ) -> Url:
+        ''' Returns URL associated with location. '''
         raise NotImplementedError
 
     @__.abstract_member_function
@@ -274,26 +272,17 @@ class Adapter( __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
-    async def is_symlink( self ) -> bool:
-        ''' Is location a symbolic link? '''
+    async def is_indirection( self ) -> bool:
+        ''' Does location provide indirection to another location? '''
         raise NotImplementedError
 
 
 @__.a.runtime_checkable
 class DirectoryAdapter( __.a.Protocol ):
-    ''' Directory access adapter. Wraps concrete implement for access. '''
+    ''' Directory access adapter. '''
     # TODO: Immutable class and object attributes.
 
-    url: Url
-
-    @classmethod
-    def from_url( selfclass, url: UrlLike ) -> __.a.Self:
-        ''' Produces adapter from URL. '''
-        return selfclass( url = Url.from_url( url ) )
-
-    def __init__( self, url: Url ): self.url = url
-
-    def __str__( self ) -> str: return str( self.url )
+    def __str__( self ) -> str: return str( self.as_url( ) )
 
     @__.abstract_member_function
     async def check_access( self ) -> bool:
@@ -310,7 +299,7 @@ class DirectoryAdapter( __.a.Protocol ):
         ''' Exposes concrete implement used to perform operations. '''
         raise NotImplementedError
 
-    # TODO: survey
+    # TODO: survey_entries
 
     # TODO: create_entry
 
@@ -321,19 +310,10 @@ class DirectoryAdapter( __.a.Protocol ):
 
 @__.a.runtime_checkable
 class FileAdapter( __.a.Protocol ):
-    ''' File access adapter. Wraps concrete implement for access. '''
+    ''' File access adapter. '''
     # TODO: Immutable class and object attributes.
 
-    url: Url
-
-    @classmethod
-    def from_url( selfclass, url: UrlLike ) -> __.a.Self:
-        ''' Produces adapter from URL. '''
-        return selfclass( url = Url.from_url( url ) )
-
-    def __init__( self, url: Url ): self.url = url
-
-    def __str__( self ) -> str: return str( self.url )
+    def __str__( self ) -> str: return str( self.as_url( ) )
 
     @__.abstract_member_function
     async def check_access( self ) -> bool:
@@ -369,6 +349,10 @@ class FileAdapter( __.a.Protocol ):
     # TODO: update_content_bytes_continuous
 
     # TODO: register_notifier
+
+
+# TODO: Python 3.12: type statement for aliases
+SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter
 
 
 class Implement( metaclass = __.ABCFactory ):
@@ -404,13 +388,22 @@ class Url( _UrlParts, metaclass = __.AccretiveClass ):
 
 # TODO: Use validator accretive dictionaries for registries.
 accessors_registry = __.AccretiveDictionary( )
-adapters_registry = __.AccretiveDictionary( )
 
 
-def accessor_from_url( url: UrlLike ) -> Accessor:
+def accessor_from_url(
+    url: UrlLike, species: str = 'simple'
+) -> GeneralAccessor:
     ''' Produces location accessor from URL. '''
+    # TODO: Use enum for accessor species.
+    return accessors_registry[ species ].from_url( url = url )
+
+
+def registrant_from_url(
+    registry: __.AbstractDictionary[ str, __.a.Any ],
+    url: UrlLike,
+) -> __.a.Any:
+    ''' Returns entry from registry if URL scheme matches. '''
     url = Url.from_url( url )
     scheme = url.scheme
-    if scheme in accessors_registry:
-        return accessors_registry[ scheme ].from_url( url = url )
+    if scheme in registry: return registry[ scheme ]
     raise NoUrlSchemeSupportError( url )

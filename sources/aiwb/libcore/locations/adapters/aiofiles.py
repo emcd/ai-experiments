@@ -33,6 +33,7 @@ class _Common:
     # TODO: Immutable class and object attributes.
 
     implement: __.Path
+    url: __.Url
 
     def __init__( self, url: __.Url ):
         # TODO: Assert file or empty scheme.
@@ -40,9 +41,11 @@ class _Common:
             # TODO: Raise more specific exception.
             raise NotImplementedError(
                 f"Only scheme and path supported in file URLs. URL: {url}" )
-        # Cast because we do not have a common protocol.
-        self.implement = __.a.cast( __.Implement, __.Path( url.path ) )
-        super( ).__init__( url = url )
+        self.implement = __.Path( url.path )
+        self.url = url
+        super( ).__init__( )
+
+    def as_url( self ) -> __.Url: return self.url
 
     async def check_access( self ) -> bool:
         from os import F_OK # TODO: Use proper mode from configuration.
@@ -55,18 +58,25 @@ class _Common:
         return await exists( self.implement )
 
     def expose_implement( self ) -> __.Implement:
-        return self.implement
+        # Cast because we do not have a common protocol.
+        return __.a.cast( __.Implement, self.implement )
 
 
-class Adapter( _Common, __.Adapter ):
-    ''' Location access adapter with aiofiles and pathlib. '''
+class GeneralAdapter( _Common, __.GeneralAdapter ):
+    ''' General location access adapter with aiofiles and pathlib. '''
     # TODO: Immutable class and object attributes.
 
-    def as_directory_adapter( self ) -> DirectoryAdapter:
-        return DirectoryAdapter( url = self.url )
+    @classmethod
+    def from_url( selfclass, url: __.UrlLike ) -> __.a.Self:
+        return selfclass( url = __.Url.from_url( url ) )
 
-    def as_file_adapter( self ) -> FileAdapter:
-        return FileAdapter( url = self.url )
+    async def as_specific( self ) -> __.SpecificAdapter:
+        # TODO: match await self.adapter.stat( ).species
+        if await self.is_directory( ):
+            return DirectoryAdapter( url = self.url )
+        elif await self.is_file( ):
+            return FileAdapter( url = self.url )
+        # TODO: assert
 
     async def is_directory( self ) -> bool:
         from aiofiles.os.path import isdir
@@ -76,9 +86,17 @@ class Adapter( _Common, __.Adapter ):
         from aiofiles.os.path import isfile
         return await isfile( self.implement )
 
-    async def is_symlink( self ) -> bool:
+    async def is_indirection( self ) -> bool:
         from aiofiles.os.path import islink
         return await islink( self.implement )
+
+# TODO? Perform registrations as part of module preparation function.
+_simple_class = __.accessors_registry[ 'simple' ]
+#_cache_class = __.accessors.registry[ 'cache' ]
+for _scheme in ( '', 'file' ):
+    _simple_class.adapters_registry[ _scheme ] = GeneralAdapter
+    #_cache_class.cache_adapters_registry[ _scheme ] = GeneralAdapter
+    #_cache_class.source_adapters_registry[ _scheme ] = GeneralAdapter
 
 
 class DirectoryAdapter( _Common, __.DirectoryAdapter ):
@@ -89,6 +107,3 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
 class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with aiofiles and pathlib. '''
     # TODO: Immutable class and object attributes.
-
-
-__.adapters_registry[ 'pathlib+aiofiles' ] = Adapter

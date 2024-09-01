@@ -28,12 +28,11 @@
 
 
 from .core import (
-    Accessor as LocationAccessor,
-    Adapter as LocationAccessAdapter,
+    GeneralAccessor as LocationAccessor,
+    GeneralAdapter as LocationAccessAdapter,
     Implement as LocationImplement,
     Url,
     UrlLike,
     accessor_from_url as location_accessor_from_url,
     accessors_registry as location_accessors_registry,
-    adapters_registry as location_adapters_registry,
 )

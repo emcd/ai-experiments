@@ -26,10 +26,13 @@
 
 from ..__ import *
 from ..core import (
-    Accessor,
-    Adapter,
     DirectoryAccessor,
+    DirectoryAdapter,
     FileAccessor,
+    FileAdapter,
+    GeneralAccessor,
+    GeneralAdapter,
+    UrlLike,
     accessors_registry,
-    adapters_registry,
+    registrant_from_url,
 )
