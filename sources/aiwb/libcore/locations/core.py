@@ -20,7 +20,7 @@
 
 ''' Abstract base classes and factories for locations. '''
 
-# TODO: Split into 'arguments', 'exceptions', and 'interfaces' modules.
+# TODO: Split into 'arguments' and 'interfaces' modules.
 # TODO: Caching variant of accessors has source adapter and cache adapter and
 #       'commit_to_source', 'difference_with_source', and 'update_from_source'
 #       methods.
@@ -42,7 +42,6 @@
 #       possibly including workflows.
 #       For local filesystems could include snapshots (ZFS, Time Machine,
 #       etc...).
-# TODO: Protocol classes for common interfaces across accessors and adapters.
 # TODO: Arguments DTO for 'check_access' methods.
 #       * pursue_indirection: (defaults to true)
 #           - local fs: follow symlinks
@@ -60,44 +59,9 @@ from urllib.parse import ParseResult as _UrlParts
 from . import __
 
 
-# TODO: Python 3.12: type statement for aliases
-UrlLike: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
-
-
-class InvalidUrlClassError( __.Omniexception, TypeError, ValueError ):
-    ''' Attempt to supply an invalid class of object as a URL. '''
-
-    def __init__( self, class_ ):
-        # TODO: Interpolate fqname of class.
-        super( ).__init__(
-            f"Cannot use instances of class {class_!r} as URLs." )
-
-
-class NoUrlSchemeSupportError( __.Omniexception, NotImplementedError ):
-    ''' Attempt to use URL scheme which has no implementation. '''
-
-    def __init__( self, url ):
-        super( ).__init__(
-            f"URL scheme {url.scheme!r} not supported. URL: {url}" )
-
-
-@__.a.runtime_checkable
-class GeneralAccessor( __.a.Protocol ):
-    ''' General location accessor. '''
-    # TODO: Immutable class and object attributes.
-
-    @classmethod
-    @__.abstract_member_function
-    def from_url( selfclass, url: UrlLike ) -> __.a.Self:
-        ''' Produces accessor from URL. '''
-        raise NotImplementedError
+class _Common( __.a.Protocol ):
 
     def __str__( self ) -> str: return str( self.as_url( ) )
-
-    @__.abstract_member_function
-    async def as_specific( self ) -> SpecificAccessor:
-        ''' Returns appropriate specific accessor for location. '''
-        raise NotImplementedError
 
     @__.abstract_member_function
     def as_url( self ) -> Url:
@@ -118,6 +82,21 @@ class GeneralAccessor( __.a.Protocol ):
     def expose_implement( self ) -> Implement:
         ''' Exposes concrete implement used to perform operations. '''
         raise NotImplementedError
+
+    # TODO: register_notifier
+
+
+class AccessorBase( _Common, __.a.Protocol ):
+    ''' Common functionality for all accessors. '''
+
+
+class AdapterBase( _Common, __.a.Protocol ):
+    ''' Common functionality for all access adapters. '''
+
+
+@__.a.runtime_checkable
+class GeneralOperations( __.a.Protocol ):
+    ''' Standard operations on locations of indeterminate species. '''
 
     @__.abstract_member_function
     async def is_directory( self ) -> bool:
@@ -138,30 +117,8 @@ class GeneralAccessor( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-class DirectoryAccessor( __.a.Protocol ):
-    ''' Directory accessor for location. '''
-
-    def __str__( self ) -> str: return str( self.as_url( ) )
-
-    @__.abstract_member_function
-    def as_url( self ) -> Url:
-        ''' Returns URL associated with location. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def check_access( self ) -> bool:
-        ''' Does current process have access to location? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def check_existence( self ) -> bool:
-        ''' Does location exist? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    def expose_implement( self ) -> Implement:
-        ''' Exposes concrete implement used to perform operations. '''
-        raise NotImplementedError
+class DirectoryOperations( __.a.Protocol ):
+    ''' Standard operations on directories. '''
 
     # TODO: survey_entries
 
@@ -169,34 +126,12 @@ class DirectoryAccessor( __.a.Protocol ):
 
     # TODO: delete_entry
 
-    # TODO: register_notifier
+    # TODO: produce_entry_accessor
 
 
 @__.a.runtime_checkable
-class FileAccessor( __.a.Protocol ):
-    ''' File accessor for location. '''
-
-    def __str__( self ) -> str: return str( self.as_url( ) )
-
-    @__.abstract_member_function
-    def as_url( self ) -> Url:
-        ''' Returns URL associated with location. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def check_access( self ) -> bool:
-        ''' Does current process have access to location? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def check_existence( self ) -> bool:
-        ''' Does location exist? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    def expose_implement( self ) -> Implement:
-        ''' Exposes concrete implement used to perform operations. '''
-        raise NotImplementedError
+class FileOperations( __.a.Protocol ):
+    ''' Standard operations on files. '''
 
     # TODO: report_mimetype
 
@@ -216,15 +151,38 @@ class FileAccessor( __.a.Protocol ):
 
     # TODO: update_content_bytes_continuous
 
-    # TODO: register_notifier
 
+@__.a.runtime_checkable
+class GeneralAccessor( AccessorBase, GeneralOperations, __.a.Protocol ):
+    ''' General location accessor. '''
+    # TODO: Immutable class and object attributes.
 
-# TODO: Python 3.12: type statement for aliases
-SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
+    @classmethod
+    @__.abstract_member_function
+    def from_url( selfclass, url: UrlLike ) -> __.a.Self:
+        ''' Produces accessor from URL. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def as_specific( self ) -> SpecificAccessor:
+        ''' Returns appropriate specific accessor for location. '''
+        raise NotImplementedError
 
 
 @__.a.runtime_checkable
-class GeneralAdapter( __.a.Protocol ):
+class DirectoryAccessor( AccessorBase, DirectoryOperations, __.a.Protocol ):
+    ''' Directory accessor for location. '''
+    # TODO: Immutable class and object attributes.
+
+
+@__.a.runtime_checkable
+class FileAccessor( AccessorBase, FileOperations, __.a.Protocol ):
+    ''' File accessor for location. '''
+    # TODO: Immutable class and object attributes.
+
+
+@__.a.runtime_checkable
+class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
     ''' General location access adapter. '''
     # TODO: Immutable class and object attributes.
 
@@ -234,125 +192,22 @@ class GeneralAdapter( __.a.Protocol ):
         ''' Produces adapter from URL. '''
         raise NotImplementedError
 
-    def __str__( self ) -> str: return str( self.as_url( ) )
-
     @__.abstract_member_function
     async def as_specific( self ) -> SpecificAdapter:
         ''' Returns appropriate specific adapter for location. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
-    def as_url( self ) -> Url:
-        ''' Returns URL associated with location. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def check_access( self ) -> bool:
-        ''' Does current process have access to location? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def check_existence( self ) -> bool:
-        ''' Does location exist? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    def expose_implement( self ) -> Implement:
-        ''' Exposes concrete implement used to perform operations. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def is_directory( self ) -> bool:
-        ''' Is location a directory? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def is_file( self ) -> bool:
-        ''' Is location a regular file? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def is_indirection( self ) -> bool:
-        ''' Does location provide indirection to another location? '''
-        raise NotImplementedError
-
 
 @__.a.runtime_checkable
-class DirectoryAdapter( __.a.Protocol ):
+class DirectoryAdapter( AdapterBase, DirectoryOperations, __.a.Protocol ):
     ''' Directory access adapter. '''
     # TODO: Immutable class and object attributes.
 
-    def __str__( self ) -> str: return str( self.as_url( ) )
-
-    @__.abstract_member_function
-    async def check_access( self ) -> bool:
-        ''' Does current process have access to location? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def check_existence( self ) -> bool:
-        ''' Does location exist? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    def expose_implement( self ) -> Implement:
-        ''' Exposes concrete implement used to perform operations. '''
-        raise NotImplementedError
-
-    # TODO: survey_entries
-
-    # TODO: create_entry
-
-    # TODO: delete_entry
-
-    # TODO: register_notifier
-
 
 @__.a.runtime_checkable
-class FileAdapter( __.a.Protocol ):
+class FileAdapter( AdapterBase, FileOperations, __.a.Protocol ):
     ''' File access adapter. '''
     # TODO: Immutable class and object attributes.
-
-    def __str__( self ) -> str: return str( self.as_url( ) )
-
-    @__.abstract_member_function
-    async def check_access( self ) -> bool:
-        ''' Does current process have access to location? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def check_existence( self ) -> bool:
-        ''' Does location exist? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    def expose_implement( self ) -> Implement:
-        ''' Exposes concrete implement used to perform operations. '''
-        raise NotImplementedError
-
-    # TODO: report_mimetype
-
-    # TODO: acquire_content
-
-    # TODO: acquire_content_continuous
-
-    # TODO: acquire_content_bytes
-
-    # TODO: acquire_content_bytes_continuous
-
-    # TODO: update_content
-
-    # TODO: update_content_continuous
-
-    # TODO: update_content_bytes
-
-    # TODO: update_content_bytes_continuous
-
-    # TODO: register_notifier
-
-
-# TODO: Python 3.12: type statement for aliases
-SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter
 
 
 class Implement( metaclass = __.ABCFactory ):
@@ -379,11 +234,18 @@ class Url( _UrlParts, metaclass = __.AccretiveClass ):
                 params = url.params,
                 query = url.query,
                 fragment = url.fragment )
+        from .exceptions import InvalidUrlClassError
         raise InvalidUrlClassError( type( url ) )
 
     def __repr__( self ) -> str: return super( ).__repr__( )
 
     def __str__( self ) -> str: return self.geturl( )
+
+
+# TODO: Python 3.12: type statement for aliases
+SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
+SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter
+UrlLike: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
 
 
 # TODO: Use validator accretive dictionaries for registries.
@@ -406,4 +268,5 @@ def registrant_from_url(
     url = Url.from_url( url )
     scheme = url.scheme
     if scheme in registry: return registry[ scheme ]
+    from .exceptions import NoUrlSchemeSupportError
     raise NoUrlSchemeSupportError( url )

@@ -28,6 +28,7 @@ from . import __
 
 class GeneralAccessor( __.GeneralAccessor ):
     ''' Simple general location accessor. '''
+    # TODO: Immutable class and object attributes.
 
     adapters_registry: __.a.ClassVar[
         __.AbstractDictionary[ str, __.GeneralAdapter ]
@@ -80,9 +81,9 @@ class GeneralAccessor( __.GeneralAccessor ):
 __.accessors_registry[ 'simple' ] = GeneralAccessor
 
 
-@__.standard_dataclass
 class DirectoryAccessor( __.DirectoryAccessor ):
     ''' Simple directory accessor. '''
+    # TODO: Immutable class and object attributes.
 
     adapter: __.DirectoryAdapter
 
@@ -100,9 +101,9 @@ class DirectoryAccessor( __.DirectoryAccessor ):
         return self.adapter.expose_implement( )
 
 
-@__.standard_dataclass
 class FileAccessor( __.FileAccessor ):
     ''' Simple file accessor. '''
+    # TODO: Immutable class and object attributes.
 
     adapter: __.FileAdapter
 

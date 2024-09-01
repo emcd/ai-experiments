@@ -18,14 +18,24 @@
 #============================================================================#
 
 
-''' Fundamental exceptions. '''
-
-# ruff: noqa: F401,F403
-# pylint: disable=unused-import
+''' Exceptions pertaining to locations and location access. '''
 
 
-from .base import Omniexception
-from .locations.exceptions import (
-    InvalidUrlClassError,
-    NoUrlSchemeSupportError,
-)
+from . import __
+
+
+class InvalidUrlClassError( __.Omniexception, TypeError, ValueError ):
+    ''' Attempt to supply an invalid class of object as a URL. '''
+
+    def __init__( self, class_ ):
+        # TODO: Interpolate fqname of class.
+        super( ).__init__(
+            f"Cannot use instances of class {class_!r} as URLs." )
+
+
+class NoUrlSchemeSupportError( __.Omniexception, NotImplementedError ):
+    ''' Attempt to use URL scheme which has no implementation. '''
+
+    def __init__( self, url ):
+        super( ).__init__(
+            f"URL scheme {url.scheme!r} not supported. URL: {url}" )
