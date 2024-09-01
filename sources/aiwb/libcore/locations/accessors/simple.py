@@ -66,11 +66,13 @@ class GeneralAccessor( _Common, __.GeneralAccessor ):
             return FileAccessor( adapter = adapter )
         # TODO: assert
 
-    async def is_directory( self ) -> bool:
-        return await self.adapter.is_directory( )
+    async def is_directory( self, pursue_indirection: bool = True ) -> bool:
+        return await self.adapter.is_directory(
+            pursue_indirection = pursue_indirection )
 
-    async def is_file( self ) -> bool:
-        return await self.adapter.is_file( )
+    async def is_file( self, pursue_indirection: bool = True ) -> bool:
+        return await self.adapter.is_file(
+            pursue_indirection = pursue_indirection )
 
     async def is_indirection( self ) -> bool:
         return await self.adapter.is_indirection( )

@@ -76,14 +76,18 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
             return DirectoryAdapter( url = self.url )
         elif await self.is_file( ):
             return FileAdapter( url = self.url )
-        # TODO: assert
+        # TODO: assert selection of adapter species
 
-    async def is_directory( self ) -> bool:
-        from aiofiles.os.path import isdir
+    async def is_directory( self, pursue_indirection: bool = True ) -> bool:
+        from aiofiles.os.path import isdir, islink
+        if not pursue_indirection and await islink( self.implement ):
+            return False
         return await isdir( self.implement )
 
-    async def is_file( self ) -> bool:
-        from aiofiles.os.path import isfile
+    async def is_file( self, pursue_indirection: bool = True ) -> bool:
+        from aiofiles.os.path import isfile, islink
+        if not pursue_indirection and await islink( self.implement ):
+            return False
         return await isfile( self.implement )
 
     async def is_indirection( self ) -> bool:

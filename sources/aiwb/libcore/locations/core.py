@@ -35,7 +35,6 @@
 #       * mode bits: acquire/create/update/delete/execute
 #           - local fs: R_OK/W_OK/W_OK/W_OK/X_OK
 #           - HTTP: GET/PUT/PATCH/DELETE/POST
-# TODO: Add indirection pursuit option to 'is_directory' and 'is_file' methods.
 
 
 from __future__ import annotations
@@ -130,12 +129,12 @@ class GeneralOperations( __.a.Protocol ):
     ''' Standard operations on locations of indeterminate species. '''
 
     @__.abstract_member_function
-    async def is_directory( self ) -> bool:
+    async def is_directory( self, pursue_indirection: bool = True ) -> bool:
         ''' Is location a directory? '''
         raise NotImplementedError
 
     @__.abstract_member_function
-    async def is_file( self ) -> bool:
+    async def is_file( self, pursue_indirection: bool = True ) -> bool:
         ''' Is location a regular file? '''
         raise NotImplementedError
 

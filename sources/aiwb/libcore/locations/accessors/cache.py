@@ -86,13 +86,15 @@ class GeneralAccessor( _Common, __.GeneralAccessor ):
             return FileAccessor( adapter = adapter, cache = self.cache )
         # TODO: assert specific accessor type
 
-    async def is_directory( self ) -> bool:
+    async def is_directory( self, pursue_indirection: bool = True ) -> bool:
         # TODO: Invalidate cache entry, if necessary.
-        return await self.adapter.is_directory( )
+        return await self.adapter.is_directory(
+            pursue_indirection = pursue_indirection )
 
-    async def is_file( self ) -> bool:
+    async def is_file( self, pursue_indirection: bool = True ) -> bool:
         # TODO: Invalidate cache entry, if necessary.
-        return await self.adapter.is_file( )
+        return await self.adapter.is_file(
+            pursue_indirection = pursue_indirection )
 
     async def is_indirection( self ) -> bool:
         return await self.adapter.is_indirection( )
