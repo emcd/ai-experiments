@@ -25,4 +25,4 @@
 
 
 from ..__ import *
-from ..libcore import Globals, LocationImplement, location_accessor_from_url
+from ..libcore import Globals, LocationImplement, SimpleLocationAccessor

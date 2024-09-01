@@ -29,6 +29,7 @@ from . import accessors
 from . import adapters
 from . import core
 
+from .accessors import CacheAccessor, SimpleAccessor
 from .core import *
 
 

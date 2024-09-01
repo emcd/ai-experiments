@@ -25,8 +25,10 @@
 
 
 from . import __
+from . import cache
 from . import simple
-# TODO: cache
 
+from .cache import GeneralAccessor as CacheAccessor
+from .simple import GeneralAccessor as SimpleAccessor
 
 __.reclassify_modules( globals( ) )

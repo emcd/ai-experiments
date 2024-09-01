@@ -26,6 +26,9 @@
 
 from ..__ import *
 from ..core import (
+    AdapterBase,
+    Cache,
+    CacheLike,
     DirectoryAccessor,
     DirectoryAdapter,
     FileAccessor,
@@ -34,5 +37,6 @@ from ..core import (
     GeneralAdapter,
     UrlLike,
     accessors_registry,
-    registrant_from_url,
+    adapter_from_url,
+    caches_registry,
 )

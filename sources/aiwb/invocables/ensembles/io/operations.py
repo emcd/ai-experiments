@@ -63,7 +63,7 @@ class SurveyDirectoryArguments( ArgumentsBase ):
         # TODO? Validate filters.
         # TODO: Use defaults from schema or class attributes.
         return selfclass(
-            location = __.location_accessor_from_url(
+            location = __.SimpleLocationAccessor.from_url(
                 arguments[ 'location' ] ).expose_implement( ),
             #file_size_maximum = arguments.get( 'file_size_maximum', 40000 ),
             filters = arguments.get( 'filters', ( 'gitignore', 'vcs' ) ),

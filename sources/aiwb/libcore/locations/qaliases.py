@@ -27,12 +27,15 @@
 # pylint: disable=unused-import
 
 
+from .accessors import (
+    CacheAccessor as        CacheLocationAccessor,
+    SimpleAccessor as       SimpleLocationAccessor,
+)
 from .core import (
-    GeneralAccessor as LocationAccessor,
-    GeneralAdapter as LocationAccessAdapter,
-    Implement as LocationImplement,
+    GeneralAccessor as      LocationAccessor,
+    GeneralAdapter as       LocationAccessAdapter,
+    Implement as            LocationImplement,
     Url,
     UrlLike,
-    accessor_from_url as location_accessor_from_url,
-    accessors_registry as location_accessors_registry,
+    adapters_registry as    location_adapters_registry,
 )

@@ -91,12 +91,8 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         return await islink( self.implement )
 
 # TODO? Perform registrations as part of module preparation function.
-_simple_class = __.accessors_registry[ 'simple' ]
-#_cache_class = __.accessors.registry[ 'cache' ]
-for _scheme in ( '', 'file' ):
-    _simple_class.adapters_registry[ _scheme ] = GeneralAdapter
-    #_cache_class.cache_adapters_registry[ _scheme ] = GeneralAdapter
-    #_cache_class.source_adapters_registry[ _scheme ] = GeneralAdapter
+__.adapters_registry[ '' ] = GeneralAdapter
+__.adapters_registry[ 'file' ] = GeneralAdapter
 
 
 class DirectoryAdapter( _Common, __.DirectoryAdapter ):

@@ -24,5 +24,5 @@
 # pylint: disable=unused-import
 
 
-from ....libcore import LocationImplement, location_accessor_from_url
+from ....libcore import LocationImplement, SimpleLocationAccessor
 from ..__ import *

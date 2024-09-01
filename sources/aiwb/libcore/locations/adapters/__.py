@@ -32,5 +32,5 @@ from ..core import (
     Implement,
     Url,
     UrlLike,
-    accessors_registry,
+    adapters_registry,
 )

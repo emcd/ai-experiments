@@ -20,21 +20,6 @@
 
 ''' Abstract base classes and factories for locations. '''
 
-# TODO: Split into 'arguments' and 'interfaces' modules.
-# TODO: Caching variant of accessors has source adapter and cache adapter and
-#       'commit_to_source', 'difference_with_source', and 'update_from_source'
-#       methods.
-#       Edits happen on cache and are only committed to source when explicitly
-#       requested. Useful for 'git', 'github', 'hg', etc... protocol schemes.
-#       AI invocables can use cache accessors to be safe, even with local
-#       files.
-#       Cache will be created in temporary file or directory on instantiation
-#       of caching accessor; will last lifetime of accessor which holds context
-#       manager for the temporary. Cache adapter will be provided URL to
-#       temporary.
-#       Cache can have expiry or TTL to trigger refreshes on operations
-#       or maybe async scheduled callbacks. Use for performance enhancement
-#       scenarios.
 # TODO: Filesystem information objects from accessors.
 #       For Git and other VCS schemes, provides discoverability for branches,
 #       which can be used to shape cache interactions.
@@ -42,6 +27,7 @@
 #       possibly including workflows.
 #       For local filesystems could include snapshots (ZFS, Time Machine,
 #       etc...).
+# TODO: Split into 'arguments' and 'interfaces' modules.
 # TODO: Arguments DTO for 'check_access' methods.
 #       * pursue_indirection: (defaults to true)
 #           - local fs: follow symlinks
@@ -95,25 +81,12 @@ class AdapterBase( _Common, __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-class GeneralOperations( __.a.Protocol ):
-    ''' Standard operations on locations of indeterminate species. '''
+class Cache( __.a.Protocol ):
+    ''' Standard operations on cache. '''
 
-    @__.abstract_member_function
-    async def is_directory( self ) -> bool:
-        ''' Is location a directory? '''
-        raise NotImplementedError
+    # TODO: clear
 
-    @__.abstract_member_function
-    async def is_file( self ) -> bool:
-        ''' Is location a regular file? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def is_indirection( self ) -> bool:
-        ''' Does location provide indirection to another location? '''
-        raise NotImplementedError
-
-    # TODO: stat
+    # TODO: report_modifications
 
 
 @__.a.runtime_checkable
@@ -150,6 +123,41 @@ class FileOperations( __.a.Protocol ):
     # TODO: update_content_bytes
 
     # TODO: update_content_bytes_continuous
+
+
+@__.a.runtime_checkable
+class GeneralOperations( __.a.Protocol ):
+    ''' Standard operations on locations of indeterminate species. '''
+
+    @__.abstract_member_function
+    async def is_directory( self ) -> bool:
+        ''' Is location a directory? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def is_file( self ) -> bool:
+        ''' Is location a regular file? '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def is_indirection( self ) -> bool:
+        ''' Does location provide indirection to another location? '''
+        raise NotImplementedError
+
+    # TODO: stat
+
+
+@__.a.runtime_checkable
+class ReconciliationOperations( __.a.Protocol ):
+    ''' Standard operations for cache reconciliation. '''
+
+    # TODO: is_cache_valid
+
+    # TODO: commit_to_source
+
+    # TODO: difference_with_source
+
+    # TODO: update_from_source
 
 
 @__.a.runtime_checkable
@@ -243,30 +251,29 @@ class Url( _UrlParts, metaclass = __.AccretiveClass ):
 
 
 # TODO: Python 3.12: type statement for aliases
+AccessorsRegistry: __.a.TypeAlias = (
+    __.AbstractDictionary[ str, type[ GeneralAccessor ] ] )
+AdaptersRegistry: __.a.TypeAlias = (
+    __.AbstractDictionary[ str, type[ GeneralAdapter ] ] )
+CacheLike: __.a.TypeAlias = bytes | str | __.PathLike | Cache
+CachesRegistry: __.a.TypeAlias = (
+    __.AbstractDictionary[ str, type[ Cache ] ] )
 SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
 SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter
 UrlLike: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
 
 
-# TODO: Use validator accretive dictionaries for registries.
-accessors_registry = __.AccretiveDictionary( )
+# TODO: Use accretive validator dictionaries for registries.
+accessors_registry: AccessorsRegistry = __.AccretiveDictionary( )
+adapters_registry: AdaptersRegistry = __.AccretiveDictionary( )
+caches_registry: CachesRegistry = __.AccretiveDictionary( )
 
 
-def accessor_from_url(
-    url: UrlLike, species: str = 'simple'
-) -> GeneralAccessor:
-    ''' Produces location accessor from URL. '''
-    # TODO: Use enum for accessor species.
-    return accessors_registry[ species ].from_url( url = url )
-
-
-def registrant_from_url(
-    registry: __.AbstractDictionary[ str, __.a.Any ],
-    url: UrlLike,
-) -> __.a.Any:
-    ''' Returns entry from registry if URL scheme matches. '''
+def adapter_from_url( url: UrlLike ) -> GeneralAdapter:
+    ''' Produces location access adapter from URL. '''
     url = Url.from_url( url )
     scheme = url.scheme
-    if scheme in registry: return registry[ scheme ]
+    if scheme in adapters_registry:
+        return adapters_registry[ scheme ].from_url( url )
     from .exceptions import NoUrlSchemeSupportError
     raise NoUrlSchemeSupportError( url )
