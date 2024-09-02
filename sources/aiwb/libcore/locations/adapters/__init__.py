@@ -26,7 +26,7 @@
 
 from . import __
 from . import aiofiles
-# TODO: httpx
+from . import httpx
 
 
 __.reclassify_modules( globals( ) )

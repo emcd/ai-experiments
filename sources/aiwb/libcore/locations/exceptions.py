@@ -39,3 +39,15 @@ class NoUrlSchemeSupportError( __.Omniexception, NotImplementedError ):
     def __init__( self, url ):
         super( ).__init__(
             f"URL scheme {url.scheme!r} not supported. URL: {url}" )
+
+
+class OperationFailure( __.Omniexception, RuntimeError ):
+    ''' Failure of attempt to perform operation. '''
+
+
+class CheckAccessOperationFailure( OperationFailure ):
+    ''' Failure of attempt to check access. '''
+
+    def __init__( self, url, reason ):
+        super( ).__init__(
+            f"Could not check access of location '{url}'. Reason: {reason}" )
