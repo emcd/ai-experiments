@@ -37,7 +37,7 @@ class Accessor( __.Accessor ):
         self, context: __.Context, arguments: __.SurveyDirectoryArguments
     ) -> __.AbstractDictionary:
         return await survey_directory(
-            location = arguments.location.produce_accessor( ),
+            location = arguments.location.expose_implement( ),
             context = context,
             arguments = arguments )
 

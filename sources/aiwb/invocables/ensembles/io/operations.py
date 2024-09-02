@@ -29,7 +29,7 @@ from . import __
 class ArgumentsBase( __.a.Protocol ):
     ''' Base class for I/O arguments data transfer objects. '''
 
-    location: __.LocationImplement
+    location: __.SimpleLocationAccessor
 
     @classmethod
     @__.abstract_member_function
@@ -64,7 +64,7 @@ class SurveyDirectoryArguments( ArgumentsBase ):
         # TODO: Use defaults from schema or class attributes.
         return selfclass(
             location = __.SimpleLocationAccessor.from_url(
-                arguments[ 'location' ] ).expose_implement( ),
+                arguments[ 'location' ] ),
             #file_size_maximum = arguments.get( 'file_size_maximum', 40000 ),
             filters = arguments.get( 'filters', ( 'gitignore', 'vcs' ) ),
             recursive = arguments.get( 'recursive', True ),
@@ -159,9 +159,9 @@ async def _operate(
         'success': await getattr( accessor, opname )( context, arguments_ ) }
 
 
-def _produce_accessor( location: __.LocationImplement ) -> Accessor:
-    url = location.url
-    scheme = location.url.scheme
+def _produce_accessor( location: __.SimpleLocationAccessor ) -> Accessor:
+    url = location.as_url( )
+    scheme = url.scheme
     if scheme in accessors: return accessors[ scheme ]( )
     raise NotImplementedError(
         f"URL scheme {scheme!r} not supported. URL: {url}" )
