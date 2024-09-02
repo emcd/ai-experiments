@@ -56,7 +56,7 @@ from datetime import (
     timedelta as TimeDelta,
     timezone as TimeZone,
 )
-from enum import Enum
+from enum import Enum, auto as produce_enumeration_value
 from functools import (
     cache as memoize,
     partial as partial_function,

@@ -27,14 +27,6 @@
 #       possibly including workflows.
 #       For local filesystems could include snapshots (ZFS, Time Machine,
 #       etc...).
-# TODO: Split into 'arguments' and 'interfaces' modules.
-# TODO: Arguments DTO for 'check_access' methods.
-#       * pursue_indirection: (defaults to true)
-#           - local fs: follow symlinks
-#           - HTTP: follow redirects
-#       * mode bits: acquire/create/update/delete/execute
-#           - local fs: R_OK/W_OK/W_OK/W_OK/X_OK
-#           - HTTP: GET/PUT/PATCH/DELETE/POST
 
 
 from __future__ import annotations
@@ -42,6 +34,7 @@ from __future__ import annotations
 from urllib.parse import ParseResult as _UrlParts
 
 from . import __
+from . import arguments as _arguments
 
 
 class _Common( __.a.Protocol ):
@@ -54,7 +47,9 @@ class _Common( __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
-    async def check_access( self ) -> bool:
+    async def check_access(
+        self, arguments: _arguments.CheckAccessArguments
+    ) -> bool:
         ''' Does current process have access to location? '''
         raise NotImplementedError
 

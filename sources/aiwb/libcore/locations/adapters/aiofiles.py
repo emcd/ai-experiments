@@ -47,11 +47,21 @@ class _Common:
 
     def as_url( self ) -> __.Url: return self.url
 
-    async def check_access( self ) -> bool:
-        from os import F_OK # TODO: Use proper mode from configuration.
+    async def check_access(
+        self, arguments: __.CheckAccessArguments
+    ) -> bool:
+        from os import F_OK, R_OK, W_OK, X_OK
         from aiofiles.os import access
+        permissions = arguments.permissions
         mode = F_OK
-        return await access( self.implement, mode )
+        if permissions & __.Permissions.Retrieve: mode |= R_OK
+        if permissions & __.Permissions.Create: mode |= W_OK
+        if permissions & __.Permissions.Update: mode |= W_OK
+        if permissions & __.Permissions.Delete: mode |= W_OK
+        if permissions & __.Permissions.Execute: mode |= X_OK
+        return await access(
+            self.implement,
+            mode, follow_symlinks = arguments.pursue_indirection )
 
     async def check_existence( self ) -> bool:
         from aiofiles.os.path import exists

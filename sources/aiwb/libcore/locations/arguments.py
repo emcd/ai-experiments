@@ -18,26 +18,30 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for location accessors. '''
-
-# ruff: noqa: F401,F403
-# pylint: disable=unused-import
+''' Arguments data transfer objects for operations on locations. '''
 
 
-from ..__ import *
-from ..arguments import *
-from ..core import (
-    AdapterBase,
-    Cache,
-    CacheLike,
-    DirectoryAccessor,
-    DirectoryAdapter,
-    FileAccessor,
-    FileAdapter,
-    GeneralAccessor,
-    GeneralAdapter,
-    UrlLike,
-    accessors_registry,
-    adapter_from_url,
-    caches_registry,
-)
+from __future__ import annotations
+
+from . import __
+
+
+class Permissions( __.enum.IntFlag ):
+    ''' Permissions bits to report or test access. '''
+
+    Abstain = 0
+    Retrieve = __.produce_enumeration_value( )
+    Create = __.produce_enumeration_value( )
+    Update = __.produce_enumeration_value( )
+    Delete = __.produce_enumeration_value( )
+    Execute = __.produce_enumeration_value( )
+
+
+@__.standard_dataclass
+class CheckAccessArguments:
+    ''' Arguments to access checker. '''
+    # HTTP: pursue_indirection -> follow redirects
+    #       permissions -> OPTIONS/GET/PUT/PATCH/DELETE/POST
+
+    permissions: Permissions
+    pursue_indirection: bool = True

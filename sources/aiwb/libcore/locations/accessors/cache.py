@@ -42,8 +42,9 @@ class _Common:
 
     def as_url( self ): return self.adapter.as_url( )
 
-    async def check_access( self ) -> bool:
-        return await self.adapter.check_access( )
+    async def check_access(
+        self, arguments: __.CheckAccessArguments
+    ) -> bool: return await self.adapter.check_access( arguments )
 
     async def check_existence( self ) -> bool:
         # TODO: Invalidate cache entry, if necessary.
