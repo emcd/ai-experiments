@@ -24,24 +24,12 @@
 from __future__ import annotations
 
 from . import __
-
-
-class Permissions( __.enum.IntFlag ):
-    ''' Permissions bits to report or test access. '''
-
-    Abstain = 0
-    Retrieve = __.produce_enumeration_value( )
-    Create = __.produce_enumeration_value( )
-    Update = __.produce_enumeration_value( )
-    Delete = __.produce_enumeration_value( )
-    Execute = __.produce_enumeration_value( )
+from . import core as _core
 
 
 @__.standard_dataclass
 class CheckAccessArguments:
     ''' Arguments to access checker. '''
-    # HTTP: pursue_indirection -> follow redirects
-    #       permissions -> OPTIONS/GET/PUT/PATCH/DELETE/POST
 
-    permissions: Permissions
+    permissions: _core.Permissions
     pursue_indirection: bool = True

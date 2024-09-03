@@ -27,7 +27,7 @@ from . import distribution as _distribution
 from . import notifications as _notifications
 
 
-class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
+class DirectorySpecies( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Possible species for locations. '''
 
     Cache = 'cache'
@@ -39,6 +39,8 @@ class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
 class Globals:
     ''' Immutable global data. Required by many library functions. '''
 
+    # TODO: name (of application)
+    # TODO? execution_id
     configuration: __.AccretiveDictionary
     directories: __.PlatformDirs
     distribution: _distribution.Information
@@ -55,7 +57,8 @@ class Globals:
         if None is distribution:
             distribution = (
                 await _distribution.Information.prepare(
-                    package = __package__, publisher = 'emcd',
+                    package = __package__.split( '.', maxsplit = 1 )[ 0 ],
+                    publisher = 'emcd',
                     exits = exits ) )
         directories = __.PlatformDirs(
             distribution.name, distribution.publisher, ensure_exists = True )
@@ -71,18 +74,18 @@ class Globals:
 
     def provide_cache_location( self, *appendages: str ) -> __.Path:
         ''' Provides cache location from configuration. '''
-        return self.provide_location( LocationSpecies.Cache, *appendages )
+        return self.provide_location( DirectorySpecies.Cache, *appendages )
 
     def provide_data_location( self, *appendages: str ) -> __.Path:
         ''' Provides data location from configuration. '''
-        return self.provide_location( LocationSpecies.Data, *appendages )
+        return self.provide_location( DirectorySpecies.Data, *appendages )
 
     def provide_state_location( self, *appendages: str ) -> __.Path:
         ''' Provides state location from configuration. '''
-        return self.provide_location( LocationSpecies.State, *appendages )
+        return self.provide_location( DirectorySpecies.State, *appendages )
 
     def provide_location(
-        self, species: LocationSpecies, *appendages: str
+        self, species: DirectorySpecies, *appendages: str
     ) -> __.Path:
         ''' Provides particular species of location from configuration. '''
         species = species.value

@@ -25,4 +25,8 @@
 
 
 from ..__ import *
-from ..libcore import Globals, LocationImplement, SimpleLocationAccessor
+from ..libcore import (
+    Globals,
+    LocationAccessImplement,
+    LocationAccessorSimple,
+)

@@ -83,7 +83,7 @@ class Store( __.a.Protocol ):
     ''' Record for prompt store. '''
 
     name: str
-    location: __.LocationImplement
+    location: __.LocationAccessImplement
 
     @classmethod
     async def prepare(
@@ -102,7 +102,7 @@ class Store( __.a.Protocol ):
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
         distribution = auxdata.distribution
         name = descriptor[ 'name' ]
-        location = __.SimpleLocationAccessor.from_url(
+        location = __.LocationAccessorSimple.from_url(
             descriptor[ 'location' ].format(
                 application_name = distribution.name,
                 custom_data = auxdata.provide_data_location( ),

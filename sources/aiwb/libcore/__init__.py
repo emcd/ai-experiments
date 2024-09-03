@@ -50,7 +50,7 @@ from .inscription import (
 from .locations.qaliases import *
 from .notifications import Queue as NotificationsQueue
 from .preparation import prepare
-from .state import Globals, LocationSpecies
+from .state import DirectorySpecies, Globals
 
 
 __.reclassify_modules( globals( ) )

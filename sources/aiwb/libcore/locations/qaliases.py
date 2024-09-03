@@ -28,14 +28,11 @@
 
 
 from .accessors import (
-    CacheAccessor as        CacheLocationAccessor,
-    SimpleAccessor as       SimpleLocationAccessor,
+    AccessorSimple as       LocationAccessorSimple,
+    AccessorWithCache as    LocationAccessorWithCache,
 )
 from .core import (
-    GeneralAccessor as      LocationAccessor,
-    GeneralAdapter as       LocationAccessAdapter,
-    Implement as            LocationImplement,
+    AccessImplement as      LocationAccessImplement,
     Url,
     UrlLike,
-    adapters_registry as    location_adapters_registry,
 )

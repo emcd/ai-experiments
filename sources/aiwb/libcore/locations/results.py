@@ -18,17 +18,20 @@
 #============================================================================#
 
 
-''' Location accessors. '''
+''' Results data transfer objects for operations on location. '''
 
-# ruff: noqa: F401
-# pylint: disable=unused-import
 
+from __future__ import annotations
 
 from . import __
-from . import cache
-from . import simple
+from . import core as _core
 
-from .cache import GeneralAccessor as AccessorWithCache
-from .simple import GeneralAccessor as AccessorSimple
 
-__.reclassify_modules( globals( ) )
+@__.standard_dataclass
+class Inode:
+    ''' Information about location. '''
+
+    mimetype: str
+    permissions: _core.Permissions
+    species: _core.LocationSpecies
+    supplement: _core.AdapterInode

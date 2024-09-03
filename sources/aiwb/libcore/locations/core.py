@@ -18,15 +18,7 @@
 #============================================================================#
 
 
-''' Abstract base classes and factories for locations. '''
-
-# TODO: Filesystem information objects from accessors.
-#       For Git and other VCS schemes, provides discoverability for branches,
-#       which can be used to shape cache interactions.
-#       For Github and other VCS wrapper schemes, provides repository metadata,
-#       possibly including workflows.
-#       For local filesystems could include snapshots (ZFS, Time Machine,
-#       etc...).
+''' Fundamental data structures and enumerations. '''
 
 
 from __future__ import annotations
@@ -34,189 +26,56 @@ from __future__ import annotations
 from urllib.parse import ParseResult as _UrlParts
 
 from . import __
-from . import arguments as _arguments
 
 
-class _Common( __.a.Protocol ):
-
-    def __str__( self ) -> str: return str( self.as_url( ) )
-
-    @__.abstract_member_function
-    def as_url( self ) -> Url:
-        ''' Returns URL associated with location. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def check_access(
-        self, arguments: _arguments.CheckAccessArguments
-    ) -> bool:
-        ''' Does current process have access to location? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def check_existence( self ) -> bool:
-        ''' Does location exist? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    def expose_implement( self ) -> Implement:
-        ''' Exposes concrete implement used to perform operations. '''
-        raise NotImplementedError
-
-    # TODO: register_notifier
+# TODO: Python 3.12: type statement for aliases
+UrlLike: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
 
 
-class AccessorBase( _Common, __.a.Protocol ):
-    ''' Common functionality for all accessors. '''
-
-
-class AdapterBase( _Common, __.a.Protocol ):
-    ''' Common functionality for all access adapters. '''
-
-
-@__.a.runtime_checkable
-class Cache( __.a.Protocol ):
-    ''' Standard operations on cache. '''
-
-    # TODO: clear
-
-    # TODO: report_modifications
-
-
-@__.a.runtime_checkable
-class DirectoryOperations( __.a.Protocol ):
-    ''' Standard operations on directories. '''
-
-    # TODO: survey_entries
-
-    # TODO: create_entry
-
-    # TODO: delete_entry
-
-    # TODO: produce_entry_accessor
-
-
-@__.a.runtime_checkable
-class FileOperations( __.a.Protocol ):
-    ''' Standard operations on files. '''
-
-    # TODO: report_mimetype
-
-    # TODO: acquire_content
-
-    # TODO: acquire_content_continuous
-
-    # TODO: acquire_content_bytes
-
-    # TODO: acquire_content_bytes_continuous
-
-    # TODO: update_content
-
-    # TODO: update_content_continuous
-
-    # TODO: update_content_bytes
-
-    # TODO: update_content_bytes_continuous
-
-
-@__.a.runtime_checkable
-class GeneralOperations( __.a.Protocol ):
-    ''' Standard operations on locations of indeterminate species. '''
-
-    @__.abstract_member_function
-    async def is_directory( self, pursue_indirection: bool = True ) -> bool:
-        ''' Is location a directory? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def is_file( self, pursue_indirection: bool = True ) -> bool:
-        ''' Is location a regular file? '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def is_indirection( self ) -> bool:
-        ''' Does location provide indirection to another location? '''
-        raise NotImplementedError
-
-    # TODO: stat
-
-
-@__.a.runtime_checkable
-class ReconciliationOperations( __.a.Protocol ):
-    ''' Standard operations for cache reconciliation. '''
-
-    # TODO: is_cache_valid
-
-    # TODO: commit_to_source
-
-    # TODO: difference_with_source
-
-    # TODO: update_from_source
-
-
-@__.a.runtime_checkable
-class GeneralAccessor( AccessorBase, GeneralOperations, __.a.Protocol ):
-    ''' General location accessor. '''
-    # TODO: Immutable class and object attributes.
-
-    @classmethod
-    @__.abstract_member_function
-    def from_url( selfclass, url: UrlLike ) -> __.a.Self:
-        ''' Produces accessor from URL. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def as_specific( self ) -> SpecificAccessor:
-        ''' Returns appropriate specific accessor for location. '''
-        raise NotImplementedError
-
-
-@__.a.runtime_checkable
-class DirectoryAccessor( AccessorBase, DirectoryOperations, __.a.Protocol ):
-    ''' Directory accessor for location. '''
-    # TODO: Immutable class and object attributes.
-
-
-@__.a.runtime_checkable
-class FileAccessor( AccessorBase, FileOperations, __.a.Protocol ):
-    ''' File accessor for location. '''
-    # TODO: Immutable class and object attributes.
-
-
-@__.a.runtime_checkable
-class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
-    ''' General location access adapter. '''
-    # TODO: Immutable class and object attributes.
-
-    @classmethod
-    @__.abstract_member_function
-    def from_url( selfclass, url: UrlLike ) -> __.a.Self:
-        ''' Produces adapter from URL. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def as_specific( self ) -> SpecificAdapter:
-        ''' Returns appropriate specific adapter for location. '''
-        raise NotImplementedError
-
-
-@__.a.runtime_checkable
-class DirectoryAdapter( AdapterBase, DirectoryOperations, __.a.Protocol ):
-    ''' Directory access adapter. '''
-    # TODO: Immutable class and object attributes.
-
-
-@__.a.runtime_checkable
-class FileAdapter( AdapterBase, FileOperations, __.a.Protocol ):
-    ''' File access adapter. '''
-    # TODO: Immutable class and object attributes.
-
-
-class Implement( metaclass = __.ABCFactory ):
-    ''' Abstract base class for location implement types. '''
+class AccessImplement( metaclass = __.ABCFactory ):
+    ''' Abstract base class for location access implements. '''
     # Note: Not a Protocol class because there is no common protocol.
     #       We just want issubclass support.
     #       Functions which return implements should cast.
+
+
+class AdapterInode( metaclass = __.ABCFactory ):
+    ''' Abstract base class for adapter-specific location information. '''
+    # Note: Not a Protocol class because there is no common protocol.
+    #       We just want issubclass support.
+    #       Functions which return implements should cast.
+
+    # http/https: cache etag and TTL?
+    # git/hg: relevant branches and tags?
+
+    # Maybe return inode on completion of whole file operations?
+    # Would be a useful streamline for cache management.
+
+
+class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Species of entity at location. '''
+    # TODO: Windows-specific and other OS-specific entities.
+    # TODO? Forks.
+
+    Bareblocks = 'bareblocks' # e.g., block device
+    Bytestream = 'bytestream' # e.g., character device
+    Directory = 'directory'
+    File = 'file'
+    Pipe = 'pipe' # e.g., FIFO, named pipe
+    Socket = 'socket' # Unix domain socket in filesystem
+    Symlink = 'symlink'
+    Void = 'void'
+
+
+class Permissions( __.enum.IntFlag ):
+    ''' Permissions bits to report or test access. '''
+
+    Abstain = 0
+    Retrieve = __.produce_enumeration_value( )
+    Create = __.produce_enumeration_value( )
+    Update = __.produce_enumeration_value( )
+    Delete = __.produce_enumeration_value( )
+    Execute = __.produce_enumeration_value( )
 
 
 class Url( _UrlParts, metaclass = __.AccretiveClass ):
@@ -242,32 +101,3 @@ class Url( _UrlParts, metaclass = __.AccretiveClass ):
     def __repr__( self ) -> str: return super( ).__repr__( )
 
     def __str__( self ) -> str: return self.geturl( )
-
-
-# TODO: Python 3.12: type statement for aliases
-AccessorsRegistry: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, type[ GeneralAccessor ] ] )
-AdaptersRegistry: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, type[ GeneralAdapter ] ] )
-CacheLike: __.a.TypeAlias = bytes | str | __.PathLike | Cache
-CachesRegistry: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, type[ Cache ] ] )
-SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
-SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter
-UrlLike: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
-
-
-# TODO: Use accretive validator dictionaries for registries.
-accessors_registry: AccessorsRegistry = __.AccretiveDictionary( )
-adapters_registry: AdaptersRegistry = __.AccretiveDictionary( )
-caches_registry: CachesRegistry = __.AccretiveDictionary( )
-
-
-def adapter_from_url( url: UrlLike ) -> GeneralAdapter:
-    ''' Produces location access adapter from URL. '''
-    url = Url.from_url( url )
-    scheme = url.scheme
-    if scheme in adapters_registry:
-        return adapters_registry[ scheme ].from_url( url )
-    from .exceptions import NoUrlSchemeSupportError
-    raise NoUrlSchemeSupportError( url )

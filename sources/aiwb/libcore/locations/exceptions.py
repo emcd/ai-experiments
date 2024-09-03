@@ -51,3 +51,11 @@ class CheckAccessOperationFailure( OperationFailure ):
     def __init__( self, url, reason ):
         super( ).__init__(
             f"Could not check access of location '{url}'. Reason: {reason}" )
+
+
+class ExamineOperationFailure( OperationFailure ):
+    ''' Failure of attempt to examine. '''
+
+    def __init__( self, url, reason ):
+        super( ).__init__(
+            f"Could not examine location '{url}'. Reason: {reason}" )

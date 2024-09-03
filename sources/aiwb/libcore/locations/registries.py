@@ -18,17 +18,36 @@
 #============================================================================#
 
 
-''' Location accessors. '''
+''' Factories and registries. '''
 
-# ruff: noqa: F401
-# pylint: disable=unused-import
 
+from __future__ import annotations
 
 from . import __
-from . import cache
-from . import simple
+from . import core as _core
+from . import interfaces as _interfaces
 
-from .cache import GeneralAccessor as AccessorWithCache
-from .simple import GeneralAccessor as AccessorSimple
 
-__.reclassify_modules( globals( ) )
+# TODO: Python 3.12: type statement for aliases
+AccessorsRegistry: __.a.TypeAlias = (
+    __.AbstractDictionary[ str, type[ _interfaces.GeneralAccessor ] ] )
+AdaptersRegistry: __.a.TypeAlias = (
+    __.AbstractDictionary[ str, type[ _interfaces.GeneralAdapter ] ] )
+CachesRegistry: __.a.TypeAlias = (
+    __.AbstractDictionary[ str, type[ _interfaces.Cache ] ] )
+
+
+# TODO: Use accretive validator dictionaries for registries.
+accessors_registry: AccessorsRegistry = __.AccretiveDictionary( )
+adapters_registry: AdaptersRegistry = __.AccretiveDictionary( )
+caches_registry: CachesRegistry = __.AccretiveDictionary( )
+
+
+def adapter_from_url( url: _core.UrlLike ) -> _interfaces.GeneralAdapter:
+    ''' Produces location access adapter from URL. '''
+    url = _core.Url.from_url( url )
+    scheme = url.scheme
+    if scheme in adapters_registry:
+        return adapters_registry[ scheme ].from_url( url )
+    from .exceptions import NoUrlSchemeSupportError
+    raise NoUrlSchemeSupportError( url )

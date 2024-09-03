@@ -27,7 +27,7 @@ import httpx as _httpx
 from . import __
 
 
-__.Implement.register( _httpx.URL )
+__.AccessImplement.register( _httpx.URL )
 
 
 class _Common:
@@ -47,28 +47,65 @@ class _Common:
     async def check_access(
         self, arguments: __.CheckAccessArguments
     ) -> bool:
-        from .exceptions import CheckAccessOperationFailure
         permissions = arguments.permissions
         async with _httpx.AsyncClient(
             follow_redirects = arguments.pursue_indirection
         ) as client: response = await client.options( self.implement )
         try: response.raise_for_status( )
         except _httpx.HTTPStatusError as exc:
-            raise CheckAccessOperationFailure(
+            raise __.CheckAccessOperationFailure(
                 self.url, reason = exc ) from exc
         if __.Permissions.Abstain == permissions: return True
         allowed_methods = frozenset( map(
-            str.upper, response.headers.get( 'allow', '' ).split( ', ' ) ) )
-        required_methods = _map_permissions_to_methods( permissions )
+            str.upper, response.headers.get( 'Allow', '' ).split( ', ' ) ) )
+        required_methods = _permissions_to_methods( permissions )
         return required_methods == required_methods & allowed_methods
 
     async def check_existence( self ) -> bool:
+        from http import HTTPStatus
         async with _httpx.AsyncClient() as client:
             response = await client.head( self.implement )
-        return 200 == response.status_code
+        return HTTPStatus.OK == response.status_code
 
-    def expose_implement( self ) -> __.Implement:
-        return __.a.cast( __.Implement, self.implement )
+    async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
+        async with _httpx.AsyncClient(
+            follow_redirects = pursue_indirection
+        ) as client:
+            permissions = await self._inspect_permissions( client )
+            if not __.Permissions.Retrieve & permissions:
+                raise __.ExamineOperationFailure(
+                    self.url, reason = "Retrieval request not allowed." )
+            try:
+                response = await client.head( self.implement )
+                response.raise_for_status( )
+            except _httpx.HTTPStatusError as exc:
+                raise __.ExamineOperationFailure(
+                    self.url, reason = exc ) from exc
+            mimetype = response.headers.get(
+                'Content-Type', 'application/octet-stream' )
+            inode = _http_inode_from_response( response )
+            return __.Inode(
+                mimetype = mimetype,
+                permissions = permissions,
+                species = __.LocationSpecies.File,
+                supplement = inode
+            )
+
+    def expose_implement( self ) -> __.AccessImplement:
+        return __.a.cast( __.AccessImplement, self.implement )
+
+    async def _inspect_permissions(
+        self, client: _httpx.AsynClient
+    ) -> __.Permissions:
+        try:
+            response = await client.options( self.implement )
+            response.raise_for_status( )
+        except _httpx.HTTPStatusError as exc:
+            raise __.ExamineOperationFailure(
+                self.url, reason = exc ) from exc
+        methods = frozenset( map(
+            str.upper, response.headers.get( 'Allow', '' ).split( ', ' ) ) )
+        return _methods_to_permissions( methods )
 
 
 class GeneralAdapter( _Common, __.GeneralAdapter ):
@@ -105,7 +142,62 @@ class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with httpx. '''
 
 
-def _map_permissions_to_methods(
+@__.standard_dataclass
+class HttpInode( __.AdapterInode ):
+    ''' HTTP-specific information of relevance for location. '''
+
+    etag: str | None
+    expiration: __.DateTime | None
+    mtime: __.DateTime | None
+
+
+def _expiration_from_response( response: _httpx.Response ) -> __.DateTime:
+    from email.utils import parsedate_to_datetime
+    cache_control = response.headers.get( 'Cache-Control' )
+    expires = response.headers.get( 'Expires' )
+    expiration = None
+    if cache_control:
+        directives = dict(
+            directive.split( '=' )
+            for directive in cache_control.split( ', ' )
+            if '=' in directive )
+        max_age = directives.get( 'max-age' )
+        if max_age:
+            expiration = (
+                __.DateTime.utcnow( )
+                + __.TimeDelta( seconds = int( max_age ) ) )
+    if not expiration and expires:
+        expiration = parsedate_to_datetime( expires )
+    return expiration
+
+
+def _http_inode_from_response( response: _httpx.Response ) -> HttpInode:
+    from email.utils import parsedate_to_datetime
+    etag = response.headers.get( 'ETag' )
+    mtime = response.headers.get( 'Last-Modified' )
+    if mtime: mtime = parsedate_to_datetime( mtime )
+    expiration = _expiration_from_response( response )
+    return HttpInode( etag = etag, expiration = expiration, mtime = mtime )
+
+
+def _methods_to_permissions(
+    methods: __.AbstractCollection[ str ]
+) -> __.Permissions:
+    permissions = __.Permissions.Abstain
+    if 'GET' in methods:
+        permissions |= __.Permissions.Retrieve
+    if 'PUT' in methods:
+        permissions |= ( __.Permissions.Create | __.Permissions.Update )
+    if 'PATCH' in methods:
+        permissions |= __.Permissions.Update
+    if 'DELETE' in methods:
+        permissions |= __.Permissions.Delete
+    if 'POST' in methods:
+        permissions |= __.Permissions.Execute
+    return permissions
+
+
+def _permissions_to_methods(
     permissions: __.Permissions
 ) -> frozenset[ str ]:
     methods = set( )

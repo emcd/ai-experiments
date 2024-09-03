@@ -23,10 +23,16 @@
 
 from __future__ import annotations
 
+from os import stat_result as _StatResult
+
 from . import __
 
 
-__.Implement.register( __.Path )
+_Permissions_CUD = (
+    __.Permissions.Create | __.Permissions.Update | __.Permissions.Delete )
+
+
+__.AccessImplement.register( __.Path )
 
 
 class _Common:
@@ -54,11 +60,9 @@ class _Common:
         from aiofiles.os import access
         permissions = arguments.permissions
         mode = F_OK
-        if permissions & __.Permissions.Retrieve: mode |= R_OK
-        if permissions & __.Permissions.Create: mode |= W_OK
-        if permissions & __.Permissions.Update: mode |= W_OK
-        if permissions & __.Permissions.Delete: mode |= W_OK
-        if permissions & __.Permissions.Execute: mode |= X_OK
+        if __.Permissions.Retrieve & permissions: mode |= R_OK
+        if _Permissions_CUD & permissions: mode |= W_OK
+        if __.Permissions.Execute & permissions: mode |= X_OK
         return await access(
             self.implement,
             mode, follow_symlinks = arguments.pursue_indirection )
@@ -67,9 +71,24 @@ class _Common:
         from aiofiles.os.path import exists
         return await exists( self.implement )
 
-    def expose_implement( self ) -> __.Implement:
+    async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
+        from aiofiles.os import stat
+        location = (
+            self.implement.resolve( ) if pursue_indirection
+            else self.implement )
+        inode = await stat( location )
+        permissions = _permissions_from_stat( inode )
+        species = _species_from_stat( inode )
+        mimetype = _derive_mimetype( location, species )
+        return __.Inode(
+            mimetype = mimetype,
+            permissions = permissions,
+            species = species,
+            supplement = inode )
+
+    def expose_implement( self ) -> __.AccessImplement:
         # Cast because we do not have a common protocol.
-        return __.a.cast( __.Implement, self.implement )
+        return __.a.cast( __.AccessImplement, self.implement )
 
 
 class GeneralAdapter( _Common, __.GeneralAdapter ):
@@ -117,3 +136,64 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
 class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with aiofiles and pathlib. '''
     # TODO: Immutable class and object attributes.
+
+
+def _derive_mimetype(
+    implement: __.AccessImplement,
+    species: __.LocationSpecies,
+) -> str:
+    from magic import from_file
+    match species:
+        case __.LocationSpecies.Bareblocks:
+            # TODO? Sniff first 4K and use magic.from_buffer on that.
+            return 'inode/blockdevice'
+        case __.LocationSpecies.Bytestream:
+            return 'inode/chardevice'
+        case __.LocationSpecies.Directory:
+            return 'inode/directory'
+        case __.LocationSpecies.File:
+            try: return from_file( str( implement ), mime = True )
+            except Exception: return 'application/octet-stream'
+        case __.LocationSpecies.Pipe:
+            return 'inode/fifo'
+        case __.LocationSpecies.Socket:
+            return 'inode/socket'
+        case __.LocationSpecies.Symlink:
+            return 'inode/symlink'
+        case __.LocationSpecies.Void:
+            return 'nothing'
+    # TODO: assert valid species
+    return 'application/octet-stream'
+
+
+def _permissions_from_stat( inode: _StatResult ) -> __.Permissions:
+    import os
+    from os import R_OK, W_OK, X_OK
+    gid = os.getgid( ) if hasattr( os, 'getgid' ) else None
+    uid = os.getuid( ) if hasattr( os, 'getuid' ) else None
+    permissions = __.Permissions.Abstain
+    mode_bitshifts = frozenset( (
+        0,
+        3 * int( gid == inode.st_gid ),
+        6 * int( uid == inode.st_uid ) ) )
+    for bitshift in mode_bitshifts:
+        if ( R_OK << bitshift ) & inode.st_mode:
+            permissions |= __.Permissions.Retrieve
+        if ( W_OK << bitshift ) & inode.st_mode:
+            permissions |= _Permissions_CUD
+        if ( X_OK << bitshift ) & inode.st_mode:
+            permissions |= __.Permissions.Execute
+    return permissions
+
+
+def _species_from_stat( inode: _StatResult ) -> __.LocationSpecies:
+    match inode.st_mode & 0o170000:
+        case 0o010000: return __.LocationSpecies.Pipe
+        case 0o020000: return __.LocationSpecies.Bytestream
+        case 0o040000: return __.LocationSpecies.Directory
+        case 0o060000: return __.LocationSpecies.Bareblocks
+        case 0o100000: return __.LocationSpecies.File
+        case 0o120000: return __.LocationSpecies.Symlink
+        case 0o140000: return __.LocationSpecies.Socket
+    # TODO: assert valid species
+    return __.LocationSpecies.Void

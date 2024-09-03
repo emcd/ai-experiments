@@ -39,7 +39,10 @@ class _Common:
     async def check_existence( self ) -> bool:
         return await self.adapter.check_existence( )
 
-    def expose_implement( self ) -> __.Implement:
+    async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
+        return await self.adapter.examine( )
+
+    def expose_implement( self ) -> __.AccessImplement:
         return self.adapter.expose_implement( )
 
 
