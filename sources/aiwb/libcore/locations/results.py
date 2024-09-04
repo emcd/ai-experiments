@@ -28,6 +28,14 @@ from . import core as _core
 
 
 @__.standard_dataclass
+class DirectoryEntry:
+    ''' Location plus infromation about it. '''
+
+    inode: Inode
+    url: _core.Url
+
+
+@__.standard_dataclass
 class Inode:
     ''' Information about location. '''
 

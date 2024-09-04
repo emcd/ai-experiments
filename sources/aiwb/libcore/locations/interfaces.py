@@ -34,6 +34,7 @@ from __future__ import annotations
 from . import __
 from . import arguments as _arguments
 from . import core as _core
+from . import filters as _filters
 from . import results as _results
 
 
@@ -96,7 +97,13 @@ class Cache( __.a.Protocol ):
 class DirectoryOperations( __.a.Protocol ):
     ''' Standard operations on directories. '''
 
-    # TODO: survey_entries
+    async def survey(
+        self,
+        filters: __.AbstractCollection[ _filters.PossibleFilter ],
+        recurse: bool = True
+    ) -> __.AbstractSequence[ _results.DirectoryEntry ]:
+        ''' Returns list of directory entries, subject to filtering. '''
+        raise NotImplementedError
 
     # TODO: create_entry
 

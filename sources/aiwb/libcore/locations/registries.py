@@ -20,12 +20,17 @@
 
 ''' Factories and registries. '''
 
+# ruff: noqa: F401
+# pylint: disable=unused-import
+
 
 from __future__ import annotations
 
 from . import __
 from . import core as _core
 from . import interfaces as _interfaces
+
+from .filters import FiltersRegistry, filters_registry
 
 
 # TODO: Python 3.12: type statement for aliases

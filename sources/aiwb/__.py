@@ -61,6 +61,7 @@ from functools import (
     cache as memoize,
     partial as partial_function,
 )
+from itertools import chain
 from logging import (
     Logger as Scribe,
     getLogger as acquire_scribe,

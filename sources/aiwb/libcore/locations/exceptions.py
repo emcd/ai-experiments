@@ -24,6 +24,13 @@
 from . import __
 
 
+class AbsentFilterError( __.Omniexception, NotImplementedError ):
+    ''' Attempt to use filter which does not exist. '''
+
+    def __init__( self, filter ):
+        super( ).__init__( f"Filter unavailable: {filter!r}" )
+
+
 class InvalidUrlClassError( __.Omniexception, TypeError, ValueError ):
     ''' Attempt to supply an invalid class of object as a URL. '''
 

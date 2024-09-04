@@ -123,6 +123,15 @@ class DirectoryAccessor( _Common, __.DirectoryAccessor ):
         self.adapter = adapter
         self.cache = cache
 
+    async def survey(
+        self,
+        filters: __.AbstractCollection[ __.PossibleFilter ],
+        recurse: bool = True
+    ) -> __.AbstractSequence[ __.DirectoryEntry ]:
+        # TODO: Invalidate cache entries, if necessary.
+        return await self.adapter.survey(
+            filters = filters, recurse = recurse )
+
 
 class FileAccessor( _Common, __.FileAccessor ):
     ''' Simple file accessor. '''

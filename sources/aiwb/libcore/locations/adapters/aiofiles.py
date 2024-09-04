@@ -139,6 +139,33 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
     ''' Directory access adapter with aiofiles and pathlib. '''
     # TODO: Immutable class and object attributes.
 
+    async def survey(
+        self,
+        filters: __.AbstractCollection[ __.PossibleFilter ],
+        recurse: bool = True
+    ) -> __.AbstractSequence[ __.DirectoryEntry ]:
+        from aiofiles.os import scandir
+        scanners = [ ]
+        results = [ ]
+        with await scandir( self.implement ) as dirents:
+            for dirent in dirents:
+                url = __.Url.from_url( dirent.path )
+                inode = (
+                    GeneralAdapter( url = url )
+                    .examine( pursue_indirection = False ) )
+                dirent_ = __.DirectoryEntry( inode = inode, url = url )
+                if filters and await __.apply_filters( dirent_, filters ):
+                    continue
+                if recurse and inode.is_directory( ):
+                    scanners.append(
+                        DirectoryAdapter( url = url )
+                        .survey( filters = filters, recurse = recurse ) )
+                results.append( dirent_ )
+            if recurse:
+                results.extend( __.chain.from_iterable(
+                    await __.gather_async( *scanners ) ) )
+        return results
+
 
 class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with aiofiles and pathlib. '''
