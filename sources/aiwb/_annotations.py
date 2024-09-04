@@ -31,7 +31,7 @@ from typing_extensions import (
     Doc,
     Generic,
     Never,
-    Optional, # Prefer to <type> | None.
+    Optional as Nullable, # Prefer to <type> | None.
     Protocol,
     Self,
     TypeAlias,
