@@ -36,8 +36,11 @@ class _Common:
         self, arguments: __.CheckAccessArguments
     ) -> bool: return await self.adapter.check_access( arguments )
 
-    async def check_existence( self ) -> bool:
-        return await self.adapter.check_existence( )
+    async def check_existence(
+        self, pursue_indirection: bool = True
+    ) -> bool:
+        return await self.adapter.check_existence(
+            pursue_indirection = pursue_indirection )
 
     async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
         return await self.adapter.examine( )
@@ -53,7 +56,7 @@ class GeneralAccessor( _Common, __.GeneralAccessor ):
     adapter: __.GeneralAdapter
 
     @classmethod
-    def from_url( selfclass, url: __.UrlLike ) -> __.a.Self:
+    def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
         adapter = __.adapter_from_url( url = url )
         return selfclass( adapter = adapter )
 

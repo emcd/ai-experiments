@@ -43,7 +43,7 @@ adapters_registry: AdaptersRegistry = __.AccretiveDictionary( )
 caches_registry: CachesRegistry = __.AccretiveDictionary( )
 
 
-def adapter_from_url( url: _core.UrlLike ) -> _interfaces.GeneralAdapter:
+def adapter_from_url( url: _core.PossibleUrl ) -> _interfaces.GeneralAdapter:
     ''' Produces location access adapter from URL. '''
     url = _core.Url.from_url( url )
     scheme = url.scheme

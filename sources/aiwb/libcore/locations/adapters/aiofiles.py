@@ -67,12 +67,19 @@ class _Common:
             self.implement,
             mode, follow_symlinks = arguments.pursue_indirection )
 
-    async def check_existence( self ) -> bool:
+    async def check_existence(
+        self, pursue_indirection: bool = True
+    ) -> bool:
         from aiofiles.os.path import exists
-        return await exists( self.implement )
+        # TODO? Resolve symlinks async.
+        location = (
+            self.implement.resolve( ) if pursue_indirection
+            else self.implement )
+        return await exists( location )
 
     async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
         from aiofiles.os import stat
+        # TODO? Resolve symlinks async.
         location = (
             self.implement.resolve( ) if pursue_indirection
             else self.implement )
@@ -96,7 +103,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
     # TODO: Immutable class and object attributes.
 
     @classmethod
-    def from_url( selfclass, url: __.UrlLike ) -> __.a.Self:
+    def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
         return selfclass( url = __.Url.from_url( url ) )
 
     async def as_specific( self ) -> __.SpecificAdapter:

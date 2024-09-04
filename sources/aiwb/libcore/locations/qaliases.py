@@ -33,6 +33,6 @@ from .accessors import (
 )
 from .core import (
     AccessImplement as      LocationAccessImplement,
+    PossibleUrl,
     Url,
-    UrlLike,
 )

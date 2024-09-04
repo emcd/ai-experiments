@@ -54,7 +54,9 @@ class _Common( __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
-    async def check_existence( self ) -> bool:
+    async def check_existence(
+        self, pursue_indirection: bool = True
+    ) -> bool:
         ''' Does location exist? '''
         raise NotImplementedError
 
@@ -166,7 +168,7 @@ class GeneralAccessor( AccessorBase, GeneralOperations, __.a.Protocol ):
 
     @classmethod
     @__.abstract_member_function
-    def from_url( selfclass, url: _core.UrlLike ) -> __.a.Self:
+    def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
         ''' Produces accessor from URL. '''
         # TODO? Remove from interface specification.
         raise NotImplementedError
@@ -196,7 +198,7 @@ class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
 
     @classmethod
     @__.abstract_member_function
-    def from_url( selfclass, url: _core.UrlLike ) -> __.a.Self:
+    def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
         ''' Produces adapter from URL. '''
         raise NotImplementedError
 
@@ -219,6 +221,6 @@ class FileAdapter( AdapterBase, FileOperations, __.a.Protocol ):
 
 
 # TODO: Python 3.12: type statement for aliases
-CacheLike: __.a.TypeAlias = bytes | str | __.PathLike | Cache
+PossibleCache: __.a.TypeAlias = bytes | str | __.PathLike | Cache
 SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
 SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter

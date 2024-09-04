@@ -29,7 +29,7 @@ from . import __
 
 
 # TODO: Python 3.12: type statement for aliases
-UrlLike: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
+PossibleUrl: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
 
 
 class AccessImplement( metaclass = __.ABCFactory ):
@@ -83,7 +83,7 @@ class Url( _UrlParts, metaclass = __.AccretiveClass ):
     # TODO: Immutable class and object attributes.
 
     @classmethod
-    def from_url( selfclass, url: UrlLike ) -> __.a.Self:
+    def from_url( selfclass, url: PossibleUrl ) -> __.a.Self:
         ''' Produces canonical URL instance from URL-like object. '''
         if isinstance( url, __.PathLike ): url = url.__fspath__( )
         if isinstance( url, ( str, bytes ) ): url = __.urlparse( url )

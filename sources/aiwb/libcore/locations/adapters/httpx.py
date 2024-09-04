@@ -61,10 +61,13 @@ class _Common:
         required_methods = _permissions_to_methods( permissions )
         return required_methods == required_methods & allowed_methods
 
-    async def check_existence( self ) -> bool:
+    async def check_existence(
+        self, pursue_indirection: bool = True
+    ) -> bool:
         from http import HTTPStatus
-        async with _httpx.AsyncClient() as client:
-            response = await client.head( self.implement )
+        async with _httpx.AsyncClient(
+            follow_redirects = pursue_indirection
+        ) as client: response = await client.head( self.implement )
         return HTTPStatus.OK == response.status_code
 
     async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
@@ -113,7 +116,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
     # TODO: Immutable class and object attributes.
 
     @classmethod
-    def from_url( selfclass, url: __.UrlLike ) -> __.a.Self:
+    def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
         return selfclass( url = __.Url.from_url( url ) )
 
     async def as_specific( self ) -> __.SpecificAdapter:

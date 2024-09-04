@@ -46,7 +46,9 @@ class _Common:
         self, arguments: __.CheckAccessArguments
     ) -> bool: return await self.adapter.check_access( arguments )
 
-    async def check_existence( self ) -> bool:
+    async def check_existence(
+        self, pursue_indirection: bool = True
+    ) -> bool:
         # TODO: Invalidate cache entry, if necessary.
         return await self.adapter.check_existence( )
 
@@ -67,8 +69,8 @@ class GeneralAccessor( _Common, __.GeneralAccessor ):
     @classmethod
     def from_url(
         selfclass,
-        url: __.UrlLike,
-        cache: __.Optional[ __.CacheLike ] = __.absent,
+        url: __.PossibleUrl,
+        cache: __.Optional[ __.PossibleCache ] = __.absent,
     ) -> __.a.Self:
         adapter = __.adapter_from_url( url = url )
         if not cache: cache = str( adapter )
