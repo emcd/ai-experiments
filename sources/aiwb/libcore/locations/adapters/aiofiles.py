@@ -178,11 +178,10 @@ def _derive_mimetype(
 ) -> str:
     from magic import from_file
     match species:
-        case __.LocationSpecies.Bareblocks:
+        case __.LocationSpecies.Blocks:
             # TODO? Sniff first 4K and use magic.from_buffer on that.
+            #       Or, use 'blkinfo' package or similar.
             return 'inode/blockdevice'
-        case __.LocationSpecies.Bytestream:
-            return 'inode/chardevice'
         case __.LocationSpecies.Directory:
             return 'inode/directory'
         case __.LocationSpecies.File:
@@ -192,10 +191,12 @@ def _derive_mimetype(
             return 'inode/fifo'
         case __.LocationSpecies.Socket:
             return 'inode/socket'
+        case __.LocationSpecies.Stream:
+            return 'inode/chardevice'
         case __.LocationSpecies.Symlink:
             return 'inode/symlink'
         case __.LocationSpecies.Void:
-            return 'nothing'
+            return 'NOTHING'
     # TODO: assert valid species
     return 'application/octet-stream'
 
@@ -223,9 +224,9 @@ def _permissions_from_stat( inode: _StatResult ) -> __.Permissions:
 def _species_from_stat( inode: _StatResult ) -> __.LocationSpecies:
     match inode.st_mode & 0o170000:
         case 0o010000: return __.LocationSpecies.Pipe
-        case 0o020000: return __.LocationSpecies.Bytestream
+        case 0o020000: return __.LocationSpecies.Stream
         case 0o040000: return __.LocationSpecies.Directory
-        case 0o060000: return __.LocationSpecies.Bareblocks
+        case 0o060000: return __.LocationSpecies.Blocks
         case 0o100000: return __.LocationSpecies.File
         case 0o120000: return __.LocationSpecies.Symlink
         case 0o140000: return __.LocationSpecies.Socket

@@ -75,12 +75,12 @@ class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
     # TODO: Windows-specific and other OS-specific entities.
     # TODO? Forks.
 
-    Bareblocks = 'bareblocks' # e.g., block device
-    Bytestream = 'bytestream' # e.g., character device
+    Blocks = 'blocks' # e.g., block device
     Directory = 'directory'
     File = 'file'
     Pipe = 'pipe' # e.g., FIFO, named pipe
     Socket = 'socket' # Unix domain socket in filesystem
+    Stream = 'stream' # e.g., character device
     Symlink = 'symlink'
     Void = 'void'
 

@@ -41,7 +41,8 @@ class Filter( __.a.Protocol ):
 
 
 # TODO: @gitignore
-# TODO: +vcs
+# TODO: +vcs:*
+# TODO: +vcs:git
 # TODO: -permissions:r
 # TODO: -permissions:cud
 # TODO: +permissions:cud
@@ -52,10 +53,12 @@ class Filter( __.a.Protocol ):
 # TODO: +inode:SPECIALS
 # TODO? +mimetype:image/*
 # TODO? +mimetype:application/octet-stream
+# TODO? +expiration>=4h  # also: Unix epoch or ISO 8601
+# TODO? +mtime<30d
 
 
 # TODO: Python 3.12: type statement for aliases
-FiltersRegistry: __.a.TypeAlias = __.AbstractDictionary[ str, Filter ]
+FiltersRegistry: __.a.TypeAlias = __.AbstractDictionary[ str, type[ Filter ] ]
 PossibleFilter: __.a.TypeAlias = bytes | str | Filter
 
 
@@ -68,14 +71,31 @@ async def apply_filters(
     filters: __.AbstractSequence[ PossibleFilter ],
 ) -> bool:
     ''' Applies sequence of filters to directory entry. '''
-    for filter in filters:
-        if isinstance( filter, bytes ): filter = filter.decode( )
-        if isinstance( filter, str ):
-            # TODO? Parse arguments from name with ':'-splitting.
-            #       E.g., '<mtime:1725421713'
-            #       E.g., '<expiration:1725421713'
-            if filter in filters_registry:
-                filter = filters_registry[ filter ]
-            else: raise _exceptions.AbsentFilterError( filter )
-        if await filter( dirent ): return True
+    for filter_ in filters:
+        if isinstance( filter_, bytes ): filter_ = filter_.decode( )
+        if isinstance( filter_, str ):
+            name, arguments = _parse_filter_specifier( filter_ )
+            if name in filters_registry:
+                filter_ = filters_registry[ name ]( *arguments )
+            else: raise _exceptions.AbsentFilterError( name )
+        if await filter_( dirent ): return True
     return False
+
+
+def _parse_filter_specifier(
+    specifier: str
+) -> ( str, __.AbstractSequence[ __.a.Any ] ):
+    for index, delim in enumerate( specifier ):
+        if ':' == delim: break
+        if delim in ( '<', '>' ): break
+    else: return specifier, ( )
+    match delim:
+        case ':': name, *arguments = specifier.split( delim )
+        case '<' | '>':
+            index1 = index + 1
+            if index1 < len( specifier ) and '=' == specifier[ index1 ]:
+                splitter = f"{delim}="
+            else: splitter = delim
+            name, *arguments = specifier.split( splitter, maxsplit = 1 )
+            arguments = ( splitter, *arguments )
+    return name, tuple( arguments )
