@@ -18,14 +18,28 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for location access adapters. '''
+''' Filters for directory entries. '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F401
 # pylint: disable=unused-import
 
 
-from ..__ import *
-from ..core import *
-from ..exceptions import *
-from ..interfaces import *
-from ..registries import *
+from . import __
+# TODO: @gitignore
+# TODO: +vcs:*
+# TODO: +vcs:git
+# TODO: -permissions:r
+# TODO: -permissions:cud
+# TODO: +permissions:cud
+# TODO: +permissions:x
+# TODO: -inode:file
+# TODO: +inode:directory
+# TODO: +inode:symlink
+# TODO: +inode:SPECIALS
+# TODO? +mimetype:image/*
+# TODO? +mimetype:application/octet-stream
+# TODO? +expiration>=4h  # also: Unix epoch or ISO 8601
+# TODO? +mtime<30d
+
+
+__.reclassify_modules( globals( ) )

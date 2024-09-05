@@ -33,7 +33,6 @@ from __future__ import annotations
 
 from . import __
 from . import core as _core
-from . import filters as _filters
 
 
 class _Common( __.a.Protocol ):
@@ -94,12 +93,21 @@ class Cache( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
+class Filter( __.a.Protocol ):
+    ''' Determines if directory entry should be filtered. '''
+
+    @__.abstract_member_function
+    async def __call__( self, dirent: _core.DirectoryEntry ) -> bool:
+        raise NotImplementedError
+
+
+@__.a.runtime_checkable
 class DirectoryOperations( __.a.Protocol ):
     ''' Standard operations on directories. '''
 
     async def survey(
         self,
-        filters: __.AbstractCollection[ _filters.PossibleFilter ],
+        filters: __.AbstractCollection[ PossibleFilter ],
         recurse: bool = True
     ) -> __.AbstractSequence[ _core.DirectoryEntry ]:
         ''' Returns list of directory entries, subject to filtering. '''
@@ -229,5 +237,6 @@ class FileAdapter( AdapterBase, FileOperations, __.a.Protocol ):
 
 # TODO: Python 3.12: type statement for aliases
 PossibleCache: __.a.TypeAlias = bytes | str | __.PathLike | Cache
+PossibleFilter: __.a.TypeAlias = bytes | str | Filter
 SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
 SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter

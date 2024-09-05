@@ -28,11 +28,14 @@ from . import __
 from . import accessors
 from . import adapters
 from . import core
+from . import filters
+from . import interfaces
+from . import registries
 
 from .accessors import AccessorSimple, AccessorWithCache
 from .core import *
-from .filters import *
 from .interfaces import *
+from .registries import *
 
 
 __.reclassify_modules( globals( ) )

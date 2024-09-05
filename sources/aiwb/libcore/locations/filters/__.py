@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for location access adapters. '''
+''' Internal imports and utilities for directory entry filters. '''
 
 # ruff: noqa: F401,F403
 # pylint: disable=unused-import
