@@ -52,6 +52,24 @@ class AdapterInode( metaclass = __.ABCFactory ):
     # Would be a useful streamline for cache management.
 
 
+@__.standard_dataclass
+class DirectoryEntry:
+    ''' Location plus infromation about it. '''
+
+    inode: Inode
+    url: Url
+
+
+@__.standard_dataclass
+class Inode:
+    ''' Information about location. '''
+
+    mimetype: str
+    permissions: Permissions
+    species: LocationSpecies
+    supplement: AdapterInode
+
+
 class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Species of entity at location. '''
     # TODO: Windows-specific and other OS-specific entities.

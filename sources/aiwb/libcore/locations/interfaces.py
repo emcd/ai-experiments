@@ -35,7 +35,6 @@ from . import __
 from . import arguments as _arguments
 from . import core as _core
 from . import filters as _filters
-from . import results as _results
 
 
 class _Common( __.a.Protocol ):
@@ -64,7 +63,7 @@ class _Common( __.a.Protocol ):
     @__.abstract_member_function
     async def examine(
         self, pursue_indirection: bool = True
-    ) -> _results.Inode:
+    ) -> _core.Inode:
         ''' Returns inode-like object for location. '''
         raise NotImplementedError
 
@@ -101,7 +100,7 @@ class DirectoryOperations( __.a.Protocol ):
         self,
         filters: __.AbstractCollection[ _filters.PossibleFilter ],
         recurse: bool = True
-    ) -> __.AbstractSequence[ _results.DirectoryEntry ]:
+    ) -> __.AbstractSequence[ _core.DirectoryEntry ]:
         ''' Returns list of directory entries, subject to filtering. '''
         raise NotImplementedError
 

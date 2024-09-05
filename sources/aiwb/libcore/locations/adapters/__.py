@@ -31,4 +31,3 @@ from ..exceptions import *
 from ..filters import *
 from ..interfaces import *
 from ..registries import *
-from ..results import *

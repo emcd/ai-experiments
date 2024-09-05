@@ -32,8 +32,8 @@ from . import core
 from .accessors import AccessorSimple, AccessorWithCache
 from .arguments import *
 from .core import *
+from .filters import *
 from .interfaces import *
-from .results import *
 
 
 __.reclassify_modules( globals( ) )

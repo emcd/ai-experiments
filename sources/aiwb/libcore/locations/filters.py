@@ -24,8 +24,8 @@
 from __future__ import annotations
 
 from . import __
+from . import core as _core
 from . import exceptions as _exceptions
-from . import results as _results
 
 
 @__.a.runtime_checkable
@@ -36,7 +36,7 @@ class Filter( __.a.Protocol ):
     name: str
 
     @__.abstract_member_function
-    async def __call__( self, dirent: _results.DirectoryEntry ) -> bool:
+    async def __call__( self, dirent: _core.DirectoryEntry ) -> bool:
         raise NotImplementedError
 
 
@@ -64,7 +64,7 @@ filters_registry: FiltersRegistry = __.AccretiveDictionary( )
 
 
 async def apply_filters(
-    dirent: _results.DirectoryEntry,
+    dirent: _core.DirectoryEntry,
     filters: __.AbstractSequence[ PossibleFilter ],
 ) -> bool:
     ''' Applies sequence of filters to directory entry. '''
