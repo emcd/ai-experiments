@@ -45,11 +45,12 @@ class _Common:
         return self.url
 
     async def check_access(
-        self, arguments: __.CheckAccessArguments
+        self,
+        permissions: __.Permissions,
+        pursue_indirection: bool = True,
     ) -> bool:
-        permissions = arguments.permissions
         async with _httpx.AsyncClient(
-            follow_redirects = arguments.pursue_indirection
+            follow_redirects = pursue_indirection
         ) as client: response = await client.options( self.implement )
         try: response.raise_for_status( )
         except _httpx.HTTPStatusError as exc:

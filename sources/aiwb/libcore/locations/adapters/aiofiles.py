@@ -54,18 +54,18 @@ class _Common:
     def as_url( self ) -> __.Url: return self.url
 
     async def check_access(
-        self, arguments: __.CheckAccessArguments
+        self,
+        permissions: __.Permissions,
+        pursue_indirection: bool = True,
     ) -> bool:
         from os import F_OK, R_OK, W_OK, X_OK
         from aiofiles.os import access
-        permissions = arguments.permissions
         mode = F_OK
         if __.Permissions.Retrieve & permissions: mode |= R_OK
         if _Permissions_CUD & permissions: mode |= W_OK
         if __.Permissions.Execute & permissions: mode |= X_OK
         return await access(
-            self.implement,
-            mode, follow_symlinks = arguments.pursue_indirection )
+            self.implement, mode, follow_symlinks = pursue_indirection )
 
     async def check_existence(
         self, pursue_indirection: bool = True

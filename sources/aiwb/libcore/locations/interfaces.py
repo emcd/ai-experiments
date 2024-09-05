@@ -32,7 +32,6 @@
 from __future__ import annotations
 
 from . import __
-from . import arguments as _arguments
 from . import core as _core
 from . import filters as _filters
 
@@ -48,7 +47,9 @@ class _Common( __.a.Protocol ):
 
     @__.abstract_member_function
     async def check_access(
-        self, arguments: _arguments.CheckAccessArguments
+        self,
+        permissions: _core.Permissions,
+        pursue_indirection: bool = True,
     ) -> bool:
         ''' Does current process have access to location? '''
         raise NotImplementedError

@@ -33,8 +33,13 @@ class _Common:
     def as_url( self ): return self.adapter.as_url( )
 
     async def check_access(
-        self, arguments: __.CheckAccessArguments
-    ) -> bool: return await self.adapter.check_access( arguments )
+        self,
+        permissions: __.Permissions,
+        pursue_indirection: bool = True,
+    ) -> bool:
+        return await self.adapter.check_access(
+            permissions = permissions,
+            pursue_indirection = pursue_indirection )
 
     async def check_existence(
         self, pursue_indirection: bool = True
