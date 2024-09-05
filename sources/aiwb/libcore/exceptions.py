@@ -25,7 +25,4 @@
 
 
 from .base import Omniexception
-from .locations.exceptions import (
-    InvalidUrlClassError,
-    NoUrlSchemeSupportError,
-)
+from .locations.exceptions import *

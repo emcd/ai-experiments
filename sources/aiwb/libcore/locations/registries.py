@@ -56,24 +56,37 @@ def adapter_from_url( url: _core.PossibleUrl ) -> _interfaces.GeneralAdapter:
     scheme = url.scheme
     if scheme in adapters_registry:
         return adapters_registry[ scheme ].from_url( url )
-    from .exceptions import NoUrlSchemeSupportError
-    raise NoUrlSchemeSupportError( url )
+    from .exceptions import UrlSchemeSupportError
+    raise UrlSchemeSupportError( url )
 
 
 async def apply_filters(
     dirent: _core.DirectoryEntry,
-    filters: __.AbstractSequence[ _interfaces.PossibleFilter ],
+    filters: __.AbstractIterable[ _interfaces.Filter ],
 ) -> bool:
-    ''' Applies sequence of filters to directory entry. '''
+    ''' Applies iterable of filters to directory entry. '''
+    for filter_ in filters:
+        if await filter_( dirent ): return True
+    return False
+
+
+def filters_from_specifiers(
+    filters: __.AbstractIterable[ _interfaces.PossibleFilter ]
+) -> __.AbstractSequence[ _interfaces.Filter ]:
+    ''' Converts iterable of possible filters into filters. '''
+    filters_ = [ ]
     for filter_ in filters:
         if isinstance( filter_, bytes ): filter_ = filter_.decode( )
         if isinstance( filter_, str ):
             name, arguments = _parse_filter_specifier( filter_ )
             if name in filters_registry:
                 filter_ = filters_registry[ name ]( *arguments )
-            else: raise _exceptions.AbsentFilterError( name )
-        if await filter_( dirent ): return True
-    return False
+            # TODO? Collect errors into exception group.
+            else: raise _exceptions.FilterAvailabilityError( name )
+        if isinstance( filter_, _interfaces.Filter ):
+            filters_.append( filter_ )
+        else: raise _exceptions.FilterClassValidityError( filter_ )
+    return tuple( filters_ )
 
 
 def _parse_filter_specifier(

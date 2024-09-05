@@ -24,23 +24,49 @@
 from . import __
 
 
-class AbsentFilterError( __.Omniexception, NotImplementedError ):
-    ''' Attempt to use filter which does not exist. '''
+class FilterArgumentSupportError( __.Omniexception, NotImplementedError ):
+    ''' Attempt to use filter argument which has no implementation. '''
 
-    def __init__( self, filter ):
-        super( ).__init__( f"Filter unavailable: {filter!r}" )
+    def __init__( self, filter_name, argument_name ):
+        super( ).__init__(
+            f"Filter {filter_name!r} does not support "
+            f"argument {argument_name!r}." )
 
 
-class InvalidUrlClassError( __.Omniexception, TypeError, ValueError ):
-    ''' Attempt to supply an invalid class of object as a URL. '''
+class FilterAvailabilityError( __.Omniexception, NotImplementedError ):
+    ''' Attempt to use filter which is not available. '''
+
+    def __init__( self, filter_name ):
+        super( ).__init__( f"Filter unavailable: {filter_name!r}" )
+
+
+class FilterClassValidityError( __.Omniexception, TypeError, ValueError ):
+    ''' Attempt to supply invalid class of object as filter. '''
 
     def __init__( self, class_ ):
-        # TODO: Interpolate fqname of class.
+        fqname = __.calculate_class_fqname( class_ )
         super( ).__init__(
-            f"Cannot use instances of class {class_!r} as URLs." )
+            f"Cannot use instances of class {fqname!r} as filters." )
 
 
-class NoUrlSchemeSupportError( __.Omniexception, NotImplementedError ):
+class FilterSpecifierValidityError( __.Omniexception, ValueError ):
+    ''' Attempt to produce filter from invalid specifier. '''
+
+    def __init__( self, specifier, reason ):
+        super( ).__init__(
+            f"Filter specifier {specifier!r} is invalid. Reason: {reason}" )
+
+
+class UrlClassValidityError( __.Omniexception, TypeError, ValueError ):
+    ''' Attempt to supply invalid class of object as URL. '''
+
+    def __init__( self, class_ ):
+        fqname = __.calculate_class_fqname( class_ )
+        super( ).__init__(
+            f"Cannot use instances of class {fqname!r} as URLs." )
+
+
+class UrlSchemeSupportError( __.Omniexception, NotImplementedError ):
     ''' Attempt to use URL scheme which has no implementation. '''
 
     def __init__( self, url ):
@@ -48,20 +74,20 @@ class NoUrlSchemeSupportError( __.Omniexception, NotImplementedError ):
             f"URL scheme {url.scheme!r} not supported. URL: {url}" )
 
 
-class OperationFailure( __.Omniexception, RuntimeError ):
-    ''' Failure of attempt to perform operation. '''
+class LocationOperateFailure( __.Omniexception, RuntimeError ):
+    ''' Failure of attempt to operate on location. '''
 
 
-class CheckAccessOperationFailure( OperationFailure ):
-    ''' Failure of attempt to check access. '''
+class LocationCheckAccessFailure( LocationOperateFailure ):
+    ''' Failure of attempt to check access to location. '''
 
     def __init__( self, url, reason ):
         super( ).__init__(
             f"Could not check access of location '{url}'. Reason: {reason}" )
 
 
-class ExamineOperationFailure( OperationFailure ):
-    ''' Failure of attempt to examine. '''
+class LocationExamineFailure( LocationOperateFailure ):
+    ''' Failure of attempt to examine location. '''
 
     def __init__( self, url, reason ):
         super( ).__init__(

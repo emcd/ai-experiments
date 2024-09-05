@@ -18,27 +18,25 @@
 #============================================================================#
 
 
-''' Filters for directory entries. '''
+''' Filter which honors Git ignore files (``.gitignore``). '''
 
-# ruff: noqa: F401
-# pylint: disable=unused-import
 
+from gitignorefile import Cache as _Cache
 
 from . import __
-from . import gitignore
-from . import vcs
-# TODO: -permissions:r
-# TODO: -permissions:cud
-# TODO: +permissions:cud
-# TODO: +permissions:x
-# TODO: -species:file
-# TODO: +species:directory
-# TODO: +species:symlink
-# TODO: +species:SPECIALS
-# TODO? +mimetype:image/*
-# TODO? +mimetype:application/octet-stream
-# TODO? +expiration>=4h  # also: Unix epoch or ISO 8601
-# TODO? +mtime<30d
 
 
-__.reclassify_modules( globals( ) )
+class Filter( __.Filter ):
+    ''' Filters directory entry according to relevant .gitignore files. '''
+    # TODO: Immutable class and instance attributes.
+
+    cache: _Cache
+
+    def __init__( self ): self.cache = _Cache( )
+
+    async def __call__( self, dirent: __.DirectoryEntry ) -> bool:
+        # TODO: Replace with async implementation.
+        # TODO: Handle exceptions.
+        return self.cache( dirent.url.path )
+
+__.filters_registry[ '@gitignore' ] = Filter

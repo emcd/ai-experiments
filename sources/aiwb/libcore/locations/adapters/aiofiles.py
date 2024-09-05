@@ -145,6 +145,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         recurse: bool = True
     ) -> __.AbstractSequence[ __.DirectoryEntry ]:
         from aiofiles.os import scandir
+        filters = __.filters_from_specifiers( filters )
         scanners = [ ]
         results = [ ]
         with await scandir( self.implement ) as dirents:

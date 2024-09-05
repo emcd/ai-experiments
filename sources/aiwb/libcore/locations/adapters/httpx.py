@@ -54,7 +54,7 @@ class _Common:
         ) as client: response = await client.options( self.implement )
         try: response.raise_for_status( )
         except _httpx.HTTPStatusError as exc:
-            raise __.CheckAccessOperationFailure(
+            raise __.LocationCheckAccessFailure(
                 self.url, reason = exc ) from exc
         if __.Permissions.Abstain == permissions: return True
         allowed_methods = frozenset( map(
@@ -77,13 +77,13 @@ class _Common:
         ) as client:
             permissions = await self._inspect_permissions( client )
             if not __.Permissions.Retrieve & permissions:
-                raise __.ExamineOperationFailure(
+                raise __.LocationExamineFailure(
                     self.url, reason = "Retrieval request not allowed." )
             try:
                 response = await client.head( self.implement )
                 response.raise_for_status( )
             except _httpx.HTTPStatusError as exc:
-                raise __.ExamineOperationFailure(
+                raise __.LocationExamineFailure(
                     self.url, reason = exc ) from exc
             mimetype = response.headers.get(
                 'Content-Type', 'application/octet-stream' )
@@ -105,7 +105,7 @@ class _Common:
             response = await client.options( self.implement )
             response.raise_for_status( )
         except _httpx.HTTPStatusError as exc:
-            raise __.ExamineOperationFailure(
+            raise __.LocationExamineFailure(
                 self.url, reason = exc ) from exc
         methods = frozenset( map(
             str.upper, response.headers.get( 'Allow', '' ).split( ', ' ) ) )

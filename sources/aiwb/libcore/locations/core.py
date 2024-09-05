@@ -54,10 +54,22 @@ class AdapterInode( metaclass = __.ABCFactory ):
 
 @__.standard_dataclass
 class DirectoryEntry:
-    ''' Location plus infromation about it. '''
+    ''' Location plus information about it. '''
 
     inode: Inode
     url: Url
+
+    def is_directory( self ) -> bool:
+        ''' Is entry a directory? '''
+        return self.inode.is_directory( )
+
+    def is_file( self ) -> bool:
+        ''' Is entry a regular file? '''
+        return self.inode.is_file( )
+
+    def is_symlink( self ) -> bool:
+        ''' Is entry a symlink? '''
+        return self.inode.is_symlink( )
 
 
 @__.standard_dataclass
@@ -68,6 +80,18 @@ class Inode:
     permissions: Permissions
     species: LocationSpecies
     supplement: AdapterInode
+
+    def is_directory( self ) -> bool:
+        ''' Does inode represent a directory? '''
+        return LocationSpecies.Directory is self.species
+
+    def is_file( self ) -> bool:
+        ''' Does inode represent a regular file? '''
+        return LocationSpecies.File is self.species
+
+    def is_symlink( self ) -> bool:
+        ''' Does inode represent a symlink? '''
+        return LocationSpecies.Symlink is self.species
 
 
 class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
@@ -113,8 +137,8 @@ class Url( _UrlParts, metaclass = __.AccretiveClass ):
                 params = url.params,
                 query = url.query,
                 fragment = url.fragment )
-        from .exceptions import InvalidUrlClassError
-        raise InvalidUrlClassError( type( url ) )
+        from .exceptions import UrlClassValidityError
+        raise UrlClassValidityError( type( url ) )
 
     def __repr__( self ) -> str: return super( ).__repr__( )
 

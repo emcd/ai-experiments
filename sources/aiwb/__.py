@@ -120,6 +120,11 @@ absent = Absent( ) #: Option with no default value.
 standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
 
 
+def calculate_class_fqname( class_: type ) -> str:
+    ''' Calculates fully-qualified name for class. '''
+    return f"{class_.__module__}.{class_.__qualname__}"
+
+
 async def chain_async( *iterables: AbstractIterable | AbstractIterableAsync ):
     ''' Chains items from iterables in sequence and asynchronously. '''
     for iterable in iterables:
