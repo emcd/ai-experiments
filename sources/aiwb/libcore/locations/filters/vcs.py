@@ -67,16 +67,18 @@ class Filter( __.Filter ):
             case '': includes = _defaults
             case _:
                 includes = frozenset(
-                    _validate_name( name ) for name in includes.split( ',' ) )
+                    _validate_name( name )
+                    for name in filter( None, includes.split( ',' ) ) )
         excludes = frozenset(
-            _validate_name( name ) for name in excludes.split( ',' ) )
+            _validate_name( name )
+            for name in filter( None, excludes.split( ',' ) ) )
         matchers = tuple( includes - excludes )
         if not matchers:
             specifier = ':'.join( _filter_name, *arguments )
             raise __.FilterSpecifierValidityError(
                 specifier = specifier,
                 reason = "Evaluates to empty set of matchers." )
-        self.matcher = matchers
+        self.matchers = matchers
 
     async def __call__( self, dirent: __.DirectoryEntry ) -> bool:
         path = __.Path( dirent.url.path )

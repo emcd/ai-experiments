@@ -70,12 +70,12 @@ class _Common:
     async def check_existence(
         self, pursue_indirection: bool = True
     ) -> bool:
-        from aiofiles.os.path import exists
+        from aiofiles.os import path
         # TODO? Resolve symlinks async.
         location = (
             self.implement.resolve( ) if pursue_indirection
             else self.implement )
-        return await exists( location )
+        return await path.exists( location )
 
     async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
         from aiofiles.os import stat
@@ -113,22 +113,23 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         elif await self.is_file( ):
             return FileAdapter( url = self.url )
         # TODO: assert selection of adapter species
+        raise AssertionError( "Could not match location species." )
 
     async def is_directory( self, pursue_indirection: bool = True ) -> bool:
-        from aiofiles.os.path import isdir, islink
-        if not pursue_indirection and await islink( self.implement ):
+        from aiofiles.os import path
+        if not pursue_indirection and await path.islink( self.implement ):
             return False
-        return await isdir( self.implement )
+        return await path.isdir( self.implement )
 
     async def is_file( self, pursue_indirection: bool = True ) -> bool:
-        from aiofiles.os.path import isfile, islink
-        if not pursue_indirection and await islink( self.implement ):
+        from aiofiles.os import path
+        if not pursue_indirection and await path.islink( self.implement ):
             return False
-        return await isfile( self.implement )
+        return await path.isfile( self.implement )
 
     async def is_indirection( self ) -> bool:
-        from aiofiles.os.path import islink
-        return await islink( self.implement )
+        from aiofiles.os import path
+        return await path.islink( self.implement )
 
 # TODO? Perform registrations as part of module preparation function.
 __.adapters_registry[ '' ] = GeneralAdapter
@@ -149,10 +150,11 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         scanners = [ ]
         results = [ ]
         with await scandir( self.implement ) as dirents:
+            # TODO: Process dirents concurrently.
             for dirent in dirents:
                 url = __.Url.from_url( dirent.path )
                 inode = (
-                    GeneralAdapter( url = url )
+                    await GeneralAdapter( url = url )
                     .examine( pursue_indirection = False ) )
                 dirent_ = __.DirectoryEntry( inode = inode, url = url )
                 if filters and await __.apply_filters( dirent_, filters ):

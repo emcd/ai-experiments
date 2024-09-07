@@ -25,15 +25,18 @@ _directory_filter_description = '''
 Filter to apply on directory listing.
 
 Choices:
-* gitignore: Removes entries not allowed by relevant '.gitignore' files.
-* vcs: Removes entries related to VCS configuration, like the '.git' directory.
+* @gitignore: Removes entries ignored by relevant '.gitignore' files.
+* +vcs: Removes entries related to VCS configuration and state,
+        like the '.git' directory. Can take an optional argument, after a
+        colon, which is a comma-separated list of matchers. The defualt,
+        '+vcs', is equivalent to '+vcs:git,hg,svn'.
 '''
 
 _directory_recursion_description = '''
 Recursively list subdirectories?
 
 If this flag is set, then it is recommended to also enable filters like
-'gitignore' and 'vcs' to prevent unnecessary results from being returned.
+'@gitignore' and '+vcs' to prevent unnecessary results from being returned.
 '''
 
 instructions_mode_argschema = {
@@ -84,38 +87,22 @@ survey_directory_argschema = {
             'type': 'array',
             'items': {
                 'type': 'string',
-                'description': _directory_filter_description,
-                'enum': [ 'gitignore', 'vcs' ]
+                'description': _directory_filter_description
             },
-            'default': [ 'gitignore', 'vcs' ],
+            'default': [ '@gitignore', '+vcs' ],
         },
-        'recursive': {
+        'recurse': {
             'type': 'boolean',
             'description': _directory_recursion_description,
             'default': True
-        },
+        }
+#        },
 #        'file_size_maximum': {
 #            'type': 'integer',
 #            'description':
 #                'Do not list regular files larger than this many bytes.',
 #            'default': 40000
-#        },
-        'return_directories': {
-            'type': 'boolean',
-            'description': 'Include directories in results?',
-            'default': True
-        },
-        'return_special_entities': {
-            'type': 'boolean',
-            'description':
-                'Include device nodes, named pipes, etc... in results?',
-            'default': True
-        },
-        'return_symlinks': {
-            'type': 'boolean',
-            'description': 'Include symlinks in results?',
-            'default': True
-        }
+#        }
     },
     'required': [ 'location' ],
 }
