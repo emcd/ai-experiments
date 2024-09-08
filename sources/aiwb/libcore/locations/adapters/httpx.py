@@ -133,7 +133,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
 
     async def is_indirection( self ) -> bool:
         # HTTP locations can be redirects.
-        async with _httpx.AsyncClient() as client:
+        async with _httpx.AsyncClient( ) as client:
             response = await client.head( self.implement )
             return response.is_redirect
 
@@ -144,6 +144,44 @@ __.adapters_registry[ 'https' ] = GeneralAdapter
 
 class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with httpx. '''
+    # TODO: Immutable class and object attributes.
+
+    async def acquire_content(
+        self,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> str:
+        async with _httpx.AsyncClient( ) as client:
+            response = await client.get( self.implement )
+        response.raise_for_status( ) # TODO: Exception handling.
+        content_type = response.headers.get( 'Content-Type', '' )
+        mimetype, _, params = content_type.partition( ';' )
+        if not mimetype:
+            from magic import from_buffer
+            mimetype = from_buffer( response.content, mime = True )
+        if charset in ( __.absent, '#DETECT#' ) and 'charset=' in params:
+            charset = params.split( 'charset=' )[ -1 ].strip( )
+        if charset in ( __.absent, '#DETECT#' ):
+            from chardet import detect
+            charset = detect( response.content )[ 'encoding' ]
+        # TODO: Newline translation.
+        content = response.content.decode( charset, errors = charset_errors )
+        return __.ContentTextResult(
+            content = content, mimetype = mimetype, charset = charset )
+        #return response.text
+
+    async def acquire_content_bytes( self ) -> bytes:
+        async with _httpx.AsyncClient( ) as client:
+            response = await client.get( self.implement )
+        response.raise_for_status( ) # TODO: Exception handling.
+        content_type = response.headers.get( 'Content-Type', '' )
+        mimetype, _, _ = content_type.partition( ';' )
+        if not mimetype:
+            from magic import from_buffer
+            mimetype = from_buffer( response.content, mime = True )
+        return __.ContentBytesReesult(
+            content = response.content, mimetype = mimetype )
 
 
 @__.standard_dataclass

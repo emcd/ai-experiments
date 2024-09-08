@@ -28,15 +28,15 @@ from __future__ import annotations
 
 from . import __
 from . import accessors
-from .operations import list_folder
-# TODO: Fold other imports into accessors.
 from .argschemata import (
-    acquire_contents_argschema,
+    acquire_content_argschema,
+    summarize_content_argschema,
     survey_directory_argschema,
-    update_contents_argschema,
+    update_content_argschema,
 )
-from .read import analyze, read
+from .read import analyze
 from .write import write_file
+from .operations import list_folder, read
 
 
 _name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
@@ -64,10 +64,10 @@ class Ensemble( __.Ensemble ):
 
 
 _invocables = (
-    ( analyze, acquire_contents_argschema ),
-    ( read, acquire_contents_argschema ),
+    ( analyze, summarize_content_argschema ),
+    ( read, acquire_content_argschema ),
     ( list_folder, survey_directory_argschema ),
-    ( write_file, update_contents_argschema ),
+    ( write_file, update_content_argschema ),
 )
 
 

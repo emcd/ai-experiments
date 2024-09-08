@@ -64,7 +64,19 @@ Analysis instructions for AI. Should not be empty in replace mode. '''
     },
 }
 
-acquire_contents_argschema = {
+acquire_content_argschema = {
+    'type': 'object',
+    'properties': {
+        'location': {
+            'type': 'string',
+            'description': 'URL or local filesystem path to be read.'
+        },
+#        'control': instructions_argschema,
+    },
+    'required': [ 'location' ],
+}
+
+summarize_content_argschema = {
     'type': 'object',
     'properties': {
         'source': {
@@ -73,7 +85,7 @@ acquire_contents_argschema = {
         },
         'control': instructions_argschema,
     },
-    'required': [ 'source' ],
+    'required': [ 'location' ],
 }
 
 survey_directory_argschema = {
@@ -107,7 +119,7 @@ survey_directory_argschema = {
     'required': [ 'location' ],
 }
 
-update_contents_argschema = {
+update_content_argschema = {
     'type': 'object',
     'properties': {
         'location': {

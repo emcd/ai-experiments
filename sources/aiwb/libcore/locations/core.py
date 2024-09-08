@@ -45,11 +45,27 @@ class AdapterInode( metaclass = __.ABCFactory ):
     #       We just want issubclass support.
     #       Functions which return implements should cast.
 
-    # http/https: cache etag and TTL?
     # git/hg: relevant branches and tags?
 
     # Maybe return inode on completion of whole file operations?
     # Would be a useful streamline for cache management.
+
+
+@__.standard_dataclass
+class ContentBytesResult:
+    ''' Result, as raw bytes, from content acquisition operation. '''
+
+    content: bytes
+    mimetype: str
+
+
+@__.standard_dataclass
+class ContentTextResult:
+    ''' Result, as Unicode string, from content acquisition operation. '''
+
+    charset: str
+    content: str
+    mimetype: str
 
 
 @__.standard_dataclass

@@ -105,10 +105,12 @@ class Filter( __.a.Protocol ):
 class DirectoryOperations( __.a.Protocol ):
     ''' Standard operations on directories. '''
 
-    async def survey(
+    async def survey_entries(
         self,
-        filters: __.AbstractCollection[ PossibleFilter ],
-        recurse: bool = True
+        filters: __.Optional[
+            __.AbstractIterable[ PossibleFilter ]
+        ] = __.absent,
+        recurse: bool = True,
     ) -> __.AbstractSequence[ _core.DirectoryEntry ]:
         ''' Returns list of directory entries, subject to filtering. '''
         raise NotImplementedError
@@ -124,13 +126,20 @@ class DirectoryOperations( __.a.Protocol ):
 class FileOperations( __.a.Protocol ):
     ''' Standard operations on files. '''
 
-    # TODO: report_mimetype
-
-    # TODO: acquire_content
+    async def acquire_content(
+        self,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> _core.ContentTextResult:
+        ''' Returns complete content of file as Unicode string. '''
+        raise NotImplementedError
 
     # TODO: acquire_content_continuous
 
-    # TODO: acquire_content_bytes
+    async def acquire_content_bytes( self ) -> _core.ContentBytesResult:
+        ''' Returns complete content of file as raw bytes. '''
+        raise NotImplementedError
 
     # TODO: acquire_content_bytes_continuous
 
@@ -221,6 +230,8 @@ class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
     async def as_specific( self ) -> SpecificAdapter:
         ''' Returns appropriate specific adapter for location. '''
         raise NotImplementedError
+
+    # TODO: classmethod is_cache_manager
 
 
 @__.a.runtime_checkable

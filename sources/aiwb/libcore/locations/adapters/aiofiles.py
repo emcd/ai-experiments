@@ -140,13 +140,15 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
     ''' Directory access adapter with aiofiles and pathlib. '''
     # TODO: Immutable class and object attributes.
 
-    async def survey(
+    async def survey_entries(
         self,
-        filters: __.AbstractCollection[ __.PossibleFilter ],
+        filters: __.Optional[
+            __.AbstractIterable[ __.PossibleFilter ]
+        ] = __.absent,
         recurse: bool = True
     ) -> __.AbstractSequence[ __.DirectoryEntry ]:
         from aiofiles.os import scandir
-        filters = __.filters_from_specifiers( filters )
+        if filters: filters = __.filters_from_specifiers( filters )
         scanners = [ ]
         results = [ ]
         with await scandir( self.implement ) as dirents:
@@ -173,6 +175,46 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
 class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with aiofiles and pathlib. '''
     # TODO: Immutable class and object attributes.
+
+    async def acquire_content(
+        self,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> __.ContentTextResult:
+        from aiofiles import open as open_
+        # TODO: Exception handling.
+        async with open_( self.implement, 'rb' ) as stream:
+            content_bytes = await stream.read( )
+        from magic import from_buffer
+        mimetype = from_buffer( content_bytes, mime = True )
+        match charset:
+            case __.absent:
+                from locale import getpreferredencoding
+                charset = getpreferredencoding( )
+            case '#DETECT#':
+                from chardet import detect
+                charset = detect( content_bytes )[ 'encoding' ]
+        if __.absent is charset_errors: charset_errors = 'strict'
+        if __.absent is newline: newline = None
+        # TODO: Newline translation.
+        content = content_bytes.decode( charset, errors = charset_errors )
+        return __.ContentTextResult(
+            content = content, mimetype = mimetype, charset = charset )
+#        async with open_( # TODO: Exception handling.
+#            self.implement,
+#            encoding = codec_name,
+#            errors = codec_errors,
+#            newline = newline,
+#        ) as stream: return await stream.read( )
+
+    async def acquire_content_bytes( self ) -> __.ContentBytesResult:
+        from aiofiles import open as open_
+        async with open_( self.implement, 'rb' ) as stream:
+            content = await stream.read( )
+        from magic import from_buffer
+        mimetype = from_buffer( content, mime = True )
+        return __.ContentBytesResult( content = content, mimetype = mimetype )
 
 
 def _derive_mimetype(

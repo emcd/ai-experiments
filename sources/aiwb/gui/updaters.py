@@ -76,7 +76,7 @@ def configure_message_interface( canister_gui, dto ):
         try:
             extract_invocation_requests(
                 gui, component = canister, close_invokers = True )
-        except Exception: pass
+        except Exception as exc: ic( str( exc ) )
         else: canister_gui.button_invoke.visible = True
     elif 'Document' == role:
         canister_gui.button_delete.visible = True

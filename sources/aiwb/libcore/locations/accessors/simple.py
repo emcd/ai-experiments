@@ -102,12 +102,14 @@ class DirectoryAccessor( _Common, __.DirectoryAccessor ):
         self.adapter = adapter
         super( ).__init__( )
 
-    async def survey(
+    async def survey_entries(
         self,
-        filters: __.AbstractCollection[ __.PossibleFilter ],
-        recurse: bool = True
+        filters: __.Optional[
+            __.AbstractIterable[ __.PossibleFilter ]
+        ] = __.absent,
+        recurse: bool = True,
     ) -> __.AbstractSequence[ __.DirectoryEntry ]:
-        return await self.adapter.survey(
+        return await self.adapter.survey_entries(
             filters = filters, recurse = recurse )
 
 
@@ -120,3 +122,17 @@ class FileAccessor( _Common, __.FileAccessor ):
     def __init__( self, adapter: __.FileAdapter ):
         self.adapter = adapter
         super( ).__init__( )
+
+    async def acquire_content(
+        self,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> __.ContentTextResult:
+        return await self.adapter.acquire_content(
+            charset = charset,
+            charset_errors = charset_errors,
+            newline = newline )
+
+    async def acquire_content_bytes( self ) -> __.ContentBytesResult:
+        return await self.adapter.acquire_content_bytes( )

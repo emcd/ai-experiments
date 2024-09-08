@@ -36,3 +36,8 @@ from .core import (
     PossibleUrl,
     Url,
 )
+from .interfaces import (
+    DirectoryAccessor,
+    FileAccessor,
+    SpecificAccessor as     SpecificLocationAccessor,
+)

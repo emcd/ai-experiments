@@ -24,5 +24,12 @@
 # pylint: disable=unused-import
 
 
-from ....libcore import LocationAccessorSimple
+from ....libcore import (
+    DirectoryAccessor,
+    FileAccessor,
+    LocationAccessorSimple,
+    LocationAccessorWithCache,
+    SpecificLocationAccessor,
+    Url,
+)
 from ..__ import *
