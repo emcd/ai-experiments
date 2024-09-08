@@ -134,6 +134,13 @@ async def chain_async( *iterables: AbstractIterable | AbstractIterableAsync ):
             for item in iterable: yield item
 
 
+def exception_to_str( exception: BaseException ) -> str:
+    ''' Produces string representation of exception with type. '''
+    return "[{class_name}] {message}".format(
+        class_name = calculate_class_fqname( type( exception ) ),
+        message = str( exception ) )
+
+
 async def gather_async(
     *operands: a.Any,
     return_exceptions: a.Annotation[

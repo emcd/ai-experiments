@@ -168,4 +168,4 @@ def _deserialize_definition_data( data: str, store: Store ) -> Definition:
 
 def _report_template_error( context, exc ):
     ic( context )
-    ic( exc )
+    ic( __.exception_to_str( exc ) )
