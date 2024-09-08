@@ -29,3 +29,7 @@ class Omniexception(
     metaclass = __.AccretiveClass,
 ):
     ''' Base for exceptions raised by package API. '''
+
+
+class SupportError( Omniexception, NotImplementedError ):
+    ''' Attempt to use implementation which is not available. '''

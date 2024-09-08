@@ -12,6 +12,7 @@ requires-python = '>= 3.10'
 dependencies = [
   'accretive',
   'aiofiles',
+  'chardet',
   'exceptiongroup', # TODO: Python 3.11: Remove.
   'fastapi[standard]',
   'gitignorefile',

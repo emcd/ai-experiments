@@ -24,4 +24,4 @@
 # pylint: disable=unused-import
 
 from ..__ import *
-from ..base import Omniexception
+from ..base import Omniexception, SupportError

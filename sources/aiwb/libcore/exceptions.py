@@ -24,5 +24,5 @@
 # pylint: disable=unused-import
 
 
-from .base import Omniexception
+from .base import Omniexception, SupportError
 from .locations.exceptions import *

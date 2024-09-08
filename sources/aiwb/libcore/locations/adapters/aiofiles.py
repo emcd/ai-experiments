@@ -28,6 +28,10 @@ from os import stat_result as _StatResult
 from . import __
 
 
+_module_name = __name__.replace( f"{__package__}.", '' )
+_entity_name = f"location access adapter '{_module_name}'"
+
+
 _Permissions_CUD = (
     __.Permissions.Create | __.Permissions.Update | __.Permissions.Delete )
 
@@ -42,11 +46,15 @@ class _Common:
     url: __.Url
 
     def __init__( self, url: __.Url ):
-        # TODO: Assert file or empty scheme.
-        if url.netloc or url.params or url.query or url.fragment:
-            # TODO: Raise more specific exception.
-            raise NotImplementedError(
-                f"Only scheme and path supported in file URLs. URL: {url}" )
+        if url.scheme not in ( '', 'file' ):
+            raise __.UrlSchemeAssertionError(
+                entity_name = _entity_name, url = url )
+        for part_name in ( 'fragment', 'netloc', 'params', 'query' ):
+            if getattr( url, part_name, '' ):
+                raise __.UrlPartAssertionError(
+                    entity_name = _entity_name,
+                    part_name = part_name,
+                    url = url )
         self.implement = __.Path( url.path )
         self.url = url
         super( ).__init__( )
@@ -59,31 +67,40 @@ class _Common:
         pursue_indirection: bool = True,
     ) -> bool:
         from os import F_OK, R_OK, W_OK, X_OK
-        from aiofiles.os import access
         mode = F_OK
         if __.Permissions.Retrieve & permissions: mode |= R_OK
         if _Permissions_CUD & permissions: mode |= W_OK
         if __.Permissions.Execute & permissions: mode |= X_OK
-        return await access(
-            self.implement, mode, follow_symlinks = pursue_indirection )
+        try:
+            from aiofiles.os import access
+            return await access(
+                self.implement, mode, follow_symlinks = pursue_indirection )
+        except Exception as exc:
+            raise __.LocationCheckAccessFailure(
+                url = self.url, reason = str( exc ) ) from exc
 
     async def check_existence(
         self, pursue_indirection: bool = True
     ) -> bool:
-        from aiofiles.os import path
-        # TODO? Resolve symlinks async.
-        location = (
-            self.implement.resolve( ) if pursue_indirection
-            else self.implement )
-        return await path.exists( location )
+        try:
+            from aiofiles.os import path
+            return await path.exists(
+                self.implement, follow_symlinks = pursue_indirection )
+        except Exception as exc:
+            raise __.LocationCheckExistenceFailure(
+                url = self.url, reason = str( exc ) ) from exc
 
     async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
-        from aiofiles.os import stat
-        # TODO? Resolve symlinks async.
-        location = (
-            self.implement.resolve( ) if pursue_indirection
-            else self.implement )
-        inode = await stat( location )
+        from os.path import realpath
+        try:
+            from aiofiles.os import stat
+            # TODO? Resolve path async.
+            #       aiofiles does not support realpath
+            location = realpath( self.implement, strict = True )
+            inode = await stat( location, follow_symlinks = False )
+        except Exception as exc:
+            raise __.LocationExamineFailure(
+                url = self.url, reason = str( exc ) ) from exc
         permissions = _permissions_from_stat( inode )
         species = _species_from_stat( inode )
         mimetype = _derive_mimetype( location, species )
@@ -107,29 +124,44 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         return selfclass( url = __.Url.from_url( url ) )
 
     async def as_specific( self ) -> __.SpecificAdapter:
-        # TODO: match await self.adapter.stat( ).species
-        if await self.is_directory( ):
-            return DirectoryAdapter( url = self.url )
-        elif await self.is_file( ):
-            return FileAdapter( url = self.url )
-        # TODO: assert selection of adapter species
-        raise AssertionError( "Could not match location species." )
+        species = ( await self.examine( pursue_indirection = True ) ).species
+        match species:
+            case __.LocationSpecies.Directory:
+                return DirectoryAdapter( url = self.url )
+            case __.LocationSpecies.File:
+                return FileAdapter( url = self.url )
+            case _:
+                reason = (
+                    f"No derivative available for species {species.value!r}." )
+                raise __.LocationAdapterDerivationFailure(
+                    url = self.url, reason = reason )
 
     async def is_directory( self, pursue_indirection: bool = True ) -> bool:
         from aiofiles.os import path
-        if not pursue_indirection and await path.islink( self.implement ):
-            return False
-        return await path.isdir( self.implement )
+        try:
+            if not pursue_indirection and await path.islink( self.implement ):
+                return False
+            return await path.isdir( self.implement )
+        except Exception as exc:
+            raise __.LocationIsDirectoryFailure(
+                url = self.url, reason = str( exc ) ) from exc
 
     async def is_file( self, pursue_indirection: bool = True ) -> bool:
         from aiofiles.os import path
-        if not pursue_indirection and await path.islink( self.implement ):
-            return False
-        return await path.isfile( self.implement )
+        try:
+            if not pursue_indirection and await path.islink( self.implement ):
+                return False
+            return await path.isfile( self.implement )
+        except Exception as exc:
+            raise __.LocationIsFileFailure(
+                url = self.url, reason = str( exc ) ) from exc
 
     async def is_indirection( self ) -> bool:
         from aiofiles.os import path
-        return await path.islink( self.implement )
+        try: return await path.islink( self.implement )
+        except Exception as exc:
+            raise __.LocationIsIndirectionFailure(
+                url = self.url, reason = str( exc ) ) from exc
 
 # TODO? Perform registrations as part of module preparation function.
 __.adapters_registry[ '' ] = GeneralAdapter
@@ -151,6 +183,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         if filters: filters = __.filters_from_specifiers( filters )
         scanners = [ ]
         results = [ ]
+        # TODO: Handle scandir exceptions.
         with await scandir( self.implement ) as dirents:
             # TODO: Process dirents concurrently.
             for dirent in dirents:
@@ -164,7 +197,8 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
                 if recurse and inode.is_directory( ):
                     scanners.append(
                         DirectoryAdapter( url = url )
-                        .survey( filters = filters, recurse = recurse ) )
+                        .survey_entries(
+                            filters = filters, recurse = recurse ) )
                 results.append( dirent_ )
             if recurse:
                 results.extend( __.chain.from_iterable(
@@ -182,38 +216,47 @@ class FileAdapter( _Common, __.FileAdapter ):
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
     ) -> __.ContentTextResult:
-        from aiofiles import open as open_
-        # TODO: Exception handling.
-        async with open_( self.implement, 'rb' ) as stream:
-            content_bytes = await stream.read( )
-        from magic import from_buffer
-        mimetype = from_buffer( content_bytes, mime = True )
+        Error = __.partial_function(
+            __.LocationAcquireContentFailure, url = self.url )
+        try:
+            from aiofiles import open as open_
+            async with open_( self.implement, 'rb' ) as stream:
+                content_bytes = await stream.read( )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        try:
+            from magic import from_buffer
+            mimetype = from_buffer( content_bytes, mime = True )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
         match charset:
             case __.absent:
                 from locale import getpreferredencoding
                 charset = getpreferredencoding( )
             case '#DETECT#':
-                from chardet import detect
-                charset = detect( content_bytes )[ 'encoding' ]
+                try:
+                    from chardet import detect
+                    charset = detect( content_bytes )[ 'encoding' ]
+                except Exception as exc:
+                    raise Error( reason = str( exc ) ) from exc
         if __.absent is charset_errors: charset_errors = 'strict'
         if __.absent is newline: newline = None
         # TODO: Newline translation.
-        content = content_bytes.decode( charset, errors = charset_errors )
+        try: content = content_bytes.decode( charset, errors = charset_errors )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
         return __.ContentTextResult(
             content = content, mimetype = mimetype, charset = charset )
-#        async with open_( # TODO: Exception handling.
-#            self.implement,
-#            encoding = codec_name,
-#            errors = codec_errors,
-#            newline = newline,
-#        ) as stream: return await stream.read( )
 
     async def acquire_content_bytes( self ) -> __.ContentBytesResult:
-        from aiofiles import open as open_
-        async with open_( self.implement, 'rb' ) as stream:
-            content = await stream.read( )
-        from magic import from_buffer
-        mimetype = from_buffer( content, mime = True )
+        Error = __.partial_function(
+            __.LocationAcquireContentFailure, url = self.url )
+        try:
+            from aiofiles import open as open_
+            async with open_( self.implement, 'rb' ) as stream:
+                content = await stream.read( )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        try:
+            from magic import from_buffer
+            mimetype = from_buffer( content, mime = True )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
         return __.ContentBytesResult( content = content, mimetype = mimetype )
 
 
@@ -241,8 +284,10 @@ def _derive_mimetype(
         case __.LocationSpecies.Symlink:
             return 'inode/symlink'
         case __.LocationSpecies.Void:
-            return 'NOTHING'
-    # TODO: assert valid species
+            return '#NOTHING#'
+        case _:
+            raise __.LocationSpeciesSupportError(
+                entity_name = _entity_name, species = species )
     return 'application/octet-stream'
 
 
@@ -267,7 +312,8 @@ def _permissions_from_stat( inode: _StatResult ) -> __.Permissions:
 
 
 def _species_from_stat( inode: _StatResult ) -> __.LocationSpecies:
-    match inode.st_mode & 0o170000:
+    inode_type = inode.st_mode & 0o170000
+    match inode_type:
         case 0o010000: return __.LocationSpecies.Pipe
         case 0o020000: return __.LocationSpecies.Stream
         case 0o040000: return __.LocationSpecies.Directory
@@ -275,5 +321,6 @@ def _species_from_stat( inode: _StatResult ) -> __.LocationSpecies:
         case 0o100000: return __.LocationSpecies.File
         case 0o120000: return __.LocationSpecies.Symlink
         case 0o140000: return __.LocationSpecies.Socket
-    # TODO: assert valid species
-    return __.LocationSpecies.Void
+        case _:
+            raise __.SupportError(
+                f"Inode type {inode_type!r} not supported by {_entity_name}." )
