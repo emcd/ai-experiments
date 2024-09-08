@@ -18,23 +18,13 @@
 #============================================================================#
 
 
-''' Abstractions and common implementations for various kinds of locations. '''
+''' Internal aggregation of locations API. '''
 
 # ruff: noqa: F401,F403
 # pylint: disable=unused-import
 
 
-from . import __
-from . import accessors
-from . import adapters
-from . import core
-from . import exceptions
-from . import filters
-from . import interfaces
-from . import registries
-
-from ._api import *
-from .accessors import AccessorSimple, AccessorWithCache
-
-
-__.reclassify_modules( globals( ) )
+from .core import *
+from .exceptions import *
+from .interfaces import *
+from .registries import *
