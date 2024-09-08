@@ -165,6 +165,8 @@ class FileAdapter( _Common, __.FileAdapter ):
         if charset in ( __.absent, '#DETECT#' ):
             from chardet import detect
             charset = detect( response.content )[ 'encoding' ]
+        if __.absent is charset_errors: charset_errors = 'strict'
+        if __.absent is newline: newline = None
         # TODO: Newline translation.
         content = response.content.decode( charset, errors = charset_errors )
         return __.ContentTextResult(

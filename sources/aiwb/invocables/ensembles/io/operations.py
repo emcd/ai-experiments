@@ -82,10 +82,11 @@ async def _accessor_from_arguments(
     arguments: __.Arguments
 ) -> __.SpecificLocationAccessor:
     url = __.Url.from_url( arguments.pop( 'location' ) )
-    if url.scheme in ( '', 'file' ):
-        accessor = __.LocationAccessorSimple.from_url( url )
-    else:
-        accessor = __.LocationAccessorWithCache.from_url( url )
+    accessor = __.LocationAccessorSimple.from_url( url )
+#    if url.scheme in ( '', 'file' ):
+#        accessor = __.LocationAccessorSimple.from_url( url )
+#    else:
+#        accessor = __.LocationAccessorWithCache.from_url( url )
     return await accessor.as_specific( )
 
 
