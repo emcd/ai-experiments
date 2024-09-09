@@ -69,8 +69,11 @@ class GeneralAccessor( _Common, __.GeneralAccessor ):
         self.adapter = adapter
         super( ).__init__( )
 
-    async def as_specific( self ) -> __.SpecificAccessor:
-        adapter = await self.adapter.as_specific( )
+    async def as_specific(
+        self,
+        species: __.Optional[ __.LocationSpecies ] = __.absent,
+    ) -> __.SpecificAccessor:
+        adapter = await self.adapter.as_specific( species = species )
         # TODO? match adapter.species
         if isinstance( adapter, __.DirectoryAdapter ):
             return DirectoryAccessor( adapter = adapter )
@@ -128,11 +131,34 @@ class FileAccessor( _Common, __.FileAccessor ):
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
-    ) -> __.ContentTextResult:
+    ) -> __.AcquireContentTextResult:
         return await self.adapter.acquire_content(
             charset = charset,
             charset_errors = charset_errors,
             newline = newline )
 
-    async def acquire_content_bytes( self ) -> __.ContentBytesResult:
+    async def acquire_content_bytes( self ) -> __.AcquireContentBytesResult:
         return await self.adapter.acquire_content_bytes( )
+
+    async def update_content(
+        self,
+        content: str,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> __.UpdateContentResult:
+        return await self.adapter.update_content(
+            content,
+            options = options,
+            charset = charset,
+            charset_errors = charset_errors,
+            newline = newline )
+
+    async def update_content_bytes(
+        self,
+        content: bytes,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+    ) -> __.UpdateContentResult:
+        return await self.adapter.update_content_bytes(
+            content, options = options )

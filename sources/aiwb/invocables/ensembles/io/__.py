@@ -24,12 +24,5 @@
 # pylint: disable=unused-import
 
 
-from ....libcore import (
-    DirectoryAccessor,
-    FileAccessor,
-    LocationAccessorSimple,
-    LocationAccessorWithCache,
-    SpecificLocationAccessor,
-    Url,
-)
+from ....libcore.locations.qaliases import *
 from ..__ import *

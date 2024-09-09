@@ -33,6 +33,8 @@ from .accessors import (
 )
 from .core import (
     AccessImplement as      LocationAccessImplement,
+    FileUpdateOptions,
+    LocationSpecies,
     PossibleUrl,
     Url,
 )

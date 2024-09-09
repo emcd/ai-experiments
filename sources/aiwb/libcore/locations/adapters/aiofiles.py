@@ -123,8 +123,13 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
     def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
         return selfclass( url = __.Url.from_url( url ) )
 
-    async def as_specific( self ) -> __.SpecificAdapter:
-        species = ( await self.examine( pursue_indirection = True ) ).species
+    async def as_specific(
+        self,
+        species: __.Optional[ __.LocationSpecies ] = __.absent,
+    ) -> __.SpecificAdapter:
+        species = (
+            species
+            or ( await self.examine( pursue_indirection = True ) ).species )
         match species:
             case __.LocationSpecies.Directory:
                 return DirectoryAdapter( url = self.url )
@@ -215,18 +220,12 @@ class FileAdapter( _Common, __.FileAdapter ):
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
-    ) -> __.ContentTextResult:
+    ) -> __.AcquireContentTextResult:
         Error = __.partial_function(
             __.LocationAcquireContentFailure, url = self.url )
-        try:
-            from aiofiles import open as open_
-            async with open_( self.implement, 'rb' ) as stream:
-                content_bytes = await stream.read( )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        try:
-            from magic import from_buffer
-            mimetype = from_buffer( content_bytes, mime = True )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        bytes_result = await self.acquire_content_bytes( )
+        content_bytes = bytes_result.content
+        mimetype = bytes_result.mimetype
         match charset:
             case __.absent:
                 from locale import getpreferredencoding
@@ -242,10 +241,10 @@ class FileAdapter( _Common, __.FileAdapter ):
         # TODO: Newline translation.
         try: content = content_bytes.decode( charset, errors = charset_errors )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        return __.ContentTextResult(
+        return __.AcquireContentTextResult(
             content = content, mimetype = mimetype, charset = charset )
 
-    async def acquire_content_bytes( self ) -> __.ContentBytesResult:
+    async def acquire_content_bytes( self ) -> __.AcquireContentBytesResult:
         Error = __.partial_function(
             __.LocationAcquireContentFailure, url = self.url )
         try:
@@ -257,7 +256,53 @@ class FileAdapter( _Common, __.FileAdapter ):
             from magic import from_buffer
             mimetype = from_buffer( content, mime = True )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        return __.ContentBytesResult( content = content, mimetype = mimetype )
+        return __.AcquireContentBytesResult(
+            content = content, mimetype = mimetype )
+
+    async def update_content(
+        self,
+        content: str,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> __.UpdateContentResult:
+        Error = __.partial_function(
+            __.LocationUpdateContentFailure, url = self.url )
+        if __.absent is charset:
+            from locale import getpreferredencoding
+            charset = getpreferredencoding( )
+        if __.absent is charset_errors: charset_errors = 'strict'
+        if __.absent is newline: newline = None
+        # TODO: Newline translation.
+        try: content_bytes = content.encode( charset, errors = charset_errors )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        bytes_result = await self.update_content_bytes(
+            content_bytes, options = options )
+        return __.UpdateContentResult(
+            count = bytes_result.count,
+            mimetype = bytes_result.mimetype,
+            charset = charset )
+
+    async def update_content_bytes(
+        self,
+        content: bytes,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+    ) -> __.UpdateContentResult:
+        Error = __.partial_function(
+            __.LocationUpdateContentFailure, url = self.url )
+        flags = _flags_from_file_update_options( options )
+        try:
+            from aiofiles import open as open_
+            async with open_( self.implement, f"{flags}b" ) as stream:
+                count = await stream.write( content )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        try:
+            from magic import from_buffer
+            mimetype = from_buffer( content, mime = True )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        return __.UpdateContentResult(
+            count = count, mimetype = mimetype, charset = None )
 
 
 def _derive_mimetype(
@@ -288,7 +333,14 @@ def _derive_mimetype(
         case _:
             raise __.LocationSpeciesSupportError(
                 entity_name = _entity_name, species = species )
-    return 'application/octet-stream'
+
+
+def _flags_from_file_update_options( options: __.FileUpdateOptions ) -> str:
+    flags = [ ]
+    if __.FileUpdateOptions.Append & options: flags.append( 'a' )
+    else: flags.append( 'w' )
+    if __.FileUpdateOptions.Absence & options: flags.append( 'x' )
+    return ''.join( flags )
 
 
 def _permissions_from_stat( inode: _StatResult ) -> __.Permissions:

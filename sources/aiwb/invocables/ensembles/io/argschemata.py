@@ -39,6 +39,17 @@ If this flag is set, then it is recommended to also enable filters like
 '@gitignore' and '+vcs' to prevent unnecessary results from being returned.
 '''
 
+_update_content_option_description = '''
+File update behavior option.
+
+Default behavior is to create file if it does not exist and to truncate file
+for content replacement.
+
+Choices:
+* append: Append to file rather than truncate.
+* error-if-exists: Do not update file if it already exists.
+'''
+
 instructions_mode_argschema = {
     'type': 'string',
     'description': '''
@@ -124,17 +135,21 @@ update_content_argschema = {
     'properties': {
         'location': {
             'type': 'string',
-            'description': 'Location of the file to be written.'
+            'description': 'URL or local path of the file to be written.'
         },
-        'contents': {
+        'content': {
             'type': 'string',
         },
-        'mode': {
-            'type': 'string',
-            'enum': [ 'append', 'truncate' ],
-            'default': 'truncate',
+        'options': {
+            'type': 'array',
+            'items': {
+                'type': 'string',
+                'enum': [ 'append', 'error-if-exists' ],
+                'description': _update_content_option_description,
+            },
+            'default': [ ],
         },
     },
-    # TODO? Require 'mode' for OpenAI strict schema.
+    # TODO? Require 'options' for OpenAI strict schema.
     'required': [ 'location', 'contents' ],
 }

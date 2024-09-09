@@ -54,7 +54,7 @@ async def list_folder(
 
 
 async def read(
-    context: __.Context, arguments: __.Arguments,
+    context: __.Context, arguments: __.Arguments
 ) -> __.AbstractDictionary:
     ''' Reads file at URL or filesystem path.
 
@@ -75,11 +75,39 @@ async def read(
     return await _read_as_string( accessor, context, arguments_ )
 
 
-# TODO: write
+async def write_file(
+    context: __.Context, arguments: __.Arguments
+) -> __.AbstractDictionary:
+    ''' Writes file at URL or filesystem path.
+
+        Options can control update behavior.
+
+        Result includes number of bytes written.
+    '''
+    arguments_ = arguments.copy( )
+    if 'location' not in arguments:
+        return { 'error': "Argument 'location' is required." }
+    if 'content' not in arguments:
+        return { 'error': "Argument 'content' is required." }
+    options = arguments.get( 'options', ( ) )
+    if not isinstance( options, __.AbstractSequence ):
+        return { 'error': "Argument 'options' must be a list." }
+    try:
+        accessor = await _accessor_from_arguments(
+            arguments_, species = __.LocationSpecies.File )
+    except Exception as exc:
+        # TODO? Generate apprisal notification.
+        return { 'error': str( exc ) }
+    if not isinstance( accessor, __.FileAccessor ):
+        return { 'error': 'Cannot update content of non-file.' }
+    #as_bytes = arguments_.pop( 'as_bytes', False )
+    #if as_bytes: return await _write_as_bytes( accessor, context, arguments_ )
+    return await _write_as_string( accessor, context, arguments_ )
 
 
 async def _accessor_from_arguments(
-    arguments: __.Arguments
+    arguments: __.Arguments,
+    species: __.Optional[ __.LocationSpecies ] = __.absent,
 ) -> __.SpecificLocationAccessor:
     url = __.Url.from_url( arguments.pop( 'location' ) )
     accessor = __.LocationAccessorSimple.from_url( url )
@@ -87,7 +115,7 @@ async def _accessor_from_arguments(
 #        accessor = __.LocationAccessorSimple.from_url( url )
 #    else:
 #        accessor = __.LocationAccessorWithCache.from_url( url )
-    return await accessor.as_specific( )
+    return await accessor.as_specific( species = species )
 
 
 async def _operate(
@@ -139,4 +167,27 @@ async def _read_as_string(
         'mimetype': result.mimetype,
         'charset': result.charset,
         'content': result.content,
+    }
+
+
+async def _write_as_string(
+    accessor: __.FileAccessor, context: __.Context, arguments: __.Arguments
+) -> __.AbstractDictionary:
+    content = arguments[ 'content' ]
+    options = arguments.get( 'options', ( ) )
+    options_ = __.FileUpdateOptions.Defaults
+    for option in options:
+        if 'append' == option:
+            options_ |= __.FileUpdateOptions.Append
+        if 'error-if-exists' == option:
+            options_ |= __.FileUpdateOptions.Absence
+    try: result = await accessor.update_content( content, options = options_ )
+    except Exception as exc:
+        # TODO? Generate apprisal notification.
+        return { 'error': str( exc ) }
+    return {
+        'location': str( accessor ),
+        'mimetype': result.mimetype,
+        'charset': result.charset,
+        'count': result.count,
     }

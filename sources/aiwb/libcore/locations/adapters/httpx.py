@@ -120,7 +120,11 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
     def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
         return selfclass( url = __.Url.from_url( url ) )
 
-    async def as_specific( self ) -> __.SpecificAdapter:
+    async def as_specific(
+        self,
+        species: __.Optional[ __.LocationSpecies ] = __.absent,
+    ) -> __.SpecificAdapter:
+        # TODO: Raise error if species is not file.
         return FileAdapter( url = self.url )
 
     async def is_directory( self, pursue_indirection: bool = True ) -> bool:
@@ -171,7 +175,6 @@ class FileAdapter( _Common, __.FileAdapter ):
         content = response.content.decode( charset, errors = charset_errors )
         return __.ContentTextResult(
             content = content, mimetype = mimetype, charset = charset )
-        #return response.text
 
     async def acquire_content_bytes( self ) -> bytes:
         async with _httpx.AsyncClient( ) as client:
@@ -185,6 +188,51 @@ class FileAdapter( _Common, __.FileAdapter ):
         return __.ContentBytesReesult(
             content = response.content, mimetype = mimetype )
 
+    async def update_content(
+        self,
+        content: str,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> __.UpdateContentResult:
+        Error = __.partial_function(
+            __.LocationUpdateContentFailure, url = self.url )
+        if __.absent is charset:
+            from locale import getpreferredencoding
+            charset = getpreferredencoding( )
+        if __.absent is charset_errors: charset_errors = 'strict'
+        if __.absent is newline: newline = None
+        try: content_bytes = content.encode( charset, errors = charset_errors )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        bytes_result = await self.update_content_bytes(
+            content_bytes, options = options )
+        return __.UpdateContentResult(
+            count = bytes_result.count,
+            mimetype = bytes_result.mimetype,
+            charset = charset )
+
+    async def update_content_bytes(
+        self,
+        content: bytes,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+    ) -> __.UpdateContentResult:
+        Error = __.partial_function(
+            __.LocationUpdateContentFailure, url = self.url )
+        # TODO: Examine content length for append option.
+        headers = _headers_from_file_update_options( options )
+        async with _httpx.AsyncClient( ) as client:
+            response = await client.put(
+                self.implement, content, headers = headers )
+        try: response.raise_for_status( )
+        except _httpx.HTTPStatusError as exc:
+            _react_http_status_error( exc, headers, Error )
+            raise Error( reason = str( exc ) ) from exc
+        count, mimetype, charset = (
+            _result_from_headers( response.headers, content, Error ) )
+        return __.UpdateContentResult(
+            count = count, mimetype = mimetype, charset = charset )
+
 
 @__.standard_dataclass
 class HttpInode( __.AdapterInode ):
@@ -193,6 +241,7 @@ class HttpInode( __.AdapterInode ):
     etag: str | None
     expiration: __.DateTime | None
     mtime: __.DateTime | None
+    # TODO: size
 
 
 def _expiration_from_response( response: _httpx.Response ) -> __.DateTime:
@@ -213,6 +262,18 @@ def _expiration_from_response( response: _httpx.Response ) -> __.DateTime:
     if not expiration and expires:
         expiration = parsedate_to_datetime( expires )
     return expiration
+
+
+def _headers_from_file_update_options(
+    options: __.FileUpdateOptions, # inode: HttpInode
+) -> __.AbstractDictionary[ str, str ]:
+    headers = { }
+    if __.FileUpdateOptions.Append & options:
+        # TODO: Use size from HTTP inode.
+        pass
+    if __.FileUpdateOptions.Absence & options:
+        headers[ 'If-None-Match' ] = '*'
+    return __.DictionaryProxy( headers )
 
 
 def _http_inode_from_response( response: _httpx.Response ) -> HttpInode:
@@ -256,3 +317,43 @@ def _permissions_to_methods(
     if permissions & __.Permissions.Execute:
         methods.add( 'POST' )
     return frozenset( methods )
+
+
+def _react_http_status_error( response_error, headers, error_to_raise ):
+    from http import HTTPStatus
+    match response_error.response.status_code:
+        case HTTPStatus.PRECONDITION_FAILED:
+            if 'If-None-Match' in headers:
+                reason = (
+                    "Upstream content already exists. "
+                    "Cannot replace with absence option enabled." )
+                raise error_to_raise( reason = reason )
+        case HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE:
+            if 'Content-Range' in headers:
+                reason = "Server does not support append operation."
+                raise error_to_raise( reason = reason )
+
+
+def _result_from_headers(
+    headers, content, error_to_raise
+) -> ( int, str, str ):
+    count = int( headers.get( 'Content-Length', len( content ) ) )
+    content_type = headers.get( 'Content-Type', '' )
+    mimetype, _, params = content_type.partition( ';' )
+    if not mimetype:
+        try:
+            from magic import from_buffer
+            mimetype = from_buffer( content, mime = True )
+        except Exception as exc:
+            raise error_to_raise( reason = str( exc ) ) from exc
+    charset = None
+    if mimetype.startswith( 'text/' ):
+        if 'charset=' in params:
+            charset = params.split( 'charset=' )[ -1 ].strip( )
+        if not charset:
+            try:
+                from chardet import detect
+                charset = detect( content )[ 'encoding' ]
+            except Exception as exc:
+                raise error_to_raise( reason = str( exc ) ) from exc
+    return count, mimetype, charset

@@ -131,23 +131,39 @@ class FileOperations( __.a.Protocol ):
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
-    ) -> _core.ContentTextResult:
+    ) -> _core.AcquireContentTextResult:
         ''' Returns complete content of file as Unicode string. '''
         raise NotImplementedError
 
     # TODO: acquire_content_continuous
 
-    async def acquire_content_bytes( self ) -> _core.ContentBytesResult:
+    async def acquire_content_bytes(
+        self
+    ) -> _core.AcquireContentBytesResult:
         ''' Returns complete content of file as raw bytes. '''
         raise NotImplementedError
 
     # TODO: acquire_content_bytes_continuous
 
-    # TODO: update_content
+    async def update_content(
+        self,
+        content: str,
+        options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> _core.UpdateContentResult:
+        ''' Updates content of file from Unicode string. '''
+        raise NotImplementedError
 
     # TODO: update_content_continuous
 
-    # TODO: update_content_bytes
+    async def update_content_bytes(
+        self,
+        content: bytes,
+        options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
+    ) -> _core.UpdateContentResult:
+        ''' Updates content of file from raw bytes. '''
 
     # TODO: update_content_bytes_continuous
 
@@ -198,7 +214,10 @@ class GeneralAccessor( AccessorBase, GeneralOperations, __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
-    async def as_specific( self ) -> SpecificAccessor:
+    async def as_specific(
+        self,
+        species: __.Optional[ _core.LocationSpecies ] = __.absent,
+    ) -> SpecificAccessor:
         ''' Returns appropriate specific accessor for location. '''
         raise NotImplementedError
 
@@ -227,7 +246,10 @@ class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
-    async def as_specific( self ) -> SpecificAdapter:
+    async def as_specific(
+        self,
+        species: __.Optional[ _core.LocationSpecies ] = __.absent,
+    ) -> SpecificAdapter:
         ''' Returns appropriate specific adapter for location. '''
         raise NotImplementedError
 

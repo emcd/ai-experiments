@@ -52,7 +52,7 @@ class AdapterInode( metaclass = __.ABCFactory ):
 
 
 @__.standard_dataclass
-class ContentBytesResult:
+class AcquireContentBytesResult:
     ''' Result, as raw bytes, from content acquisition operation. '''
 
     content: bytes
@@ -60,7 +60,7 @@ class ContentBytesResult:
 
 
 @__.standard_dataclass
-class ContentTextResult:
+class AcquireContentTextResult:
     ''' Result, as Unicode string, from content acquisition operation. '''
 
     charset: str
@@ -86,6 +86,14 @@ class DirectoryEntry:
     def is_symlink( self ) -> bool:
         ''' Is entry a symlink? '''
         return self.inode.is_symlink( )
+
+
+class FileUpdateOptions( __.enum.IntFlag ):
+    ''' File update options bits. '''
+
+    Defaults = 0  # create (if not exists), truncate
+    Append = __.produce_enumeration_value( ) # append
+    Absence = __.produce_enumeration_value( ) # error (if exists)
 
 
 @__.standard_dataclass
@@ -134,6 +142,15 @@ class Permissions( __.enum.IntFlag ):
     Update = __.produce_enumeration_value( )
     Delete = __.produce_enumeration_value( )
     Execute = __.produce_enumeration_value( )
+
+
+@__.standard_dataclass
+class UpdateContentResult:
+    ''' Result of content update operation. '''
+
+    charset: __.a.Nullable[ str ]
+    count: int
+    mimetype: str
 
 
 class Url( _UrlParts, metaclass = __.AccretiveClass ):

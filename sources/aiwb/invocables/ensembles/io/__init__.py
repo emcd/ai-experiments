@@ -35,8 +35,7 @@ from .argschemata import (
     update_content_argschema,
 )
 from .read import analyze
-from .write import write_file
-from .operations import list_folder, read
+from .operations import list_folder, read, write_file
 
 
 _name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
