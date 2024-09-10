@@ -79,6 +79,16 @@ class _Common:
         return HTTPStatus.OK == response.status_code
 
     async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
+        inode = await self._examine( pursue_indirection = pursue_indirection )
+        if __.LocationSpecies.Void is inode.species:
+            raise __.LocationExamineFailure(
+                self.url, reason = "Location does not exist." )
+        return inode
+
+    def expose_implement( self ) -> __.AccessImplement:
+        return __.a.cast( __.AccessImplement, self.implement )
+
+    async def _examine( self, pursue_indirection: bool = True ) -> __.Inode:
         async with _httpx.AsyncClient(
             follow_redirects = pursue_indirection
         ) as client:
@@ -109,9 +119,6 @@ class _Common:
                 species = species,
                 supplement = inode
             )
-
-    def expose_implement( self ) -> __.AccessImplement:
-        return __.a.cast( __.AccessImplement, self.implement )
 
     async def _inspect_permissions(
         self, client: _httpx.AsynClient
@@ -223,7 +230,7 @@ class FileAdapter( _Common, __.FileAdapter ):
     ) -> __.UpdateContentResult:
         Error = __.partial_function(
             __.LocationUpdateContentFailure, url = self.url )
-        try: inode = await self.examine( )
+        try: inode = await self._examine( )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
         headers = _headers_from_file_update_options( options, inode, content )
         async with _httpx.AsyncClient( ) as client:
