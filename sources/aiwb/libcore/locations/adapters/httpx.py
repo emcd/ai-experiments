@@ -186,13 +186,16 @@ class FileAdapter( _Common, __.FileAdapter ):
         content_bytes, mimetype, charset_ = (
             await self._acquire_content_bytes( ) )
         if charset in ( __.absent, '#DETECT#' ): charset = charset_
-        if __.absent is charset_errors: charset_errors = 'strict'
-        if __.absent is newline: newline = None
-        # TODO: Newline translation.
-        try: content = content_bytes.decode( charset, errors = charset_errors )
+        try:
+            content = __.decode_content(
+                content_bytes,
+                charset = charset,
+                charset_errors = charset_errors )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        try: content_nl = __.normalize_newlines( content, newline = newline )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
         return __.AcquireContentTextResult(
-            content = content, mimetype = mimetype, charset = charset )
+            content = content_nl, mimetype = mimetype, charset = charset )
 
     async def acquire_content_bytes( self ) -> __.AcquireContentBytesResult:
         content, mimetype, _ = await self._acquire_content_bytes( )
@@ -209,12 +212,12 @@ class FileAdapter( _Common, __.FileAdapter ):
     ) -> __.UpdateContentResult:
         Error = __.partial_function(
             __.LocationUpdateContentFailure, url = self.url )
-        if __.absent is charset:
-            from locale import getpreferredencoding
-            charset = getpreferredencoding( )
-        if __.absent is charset_errors: charset_errors = 'strict'
-        if __.absent is newline: newline = None
-        try: content_bytes = content.encode( charset, errors = charset_errors )
+        content_nl = _translate_newlines( content, newline = newline )
+        try:
+            content_bytes, charset = __.encode_content(
+                content_nl,
+                charset = charset,
+                charset_errors = charset_errors )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
         bytes_result = await self.update_content_bytes(
             content_bytes, options = options )
@@ -342,6 +345,14 @@ def _methods_to_permissions(
     if 'POST' in methods:
         permissions |= __.Permissions.Execute
     return permissions
+
+
+def _translate_newlines(
+    content: str, newline: __.Optional[ str ] = __.absent
+) -> str:
+    # TODO: Streaming version.
+    if newline in ( __.absent, '', '\n' ): return content
+    return newline.join( content.split( '\n' ) )
 
 
 def _permissions_to_methods(

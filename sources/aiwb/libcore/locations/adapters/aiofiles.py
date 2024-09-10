@@ -224,25 +224,17 @@ class FileAdapter( _Common, __.FileAdapter ):
         Error = __.partial_function(
             __.LocationAcquireContentFailure, url = self.url )
         bytes_result = await self.acquire_content_bytes( )
-        content_bytes = bytes_result.content
         mimetype = bytes_result.mimetype
-        match charset:
-            case __.absent:
-                from locale import getpreferredencoding
-                charset = getpreferredencoding( )
-            case '#DETECT#':
-                try:
-                    from chardet import detect
-                    charset = detect( content_bytes )[ 'encoding' ]
-                except Exception as exc:
-                    raise Error( reason = str( exc ) ) from exc
-        if __.absent is charset_errors: charset_errors = 'strict'
-        if __.absent is newline: newline = None
-        # TODO: Newline translation.
-        try: content = content_bytes.decode( charset, errors = charset_errors )
+        try:
+            content = __.decode_content(
+                bytes_result.content,
+                charset = charset,
+                charset_errors = charset_errors )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        try: content_nl = __.normalize_newlines( content, newline = newline )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
         return __.AcquireContentTextResult(
-            content = content, mimetype = mimetype, charset = charset )
+            content = content_nl, mimetype = mimetype, charset = charset )
 
     async def acquire_content_bytes( self ) -> __.AcquireContentBytesResult:
         Error = __.partial_function(
@@ -269,13 +261,12 @@ class FileAdapter( _Common, __.FileAdapter ):
     ) -> __.UpdateContentResult:
         Error = __.partial_function(
             __.LocationUpdateContentFailure, url = self.url )
-        if __.absent is charset:
-            from locale import getpreferredencoding
-            charset = getpreferredencoding( )
-        if __.absent is charset_errors: charset_errors = 'strict'
-        if __.absent is newline: newline = None
-        # TODO: Newline translation.
-        try: content_bytes = content.encode( charset, errors = charset_errors )
+        content_nl = _nativize_newlines( content, newline = newline )
+        try:
+            content_bytes, charset = __.encode_content(
+                content_nl,
+                charset = charset,
+                charset_errors = charset_errors )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
         bytes_result = await self.update_content_bytes(
             content_bytes, options = options )
@@ -341,6 +332,17 @@ def _flags_from_file_update_options( options: __.FileUpdateOptions ) -> str:
     else: flags.append( 'w' )
     if __.FileUpdateOptions.Absence & options: flags.append( 'x' )
     return ''.join( flags )
+
+
+def _nativize_newlines(
+    content: str, newline: __.Optional[ str ] = __.absent
+) -> str:
+    # TODO: Streaming version.
+    if newline in ( '', '\n' ): return content
+    if __.absent is newline:
+        from os import linesep
+        newline = linesep
+    return newline.join( content.split( '\n' ) )
 
 
 def _permissions_from_stat( inode: _StatResult ) -> __.Permissions:
