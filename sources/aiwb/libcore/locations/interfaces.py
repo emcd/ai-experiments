@@ -75,21 +75,24 @@ class _Common( __.a.Protocol ):
     # TODO: register_notifier
 
 
-class AccessorBase( _Common, __.a.Protocol ):
-    ''' Common functionality for all accessors. '''
-
-
+@__.a.runtime_checkable
 class AdapterBase( _Common, __.a.Protocol ):
     ''' Common functionality for all access adapters. '''
 
+    @classmethod
+    @__.abstract_member_function
+    def is_cache_manager( selfclass ) -> bool:
+        ''' Is access adapter a cache manager for itself?
+
+            For cases like Git, Github, Mercurial, etc.... '''
+        raise NotImplementedError
+
 
 @__.a.runtime_checkable
-class Cache( __.a.Protocol ):
-    ''' Standard operations on cache. '''
+class CacheBase( _Common, __.a.Protocol ):
+    ''' Common functionality for all caches. '''
 
-    # TODO? clear
-
-    # TODO? report_modifications
+    manager: CacheManager
 
 
 @__.a.runtime_checkable
@@ -192,46 +195,13 @@ class GeneralOperations( __.a.Protocol ):
 class ReconciliationOperations( __.a.Protocol ):
     ''' Standard operations for cache reconciliation. '''
 
-    # TODO: is_cache_valid
+    # TODO? is_cache_valid
 
     # TODO: commit_to_source
 
     # TODO: difference_with_source
 
     # TODO: update_from_source
-
-
-@__.a.runtime_checkable
-class GeneralAccessor( AccessorBase, GeneralOperations, __.a.Protocol ):
-    ''' General location accessor. '''
-    # TODO: Immutable class and object attributes.
-
-    @classmethod
-    @__.abstract_member_function
-    def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
-        ''' Produces accessor from URL. '''
-        # TODO? Remove from interface specification.
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def as_specific(
-        self,
-        species: __.Optional[ _core.LocationSpecies ] = __.absent,
-    ) -> SpecificAccessor:
-        ''' Returns appropriate specific accessor for location. '''
-        raise NotImplementedError
-
-
-@__.a.runtime_checkable
-class DirectoryAccessor( AccessorBase, DirectoryOperations, __.a.Protocol ):
-    ''' Directory accessor for location. '''
-    # TODO: Immutable class and object attributes.
-
-
-@__.a.runtime_checkable
-class FileAccessor( AccessorBase, FileOperations, __.a.Protocol ):
-    ''' File accessor for location. '''
-    # TODO: Immutable class and object attributes.
 
 
 @__.a.runtime_checkable
@@ -253,8 +223,6 @@ class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
         ''' Returns appropriate specific adapter for location. '''
         raise NotImplementedError
 
-    # TODO: classmethod is_cache_manager
-
 
 @__.a.runtime_checkable
 class DirectoryAdapter( AdapterBase, DirectoryOperations, __.a.Protocol ):
@@ -268,8 +236,63 @@ class FileAdapter( AdapterBase, FileOperations, __.a.Protocol ):
     # TODO: Immutable class and object attributes.
 
 
+@__.a.runtime_checkable
+class GeneralCache( CacheBase, GeneralOperations, __.a.Protocol ):
+    ''' General location cache. '''
+    # TODO: Immutable class and object attributes.
+
+    @classmethod
+    @__.abstract_member_function
+    def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
+        ''' Produces cache from URL. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def as_specific(
+        self,
+        species: __.Optional[ _core.LocationSpecies ] = __.absent,
+    ) -> SpecificAdapter:
+        ''' Returns appropriate specific cache for location. '''
+        raise NotImplementedError
+
+
+@__.a.runtime_checkable
+class DirectoryCache( CacheBase, DirectoryOperations, __.a.Protocol ):
+    ''' Directory cache. '''
+    # TODO: Immutable class and object attributes.
+
+
+@__.a.runtime_checkable
+class FileCache( CacheBase, FileOperations, __.a.Protocol ):
+    ''' File cache. '''
+    # TODO: Immutable class and object attributes.
+
+
+@__.a.runtime_checkable
+class CacheManager( ReconciliationOperations, __.a.Protocol ):
+    ''' Manager for collection of caches.
+
+        Typically maintains an anchor path, associated with the root of a
+        directory tree, such as the clone of a VCS repository. Shared among all
+        cache objects within the tree. '''
+    # TODO: Immutable class and object attributes.
+
+    @classmethod
+    @__.abstract_member_function
+    async def from_urls(
+        selfclass,
+        storage_url: __.PossibleUrl,
+        source_prefix_url: __.PossibleUrl,
+    ) -> __.a.Self:
+        ''' Produces cache manager from storage location and source prefix. '''
+        raise NotImplementedError
+
+
 # TODO: Python 3.12: type statement for aliases
-PossibleCache: __.a.TypeAlias = bytes | str | __.PathLike | Cache
+DirectoryAccessor: __.a.TypeAlias = DirectoryAdapter | DirectoryCache
+FileAccessor: __.a.TypeAlias = FileAdapter | FileCache
+GeneralAccessor: __.a.TypeAlias = GeneralAdapter | GeneralCache
 PossibleFilter: __.a.TypeAlias = bytes | str | Filter
 SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
 SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter
+SpecificCache: __.a.TypeAlias = DirectoryCache | FileCache

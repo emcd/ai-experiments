@@ -25,8 +25,8 @@
 
 
 from . import __
-from . import accessors
 from . import adapters
+from . import caches
 from . import core
 from . import exceptions
 from . import filters
@@ -34,7 +34,6 @@ from . import interfaces
 from . import registries
 
 from ._api import *
-from .accessors import AccessorSimple, AccessorWithCache
 
 
 __.reclassify_modules( globals( ) )

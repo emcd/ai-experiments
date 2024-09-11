@@ -28,5 +28,5 @@ from ..__ import *
 from ..libcore import (
     Globals,
     LocationAccessImplement,
-    LocationAccessorSimple,
+    location_adapter_from_url,
 )

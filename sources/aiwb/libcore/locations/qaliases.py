@@ -27,10 +27,6 @@
 # pylint: disable=unused-import
 
 
-from .accessors import (
-    AccessorSimple as       LocationAccessorSimple,
-    AccessorWithCache as    LocationAccessorWithCache,
-)
 from .core import (
     AccessImplement as      LocationAccessImplement,
     FileUpdateOptions,
@@ -43,4 +39,10 @@ from .interfaces import (
     DirectoryAccessor,
     FileAccessor,
     SpecificAccessor as     SpecificLocationAccessor,
+)
+from .registries import (
+    adapter_from_url as     location_adapter_from_url,
+    adapters_registry as    location_adapters_registry,
+    cache_from_url as       location_cache_from_url,
+    caches_registry as      location_caches_registry,
 )

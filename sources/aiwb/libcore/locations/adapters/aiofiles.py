@@ -45,6 +45,9 @@ class _Common:
     implement: __.Path
     url: __.Url
 
+    @classmethod
+    def is_cache_manager( selfclass ) -> bool: return False
+
     def __init__( self, url: __.Url ):
         if url.scheme not in ( '', 'file' ):
             raise __.UrlSchemeAssertionError(
@@ -84,8 +87,7 @@ class _Common:
     ) -> bool:
         try:
             from aiofiles.os import path
-            return await path.exists(
-                self.implement, follow_symlinks = pursue_indirection )
+            return await path.exists( self.implement )
         except Exception as exc:
             raise __.LocationCheckExistenceFailure(
                 url = self.url, reason = str( exc ) ) from exc
@@ -127,9 +129,17 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         self,
         species: __.Optional[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificAdapter:
-        species = (
-            species
-            or ( await self.examine( pursue_indirection = True ) ).species )
+        exists = await self.check_existence( pursue_indirection = True )
+        if exists:
+            species_ = (
+                ( await self.examine( pursue_indirection = True ) ).species )
+            if __.absent is not species and species is not species_:
+                reason = (
+                    f"Requested species, '{species}', "
+                    f"does not match actual species, '{species_}'." )
+                raise __.LocationAdapterDerivationFailure(
+                    url = self.url, reason = reason )
+            species = species_
         match species:
             case __.LocationSpecies.Directory:
                 return DirectoryAdapter( url = self.url )

@@ -18,17 +18,16 @@
 #============================================================================#
 
 
-''' Location accessors. '''
+''' Location access adapters. '''
 
 # ruff: noqa: F401
 # pylint: disable=unused-import
 
 
 from . import __
-from . import cache
 from . import simple
+# TODO? edit
+# TODO? expiry
 
-from .cache import GeneralAccessor as AccessorWithCache
-from .simple import GeneralAccessor as AccessorSimple
 
 __.reclassify_modules( globals( ) )

@@ -37,20 +37,26 @@ async def list_folder(
         Optional filters, such as ignorefiles, may be applied.
     '''
     # TODO? file_size_maximum = arguments.get( 'file_size_maximum', 40000 )
+    arguments_ = arguments.copy( )
     # TODO: Validate arguments.
-    result = await _operate(
-        opname = 'survey_entries', context = context, arguments = arguments )
-    if 'success' in result:
-        result = result.copy( )
-        dirents = [
-            {
-                'location': str( dirent.url ),
-                'mimetype': dirent.inode.mimetype,
-            }
-            for dirent in result[ 'success' ]
-        ]
-        result[ 'success' ] = dirents
-    return result
+    try: accessor = await _accessor_from_arguments( arguments_ )
+    except Exception as exc:
+        # TODO? Generate apprisal notification.
+        return { 'error': str( exc ) }
+    if not isinstance( accessor, __.DirectoryAccessor ):
+        return { 'error': 'Cannot list entries of non-directory.' }
+    try: result = await accessor.survey_entries( **arguments_ )
+    except Exception as exc:
+        # TODO? Generate apprisal notification.
+        return { 'error': str( exc ) }
+    dirents = [
+        {
+            'location': str( dirent.url ),
+            'mimetype': dirent.inode.mimetype,
+        }
+        for dirent in result
+    ]
+    return { 'success': dirents }
 
 
 async def read(
@@ -110,31 +116,10 @@ async def _accessor_from_arguments(
     species: __.Optional[ __.LocationSpecies ] = __.absent,
 ) -> __.SpecificLocationAccessor:
     url = __.Url.from_url( arguments.pop( 'location' ) )
-    accessor = __.LocationAccessorSimple.from_url( url )
-#    if url.scheme in ( '', 'file' ):
-#        accessor = __.LocationAccessorSimple.from_url( url )
-#    else:
-#        accessor = __.LocationAccessorWithCache.from_url( url )
+    adapter = __.location_adapter_from_url( url )
+    if adapter.is_cache_manager( ): accessor = adapter.produce_cache( )
+    else: accessor = adapter
     return await accessor.as_specific( species = species )
-
-
-async def _operate(
-    opname: str, context: __.Context, arguments: __.Arguments,
-) -> __.AbstractDictionary:
-    arguments_ = arguments.copy( )
-    # TODO? Move accessor creation to callers for better customization.
-    try:
-        accessor = (
-            await __.LocationAccessorSimple.from_url(
-                arguments_.pop( 'location' ) ).as_specific( ) )
-    except Exception as exc:
-        # TODO? Generate apprisal notification.
-        return { 'error': str( exc ) }
-    try: result = await getattr( accessor, opname )( **arguments_ )
-    except Exception as exc:
-        # TODO? Generate apprisal notification.
-        return { 'error': str( exc ) }
-    return { 'success': result }
 
 
 async def _read_as_bytes(

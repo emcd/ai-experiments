@@ -83,9 +83,9 @@ class DirectoryEntry:
         ''' Is entry a regular file? '''
         return self.inode.is_file( )
 
-    def is_symlink( self ) -> bool:
-        ''' Is entry a symlink? '''
-        return self.inode.is_symlink( )
+    def is_indirection( self ) -> bool:
+        ''' Is entry an indirection? '''
+        return self.inode.is_indirection( )
 
 
 class FileUpdateOptions( __.enum.IntFlag ):
@@ -113,8 +113,8 @@ class Inode:
         ''' Does inode represent a regular file? '''
         return LocationSpecies.File is self.species
 
-    def is_symlink( self ) -> bool:
-        ''' Does inode represent a symlink? '''
+    def is_indirection( self ) -> bool:
+        ''' Does inode represent an indirection? '''
         return LocationSpecies.Symlink is self.species
 
 

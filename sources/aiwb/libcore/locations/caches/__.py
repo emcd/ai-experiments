@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for location accessors. '''
+''' Internal imports and utilities for caches. '''
 
 # ruff: noqa: F401,F403
 # pylint: disable=unused-import

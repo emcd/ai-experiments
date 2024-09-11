@@ -40,6 +40,9 @@ class _Common:
     implement: _httpx.URL
     url: __.Url
 
+    @classmethod
+    def is_cache_manager( selfclass ) -> bool: return False
+
     def __init__( self, url: __.Url ):
         if url.scheme not in ( 'http', 'https' ):
             raise __.UrlSchemeAssertionError(

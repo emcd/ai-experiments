@@ -33,18 +33,16 @@ from . import interfaces as _interfaces
 
 
 # TODO: Python 3.12: type statement for aliases
-AccessorsRegistry: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, type[ _interfaces.GeneralAccessor ] ] )
 AdaptersRegistry: __.a.TypeAlias = (
     __.AbstractDictionary[ str, type[ _interfaces.GeneralAdapter ] ] )
 CachesRegistry: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, type[ _interfaces.Cache ] ] )
+    __.AbstractDictionary[ str, type[ _interfaces.CacheManager ] ] )
+# TODO: Content filters versus dirent filters.
 FiltersRegistry: __.a.TypeAlias = (
     __.AbstractDictionary[ str, type[ _interfaces.Filter ] ] )
 
 
 # TODO: Use accretive validator dictionaries for registries.
-accessors_registry: AccessorsRegistry = __.AccretiveDictionary( )
 adapters_registry: AdaptersRegistry = __.AccretiveDictionary( )
 caches_registry: CachesRegistry = __.AccretiveDictionary( )
 filters_registry: FiltersRegistry = __.AccretiveDictionary( )
@@ -68,6 +66,24 @@ async def apply_filters(
     for filter_ in filters:
         if await filter_( dirent ): return True
     return False
+
+
+def cache_from_url(
+    url: _core.PossibleUrl,
+    manager: __.Optional[ _interfaces.CacheManager ] = __.absent,
+) -> _interfaces.GeneralCache:
+    ''' Produces cache from URL and cache manager. '''
+    adapter = adapter_from_url( url = url )
+    if adapter.is_cache_manager( ):
+        if __.absent is not manager:
+            # TODO: raise error
+            pass
+        manager = adapter
+    elif __.absent is manager:
+        # TODO: raise error
+        pass
+    # TODO: assert manager type
+    return manager.produce_cache( adapter )
 
 
 def filters_from_specifiers(
