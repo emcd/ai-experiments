@@ -28,10 +28,6 @@ from urllib.parse import ParseResult as _UrlParts
 from . import __
 
 
-# TODO: Python 3.12: type statement for aliases
-PossibleUrl: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
-
-
 class AccessImplement( metaclass = __.ABCFactory ):
     ''' Abstract base class for location access implements. '''
     # Note: Not a Protocol class because there is no common protocol.
@@ -144,6 +140,14 @@ class Permissions( __.enum.IntFlag ):
     Execute = __.produce_enumeration_value( )
 
 
+class Possessor( __.Enum ):
+    ''' Representation of potential owner of location. '''
+
+    CurrentUser = 'current user'
+    CurrentPopulation = 'current user population' # aka., group
+    Omnipopulation = 'everyone'
+
+
 @__.standard_dataclass
 class UpdateContentResult:
     ''' Result of content update operation. '''
@@ -190,6 +194,12 @@ class Url( _UrlParts, metaclass = __.AccretiveClass ):
             params = self.params,
             query = self.query,
             fragment = self.fragment )
+
+
+# TODO: Python 3.12: type statement for aliases
+PermissionsTable: __.a.TypeAlias = (
+    __.AbstractDictionary[ Possessor, Permissions ] )
+PossibleUrl: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
 
 
 # TODO: Streaming codecs for reduced memory footprint.

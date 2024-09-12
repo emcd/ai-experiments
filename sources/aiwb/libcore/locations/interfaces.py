@@ -108,6 +108,40 @@ class Filter( __.a.Protocol ):
 class DirectoryOperations( __.a.Protocol ):
     ''' Standard operations on directories. '''
 
+    async def create_directory(
+        self,
+        name: PossibleRelativeLocator,
+        permissions: _core.Permissions | _core.PermissionsTable,
+        exist_ok: bool = True,
+        parents: CreateParentsArgument = True,
+    ) -> DirectoryAccessor:
+        ''' Creates directory relative to URL of this accessor. '''
+        raise NotImplementedError
+
+    # TODO: create_file
+
+    # TODO: create_indirection
+
+    async def delete_directory(
+        self,
+        name: PossibleRelativeLocator,
+        absent_ok: bool = True,
+        recurse: bool = True,
+        safe: bool = True,
+    ):
+        ''' Deletes directory relative to URL of this accessor. '''
+        raise NotImplementedError
+
+    # TODO: delete_file
+
+    # TODO: delete_indirection
+
+    def produce_entry_accessor(
+        self, name: PossibleRelativeLocator
+    ) -> GeneralAccessor:
+        ''' Derives new accessor relative to URL of this accessor. '''
+        raise NotImplementedError
+
     async def survey_entries(
         self,
         filters: __.Optional[
@@ -116,38 +150,6 @@ class DirectoryOperations( __.a.Protocol ):
         recurse: bool = True,
     ) -> __.AbstractSequence[ _core.DirectoryEntry ]:
         ''' Returns list of directory entries, subject to filtering. '''
-        raise NotImplementedError
-
-    async def create_entry(
-        self,
-        name: PossibleRelativeLocator,
-        species: _core.LocationSpecies,
-        permissions: _core.Permissions,
-        exist_ok: bool = True,
-        parents: CreateParentsArgument = True,
-    ) -> _core.DirectoryEntry:
-        ''' Creates directory entry relative to URL of this accessor. '''
-        raise NotImplementedError
-
-    async def delete_entry(
-        self,
-        name: PossibleRelativeLocator,
-        absent_ok: bool = True,
-        recurse: RecurseArgument = True,
-        # TODO? Add 'safe' argument which performs sanity checks.
-        #       localfs: Refuse to delete /<dir>/<entity> if safe.
-        #       localfs: Refuse to delete <dir>/<entity> if safe and at root.
-        #       localfs: Refuse to delete $HOME or ~ if safe.
-        #       localfs: Refuse to delete certain device nodes if safe on Unix.
-        #       localfs: Refuse to delete if safe and superuser.
-    ):
-        ''' Deletes directory entry relative to URL of this accessor. '''
-        raise NotImplementedError
-
-    def produce_entry_accessor(
-        self, name: PossibleRelativeLocator
-    ) -> GeneralAccessor:
-        ''' Derives new accessor relative to URL of this accessor. '''
         raise NotImplementedError
 
 
