@@ -18,16 +18,11 @@
 #============================================================================#
 
 
-''' Ensembles of invocables. '''
+''' Internal imports and utilities for summarization invocables. '''
 
-# ruff: noqa: F401
+# ruff: noqa: F401,F403
 # pylint: disable=unused-import
 
 
-from . import __
-from . import io
-from . import probability
-from . import summarization
-
-
-__.reclassify_modules( globals( ) )
+from ....libcore.locations.qaliases import *
+from ..__ import *

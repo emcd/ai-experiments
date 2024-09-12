@@ -20,8 +20,6 @@
 
 ''' AI functionality for reading from various sources. '''
 
-# TODO: Move to different subpackage and build on top of libcore locations.
-
 
 from . import __
 

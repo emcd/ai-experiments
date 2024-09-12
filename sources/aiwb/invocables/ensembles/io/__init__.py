@@ -29,12 +29,10 @@ from __future__ import annotations
 from . import __
 from .argschemata import (
     acquire_content_argschema,
-    summarize_content_argschema,
     survey_directory_argschema,
     update_content_argschema,
 )
 from .operations import list_folder, read, write_file
-from .summarize import analyze # TODO: Move to different subpackage.
 
 
 _name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
@@ -62,7 +60,6 @@ class Ensemble( __.Ensemble ):
 
 
 _invocables = (
-    ( analyze, summarize_content_argschema ),
     ( read, acquire_content_argschema ),
     ( list_folder, survey_directory_argschema ),
     ( write_file, update_content_argschema ),

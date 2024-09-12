@@ -24,10 +24,6 @@
 from . import __
 
 
-# TODO? grok
-#   Probably move 'analyze' to separate summarization module.
-
-
 async def list_folder(
     context: __.Context, arguments: __.Arguments,
 ) -> __.AbstractDictionary:

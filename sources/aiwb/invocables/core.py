@@ -196,6 +196,8 @@ _default_ensemble_descriptors = __.DictionaryProxy( {
         __.DictionaryProxy( { 'name': 'io', 'enable': True } ),
     'probability':
         __.DictionaryProxy( { 'name': 'probability', 'enable': True } ),
+    'summarization':
+        __.DictionaryProxy( { 'name': 'summarization', 'enable': True } ),
 } )
 
 

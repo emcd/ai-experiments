@@ -18,16 +18,42 @@
 #============================================================================#
 
 
-''' Ensembles of invocables. '''
-
-# ruff: noqa: F401
-# pylint: disable=unused-import
+''' Argument schemata for summarization operations. '''
 
 
-from . import __
-from . import io
-from . import probability
-from . import summarization
+instructions_mode_argschema = {
+    'type': 'string',
+    'description': '''
+Replace or supplement default instructions of AI agent with given
+instructions? ''',
+    'enum': [ 'replace', 'supplement' ],
+    'default': 'supplement',
+}
 
+instructions_argschema = {
+    'type': 'object',
+    'description': '''
+Special instructions to AI agent to replace or supplement its default
+instructions. If not supplied, the agent will use only its default
+instructions. ''',
+    'properties': {
+        'mode': instructions_mode_argschema,
+        'instructions': {
+            'type': 'string',
+            'description': '''
+Analysis instructions for AI. Should not be empty in replace mode. '''
+        },
+    },
+}
 
-__.reclassify_modules( globals( ) )
+summarize_content_argschema = {
+    'type': 'object',
+    'properties': {
+        'source': {
+            'type': 'string',
+            'description': 'URL or local filesystem path to be read.'
+        },
+        'control': instructions_argschema,
+    },
+    'required': [ 'location' ],
+}
