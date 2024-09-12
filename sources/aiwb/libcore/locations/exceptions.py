@@ -106,6 +106,24 @@ class LocationCheckExistenceFailure( LocationOperateFailure ):
             f"Reason: {reason}" )
 
 
+class LocationCreateFailure( LocationOperateFailure ):
+    ''' Failure of attempt to create location. '''
+
+    def __init__( self, url, reason ):
+        super( ).__init__(
+            f"Could not create location '{url}'. "
+            f"Reason: {reason}" )
+
+
+class LocationDeleteFailure( LocationOperateFailure ):
+    ''' Failure of attempt to delete location. '''
+
+    def __init__( self, url, reason ):
+        super( ).__init__(
+            f"Could not delete location '{url}'. "
+            f"Reason: {reason}" )
+
+
 class LocationExamineFailure( LocationOperateFailure ):
     ''' Failure of attempt to examine location. '''
 
@@ -157,6 +175,18 @@ class LocationSpeciesSupportError( __.SupportError ):
     def __init__( self, entity_name, species ):
         super( ).__init__(
             f"Location species '{species}' not supported by {entity_name}." )
+
+
+class RelativeLocationClassValidityError(
+    __.Omniexception, TypeError, ValueError
+):
+    ''' Attempt to supply invalid class of object as relative location. '''
+
+    def __init__( self, class_ ):
+        fqname = __.calculate_class_fqname( class_ )
+        super( ).__init__(
+            f"Cannot use instances of class {fqname!r} "
+            "as relative locations." )
 
 
 class UrlClassValidityError( __.Omniexception, TypeError, ValueError ):

@@ -177,6 +177,20 @@ class Url( _UrlParts, metaclass = __.AccretiveClass ):
 
     def __str__( self ) -> str: return self.geturl( )
 
+    def with_path( self, path: __.PossiblePath ) -> __.a.Self:
+        ''' Returns copy of URL with path part altered. '''
+        if isinstance( path, bytes ):
+            # Cannot use os.fsdecode because that is not platform-neutral,
+            # which would be required for HTTP, etc....
+            path = path.decode( )
+        return type( self )(
+            scheme = self.scheme,
+            netloc = self.netloc,
+            path = str( path ),
+            params = self.params,
+            query = self.query,
+            fragment = self.fragment )
+
 
 # TODO: Streaming codecs for reduced memory footprint.
 #       Not zero-copy, but can use constant-sized memory window.

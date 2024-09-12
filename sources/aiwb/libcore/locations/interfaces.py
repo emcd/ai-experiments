@@ -118,11 +118,37 @@ class DirectoryOperations( __.a.Protocol ):
         ''' Returns list of directory entries, subject to filtering. '''
         raise NotImplementedError
 
-    # TODO: create_entry
+    async def create_entry(
+        self,
+        name: RelativeLocation,
+        species: _core.LocationSpecies,
+        permissions: _core.Permissions,
+        exist_ok: bool = True,
+        parents: CreateParentsArgument = True,
+    ) -> _core.DirectoryEntry:
+        ''' Creates directory entry relative to URL of this accessor. '''
+        raise NotImplementedError
 
-    # TODO: delete_entry
+    async def delete_entry(
+        self,
+        name: RelativeLocation,
+        absent_ok: bool = True,
+        recurse: RecurseArgument = True,
+        # TODO? Add 'safe' argument which performs sanity checks.
+        #       localfs: Refuse to delete /<dir>/<entity> if safe.
+        #       localfs: Refuse to delete <dir>/<entity> if safe and at root.
+        #       localfs: Refuse to delete $HOME or ~ if safe.
+        #       localfs: Refuse to delete certain device nodes if safe on Unix.
+        #       localfs: Refuse to delete if safe and superuser.
+    ):
+        ''' Deletes directory entry relative to URL of this accessor. '''
+        raise NotImplementedError
 
-    # TODO: produce_entry_accessor
+    def produce_entry_accessor(
+        self, name: RelativeLocation
+    ) -> GeneralAccessor:
+        ''' Derives new accessor relative to URL of this accessor. '''
+        raise NotImplementedError
 
 
 @__.a.runtime_checkable
@@ -279,20 +305,30 @@ class CacheManager( ReconciliationOperations, __.a.Protocol ):
 
     @classmethod
     @__.abstract_member_function
-    async def from_urls(
-        selfclass,
-        storage_url: __.PossibleUrl,
-        source_prefix_url: __.PossibleUrl,
-    ) -> __.a.Self:
-        ''' Produces cache manager from storage location and source prefix. '''
+    async def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
+        ''' Produces cache manager from storage location URL. '''
+        raise NotImplementedError
+
+    async def produce_cache( self, adapter: GeneralAdapter ) -> GeneralCache:
+        ''' Produces cache from general location access adapter. '''
         raise NotImplementedError
 
 
 # TODO: Python 3.12: type statement for aliases
+
 DirectoryAccessor: __.a.TypeAlias = DirectoryAdapter | DirectoryCache
 FileAccessor: __.a.TypeAlias = FileAdapter | FileCache
 GeneralAccessor: __.a.TypeAlias = GeneralAdapter | GeneralCache
 PossibleFilter: __.a.TypeAlias = bytes | str | Filter
+RelativeLocation: __.a.TypeAlias = (
+    __.PossiblePath | __.AbstractIterable[ __.PossiblePath ] )
 SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
 SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter
 SpecificCache: __.a.TypeAlias = DirectoryCache | FileCache
+
+CreateParentsArgument: __.a.TypeAlias = __.a.Annotation[
+    bool, __.a.Doc( ''' Create parent directories if they do not exist. ''' )
+]
+RecurseArgument: __.a.TypeAlias = __.a.Annotation[
+    bool, __.a.Doc( ''' Only relevant for directories. ''' )
+]

@@ -220,6 +220,84 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
                     await __.gather_async( *scanners ) ) )
         return results
 
+    async def create_entry(
+        self,
+        name: __.RelativeLocation,
+        species: __.LocationSpecies,
+        permissions: __.Permissions,
+        exist_ok: bool = True,
+        parents: __.CreateParentsArgument = True,
+    ) -> __.DirectoryEntry:
+        try: accessor = self.produce_entry_accessor( name )
+        except Exception as exc:
+            raise __.LocationCreateFailure(
+                url = self.url, reason = str( exc ) ) from exc
+        url = accessor.as_url( )
+        Error = __.partial_function( __.LocationCreateFailure, url = url )
+        exists = await accessor.check_existence( pursue_indirection = False )
+        if exists:
+            if not exist_ok: raise Error( reason = "Entry already exists." )
+            inode = await accessor.examine( puruse_indirection = False )
+            if species is not inode.species:
+                reason = (
+                    f"Entry already exists as {inode.species.value}. "
+                    f"Creation request is for {species.value}." )
+                raise Error( reason = reason )
+            # TODO? Compare permissions: chmod or error
+            return __.DirectoryEntry( inode = inode, url = url )
+        return await self._create_entry(
+            accessor, species, permissions, parents )
+
+    async def delete_entry(
+        self,
+        name: __.RelativeLocation,
+        absent_ok: bool = True,
+        recurse: __.RecurseArgument = True,
+    ):
+        # TODO: Implement.
+        pass
+
+    async def produce_entry_accessor(
+        self, name: __.RelativeLocation
+    ) -> __.GeneralAccessor:
+        if isinstance( name, __.PossiblePath ): name = ( name, )
+        if isinstance( name, __.AbstractIterable[ __.PossiblePath ] ):
+            return __.adapter_from_url(
+                self.url.with_path(
+                    __.Path( self.url.path ).joinpath( *name ) ) )
+        raise __.RelativeLocationClassValidityError( type( name ) )
+
+    async def _create_entry(
+        self,
+        accessor: __.GeneralAdapter,
+        species: __.LocationSpecies,
+        permissions: __.Permissions,
+        parents: bool,
+    ) -> __.DirectoryEntry:
+        from aiofiles.os import makedirs, mkdir
+        url = accessor.as_url( )
+        path = __.Path( url.path )
+        Error = __.partial_function( __.LocationCreateFailure, url = url )
+        mode = 0o660 # TODO: translate from permissions
+        if parents:
+            try: await makedirs( path.parent, exist_ok = True )
+            except Exception as exc:
+                raise Error( reason = str( exc ) ) from exc
+        # Note: aiofiles does not wrap os.mknod.
+        match species:
+            case __.LocationSpecies.Directory:
+                try: await mkdir( path, mode = 0o770 ) # TODO: correct mode
+                except Exception as exc:
+                    raise Error( reason = str( exc ) ) from exc
+            case __.LocationSpecies.File:
+                try: path.touch( mode = mode )
+                except Exception as exc:
+                    raise Error( reason = str( exc ) ) from exc
+            case _:
+                reason = f"Creation of {species.value} is not implemented."
+                raise Error( reason = reason )
+        return await accessor.examine( pursue_indirection = False )
+
 
 class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with aiofiles and pathlib. '''
@@ -376,6 +454,7 @@ def _permissions_from_stat( inode: _StatResult ) -> __.Permissions:
 
 
 def _species_from_stat( inode: _StatResult ) -> __.LocationSpecies:
+    # TODO: import constants from stdlib 'stat' module
     inode_type = inode.st_mode & 0o170000
     match inode_type:
         case 0o010000: return __.LocationSpecies.Pipe
