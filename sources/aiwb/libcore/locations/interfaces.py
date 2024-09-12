@@ -120,7 +120,7 @@ class DirectoryOperations( __.a.Protocol ):
 
     async def create_entry(
         self,
-        name: RelativeLocation,
+        name: PossibleRelativeLocator,
         species: _core.LocationSpecies,
         permissions: _core.Permissions,
         exist_ok: bool = True,
@@ -131,7 +131,7 @@ class DirectoryOperations( __.a.Protocol ):
 
     async def delete_entry(
         self,
-        name: RelativeLocation,
+        name: PossibleRelativeLocator,
         absent_ok: bool = True,
         recurse: RecurseArgument = True,
         # TODO? Add 'safe' argument which performs sanity checks.
@@ -145,7 +145,7 @@ class DirectoryOperations( __.a.Protocol ):
         raise NotImplementedError
 
     def produce_entry_accessor(
-        self, name: RelativeLocation
+        self, name: PossibleRelativeLocator
     ) -> GeneralAccessor:
         ''' Derives new accessor relative to URL of this accessor. '''
         raise NotImplementedError
@@ -320,7 +320,7 @@ DirectoryAccessor: __.a.TypeAlias = DirectoryAdapter | DirectoryCache
 FileAccessor: __.a.TypeAlias = FileAdapter | FileCache
 GeneralAccessor: __.a.TypeAlias = GeneralAdapter | GeneralCache
 PossibleFilter: __.a.TypeAlias = bytes | str | Filter
-RelativeLocation: __.a.TypeAlias = (
+PossibleRelativeLocator: __.a.TypeAlias = (
     __.PossiblePath | __.AbstractIterable[ __.PossiblePath ] )
 SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
 SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter

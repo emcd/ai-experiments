@@ -177,16 +177,15 @@ class LocationSpeciesSupportError( __.SupportError ):
             f"Location species '{species}' not supported by {entity_name}." )
 
 
-class RelativeLocationClassValidityError(
+class RelativeLocatorClassValidityError(
     __.Omniexception, TypeError, ValueError
 ):
-    ''' Attempt to supply invalid class of object as relative location. '''
+    ''' Attempt to supply invalid class of object as relative locator. '''
 
     def __init__( self, class_ ):
         fqname = __.calculate_class_fqname( class_ )
         super( ).__init__(
-            f"Cannot use instances of class {fqname!r} "
-            "as relative locations." )
+            f"Cannot use instances of class {fqname!r} as relative locators." )
 
 
 class UrlClassValidityError( __.Omniexception, TypeError, ValueError ):

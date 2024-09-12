@@ -222,7 +222,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
 
     async def create_entry(
         self,
-        name: __.RelativeLocation,
+        name: __.PossibleRelativeLocator,
         species: __.LocationSpecies,
         permissions: __.Permissions,
         exist_ok: bool = True,
@@ -250,7 +250,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
 
     async def delete_entry(
         self,
-        name: __.RelativeLocation,
+        name: __.PossibleRelativeLocator,
         absent_ok: bool = True,
         recurse: __.RecurseArgument = True,
     ):
@@ -258,14 +258,14 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         pass
 
     async def produce_entry_accessor(
-        self, name: __.RelativeLocation
+        self, name: __.PossibleRelativeLocator
     ) -> __.GeneralAccessor:
         if isinstance( name, __.PossiblePath ): name = ( name, )
         if isinstance( name, __.AbstractIterable[ __.PossiblePath ] ):
             return __.adapter_from_url(
                 self.url.with_path(
                     __.Path( self.url.path ).joinpath( *name ) ) )
-        raise __.RelativeLocationClassValidityError( type( name ) )
+        raise __.RelativeLocatorClassValidityError( type( name ) )
 
     async def _create_entry(
         self,
