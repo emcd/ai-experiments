@@ -20,6 +20,8 @@
 
 ''' AI functionality for reading from various sources. '''
 
+# TODO: Move to different subpackage and build on top of libcore locations.
+
 
 from . import __
 
@@ -44,42 +46,6 @@ async def analyze(
         arguments[ 'source' ],
         operators,
         control = arguments.get( 'control' ) )
-
-
-async def read(
-    context: __.Context, arguments: __.Arguments
-) -> __.AbstractSequence:
-    ''' Reads URL or filesystem path and returns contents and metadata.
-
-        Metadata includes location and MIME type.
-
-        If location is directory, then all of its entries are recursively
-        scanned and their relevance is determined by an AI classifier. All
-        relevant entries will be returned as a list of triples, consisting of
-        location, MIME type, and content. Custom instructions may optionally be
-        supplied to the classifier for directory entries.
-    '''
-    operators = __.SimpleNamespace(
-        from_directory = _read_recursive,
-        from_file = _read_file_at_location,
-        from_http = _read_http_wrapped,
-        tokens_counter = _count_tokens,
-    )
-    return await _operate(
-        context.auxdata,
-        arguments[ 'source' ],
-        operators,
-        control = arguments.get( 'control' ) )
-
-
-async def _read_recursive( auxdata, path, control = None ):
-    results = [ ]
-    for dirent in await _list_directory( auxdata, path, control = control ):
-        result = await _read_file( auxdata, dirent )
-        if isinstance( result, str ):
-            results.append( dict( error = result, **dirent ) )
-        else: results.append( result )
-    return results
 
 
 def _access_tokens_limit( auxdata ):
@@ -291,10 +257,6 @@ async def _read_file( auxdata, dirent ):
         return dict( error = f"{exc_type}: {exc}", **dirent )
 
 
-async def _read_file_at_location( auxdata, location, **nomargs ):
-    return await _read_file( auxdata, dict( location = str( location ) ) )
-
-
 async def _read_http( auxdata, url ):
     from aiofiles import open as open_
     dirent = dict( location = url )
@@ -323,10 +285,6 @@ def _read_http_core( auxdata, url ):
         with urlopen( request ) as response:
             copyfileobj( response, file )
     return file.name
-
-
-async def _read_http_wrapped( auxdata, url, **nomargs ):
-    return await _read_http( auxdata, url )
 
 
 def _render_analysis_prompt( auxdata, control, content, mime_type ):
