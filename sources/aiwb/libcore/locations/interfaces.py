@@ -311,7 +311,13 @@ class CacheManager( ReconciliationOperations, __.a.Protocol ):
         ''' Produces cache manager from storage location URL. '''
         raise NotImplementedError
 
-    async def produce_cache( self, adapter: GeneralAdapter ) -> GeneralCache:
+    @__.abstract_member_function
+    def as_url( self ) -> _core.Url:
+        ''' Returns URL associated with cache storage location. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def produce_cache( self, adapter: GeneralAdapter ) -> GeneralCache:
         ''' Produces cache from general location access adapter. '''
         raise NotImplementedError
 
@@ -330,7 +336,4 @@ SpecificCache: __.a.TypeAlias = DirectoryCache | FileCache
 
 CreateParentsArgument: __.a.TypeAlias = __.a.Annotation[
     bool, __.a.Doc( ''' Create parent directories if they do not exist. ''' )
-]
-RecurseArgument: __.a.TypeAlias = __.a.Annotation[
-    bool, __.a.Doc( ''' Only relevant for directories. ''' )
 ]
