@@ -75,6 +75,15 @@ class LocationAdapterDerivationFailure( __.SupportError, AssertionError ):
             f"Reason: {reason}" )
 
 
+class LocationSpeciesAssertionFailure( __.Omniexception, AssertionError ):
+    ''' Failure to provide acceptable location species. '''
+
+    def __init__( self, url, reason ):
+        super( ).__init__(
+            f"Did not provide acceptable location species for '{url}'. "
+            f"Reason: {reason}" )
+
+
 class LocationOperateFailure( __.Omniexception, RuntimeError ):
     ''' Failure of attempt to operate on location. '''
 

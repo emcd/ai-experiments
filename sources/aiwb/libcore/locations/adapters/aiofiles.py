@@ -127,29 +127,26 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
 
     async def as_specific(
         self,
+        force: bool = False,
+        pursue_indirection: bool = True,
         species: __.Optional[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificAdapter:
-        exists = await self.check_existence( pursue_indirection = True )
-        if exists:
-            species_ = (
-                ( await self.examine( pursue_indirection = True ) ).species )
-            if __.absent is not species and species is not species_:
-                reason = (
-                    f"Requested species, '{species}', "
-                    f"does not match actual species, '{species_}'." )
-                raise __.LocationAdapterDerivationFailure(
-                    url = self.url, reason = reason )
-            species = species_
-        match species:
+        Error = __.partial_function(
+            __.LocationAdapterDerivationFailure, url = self.url )
+        try:
+            species_ = species if force else await self.discover_species(
+                pursue_indirection = pursue_indirection, species = species )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        match species_:
             case __.LocationSpecies.Directory:
                 return DirectoryAdapter( url = self.url )
             case __.LocationSpecies.File:
                 return FileAdapter( url = self.url )
             case _:
                 reason = (
-                    f"No derivative available for species {species.value!r}." )
-                raise __.LocationAdapterDerivationFailure(
-                    url = self.url, reason = reason )
+                    "No derivative available for species "
+                    f"{species_.value!r}." )
+                raise Error( reason = reason )
 
     async def is_directory( self, pursue_indirection: bool = True ) -> bool:
         from aiofiles.os import path

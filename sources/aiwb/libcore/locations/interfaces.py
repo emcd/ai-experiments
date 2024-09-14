@@ -33,6 +33,7 @@ from __future__ import annotations
 
 from . import __
 from . import core as _core
+from . import exceptions as _exceptions
 
 
 class _Common( __.a.Protocol ):
@@ -246,10 +247,35 @@ class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
     @__.abstract_member_function
     async def as_specific(
         self,
+        force: bool = False,
+        pursue_indirection: bool = True,
         species: __.Optional[ _core.LocationSpecies ] = __.absent,
     ) -> SpecificAdapter:
         ''' Returns appropriate specific adapter for location. '''
         raise NotImplementedError
+
+    async def discover_species(
+        self,
+        pursue_indirection: bool = True,
+        species: __.Optional[ _core.LocationSpecies ] = __.absent,
+    ) -> _core.LocationSpecies:
+        ''' Discovers or asserts species of location. '''
+        Error = __.partial_function(
+            _exceptions.LocationSpeciesAssertionFailure, url = self.as_url( ) )
+        exists = (
+            await self.check_existence(
+                pursue_indirection = pursue_indirection ) )
+        if exists:
+            species_ = (
+                ( await self.examine(
+                    pursue_indirection = pursue_indirection ) ).species )
+            if __.absent is not species and species is not species_:
+                reason = (
+                    f"Requested species, '{species}', "
+                    f"does not match actual species, '{species_}'." )
+                raise Error( reason = reason )
+            return species_
+        return species
 
 
 @__.a.runtime_checkable

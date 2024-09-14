@@ -150,10 +150,24 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
 
     async def as_specific(
         self,
+        force: bool = False,
+        pursue_indirection: bool = True,
         species: __.Optional[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificAdapter:
-        # TODO: Raise error if species is not file.
-        return FileAdapter( url = self.url )
+        Error = __.partial_function(
+            __.LocationAdapterDerivationFailure, url = self.url )
+        try:
+            species_ = species if force else await self.discover_species(
+                pursue_indirection = pursue_indirection, species = species )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        match species_:
+            case __.LocationSpecies.File:
+                return FileAdapter( url = self.url )
+            case _:
+                reason = (
+                    "No derivative available for species "
+                    f"{species_.value!r}." )
+                raise Error( reason = reason )
 
     async def is_directory( self, pursue_indirection: bool = True ) -> bool:
         # HTTP locations are not directories.

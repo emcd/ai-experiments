@@ -30,7 +30,19 @@ _module_name = __name__.replace( f"{__package__}.", '' )
 _entity_name = f"cache '{_module_name}'"
 
 
-class _Common:
+def _ensures_cache( function: __.a.Callable ):
+    ''' Decorator which ensures cache is filled before operation. '''
+    from functools import wraps
+
+    @wraps( function )
+    async def invoker( cache: _Common, *posargs, **nomargs ):
+        await cache._ingest_if_absent( )
+        return await function( cache, *posargs, **nomargs )
+
+    return invoker
+
+
+class _Common( __.a.Protocol ):
     # TODO: Immutable class and object attributes.
 
     adapter: __.AdapterBase
@@ -43,6 +55,7 @@ class _Common:
 
     def as_url( self ) -> __.Url: return self.adapter.as_url( )
 
+    @_ensures_cache
     async def check_access(
         self,
         permissions: __.Permissions,
@@ -51,7 +64,6 @@ class _Common:
         Error = __.partial_function(
             __.CacheOperationFailure( url = self.adapter.as_url( ) ) )
         cache_adapter = __.adapter_from_url( self.cache_url )
-        await self._ingest_if_absent( pursue_indirection = pursue_indirection )
         try:
             return cache_adapter.check_access(
                 permissions = permissions,
@@ -79,6 +91,7 @@ class _Common:
             await self._ingest( pursue_indirection = pursue_indirection )
         return source_exists
 
+    @_ensures_cache
     async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
         Error = __.partial_function(
             __.CacheOperationFailure( url = self.adapter.as_url( ) ) )
@@ -94,7 +107,8 @@ class _Common:
         return __.a.cast(
             __.AccessImplement, self.adapter.expose_implement( ) )
 
-    async def _ingest( self, pursue_indirection: bool ):
+    @__.abstract_member_function
+    async def _ingest( self ):
         # TODO: Implement:
         #       Examine source URL to get inode.
         #       (Properly handle indirection.)
@@ -103,18 +117,15 @@ class _Common:
         #       Recursively populate if directory.
         #       Acquire content bytes if file.
         #       (Raise CacheOperationFailure on any error.)
-        pass
+        raise NotImplementedError
 
-    async def _ingest_if_absent( self, pursue_indirection: bool ):
+    async def _ingest_if_absent( self ):
         Error = __.partial_function(
             __.CacheOperationFailure( url = self.adapter.as_url( ) ) )
         cache_adapter = __.adapter_from_url( self.cache_url )
-        try:
-            exists = await cache_adapter.check_existence(
-                pursue_indirection = False )
+        try: exists = await cache_adapter.check_existence( )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        if not exists:
-            await self._ingest( pursue_indirection = pursue_indirection )
+        if not exists: await self._ingest( )
 
 
 @__.standard_dataclass
@@ -166,19 +177,189 @@ class GeneralCache( _Common, __.GeneralCache ):
 
     async def as_specific(
         self,
+        force: bool = False,
+        pursue_indirection: bool = True,
         species: __.Optional[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificCache:
-        # TODO: Implement.
-        pass
+        Error = __.partial_function(
+            __.LocationCacheDerivationFailure, url = self.cache_url )
+        try:
+            species_ = species if force else await self.discover_species(
+                pursue_indirection = pursue_indirection, species = species )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        adapter = await self.adapter.as_specific(
+            force = True,
+            pursue_indirection = pursue_indirection,
+            species = species_ )
+        match species_:
+            case __.LocationSpecies.Directory:
+                return DirectoryCache(
+                    adapter = adapter, cache_url = self.cache_url )
+            case __.LocationSpecies.File:
+                return FileCache(
+                    adapter = adapter, cache_url = self.cache_url )
+            case _:
+                reason = (
+                    "No derivative available for species "
+                    f"{species_.value!r}." )
+                raise Error( reason = reason )
 
+    @_ensures_cache
     async def is_directory( self, pursue_indirection: bool = True ) -> bool:
-        # TODO: Implement.
-        pass
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        return await cache_adapter.is_directory(
+            pursue_indirection = pursue_indirection )
 
+    @_ensures_cache
     async def is_file( self, pursue_indirection: bool = True ) -> bool:
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        return await cache_adapter.is_file(
+            pursue_indirection = pursue_indirection )
+
+    @_ensures_cache
+    async def is_indirection( self ) -> bool:
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        return await cache_adapter.is_indirection( )
+
+    async def _ingest( self ):
+        Error = __.partial_function(
+            __.CacheOperationFailure( url = self.adapter.as_url( ) ) )
+        try: adapter = await self.adapter.as_specific( )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        if isinstance( adapter, __.DirectoryAdapter ):
+            cache = DirectoryCache(
+                adapter = adapter, cache_url = self.cache_url )
+        elif isinstance( adapter, __.FileAdapter ):
+            cache = FileCache(
+                adapter = adapter, cache_url = self.cache_url )
+        else:
+            reason = "Cannot ingest entities of species {species_.value!r}."
+            raise Error( reason = reason )
+        await cache._ingest( )
+
+
+class DirectoryCache( _Common, __.DirectoryCache ):
+    ''' Simple cache for directory. '''
+    # TODO: Immutable class and object attributes.
+
+    adapter: __.DirectoryAdapter
+
+    @_ensures_cache
+    async def create_directory(
+        self,
+        name: __.PossibleRelativeLocator,
+        permissions: __.Permissions | __.PermissionsTable,
+        exist_ok: bool = True,
+        parents: __.CreateParentsArgument = True,
+    ) -> __.DirectoryAccessor:
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        return await cache_adapter.create_directory(
+            name = name,
+            permissions = permissions,
+            exist_ok = exist_ok,
+            parents = parents )
+
+    # TODO: create_file
+
+    @_ensures_cache
+    async def delete_directory(
+        self,
+        name: __.PossibleRelativeLocator,
+        absent_ok: bool = True,
+        recurse: bool = True,
+        safe: bool = True,
+    ):
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        # TODO? Record deletion for commit.
+        return await cache_adapter.delete_directory(
+            name = name,
+            absent_ok = absent_ok,
+            recurse = recurse,
+            safe = safe )
+
+    async def produce_entry_accessor(
+        self, name: __.PossibleRelativeLocator
+    ) -> __.GeneralAccessor:
+        if isinstance( name, __.PossiblePath ): name = ( name, )
+        if isinstance( name, __.AbstractIterable[ __.PossiblePath ] ):
+            source_base_url = self.adapter.as_url( )
+            source_url = source_base_url.with_path(
+                __.Path( source_base_url.path ).joinpath( *name ) )
+            source_adapter = __.adapter_from_url( source_url )
+            cache_url = self.cache_url.with_path(
+                __.Path( self.cache_url.path ).joinpath( *name ) )
+            return GeneralCache(
+                adapter = source_adapter, cache_url = cache_url )
+        raise __.RelativeLocatorClassValidityError( type( name ) )
+
+    @_ensures_cache
+    async def survey_entries(
+        self,
+        filters: __.Optional[
+            __.AbstractIterable[ __.PossibleFilter ]
+        ] = __.absent,
+        recurse: bool = True
+    ) -> __.AbstractSequence[ __.DirectoryEntry ]:
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        return await cache_adapter.survey_entries(
+            filters = filters, recurse = recurse )
+
+    async def _ingest( self ):
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        # TODO: Handle exceptions.
+        cache_adapter.create_directory(
+            name = '.',
+            permissions = __.AccretiveDictionary( {
+                __.Possessor.CurrentPopulation: __.Permissions_RCUDX,
+                __.Possessor.CurrentUser: __.Permissions_RCUDX } ),
+            exist_ok = True,
+            parents = True )
+        source_base_url = self.adapter.as_url( )
+        # TODO: Parallel async fanout for entry ingestion.
+        for dirent in self.adapter.survey_entries(
+            filters = ( ), recurse = False
+        ):
+            name = (
+                __.Path( dirent.url.path )
+                .relative_to( source_base_url.path ) )
+            entry_accessor = self.produce_entry_accessor( name )
+            await entry_accessor._ingest( )
+
+
+class FileCache( _Common, __.FileCache ):
+    ''' Simple cache for file. '''
+    # TODO: Immutable class and object attributes.
+
+    adapter: __.DirectoryAdapter
+
+    async def acquire_content(
+        self,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> __.AcquireContentTextResult:
         # TODO: Implement.
         pass
 
-    async def is_indirection( self ) -> bool:
+    async def acquire_content_bytes( self ) -> __.AcquireContentBytesResult:
+        # TODO: Implement.
+        pass
+
+    async def update_content(
+        self,
+        content: str,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> __.UpdateContentResult:
+        # TODO: Implement.
+        pass
+
+    async def update_content_bytes(
+        self,
+        content: bytes,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+    ) -> __.UpdateContentResult:
         # TODO: Implement.
         pass
