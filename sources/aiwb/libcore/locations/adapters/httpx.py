@@ -155,7 +155,8 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         species: __.Optional[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificAdapter:
         Error = __.partial_function(
-            __.LocationAdapterDerivationFailure, url = self.url )
+            __.LocationAccessorDerivationFailure,
+            entity_name = _entity_name, url = self.url )
         try:
             species_ = species if force else await self.discover_species(
                 pursue_indirection = pursue_indirection, species = species )

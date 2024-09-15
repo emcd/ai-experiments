@@ -139,6 +139,10 @@ class Permissions( __.enum.IntFlag ):
     Delete = __.produce_enumeration_value( )
     Execute = __.produce_enumeration_value( )
 
+Permissions_CUD = Permissions.Create | Permissions.Update | Permissions.Delete
+Permissions_RCUD = Permissions_CUD | Permissions.Retrieve
+Permissions_RCUDX = Permissions_RCUD | Permissions.Execute
+
 
 class Possessor( __.Enum ):
     ''' Representation of potential owner of location. '''

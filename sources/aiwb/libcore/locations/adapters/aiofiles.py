@@ -32,10 +32,6 @@ _module_name = __name__.replace( f"{__package__}.", '' )
 _entity_name = f"location access adapter '{_module_name}'"
 
 
-_Permissions_CUD = (
-    __.Permissions.Create | __.Permissions.Update | __.Permissions.Delete )
-
-
 __.AccessImplement.register( __.Path )
 
 
@@ -72,7 +68,7 @@ class _Common:
         from os import F_OK, R_OK, W_OK, X_OK
         mode = F_OK
         if __.Permissions.Retrieve & permissions: mode |= R_OK
-        if _Permissions_CUD & permissions: mode |= W_OK
+        if __.Permissions_CUD & permissions: mode |= W_OK
         if __.Permissions.Execute & permissions: mode |= X_OK
         try:
             from aiofiles.os import access
@@ -132,7 +128,8 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         species: __.Optional[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificAdapter:
         Error = __.partial_function(
-            __.LocationAdapterDerivationFailure, url = self.url )
+            __.LocationAccessorDerivationFailure,
+            entity_name = _entity_name, url = self.url )
         try:
             species_ = species if force else await self.discover_species(
                 pursue_indirection = pursue_indirection, species = species )
@@ -220,8 +217,36 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         return await accessor.as_specific(
             species = __.LocationSpecies.Directory )
 
-    # TODO: create_file
-    # Note: aiofiles does not wrap os.mknod or pathlib.Path.touch.
+    async def create_file(
+        self,
+        name: __.PossibleRelativeLocator,
+        permissions: __.Permissions | __.PermissionsTable,
+        exist_ok: bool = True,
+        parents: __.CreateParentsArgument = True,
+    ) -> __.FileAccessor:
+        try: accessor = self.produce_entry_accessor( name )
+        except Exception as exc:
+            raise __.LocationCreateFailure(
+                url = self.url, reason = str( exc ) ) from exc
+        url = accessor.as_url( )
+        Error = __.partial_function( __.LocationCreateFailure, url = url )
+        exists = await _probe_accessor_if_exists(
+            accessor,
+            species = __.LocationSpecies.File,
+            permissions = permissions,
+            error_to_raise = Error,
+            exist_ok = exist_ok )
+        if not exists:
+            if parents:
+                await _create_parent_directories(
+                    url, permissions, error_to_raise = Error )
+            mode = _access_mode_from_permissions( permissions )
+            # Note: aiofiles does not wrap os.mknod or pathlib.Path.touch.
+            try: __.Path( url.path ).touch( mode = mode )
+            except Exception as exc:
+                raise Error( reason = str( exc ) ) from exc
+        return await accessor.as_specific(
+            species = __.LocationSpecies.File )
 
     # TODO: create_indirection
 
@@ -235,6 +260,17 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         # TODO: Implement.
         #       Refuse to delete $HOME or ~ if safe.
         pass
+
+    async def delete_file(
+        self,
+        name: __.PossibleRelativeLocator,
+        absent_ok: bool = True,
+        safe: bool = True,
+    ):
+        # TODO: Implement.
+        pass
+
+    # TODO: delete_indirection
 
     async def produce_entry_accessor(
         self, name: __.PossibleRelativeLocator
@@ -380,7 +416,7 @@ def _access_mode_from_permissions(
         for bitshift in mode_bitshifts:
             if __.Permissions.Retrieve & permissions_:
                 mode |= ( R_OK << bitshift )
-            if _Permissions_CUD & permissions_:
+            if __.Permissions_CUD & permissions_:
                 mode |= ( W_OK << bitshift )
             if __.Permissions.Execute & permissions_:
                 mode |= ( X_OK << bitshift )
@@ -467,7 +503,7 @@ def _permissions_from_stat( inode: _StatResult ) -> __.Permissions:
         if ( R_OK << bitshift ) & inode.st_mode:
             permissions |= __.Permissions.Retrieve
         if ( W_OK << bitshift ) & inode.st_mode:
-            permissions |= _Permissions_CUD
+            permissions |= __.Permissions_CUD
         if ( X_OK << bitshift ) & inode.st_mode:
             permissions |= __.Permissions.Execute
     return permissions

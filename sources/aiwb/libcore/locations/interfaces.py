@@ -119,7 +119,15 @@ class DirectoryOperations( __.a.Protocol ):
         ''' Creates directory relative to URL of this accessor. '''
         raise NotImplementedError
 
-    # TODO: create_file
+    async def create_file(
+        self,
+        name: PossibleRelativeLocator,
+        permissions: _core.Permissions | _core.PermissionsTable,
+        exist_ok: bool = True,
+        parents: CreateParentsArgument = True,
+    ) -> FileAccessor:
+        ''' Creates file relative to URL of this accessor. '''
+        raise NotImplementedError
 
     # TODO: create_indirection
 
@@ -128,12 +136,18 @@ class DirectoryOperations( __.a.Protocol ):
         name: PossibleRelativeLocator,
         absent_ok: bool = True,
         recurse: bool = True,
-        safe: bool = True,
+        safe: bool = True, # TODO? safeties enum
     ):
         ''' Deletes directory relative to URL of this accessor. '''
         raise NotImplementedError
 
-    # TODO: delete_file
+    async def delete_file(
+        self,
+        name: PossibleRelativeLocator,
+        absent_ok: bool = True,
+        safe: bool = True, # TODO? safeties enum
+    ):
+        ''' Deletes file relative to URL of this accessor. '''
 
     # TODO: delete_indirection
 
@@ -204,6 +218,29 @@ class FileOperations( __.a.Protocol ):
 class GeneralOperations( __.a.Protocol ):
     ''' Standard operations on locations of indeterminate species. '''
 
+    async def discover_species(
+        self,
+        pursue_indirection: bool = True,
+        species: __.Optional[ _core.LocationSpecies ] = __.absent,
+    ) -> _core.LocationSpecies:
+        ''' Discovers or asserts species of location. '''
+        Error = __.partial_function(
+            _exceptions.LocationSpeciesAssertionError, url = self.as_url( ) )
+        exists = (
+            await self.check_existence(
+                pursue_indirection = pursue_indirection ) )
+        if exists:
+            species_ = (
+                ( await self.examine(
+                    pursue_indirection = pursue_indirection ) ).species )
+            if __.absent is not species and species is not species_:
+                reason = (
+                    f"Requested species, '{species}', "
+                    f"does not match actual species, '{species_}'." )
+                raise Error( reason = reason )
+            return species_
+        return species
+
     @__.abstract_member_function
     async def is_directory( self, pursue_indirection: bool = True ) -> bool:
         ''' Is location a directory? '''
@@ -253,29 +290,6 @@ class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
     ) -> SpecificAdapter:
         ''' Returns appropriate specific adapter for location. '''
         raise NotImplementedError
-
-    async def discover_species(
-        self,
-        pursue_indirection: bool = True,
-        species: __.Optional[ _core.LocationSpecies ] = __.absent,
-    ) -> _core.LocationSpecies:
-        ''' Discovers or asserts species of location. '''
-        Error = __.partial_function(
-            _exceptions.LocationSpeciesAssertionFailure, url = self.as_url( ) )
-        exists = (
-            await self.check_existence(
-                pursue_indirection = pursue_indirection ) )
-        if exists:
-            species_ = (
-                ( await self.examine(
-                    pursue_indirection = pursue_indirection ) ).species )
-            if __.absent is not species and species is not species_:
-                reason = (
-                    f"Requested species, '{species}', "
-                    f"does not match actual species, '{species_}'." )
-                raise Error( reason = reason )
-            return species_
-        return species
 
 
 @__.a.runtime_checkable

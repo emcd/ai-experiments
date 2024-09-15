@@ -18,7 +18,15 @@
 #============================================================================#
 
 
-''' Simple cache which uses separate storage adapter. '''
+''' Simple cache which uses separate storage adapter.
+
+    Limitations:
+    * Does not track indirection (symlinks, redirects, etc...). Always caches
+      location referenced by fully-resolved URL.
+    * Does not track upstream expiries (e.g., HTTP cache controls).
+    * Does not track upstream MIME type or charset hints (e.g., HTTP
+      'Content-Type' headers.
+'''
 
 
 from __future__ import annotations
@@ -61,67 +69,41 @@ class _Common( __.a.Protocol ):
         permissions: __.Permissions,
         pursue_indirection: bool = True,
     ) -> bool:
-        Error = __.partial_function(
-            __.CacheOperationFailure( url = self.adapter.as_url( ) ) )
         cache_adapter = __.adapter_from_url( self.cache_url )
-        try:
-            return cache_adapter.check_access(
-                permissions = permissions,
-                pursue_indirection = pursue_indirection )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        return cache_adapter.check_access(
+            permissions = permissions,
+            pursue_indirection = pursue_indirection )
 
     async def check_existence(
         self, pursue_indirection: bool = True
     ) -> bool:
         source_adapter = self.adapter
-        Error = __.partial_function(
-            __.CacheOperationFailure( url = source_adapter.as_url( ) ) )
         cache_adapter = __.adapter_from_url( self.cache_url )
-        try:
-            cache_exists = await cache_adapter.check_existence(
-                pursue_indirection = pursue_indirection )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        if not cache_exists:
-            try:
-                source_exists = await source_adapter.check_existence(
-                    pursue_indirection = pursue_indirection )
-            except Exception as exc:
-                raise Error( reason = str( exc ) ) from exc
-        if source_exists:
-            await self._ingest( pursue_indirection = pursue_indirection )
+        cache_exists = await cache_adapter.check_existence(
+            pursue_indirection = pursue_indirection )
+        if cache_exists: return True
+        source_exists = await source_adapter.check_existence(
+            pursue_indirection = pursue_indirection )
+        if source_exists: await self._ingest( )
         return source_exists
 
     @_ensures_cache
     async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
-        Error = __.partial_function(
-            __.CacheOperationFailure( url = self.adapter.as_url( ) ) )
         cache_adapter = __.adapter_from_url( self.cache_url )
-        await self._ingest_if_absent( pursue_indirection = pursue_indirection )
-        try:
-            return cache_adapter.examine(
-                pursue_indirection = pursue_indirection )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        return cache_adapter.examine(
+            pursue_indirection = pursue_indirection )
 
     def expose_implement( self ) -> __.AccessImplement:
-        # Cast because we do not have a common protocol.
-        return __.a.cast(
-            __.AccessImplement, self.adapter.expose_implement( ) )
+        return self.adapter.expose_implement( )
 
     @__.abstract_member_function
     async def _ingest( self ):
-        # TODO: Implement:
-        #       Examine source URL to get inode.
-        #       (Properly handle indirection.)
-        #       Clone permissions mapped to current user and group.
-        #       Create directory entry according location species.
-        #       Recursively populate if directory.
-        #       Acquire content bytes if file.
-        #       (Raise CacheOperationFailure on any error.)
         raise NotImplementedError
 
     async def _ingest_if_absent( self ):
         Error = __.partial_function(
-            __.CacheOperationFailure( url = self.adapter.as_url( ) ) )
+            __.LocationCacheIngestFailure,
+            source_url = self.adapter.as_url( ), cache_url = self.cache_url )
         cache_adapter = __.adapter_from_url( self.cache_url )
         try: exists = await cache_adapter.check_existence( )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
@@ -182,7 +164,8 @@ class GeneralCache( _Common, __.GeneralCache ):
         species: __.Optional[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificCache:
         Error = __.partial_function(
-            __.LocationCacheDerivationFailure, url = self.cache_url )
+            __.LocationAccessorDerivationFailure,
+            entity_name = _entity_name, url = self.cache_url )
         try:
             species_ = species if force else await self.discover_species(
                 pursue_indirection = pursue_indirection, species = species )
@@ -223,7 +206,8 @@ class GeneralCache( _Common, __.GeneralCache ):
 
     async def _ingest( self ):
         Error = __.partial_function(
-            __.CacheOperationFailure( url = self.adapter.as_url( ) ) )
+            __.LocationCacheIngestFailure,
+            source_url = self.adapter.as_url( ), cache_url = self.cache_url )
         try: adapter = await self.adapter.as_specific( )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
         if isinstance( adapter, __.DirectoryAdapter ):
@@ -233,7 +217,8 @@ class GeneralCache( _Common, __.GeneralCache ):
             cache = FileCache(
                 adapter = adapter, cache_url = self.cache_url )
         else:
-            reason = "Cannot ingest entities of species {species_.value!r}."
+            species = ( await adapter.examine( ) ).inode.species
+            reason = f"Cannot ingest entities of species {species.value!r}."
             raise Error( reason = reason )
         await cache._ingest( )
 
@@ -259,9 +244,21 @@ class DirectoryCache( _Common, __.DirectoryCache ):
             exist_ok = exist_ok,
             parents = parents )
 
-    # TODO: create_file
-
     @_ensures_cache
+    async def create_file(
+        self,
+        name: __.PossibleRelativeLocator,
+        permissions: __.Permissions | __.PermissionsTable,
+        exist_ok: bool = True,
+        parents: __.CreateParentsArgument = True,
+    ) -> __.FileAccessor:
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        return await cache_adapter.create_file(
+            name = name,
+            permissions = permissions,
+            exist_ok = exist_ok,
+            parents = parents )
+
     async def delete_directory(
         self,
         name: __.PossibleRelativeLocator,
@@ -270,8 +267,21 @@ class DirectoryCache( _Common, __.DirectoryCache ):
         safe: bool = True,
     ):
         cache_adapter = __.adapter_from_url( self.cache_url )
-        # TODO? Record deletion for commit.
         return await cache_adapter.delete_directory(
+            name = name,
+            absent_ok = absent_ok,
+            recurse = recurse,
+            safe = safe )
+
+    async def delete_file(
+        self,
+        name: __.PossibleRelativeLocator,
+        absent_ok: bool = True,
+        recurse: bool = True,
+        safe: bool = True,
+    ):
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        return await cache_adapter.delete_file(
             name = name,
             absent_ok = absent_ok,
             recurse = recurse,
@@ -305,25 +315,32 @@ class DirectoryCache( _Common, __.DirectoryCache ):
             filters = filters, recurse = recurse )
 
     async def _ingest( self ):
+        Error = __.partial_function(
+            __.LocationCacheIngestFailure,
+            source_url = self.adapter.as_url( ), cache_url = self.cache_url )
         cache_adapter = __.adapter_from_url( self.cache_url )
-        # TODO: Handle exceptions.
-        cache_adapter.create_directory(
-            name = '.',
-            permissions = __.AccretiveDictionary( {
-                __.Possessor.CurrentPopulation: __.Permissions_RCUDX,
-                __.Possessor.CurrentUser: __.Permissions_RCUDX } ),
-            exist_ok = True,
-            parents = True )
+        try:
+            await cache_adapter.create_directory(
+                name = '.',
+                permissions = __.AccretiveDictionary( {
+                    __.Possessor.CurrentPopulation: __.Permissions_RCUDX,
+                    __.Possessor.CurrentUser: __.Permissions_RCUDX } ),
+                exist_ok = True,
+                parents = True )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
         source_base_url = self.adapter.as_url( )
         # TODO: Parallel async fanout for entry ingestion.
-        for dirent in self.adapter.survey_entries(
+        for dirent in await self.adapter.survey_entries(
             filters = ( ), recurse = False
         ):
             name = (
                 __.Path( dirent.url.path )
                 .relative_to( source_base_url.path ) )
-            entry_accessor = self.produce_entry_accessor( name )
-            await entry_accessor._ingest( )
+            try:
+                entry_accessor = self.produce_entry_accessor( name )
+                await entry_accessor._ingest( )
+            except Exception as exc:
+                raise Error( reason = str( exc ) ) from exc
 
 
 class FileCache( _Common, __.FileCache ):
@@ -332,18 +349,23 @@ class FileCache( _Common, __.FileCache ):
 
     adapter: __.DirectoryAdapter
 
+    @_ensures_cache
     async def acquire_content(
         self,
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
     ) -> __.AcquireContentTextResult:
-        # TODO: Implement.
-        pass
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        return await cache_adapter.acquire_content(
+            charset = charset,
+            charset_errors = charset_errors,
+            newline = newline )
 
+    @_ensures_cache
     async def acquire_content_bytes( self ) -> __.AcquireContentBytesResult:
-        # TODO: Implement.
-        pass
+        cache_adapter = __.adapter_from_url( self.cache_url )
+        return await cache_adapter.acquire_content_bytes( )
 
     async def update_content(
         self,
@@ -353,13 +375,41 @@ class FileCache( _Common, __.FileCache ):
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
     ) -> __.UpdateContentResult:
-        # TODO: Implement.
-        pass
+        cache_adapter = await self._create_cache_file_if_absent( )
+        return await cache_adapter.update_content(
+            content,
+            options = options,
+            charset = charset,
+            charset_errors = charset_errors,
+            newline = newline )
 
     async def update_content_bytes(
         self,
         content: bytes,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.UpdateContentResult:
-        # TODO: Implement.
-        pass
+        cache_adapter = await self._create_cache_file_if_absent( )
+        return await cache_adapter.update_content_bytes(
+            content, options = options )
+
+    async def _ingest( self ):
+        Error = __.partial_function(
+            __.LocationCacheIngestFailure,
+            source_url = self.adapter.as_url( ), cache_url = self.cache_url )
+        try:
+            cache_adapter = await self._create_cache_file_if_absent( )
+            acquisition = await self.adapter.acquire_content_bytes( )
+            await cache_adapter.update_content_bytes( acquisition.content )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+
+    async def _create_cache_file_if_absent( self ) -> __.FileAdapter:
+        path = __.Path( self.cache_url.path )
+        parent_url = self.cache_url.with_path( path.parent )
+        parent_adapter = __.adapter_from_url( parent_url )
+        return await parent_adapter.create_file(
+            name = path.name,
+            permissions = __.AccretiveDictionary( {
+                __.Possessor.CurrentPopulation: __.Permissions_RCUD,
+                __.Possessor.CurrentUser: __.Permissions_RCUD } ),
+            exist_ok = True,
+            parents = True )

@@ -40,7 +40,7 @@ class FilterAvailabilityError( __.SupportError ):
         super( ).__init__( f"Filter unavailable: {filter_name!r}" )
 
 
-class FilterClassValidityError( __.Omniexception, TypeError, ValueError ):
+class FilterClassValidityError( __.Omnierror, TypeError, ValueError ):
     ''' Attempt to supply invalid class of object as filter. '''
 
     def __init__( self, class_ ):
@@ -49,7 +49,7 @@ class FilterClassValidityError( __.Omniexception, TypeError, ValueError ):
             f"Cannot use instances of class {fqname!r} as filters." )
 
 
-class FilterSpecifierValidityError( __.Omniexception, ValueError ):
+class FilterSpecifierValidityError( __.Omnierror, ValueError ):
     ''' Attempt to produce filter from invalid specifier. '''
 
     def __init__( self, specifier, reason ):
@@ -60,31 +60,23 @@ class FilterSpecifierValidityError( __.Omniexception, ValueError ):
 class LocationAccessorDerivationFailure( __.SupportError, AssertionError ):
     ''' Failure to derive specific location accessor. '''
 
-    def __init__( self, url, reason ):
+    def __init__( self, entity_name, url, reason ):
         super( ).__init__(
-            f"Could not derive specific accessor for location '{url}'. "
+            f"Could not derive specific {entity_name} for location '{url}'. "
             f"Reason: {reason}" )
 
 
-class LocationAdapterDerivationFailure( __.SupportError, AssertionError ):
-    ''' Failure to derive specific location access adapter. '''
+class LocationCacheIngestFailure( __.Omnierror ):
+    ''' Failure of attempt to ingest source into cache. '''
 
-    def __init__( self, url, reason ):
+    def __init__( self, source_url, cache_url, reason ):
         super( ).__init__(
-            f"Could not derive specific access adapter for location '{url}'. "
+            f"Could not ingest source location '{source_url}' "
+            f"into cache location '{cache_url}'. "
             f"Reason: {reason}" )
 
 
-class LocationSpeciesAssertionFailure( __.Omniexception, AssertionError ):
-    ''' Failure to provide acceptable location species. '''
-
-    def __init__( self, url, reason ):
-        super( ).__init__(
-            f"Did not provide acceptable location species for '{url}'. "
-            f"Reason: {reason}" )
-
-
-class LocationOperateFailure( __.Omniexception, RuntimeError ):
+class LocationOperateFailure( __.Omnierror, Exception ):
     ''' Failure of attempt to operate on location. '''
 
 
@@ -178,6 +170,17 @@ class LocationUpdateContentFailure( LocationOperateFailure ):
             f"Reason: {reason}" )
 
 
+class LocationSpeciesAssertionError(
+    __.Omnierror, AssertionError, ValueError
+):
+    ''' Failure to provide acceptable location species. '''
+
+    def __init__( self, url, reason ):
+        super( ).__init__(
+            f"Did not provide acceptable location species for '{url}'. "
+            f"Reason: {reason}" )
+
+
 class LocationSpeciesSupportError( __.SupportError ):
     ''' Attempt to use location species which has no implementation. '''
 
@@ -186,9 +189,7 @@ class LocationSpeciesSupportError( __.SupportError ):
             f"Location species '{species}' not supported by {entity_name}." )
 
 
-class RelativeLocatorClassValidityError(
-    __.Omniexception, TypeError, ValueError
-):
+class RelativeLocatorClassValidityError( __.Omnierror, TypeError, ValueError ):
     ''' Attempt to supply invalid class of object as relative locator. '''
 
     def __init__( self, class_ ):
@@ -197,7 +198,7 @@ class RelativeLocatorClassValidityError(
             f"Cannot use instances of class {fqname!r} as relative locators." )
 
 
-class UrlClassValidityError( __.Omniexception, TypeError, ValueError ):
+class UrlClassValidityError( __.Omnierror, TypeError, ValueError ):
     ''' Attempt to supply invalid class of object as URL. '''
 
     def __init__( self, class_ ):
@@ -206,7 +207,7 @@ class UrlClassValidityError( __.Omniexception, TypeError, ValueError ):
             f"Cannot use instances of class {fqname!r} as URLs." )
 
 
-class UrlPartAssertionError( __.Omniexception, AssertionError, ValueError ):
+class UrlPartAssertionError( __.Omnierror, AssertionError, ValueError ):
     ''' Attempt to provide URL part which is not applicable. '''
 
     def __init__( self, entity_name, part_name, url ):
@@ -215,7 +216,7 @@ class UrlPartAssertionError( __.Omniexception, AssertionError, ValueError ):
             f"URL: {url}" )
 
 
-class UrlSchemeAssertionError( __.Omniexception, AssertionError, ValueError ):
+class UrlSchemeAssertionError( __.Omnierror, AssertionError, ValueError ):
     ''' Attempt to use URL scheme which is not applicable. '''
 
     def __init__( self, entity_name, url ):

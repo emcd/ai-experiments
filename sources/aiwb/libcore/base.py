@@ -28,8 +28,12 @@ class Omniexception(
     __.AccretiveObject, BaseException,
     metaclass = __.AccretiveClass,
 ):
-    ''' Base for exceptions raised by package API. '''
+    ''' Base for all exceptions raised by package API. '''
 
 
-class SupportError( Omniexception, NotImplementedError ):
+class Omnierror( Omniexception, Exception ):
+    ''' Base for error exceptions raised by package API. '''
+
+
+class SupportError( Omnierror, NotImplementedError ):
     ''' Attempt to use implementation which is not available. '''
