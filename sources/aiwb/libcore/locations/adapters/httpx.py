@@ -81,7 +81,11 @@ class _Common:
         ) as client: response = await client.head( self.implement )
         return HTTPStatus.OK == response.status_code
 
-    async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
+    async def examine(
+        self,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
+        pursue_indirection: bool = True,
+    ) -> __.Inode:
         inode = await self._examine( pursue_indirection = pursue_indirection )
         if __.LocationSpecies.Void is inode.species:
             raise __.LocationExamineFailure(
@@ -120,8 +124,7 @@ class _Common:
                 mimetype = mimetype,
                 permissions = permissions,
                 species = species,
-                supplement = inode
-            )
+                supplement = inode )
 
     async def _inspect_permissions(
         self, client: _httpx.AsynClient
@@ -195,6 +198,7 @@ class FileAdapter( _Common, __.FileAdapter ):
 
     async def acquire_content(
         self,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
@@ -215,7 +219,9 @@ class FileAdapter( _Common, __.FileAdapter ):
         return __.AcquireContentTextResult(
             content = content_nl, mimetype = mimetype, charset = charset )
 
-    async def acquire_content_bytes( self ) -> __.AcquireContentBytesResult:
+    async def acquire_content_bytes(
+        self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
+    ) -> __.AcquireContentBytesResult:
         content, mimetype, _ = await self._acquire_content_bytes( )
         return __.AcquireContentBytesReesult(
             content = content, mimetype = mimetype )
@@ -223,10 +229,11 @@ class FileAdapter( _Common, __.FileAdapter ):
     async def update_content(
         self,
         content: str,
-        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.UpdateContentResult:
         Error = __.partial_function(
             __.LocationUpdateContentFailure, url = self.url )
@@ -247,6 +254,7 @@ class FileAdapter( _Common, __.FileAdapter ):
     async def update_content_bytes(
         self,
         content: bytes,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.UpdateContentResult:
         Error = __.partial_function(

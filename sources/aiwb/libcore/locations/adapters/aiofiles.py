@@ -88,7 +88,11 @@ class _Common:
             raise __.LocationCheckExistenceFailure(
                 url = self.url, reason = str( exc ) ) from exc
 
-    async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
+    async def examine(
+        self,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
+        pursue_indirection: bool = True,
+    ) -> __.Inode:
         from os.path import realpath
         try:
             from aiofiles.os import stat
@@ -103,10 +107,11 @@ class _Common:
         species = _species_from_stat( inode )
         mimetype = _derive_mimetype( location, species )
         return __.Inode(
-            mimetype = mimetype,
-            permissions = permissions,
             species = species,
-            supplement = inode )
+            permissions = permissions,
+            supplement = inode,
+            mimetype = mimetype,
+            mtime = inode.st_mtime )
 
     def expose_implement( self ) -> __.AccessImplement:
         # Cast because we do not have a common protocol.
@@ -284,6 +289,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
 
     async def survey_entries(
         self,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         filters: __.Optional[
             __.AbstractIterable[ __.PossibleFilter ]
         ] = __.absent,
@@ -322,6 +328,7 @@ class FileAdapter( _Common, __.FileAdapter ):
 
     async def acquire_content(
         self,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
@@ -341,7 +348,9 @@ class FileAdapter( _Common, __.FileAdapter ):
         return __.AcquireContentTextResult(
             content = content_nl, mimetype = mimetype, charset = charset )
 
-    async def acquire_content_bytes( self ) -> __.AcquireContentBytesResult:
+    async def acquire_content_bytes(
+        self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
+    ) -> __.AcquireContentBytesResult:
         Error = __.partial_function(
             __.LocationAcquireContentFailure, url = self.url )
         try:
@@ -359,10 +368,11 @@ class FileAdapter( _Common, __.FileAdapter ):
     async def update_content(
         self,
         content: str,
-        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.UpdateContentResult:
         Error = __.partial_function(
             __.LocationUpdateContentFailure, url = self.url )
@@ -383,6 +393,7 @@ class FileAdapter( _Common, __.FileAdapter ):
     async def update_content_bytes(
         self,
         content: bytes,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.UpdateContentResult:
         Error = __.partial_function(
@@ -443,16 +454,16 @@ async def _create_parent_directories(
 def _derive_mimetype(
     implement: __.AccessImplement,
     species: __.LocationSpecies,
-) -> str:
-    from magic import from_file
+) -> __.Nullable[ str ]:
     match species:
         case __.LocationSpecies.Blocks:
-            # TODO? Sniff first 4K and use magic.from_buffer on that.
-            #       Or, use 'blkinfo' package or similar.
+            # TODO? Use 'blkinfo' package or similar.
             return 'inode/blockdevice'
         case __.LocationSpecies.Directory:
             return 'inode/directory'
         case __.LocationSpecies.File:
+            # TODO: return None if detection not requested
+            from magic import from_file
             try: return from_file( str( implement ), mime = True )
             except Exception: return 'application/octet-stream'
         case __.LocationSpecies.Pipe:
@@ -464,7 +475,7 @@ def _derive_mimetype(
         case __.LocationSpecies.Symlink:
             return 'inode/symlink'
         case __.LocationSpecies.Void:
-            return '#NOTHING#'
+            return '#NOTHING#' # TODO: return None
         case _:
             raise __.LocationSpeciesSupportError(
                 entity_name = _entity_name, species = species )

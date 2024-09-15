@@ -63,7 +63,9 @@ class _Common( __.a.Protocol ):
 
     @__.abstract_member_function
     async def examine(
-        self, pursue_indirection: bool = True
+        self,
+        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
+        pursue_indirection: bool = True,
     ) -> _core.Inode:
         ''' Returns inode-like object for location. '''
         raise NotImplementedError
@@ -159,6 +161,7 @@ class DirectoryOperations( __.a.Protocol ):
 
     async def survey_entries(
         self,
+        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
         filters: __.Optional[
             __.AbstractIterable[ PossibleFilter ]
         ] = __.absent,
@@ -174,6 +177,7 @@ class FileOperations( __.a.Protocol ):
 
     async def acquire_content(
         self,
+        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
@@ -184,7 +188,8 @@ class FileOperations( __.a.Protocol ):
     # TODO: acquire_content_continuous
 
     async def acquire_content_bytes(
-        self
+        self,
+        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
     ) -> _core.AcquireContentBytesResult:
         ''' Returns complete content of file as raw bytes. '''
         raise NotImplementedError
@@ -194,10 +199,11 @@ class FileOperations( __.a.Protocol ):
     async def update_content(
         self,
         content: str,
-        options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
+        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
+        options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
     ) -> _core.UpdateContentResult:
         ''' Updates content of file from Unicode string. '''
         raise NotImplementedError
@@ -207,6 +213,7 @@ class FileOperations( __.a.Protocol ):
     async def update_content_bytes(
         self,
         content: bytes,
+        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
         options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
     ) -> _core.UpdateContentResult:
         ''' Updates content of file from raw bytes. '''

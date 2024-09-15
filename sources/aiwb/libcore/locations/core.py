@@ -96,10 +96,15 @@ class FileUpdateOptions( __.enum.IntFlag ):
 class Inode:
     ''' Information about location. '''
 
-    mimetype: str
-    permissions: Permissions
     species: LocationSpecies
+    permissions: Permissions
     supplement: AdapterInode
+    bytes_count: __.Nullable[ int ] = None
+    content_id: __.Nullable[ str ] = None
+    mimetype: __.Nullable[ str ] = None
+    charset: __.Nullable[ str ] = None
+    mtime: __.Nullable[ __.DateTime ] = None # modification time
+    etime: __.Nullable[ __.DateTime ] = None # expiration time
 
     def is_directory( self ) -> bool:
         ''' Does inode represent a directory? '''
@@ -112,6 +117,47 @@ class Inode:
     def is_indirection( self ) -> bool:
         ''' Does inode represent an indirection? '''
         return LocationSpecies.Symlink is self.species
+
+    def is_void( self ) -> bool:
+        ''' Does inode represent nothing? '''
+        return LocationSpecies.Void is self.species
+
+    def with_attributes(
+        self,
+        bytes_count: __.Optional[ __.a.Nullable[ int ] ] = __.absent,
+        content_id: __.Optional[ __.a.Nullable[ str ] ] = __.absent,
+        mimetype: __.Optional[ __.a.Nullable[ str ] ] = __.absent,
+        charset: __.Optional[ __.a.Nullable[ str ] ] = __.absent,
+        mtime: __.Optional[ __.a.Nullable[ __.DateTime ] ] = __.absent,
+        etime: __.Optional[ __.a.Nullable[ __.DateTime ] ] = __.absent,
+    ) -> __.a.Self:
+        ''' Returns copy with updated attributes. '''
+        return type( self )(
+            species = self.species,
+            permissions = self.permissions,
+            supplement = self.supplement,
+            bytes_count = (
+                self.bytes_count if __.absent is bytes_count
+                else bytes_count ),
+            content_id = (
+                self.content_id if __.absent is content_id
+                else content_id ),
+            mimetype = self.mimetype if __.absent is mimetype else mimetype,
+            charset = self.charset if __.absent is charset else charset,
+            mtime = self.mtime if __.absent is mtime else mtime,
+            etime = self.etime if __.absent is etime else etime )
+
+
+class InodeAttributes( __.enum.IntFlag ):
+    ''' Which nullable attributes to fill when requesting an inode. '''
+
+    Nothing = 0
+    BytesCount = __.produce_enumeration_value( )
+    ContentId = __.produce_enumeration_value( )
+    Mimetype = __.produce_enumeration_value( )
+    Charset = __.produce_enumeration_value( )
+    Mtime = __.produce_enumeration_value( ) # modification time
+    Etime = __.produce_enumeration_value( ) # expiration time
 
 
 class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum

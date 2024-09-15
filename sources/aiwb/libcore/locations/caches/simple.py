@@ -88,7 +88,11 @@ class _Common( __.a.Protocol ):
         return source_exists
 
     @_ensures_cache
-    async def examine( self, pursue_indirection: bool = True ) -> __.Inode:
+    async def examine(
+        self,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
+        pursue_indirection: bool = True,
+    ) -> __.Inode:
         cache_adapter = __.adapter_from_url( self.cache_url )
         return cache_adapter.examine(
             pursue_indirection = pursue_indirection )
@@ -305,6 +309,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
     @_ensures_cache
     async def survey_entries(
         self,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         filters: __.Optional[
             __.AbstractIterable[ __.PossibleFilter ]
         ] = __.absent,
@@ -352,6 +357,7 @@ class FileCache( _Common, __.FileCache ):
     @_ensures_cache
     async def acquire_content(
         self,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
@@ -363,17 +369,20 @@ class FileCache( _Common, __.FileCache ):
             newline = newline )
 
     @_ensures_cache
-    async def acquire_content_bytes( self ) -> __.AcquireContentBytesResult:
+    async def acquire_content_bytes(
+        self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
+    ) -> __.AcquireContentBytesResult:
         cache_adapter = __.adapter_from_url( self.cache_url )
         return await cache_adapter.acquire_content_bytes( )
 
     async def update_content(
         self,
         content: str,
-        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.UpdateContentResult:
         cache_adapter = await self._create_cache_file_if_absent( )
         return await cache_adapter.update_content(
@@ -386,6 +395,7 @@ class FileCache( _Common, __.FileCache ):
     async def update_content_bytes(
         self,
         content: bytes,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.UpdateContentResult:
         cache_adapter = await self._create_cache_file_if_absent( )
