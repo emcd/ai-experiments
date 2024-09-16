@@ -557,20 +557,23 @@ async def _probe_accessor_if_exists(
     return False
 
 
-def _species_from_stat( inode: _StatResult ) -> __.LocationSpecies:
-    # TODO: import constants from stdlib 'stat' module
-    inode_type = inode.st_mode & 0o170000
-    match inode_type:
-        case 0o010000: return __.LocationSpecies.Pipe
-        case 0o020000: return __.LocationSpecies.Stream
-        case 0o040000: return __.LocationSpecies.Directory
-        case 0o060000: return __.LocationSpecies.Blocks
-        case 0o100000: return __.LocationSpecies.File
-        case 0o120000: return __.LocationSpecies.Symlink
-        case 0o140000: return __.LocationSpecies.Socket
-        case _:
-            raise __.SupportError(
-                f"Inode type {inode_type!r} not supported by {_entity_name}." )
+def _species_from_stat( stat: _StatResult ) -> __.LocationSpecies:
+    from stat import (
+        S_IFMT,
+        S_ISBLK, S_ISCHR, S_ISDIR, S_ISFIFO, S_ISLNK, S_ISREG, S_ISSOCK
+    )
+    mode = stat.st_mode
+    if S_ISREG( mode ):     return __.LocationSpecies.File
+    if S_ISLNK( mode ):     return __.LocationSpecies.Symlink
+    if S_ISDIR( mode ):     return __.LocationSpecies.Directory
+    if S_ISBLK( mode ):     return __.LocationSpecies.Blocks
+    if S_ISFIFO( mode ):    return __.LocationSpecies.Pipe
+    if S_ISSOCK( mode ):    return __.LocationSpecies.Socket
+    if S_ISCHR( mode ):     return __.LocationSpecies.Stream
+    inode_type = mode & S_IFMT
+    # TODO? Other entities: doors, etc....
+    raise __.SupportError(
+        f"Inode type {inode_type!r} not supported by {_entity_name}." )
 
 
 def _tabulate_permissions(
