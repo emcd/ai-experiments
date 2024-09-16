@@ -32,6 +32,7 @@ from . import exceptions
 from . import filters
 from . import interfaces
 from . import registries
+from . import utilities
 
 from ._api import *
 

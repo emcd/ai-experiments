@@ -30,6 +30,7 @@
 from .core import (
     AccessImplement as      LocationAccessImplement,
     FileUpdateOptions,
+    InodeAttributes,
     LocationSpecies,
     PossibleUrl,
     Url,

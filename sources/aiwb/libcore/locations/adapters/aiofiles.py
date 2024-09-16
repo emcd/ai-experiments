@@ -93,25 +93,27 @@ class _Common:
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         pursue_indirection: bool = True,
     ) -> __.Inode:
-        from os.path import realpath
+        Error = __.partial_function(
+            __.LocationExamineFailure, url = self.url )
         try:
-            from aiofiles.os import stat
+            from os.path import realpath
             # TODO? Resolve path async.
             #       aiofiles does not support realpath
             location = realpath( self.implement, strict = True )
-            inode = await stat( location, follow_symlinks = False )
-        except Exception as exc:
-            raise __.LocationExamineFailure(
-                url = self.url, reason = str( exc ) ) from exc
-        permissions = _permissions_from_stat( inode )
-        species = _species_from_stat( inode )
-        mimetype = _derive_mimetype( location, species )
-        return __.Inode(
-            species = species,
-            permissions = permissions,
-            supplement = inode,
-            mimetype = mimetype,
-            mtime = inode.st_mtime )
+            from aiofiles.os import stat
+            stat = await stat( location, follow_symlinks = False )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        inode_s = _inode_from_stat( stat )
+        if (    __.LocationSpecies.File is inode_s.species
+                and __.InodeAttributes.Mimetype & attributes
+        ):
+            from magic import from_file
+            mimetype = from_file( str( self.implement ), mime = True )
+            inode = inode_s.with_attributes( mimetype = mimetype )
+        # TODO? Probe block devices with 'blkid' or similar.
+        else: inode = inode_s
+        return __.honor_inode_attributes(
+            inode = inode, attributes = attributes, error_to_raise = Error )
 
     def expose_implement( self ) -> __.AccessImplement:
         # Cast because we do not have a common protocol.
@@ -306,7 +308,9 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
                 url = __.Url.from_url( dirent.path )
                 inode = (
                     await GeneralAdapter( url = url )
-                    .examine( pursue_indirection = False ) )
+                    .examine(
+                        attributes = attributes,
+                        pursue_indirection = False ) )
                 dirent_ = __.DirectoryEntry( inode = inode, url = url )
                 if filters and await __.apply_filters( dirent_, filters ):
                     continue
@@ -314,7 +318,9 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
                     scanners.append(
                         DirectoryAdapter( url = url )
                         .survey_entries(
-                            filters = filters, recurse = recurse ) )
+                            attributes = attributes,
+                            filters = filters,
+                            recurse = recurse ) )
                 results.append( dirent_ )
             if recurse:
                 results.extend( __.chain.from_iterable(
@@ -335,8 +341,9 @@ class FileAdapter( _Common, __.FileAdapter ):
     ) -> __.AcquireContentTextResult:
         Error = __.partial_function(
             __.LocationAcquireContentFailure, url = self.url )
-        bytes_result = await self.acquire_content_bytes( )
-        mimetype = bytes_result.mimetype
+        bytes_result = (
+            await self.acquire_content_bytes( attributes = attributes ) )
+        if __.absent is charset: charset = bytes_result.inode.charset
         try:
             content = __.decode_content(
                 bytes_result.content,
@@ -345,8 +352,9 @@ class FileAdapter( _Common, __.FileAdapter ):
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
         try: content_nl = __.normalize_newlines( content, newline = newline )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        inode = bytes_result.inode.with_attributes( charset = charset )
         return __.AcquireContentTextResult(
-            content = content_nl, mimetype = mimetype, charset = charset )
+            content = content_nl, inode = inode )
 
     async def acquire_content_bytes(
         self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
@@ -354,16 +362,19 @@ class FileAdapter( _Common, __.FileAdapter ):
         Error = __.partial_function(
             __.LocationAcquireContentFailure, url = self.url )
         try:
+            from os import fstat
             from aiofiles import open as open_
             async with open_( self.implement, 'rb' ) as stream:
                 content = await stream.read( )
+                stat = fstat( stream.fileno( ) )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        try:
-            from magic import from_buffer
-            mimetype = from_buffer( content, mime = True )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        return __.AcquireContentBytesResult(
-            content = content, mimetype = mimetype )
+        inode_s = _inode_from_stat( stat )
+        inode = __.honor_inode_attributes(
+            inode = inode_s,
+            attributes = attributes,
+            error_to_raise = Error,
+            content = content )
+        return __.AcquireContentBytesResult( content = content, inode = inode )
 
     async def update_content(
         self,
@@ -373,7 +384,7 @@ class FileAdapter( _Common, __.FileAdapter ):
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
-    ) -> __.UpdateContentResult:
+    ) -> __.Inode:
         Error = __.partial_function(
             __.LocationUpdateContentFailure, url = self.url )
         content_nl = _nativize_newlines( content, newline = newline )
@@ -383,33 +394,35 @@ class FileAdapter( _Common, __.FileAdapter ):
                 charset = charset,
                 charset_errors = charset_errors )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        bytes_result = await self.update_content_bytes(
-            content_bytes, options = options )
-        return __.UpdateContentResult(
-            count = bytes_result.count,
-            mimetype = bytes_result.mimetype,
-            charset = charset )
+        inode = await self.update_content_bytes(
+            content_bytes,
+            attributes = attributes,
+            options = options )
+        return inode.with_attributes( charset = charset )
 
     async def update_content_bytes(
         self,
         content: bytes,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
-    ) -> __.UpdateContentResult:
+    ) -> __.Inode:
         Error = __.partial_function(
             __.LocationUpdateContentFailure, url = self.url )
         flags = _flags_from_file_update_options( options )
         try:
+            from os import fstat
             from aiofiles import open as open_
             async with open_( self.implement, f"{flags}b" ) as stream:
-                count = await stream.write( content )
+                await stream.write( content )
+                await stream.flush( ) # Cannot use bytes count in append mode.
+                stat = fstat( stream.fileno( ) )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        try:
-            from magic import from_buffer
-            mimetype = from_buffer( content, mime = True )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        return __.UpdateContentResult(
-            count = count, mimetype = mimetype, charset = None )
+        inode_s = _inode_from_stat( stat )
+        return __.honor_inode_attributes(
+            inode = inode_s,
+            attributes = attributes,
+            error_to_raise = Error,
+            content = content )
 
 
 def _access_mode_from_permissions(
@@ -451,34 +464,17 @@ async def _create_parent_directories(
         raise error_to_raise( reason = str( exc ) ) from exc
 
 
-def _derive_mimetype(
-    implement: __.AccessImplement,
-    species: __.LocationSpecies,
-) -> __.Nullable[ str ]:
+def _derive_mimetype( species: __.LocationSpecies ) -> __.Nullable[ str ]:
     match species:
-        case __.LocationSpecies.Blocks:
-            # TODO? Use 'blkinfo' package or similar.
-            return 'inode/blockdevice'
-        case __.LocationSpecies.Directory:
-            return 'inode/directory'
-        case __.LocationSpecies.File:
-            # TODO: return None if detection not requested
-            from magic import from_file
-            try: return from_file( str( implement ), mime = True )
-            except Exception: return 'application/octet-stream'
-        case __.LocationSpecies.Pipe:
-            return 'inode/fifo'
-        case __.LocationSpecies.Socket:
-            return 'inode/socket'
-        case __.LocationSpecies.Stream:
-            return 'inode/chardevice'
-        case __.LocationSpecies.Symlink:
-            return 'inode/symlink'
-        case __.LocationSpecies.Void:
-            return '#NOTHING#' # TODO: return None
-        case _:
-            raise __.LocationSpeciesSupportError(
-                entity_name = _entity_name, species = species )
+        case __.LocationSpecies.Blocks:     return 'inode/blockdevice'
+        case __.LocationSpecies.Directory:  return 'inode/directory'
+        case __.LocationSpecies.File:       return
+        case __.LocationSpecies.Pipe:       return 'inode/fifo'
+        case __.LocationSpecies.Socket:     return 'inode/socket'
+        case __.LocationSpecies.Stream:     return 'inode/chardevice'
+        case __.LocationSpecies.Symlink:    return 'inode/symlink'
+        case __.LocationSpecies.Void:       return
+    return
 
 
 def _flags_from_file_update_options( options: __.FileUpdateOptions ) -> str:
@@ -487,6 +483,25 @@ def _flags_from_file_update_options( options: __.FileUpdateOptions ) -> str:
     else: flags.append( 'w' )
     if __.FileUpdateOptions.Absence & options: flags.append( 'x' )
     return ''.join( flags )
+
+
+def _inode_from_stat( stat: _StatResult ) -> __.Inode:
+    permissions = _permissions_from_stat( stat )
+    species = _species_from_stat( stat )
+    supplement = stat
+    bytes_count = stat.st_size
+    content_id = None
+    mimetype = _derive_mimetype( species )
+    charset = None
+    mtime = __.DateTime.fromtimestamp( stat.st_mtime, __.TimeZone.utc )
+    etime = None
+    return __.Inode(
+        permissions = permissions, species = species,
+        supplement = supplement,
+        bytes_count = bytes_count,
+        content_id = content_id,
+        mimetype = mimetype, charset = charset,
+        mtime = mtime, etime = etime )
 
 
 def _nativize_newlines(

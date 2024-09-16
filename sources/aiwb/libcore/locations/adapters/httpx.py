@@ -86,7 +86,9 @@ class _Common:
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         pursue_indirection: bool = True,
     ) -> __.Inode:
-        inode = await self._examine( pursue_indirection = pursue_indirection )
+        inode = await self._examine(
+            attributes = attributes,
+            pursue_indirection = pursue_indirection )
         if __.LocationSpecies.Void is inode.species:
             raise __.LocationExamineFailure(
                 self.url, reason = "Location does not exist." )
@@ -95,36 +97,41 @@ class _Common:
     def expose_implement( self ) -> __.AccessImplement:
         return __.a.cast( __.AccessImplement, self.implement )
 
-    async def _examine( self, pursue_indirection: bool = True ) -> __.Inode:
+    async def _examine(
+        self,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
+        pursue_indirection: bool = True,
+    ) -> __.Inode:
+        inode_absent = __.Inode(
+            permissions = __.Permissions.Abstain,
+            species = __.LocationSpecies.Void,
+            supplement = { } )
+        Error = __.partial_function(
+            __.LocationExamineFailure, url = self.url )
         async with _httpx.AsyncClient(
             follow_redirects = pursue_indirection
         ) as client:
-            inode_absent = __.Inode(
-                mimetype = '#NOTHING#',
-                permissions = __.Permissions.Abstain,
-                species = __.LocationSpecies.Void,
-                supplement = HttpInode.as_empty( ) )
-            species, permissions = await self._inspect_permissions( client )
-            if __.LocationSpecies.Void is species: return inode_absent
-            if not __.Permissions.Retrieve & permissions:
-                raise __.LocationExamineFailure(
-                    self.url, reason = "Retrieval request not allowed." )
+            #species, permissions = await self._inspect_permissions( client )
+            #if __.LocationSpecies.Void is species: return inode_absent
+            #if not __.Permissions.Retrieve & permissions:
+            #    raise __.LocationExamineFailure(
+            #        self.url, reason = "Retrieval request not allowed." )
             response = await client.head( self.implement )
-            try: response.raise_for_status( )
-            except _httpx.HTTPStatusError as exc:
-                from http import HTTPStatus
-                if HTTPStatus.NOT_FOUND == exc.response.status_code:
-                    return inode_absent
-                raise __.LocationExamineFailure(
-                    self.url, reason = exc ) from exc
-            mimetype = response.headers.get(
-                'Content-Type', 'application/octet-stream' )
-            inode = _http_inode_from_response( response )
-            return __.Inode(
-                mimetype = mimetype,
-                permissions = permissions,
-                species = species,
-                supplement = inode )
+        try: response.raise_for_status( )
+        except _httpx.HTTPStatusError as exc:
+            from http import HTTPStatus
+            if HTTPStatus.NOT_FOUND == exc.response.status_code:
+                return inode_absent
+            raise Error( reason = str( exc ) ) from exc
+        # TEMP HACK
+        permissions = __.Permissions.Retrieve
+        species = __.LocationSpecies.File
+        inode = _inode_from_headers(
+            headers = response.headers,
+            permissions = permissions,
+            species = species )
+        return __.honor_inode_attributes(
+            inode = inode, attributes = attributes, error_to_raise = Error )
 
     async def _inspect_permissions(
         self, client: _httpx.AsynClient
@@ -205,26 +212,42 @@ class FileAdapter( _Common, __.FileAdapter ):
     ) -> __.AcquireContentTextResult:
         Error = __.partial_function(
             __.LocationAcquireContentFailure, url = self.url )
-        content_bytes, mimetype, charset_ = (
-            await self._acquire_content_bytes( ) )
-        if charset in ( __.absent, '#DETECT#' ): charset = charset_
+        bytes_result = (
+            await self.acquire_content_bytes( attributes = attributes ) )
+        if __.absent is charset: charset = bytes_result.inode.charset
         try:
             content = __.decode_content(
-                content_bytes,
+                bytes_result.content,
                 charset = charset,
                 charset_errors = charset_errors )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
         try: content_nl = __.normalize_newlines( content, newline = newline )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        inode = bytes_result.inode.with_attributes( charset = charset )
         return __.AcquireContentTextResult(
-            content = content_nl, mimetype = mimetype, charset = charset )
+            content = content_nl, inode = inode )
 
     async def acquire_content_bytes(
-        self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
+        self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
     ) -> __.AcquireContentBytesResult:
-        content, mimetype, _ = await self._acquire_content_bytes( )
-        return __.AcquireContentBytesReesult(
-            content = content, mimetype = mimetype )
+        Error = __.partial_function(
+            __.LocationAcquireContentFailure, url = self.url )
+        async with _httpx.AsyncClient( ) as client:
+            response = await client.get( self.implement )
+        try: response.raise_for_status( )
+        except _httpx.HTTPStatusError as exc:
+            raise Error( reason = str( exc ) ) from exc
+        inode_h = _inode_from_headers(
+            headers = response.headers,
+            permissions = __.Permissions.Retrieve, # at least
+            species = __.LocationSpecies.File )
+        inode = __.honor_inode_attributes(
+            inode = inode_h,
+            attributes = attributes,
+            error_to_raise = Error,
+            content = response.content )
+        return __.AcquireContentBytesResult(
+            content = response.content, inode = inode )
 
     async def update_content(
         self,
@@ -234,7 +257,7 @@ class FileAdapter( _Common, __.FileAdapter ):
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
-    ) -> __.UpdateContentResult:
+    ) -> __.Inode:
         Error = __.partial_function(
             __.LocationUpdateContentFailure, url = self.url )
         content_nl = _translate_newlines( content, newline = newline )
@@ -244,24 +267,24 @@ class FileAdapter( _Common, __.FileAdapter ):
                 charset = charset,
                 charset_errors = charset_errors )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        bytes_result = await self.update_content_bytes(
-            content_bytes, options = options )
-        return __.UpdateContentResult(
-            count = bytes_result.count,
-            mimetype = bytes_result.mimetype,
-            charset = charset )
+        inode = await self.update_content_bytes(
+            content_bytes,
+            attributes = attributes,
+            options = options )
+        charset = inode.charset or charset
+        return inode.with_attributes( charset = charset )
 
     async def update_content_bytes(
         self,
         content: bytes,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
-    ) -> __.UpdateContentResult:
+    ) -> __.Inode:
         Error = __.partial_function(
             __.LocationUpdateContentFailure, url = self.url )
-        try: inode = await self._examine( )
+        try: inode_ = await self._examine( )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        headers = _headers_from_file_update_options( options, inode, content )
+        headers = _headers_from_file_update_options( options, inode_, content )
         async with _httpx.AsyncClient( ) as client:
             response = await client.put(
                 self.implement, content, headers = headers )
@@ -269,48 +292,23 @@ class FileAdapter( _Common, __.FileAdapter ):
         except _httpx.HTTPStatusError as exc:
             _react_http_status_error( exc, headers, Error )
             raise Error( reason = str( exc ) ) from exc
-        count, mimetype, charset = (
-            _result_from_headers( response.headers, content, Error ) )
-        return __.UpdateContentResult(
-            count = count, mimetype = mimetype, charset = charset )
-
-    async def _acquire_content_bytes(
-        self
-    ) -> ( bytes, str, str ):
-        Error = __.partial_function(
-            __.LocationAcquireContentFailure, url = self.url )
-        async with _httpx.AsyncClient( ) as client:
-            response = await client.get( self.implement )
-        try: response.raise_for_status( )
-        except _httpx.HTTPStatusError as exc:
-            raise Error( reason = str( exc ) ) from exc
-        count, mimetype, charset = (
-            _result_from_headers( response.headers, response.content, Error ) )
-        return response.content, mimetype, charset
+        inode_h = _inode_from_headers(
+            headers = response.headers,
+            permissions = inode_.permissions,
+            species = inode_.species )
+        return __.honor_inode_attributes(
+            inode = inode_h,
+            attributes = attributes,
+            error_to_raise = Error,
+            content = content )
 
 
-@__.standard_dataclass
-class HttpInode( __.AdapterInode ):
-    ''' HTTP-specific information of relevance for location. '''
-
-    etag: __.a.Nullable[ str ]
-    expiration: __.a.Nullable[ __.DateTime ]
-    mtime: __.a.Nullable[ __.DateTime ]
-    size: __.a.Nullable[ int ]
-
-    @classmethod
-    def as_empty( selfclass ) -> __.a.Self:
-        return selfclass(
-            etag = None,
-            expiration = None,
-            mtime = None,
-            size = None )
-
-
-def _expiration_from_response( response: _httpx.Response ) -> __.DateTime:
+def _expiration_from_headers(
+    headers: __.AbstractDictionary[ str, str ]
+) -> __.a.Nullable[ __.DateTime ]:
     from email.utils import parsedate_to_datetime
-    cache_control = response.headers.get( 'Cache-Control' )
-    expires = response.headers.get( 'Expires' )
+    cache_control = headers.get( 'Cache-Control' )
+    expires = headers.get( 'Expires' )
     expiration = None
     if cache_control:
         directives = dict(
@@ -336,7 +334,7 @@ def _headers_from_file_update_options(
         # TODO? Check if location species is Void instead.
         headers[ 'If-None-Match' ] = '*'
     if __.FileUpdateOptions.Append & options and not is_void:
-        size = inode.supplement.size
+        size = inode.bytes_count
         if size:
             delta = len( content )
             start, end = size, size + delta - 1
@@ -345,15 +343,33 @@ def _headers_from_file_update_options(
     return __.DictionaryProxy( headers )
 
 
-def _http_inode_from_response( response: _httpx.Response ) -> HttpInode:
+def _inode_from_headers(
+    headers: __.AbstractDictionary[ str, str ],
+    permissions: __.Permissions,
+    species: __.LocationSpecies,
+) -> __.Inode:
     from email.utils import parsedate_to_datetime
-    etag = response.headers.get( 'ETag' )
-    mtime = response.headers.get( 'Last-Modified' )
+    bytes_count = headers.get( 'Content-Length' )
+    if bytes_count: bytes_count = int( bytes_count )
+    content_id = None
+    if ( etag := headers.get( 'ETag' ) ): content_id = f"etag:{etag}"
+    content_type = headers.get( 'Content-Type', '' )
+    mimetype, _, params = content_type.partition( ';' )
+    charset = None
+    if mimetype.startswith( 'text/' ) and 'charset=' in params:
+        charset = params.split( 'charset=' )[ -1 ].strip( )
+    mimetype = mimetype or None
+    mtime = headers.get( 'Last-Modified' )
     if mtime: mtime = parsedate_to_datetime( mtime )
-    expiration = _expiration_from_response( response )
-    size = response.headers.get( 'Content-Length' )
-    return HttpInode(
-        etag = etag, expiration = expiration, mtime = mtime, size = size )
+    etime = _expiration_from_headers( headers )
+    supplement = dict( headers )
+    return __.Inode(
+        permissions = permissions, species = species,
+        supplement = supplement,
+        bytes_count = bytes_count,
+        content_id = content_id,
+        mimetype = mimetype, charset = charset,
+        mtime = mtime, etime = etime )
 
 
 def _methods_to_permissions(
@@ -411,28 +427,3 @@ def _react_http_status_error( response_error, headers, error_to_raise ):
             if 'Content-Range' in headers:
                 reason = "Server does not support append operation."
                 raise error_to_raise( reason = reason )
-
-
-def _result_from_headers(
-    headers, content, error_to_raise
-) -> ( int, str, str ):
-    count = int( headers.get( 'Content-Length', len( content ) ) )
-    content_type = headers.get( 'Content-Type', '' )
-    mimetype, _, params = content_type.partition( ';' )
-    if not mimetype:
-        try:
-            from magic import from_buffer
-            mimetype = from_buffer( content, mime = True )
-        except Exception as exc:
-            raise error_to_raise( reason = str( exc ) ) from exc
-    charset = None
-    if mimetype.startswith( 'text/' ):
-        if 'charset=' in params:
-            charset = params.split( 'charset=' )[ -1 ].strip( )
-        if not charset:
-            try:
-                from chardet import detect
-                charset = detect( content )[ 'encoding' ]
-            except Exception as exc:
-                raise error_to_raise( reason = str( exc ) ) from exc
-    return count, mimetype, charset

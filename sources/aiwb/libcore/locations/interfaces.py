@@ -204,7 +204,7 @@ class FileOperations( __.a.Protocol ):
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
         options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
-    ) -> _core.UpdateContentResult:
+    ) -> _core.Inode:
         ''' Updates content of file from Unicode string. '''
         raise NotImplementedError
 
@@ -215,7 +215,7 @@ class FileOperations( __.a.Protocol ):
         content: bytes,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
         options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
-    ) -> _core.UpdateContentResult:
+    ) -> _core.Inode:
         ''' Updates content of file from raw bytes. '''
 
     # TODO: update_content_bytes_continuous

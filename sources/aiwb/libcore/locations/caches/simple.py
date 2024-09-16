@@ -95,6 +95,7 @@ class _Common( __.a.Protocol ):
     ) -> __.Inode:
         cache_adapter = __.adapter_from_url( self.cache_url )
         return cache_adapter.examine(
+            attributes = attributes,
             pursue_indirection = pursue_indirection )
 
     def expose_implement( self ) -> __.AccessImplement:
@@ -317,7 +318,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
     ) -> __.AbstractSequence[ __.DirectoryEntry ]:
         cache_adapter = __.adapter_from_url( self.cache_url )
         return await cache_adapter.survey_entries(
-            filters = filters, recurse = recurse )
+            attributes = attributes, filters = filters, recurse = recurse )
 
     async def _ingest( self ):
         Error = __.partial_function(
@@ -364,6 +365,7 @@ class FileCache( _Common, __.FileCache ):
     ) -> __.AcquireContentTextResult:
         cache_adapter = __.adapter_from_url( self.cache_url )
         return await cache_adapter.acquire_content(
+            attributes = attributes,
             charset = charset,
             charset_errors = charset_errors,
             newline = newline )
@@ -373,7 +375,9 @@ class FileCache( _Common, __.FileCache ):
         self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
     ) -> __.AcquireContentBytesResult:
         cache_adapter = __.adapter_from_url( self.cache_url )
-        return await cache_adapter.acquire_content_bytes( )
+        return (
+            await cache_adapter.acquire_content_bytes(
+                attributes = attributes ) )
 
     async def update_content(
         self,
@@ -383,24 +387,25 @@ class FileCache( _Common, __.FileCache ):
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
-    ) -> __.UpdateContentResult:
+    ) -> __.Inode:
         cache_adapter = await self._create_cache_file_if_absent( )
         return await cache_adapter.update_content(
             content,
-            options = options,
+            attributes = attributes,
             charset = charset,
             charset_errors = charset_errors,
-            newline = newline )
+            newline = newline,
+            options = options )
 
     async def update_content_bytes(
         self,
         content: bytes,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
-    ) -> __.UpdateContentResult:
+    ) -> __.Inode:
         cache_adapter = await self._create_cache_file_if_absent( )
         return await cache_adapter.update_content_bytes(
-            content, options = options )
+            content, attributes = attributes, options = options )
 
     async def _ingest( self ):
         Error = __.partial_function(

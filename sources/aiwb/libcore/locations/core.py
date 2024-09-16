@@ -43,25 +43,21 @@ class AdapterInode( metaclass = __.ABCFactory ):
 
     # git/hg: relevant branches and tags?
 
-    # Maybe return inode on completion of whole file operations?
-    # Would be a useful streamline for cache management.
-
 
 @__.standard_dataclass
 class AcquireContentBytesResult:
     ''' Result, as raw bytes, from content acquisition operation. '''
 
     content: bytes
-    mimetype: str
+    inode: Inode
 
 
 @__.standard_dataclass
 class AcquireContentTextResult:
     ''' Result, as Unicode string, from content acquisition operation. '''
 
-    charset: str
     content: str
-    mimetype: str
+    inode: Inode
 
 
 @__.standard_dataclass
@@ -198,15 +194,6 @@ class Possessor( __.Enum ):
     Omnipopulation = 'everyone'
 
 
-@__.standard_dataclass
-class UpdateContentResult:
-    ''' Result of content update operation. '''
-
-    charset: __.a.Nullable[ str ]
-    count: int
-    mimetype: str
-
-
 class Url( _UrlParts, metaclass = __.AccretiveClass ):
     ''' Tracks URL components separately. Displays as original string. '''
     # TODO: Immutable class and object attributes.
@@ -250,52 +237,3 @@ class Url( _UrlParts, metaclass = __.AccretiveClass ):
 PermissionsTable: __.a.TypeAlias = (
     __.AbstractDictionary[ Possessor, Permissions ] )
 PossibleUrl: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
-
-
-# TODO: Streaming codecs for reduced memory footprint.
-#       Not zero-copy, but can use constant-sized memory window.
-
-
-def decode_content(
-    content: bytes,
-    charset: __.Optional[ str ] = __.absent,
-    charset_errors: __.Optional[ str ] = __.absent,
-) -> str:
-    match charset:
-        case __.absent:
-            from locale import getpreferredencoding
-            charset = getpreferredencoding( )
-        case '#DETECT#':
-            from chardet import detect
-            charset = detect( content )[ 'encoding' ]
-    if __.absent is charset_errors: charset_errors = 'strict'
-    return content.decode( charset, errors = charset_errors )
-
-
-def encode_content(
-    content: str,
-    charset: __.Optional[ str ] = __.absent,
-    charset_errors: __.Optional[ str ] = __.absent,
-) -> ( bytes, str ):
-    if __.absent is charset:
-        from locale import getpreferredencoding
-        charset = getpreferredencoding( )
-    if __.absent is charset_errors: charset_errors = 'strict'
-    content_bytes = content.encode( charset, errors = charset_errors )
-    return content_bytes, charset
-
-
-def normalize_newlines(
-    content: str, newline: __.Optional[ str ] = __.absent
-) -> str:
-    if '' == newline: return content
-    match newline:
-        case __.absent | '\n':
-            return content.replace( '\r\n', '\n' ).replace( '\r', '\n' )
-        case '\r':
-            return content.replace( '\r\n', '\r' ).replace( '\n', '\r' )
-        case '\r\n':
-            return (
-                content.replace( '\r\n', '\r' ).replace( '\n', '\r' )
-                .replace( '\r', '\r\n' ) )
-        # TODO: Error.

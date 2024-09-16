@@ -41,6 +41,7 @@ async def list_folder(
         return { 'error': str( exc ) }
     if not isinstance( accessor, __.DirectoryAccessor ):
         return { 'error': 'Cannot list entries of non-directory.' }
+    arguments_[ 'attributes' ] = __.InodeAttributes.Mimetype
     try: result = await accessor.survey_entries( **arguments_ )
     except Exception as exc:
         # TODO? Generate apprisal notification.
@@ -72,6 +73,8 @@ async def read(
         return { 'error': str( exc ) }
     if not isinstance( accessor, __.FileAccessor ):
         return { 'error': 'Cannot acquire content of non-file.' }
+    arguments_[ 'attributes' ] = (
+        __.InodeAttributes.Mimetype | __.InodeAttributes.Charset )
     #as_bytes = arguments_.pop( 'as_bytes', False )
     #if as_bytes: return await _read_as_bytes( accessor, context, arguments_ )
     return await _read_as_string( accessor, context, arguments_ )
@@ -102,6 +105,8 @@ async def write_file(
         return { 'error': str( exc ) }
     if not isinstance( accessor, __.FileAccessor ):
         return { 'error': 'Cannot update content of non-file.' }
+    arguments_[ 'attributes' ] = (
+        __.InodeAttributes.Mimetype | __.InodeAttributes.Charset )
     #as_bytes = arguments_.pop( 'as_bytes', False )
     #if as_bytes: return await _write_as_bytes( accessor, context, arguments_ )
     return await _write_as_string( accessor, context, arguments_ )
@@ -127,7 +132,7 @@ async def _read_as_bytes(
         return { 'error': str( exc ) }
     from base64 import b64encode
     data = b64encode( result.content ).decode( 'ascii' )
-    mimetype = result.mimetype
+    mimetype = result.inode.mimetype
     data_url = f"data:{mimetype};base64,{data}"
     return {
         'location': str( accessor ),
@@ -145,8 +150,8 @@ async def _read_as_string(
         return { 'error': str( exc ) }
     return {
         'location': str( accessor ),
-        'mimetype': result.mimetype,
-        'charset': result.charset,
+        'mimetype': result.inode.mimetype,
+        'charset': result.inode.charset,
         'content': result.content,
     }
 
@@ -170,5 +175,5 @@ async def _write_as_string(
         'location': str( accessor ),
         'mimetype': result.mimetype,
         'charset': result.charset,
-        'count': result.count,
+        'bytes_count': result.bytes_count,
     }
