@@ -6,7 +6,6 @@
 
     - Detection of environment, executables, and libraries for functions.
     - Improve callbacks to record intermediate AI assistant outputs.
-    - Tool to recursively list directories (without reading files).
     - Tool to interact with PR comments.
     - Tool to interact with vector databases for documentation search.
     - Tool to perform documentation searchs against web sites.

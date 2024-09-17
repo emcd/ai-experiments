@@ -281,7 +281,7 @@ class ReconciliationOperations( __.a.Protocol ):
             = _core.ConflictResolutionActions.Error,
         impurities: _core.ImpurityResolutionActions
             = _core.ImpurityResolutionActions.Ignore,
-    ) -> __.a.Self:
+    ) -> __.a.Self: # TODO: Return dirents of affected locations.
         ''' Commits cache to sources. '''
         raise NotImplementedError
 
@@ -303,7 +303,7 @@ class ReconciliationOperations( __.a.Protocol ):
             = _core.ConflictResolutionActions.Error,
         impurities: _core.ImpurityResolutionActions
             = _core.ImpurityResolutionActions.Ignore,
-    ) -> __.a.Self:
+    ) -> __.a.Self: # TODO: Return dirents of affected locations.
         ''' Reingests cache from sources. '''
         raise NotImplementedError
 
