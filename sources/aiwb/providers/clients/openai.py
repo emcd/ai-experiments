@@ -390,6 +390,7 @@ async def _discover_models_from_api( ):
         in _model_family_context_window_sizes.items( ):
             if model_name.startswith( model_family_name ):
                 tokens_limits[ model_name ] = tokens_limit
+                break
     return {
         model_name: {
             'honors-system-prompt': sysprompt_honor[ model_name ],

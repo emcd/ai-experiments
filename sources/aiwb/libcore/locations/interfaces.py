@@ -267,13 +267,45 @@ class GeneralOperations( __.a.Protocol ):
 class ReconciliationOperations( __.a.Protocol ):
     ''' Standard operations for cache reconciliation. '''
 
-    # TODO? is_cache_valid
+    # TODO? Allow aliens, conflicts, and impurities arguments to be single enum
+    #       applied to all objects in reconciliation operation or to be a table
+    #       of URL-to-action entries for finer-grained control.
 
-    # TODO: commit_to_source
+    # TODO? clear
 
-    # TODO: difference_with_source
+    async def commit(
+        self, *,
+        aliens: _core.AlienResolutionActions
+            = _core.AlienResolutionActions.Ignore,
+        conflicts: _core.ConflictResolutionActions
+            = _core.ConflictResolutionActions.Error,
+        impurities: _core.ImpurityResolutionActions
+            = _core.ImpurityResolutionActions.Ignore,
+    ) -> __.a.Self:
+        ''' Commits cache to sources. '''
+        raise NotImplementedError
 
-    # TODO: update_from_source
+    async def difference(
+        self
+    ) -> __.AbstractSequence[ _core.CacheDifferenceBase ]:
+        ''' Reports differences between cache and sources. '''
+        raise NotImplementedError
+
+    async def is_divergent( self ) -> bool:
+        ''' Checks if cache matches sources. '''
+        raise NotImplementedError
+
+    async def reingest(
+        self, *,
+        aliens: _core.AlienResolutionActions
+            = _core.AlienResolutionActions.Ignore,
+        conflicts: _core.ConflictResolutionActions
+            = _core.ConflictResolutionActions.Error,
+        impurities: _core.ImpurityResolutionActions
+            = _core.ImpurityResolutionActions.Ignore,
+    ) -> __.a.Self:
+        ''' Reingests cache from sources. '''
+        raise NotImplementedError
 
 
 @__.a.runtime_checkable
@@ -347,8 +379,7 @@ class CacheManager( ReconciliationOperations, __.a.Protocol ):
     ''' Manager for collection of caches.
 
         Typically maintains an anchor path, associated with the root of a
-        directory tree, such as the clone of a VCS repository. Shared among all
-        cache objects within the tree. '''
+        directory tree, such as the clone of a VCS repository. '''
     # TODO: Immutable class and object attributes.
 
     @classmethod

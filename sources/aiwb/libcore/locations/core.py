@@ -60,6 +60,59 @@ class AcquireContentTextResult:
     inode: Inode
 
 
+class AlienResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Which action to take when unregistered cache entity is encountered.
+
+        Simple caches might not have the concept of aliens. However, they are
+        useful for VCS-backed edit caches which have the concept of a staging
+        index and tracked files (e.g., Git).
+
+        Not all resolution actions are necessarily valid for certain
+        reconciliation operations with certain cache managers. Expect that
+        errors will be raised in these cases.
+
+        Custom behaviors should be specified on cache manager initialization or
+        via optional argument to function.
+    '''
+
+    Custom = 'custom'   # honor accessor-specific behavior
+    Delete = 'delete'   # delete unregistered entity before reconciliation
+    Error = 'error'     # raise error
+    Ignore = 'ignore'   # do not reconcile with sources
+    Include = 'include' # reconcile with sources
+
+    # For a Git-backed cache manager, custom alien resolution might look like:
+    #   git stash push --include-untracked -- <paths>
+
+
+class CacheDifferenceBase:
+    ''' Base for various kinds of cache differences. '''
+
+    # TODO: Possible subclasses:
+    #   ContentCacheDifference
+    #   DirentsCacheDifference
+    #   InodeCacheDifference (bytes_count, content_id, mtime, species, etc...)
+
+
+class ConflictResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Which action to take upon conflict between cache and sources.
+
+        Custom behaviors should be specified on cache manager initialization or
+        via optional argument to function.
+    '''
+
+    Accept = 'accept'   # honor source differences as authoritative
+    Custom = 'custom'   # honor accessor-specific behavior
+    Error = 'error'     # raise error
+    Reject = 'reject'   # honor cache differences as authoritative
+
+    # For a Git-backed cache manager, the 'Accept' action might be equivalent
+    # to:
+    #   git fetch <remote> <branch>
+    #   git merge --strategy=recursive --strategy-option=theirs \
+    #       <remote>/<branch>
+
+
 @__.standard_dataclass
 class DirectoryEntry:
     ''' Location plus information about it. '''
@@ -86,6 +139,31 @@ class FileUpdateOptions( __.enum.IntFlag ):
     Defaults = 0  # create (if not exists), truncate
     Append = __.produce_enumeration_value( ) # append
     Absence = __.produce_enumeration_value( ) # error (if exists)
+
+
+class ImpurityResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Which action to take when cache has unregistered alterations.
+
+        Simple caches might not have the concept of impurities. However, they
+        are useful for VCS-backed edit caches which have the concept of a
+        staging index (e.g., Git).
+
+        Not all resolution actions are necessarily valid for certain
+        reconciliation operations with certain cache managers. Expect that
+        errors will be raised in these cases.
+
+        Custom behaviors should be specified on cache manager initialization or
+        via optional argument to function.
+    '''
+
+    Custom = 'custom'   # honor accessor-specific behavior
+    Erase = 'erase'     # erase unregistered alterations before reconciliation
+    Error = 'error'     # raise error
+    Ignore = 'ignore'   # do not reconcile with sources
+    Include = 'include' # reconcile with sources
+
+    # For a Git-backed cache manager, custom alien resolution might look like:
+    #   git stash push --keep-index -- <paths>
 
 
 @__.standard_dataclass
@@ -158,8 +236,7 @@ class InodeAttributes( __.enum.IntFlag ):
 
 class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Species of entity at location. '''
-    # TODO: Windows-specific and other OS-specific entities.
-    # TODO? Forks.
+    # TODO? Solaris doors, etc...
 
     Blocks = 'blocks' # e.g., block device
     Directory = 'directory'
@@ -234,6 +311,12 @@ class Url( _UrlParts, metaclass = __.AccretiveClass ):
 
 
 # TODO: Python 3.12: type statement for aliases
+AlienResolutionActionsTable: __.a.TypeAlias = (
+    __.AbstractDictionary[ Url, AlienResolutionActions ] )
+ConflictResolutionActionsTable: __.a.TypeAlias = (
+    __.AbstractDictionary[ Url, ConflictResolutionActions ] )
+ImpurityResolutionActionsTable: __.a.TypeAlias = (
+    __.AbstractDictionary[ Url, ImpurityResolutionActions ] )
 PermissionsTable: __.a.TypeAlias = (
     __.AbstractDictionary[ Possessor, Permissions ] )
 PossibleUrl: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts

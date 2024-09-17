@@ -25,7 +25,7 @@
       location referenced by fully-resolved URL.
     * Does not track upstream expiries (e.g., HTTP cache controls).
     * Does not track upstream MIME type or charset hints (e.g., HTTP
-      'Content-Type' headers.
+      'Content-Type' headers).
 '''
 
 
@@ -131,6 +131,34 @@ class CacheManager( __.CacheManager ):
 
     def as_url( self ) -> __.Url: return self.adapter.as_url( )
 
+    async def commit(
+        self, *,
+        aliens: __.AlienResolutionActions
+            = __.AlienResolutionActions.Ignore,
+        conflicts: __.ConflictResolutionActions
+            = __.ConflictResolutionActions.Error,
+        impurities: __.ImpurityResolutionActions
+            = __.ImpurityResolutionActions.Ignore,
+    ) -> __.a.Self:
+        # No concept of aliens or impurities. Everything is considered.
+        # TODO: Implement.
+        pass
+
+    async def difference(
+        self
+    ) -> __.AbstractSequence[ __.CacheDifferenceBase ]:
+        # No concept of aliens or impurities. Everything is considered.
+        # TODO: Implement.
+        pass
+
+    async def is_divergent( self ) -> bool:
+        # No concept of aliens or impurities. Everything is considered.
+        # TODO: Survey directory.
+        #       Derive source URL from cache URL.
+        #       Compare entries in source directories versus cache directories.
+        #       Compare contents of source files versus cache files.
+        pass
+
     def produce_cache(
         self, source_adapter: __.GeneralAdapter
     ) -> __.GeneralCache:
@@ -138,6 +166,19 @@ class CacheManager( __.CacheManager ):
             source_adapter = source_adapter )
         return GeneralCache(
             adapter = source_adapter, cache_url = cache_url )
+
+    async def reingest(
+        self, *,
+        aliens: __.AlienResolutionActions
+            = __.AlienResolutionActions.Ignore,
+        conflicts: __.ConflictResolutionActions
+            = __.ConflictResolutionActions.Error,
+        impurities: __.ImpurityResolutionActions
+            = __.ImpurityResolutionActions.Ignore,
+    ) -> __.a.Self:
+        # No concept of aliens or impurities. Everything is considered.
+        # TODO: Implement.
+        pass
 
     def _calculate_cache_url(
         self, source_adapter: __.AdapterBase
