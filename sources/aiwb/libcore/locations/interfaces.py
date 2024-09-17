@@ -233,13 +233,12 @@ class GeneralOperations( __.a.Protocol ):
         ''' Discovers or asserts species of location. '''
         Error = __.partial_function(
             _exceptions.LocationSpeciesAssertionError, url = self.as_url( ) )
-        exists = (
-            await self.check_existence(
-                pursue_indirection = pursue_indirection ) )
-        if exists:
+        try:
             species_ = (
                 ( await self.examine(
                     pursue_indirection = pursue_indirection ) ).species )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        if _core.LocationSpecies.Void is not species_: # exists
             if __.absent is not species and species is not species_:
                 reason = (
                     f"Requested species, '{species}', "

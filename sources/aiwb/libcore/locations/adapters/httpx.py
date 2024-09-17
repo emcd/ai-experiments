@@ -59,18 +59,14 @@ class _Common:
         permissions: __.Permissions,
         pursue_indirection: bool = True,
     ) -> bool:
-        async with _httpx.AsyncClient(
-            follow_redirects = pursue_indirection
-        ) as client: response = await client.options( self.implement )
-        try: response.raise_for_status( )
-        except _httpx.HTTPStatusError as exc:
-            raise __.LocationCheckAccessFailure(
-                self.url, reason = exc ) from exc
+        Error = __.partial_function(
+            __.LocationCheckAccessFailure, url = self.url )
+        try:
+            inode = await self._inspect_permissions(
+                pursue_indirection = pursue_indirection )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
         if __.Permissions.Abstain == permissions: return True
-        allowed_methods = frozenset( map(
-            str.upper, response.headers.get( 'Allow', '' ).split( ', ' ) ) )
-        required_methods = _permissions_to_methods( permissions )
-        return required_methods == required_methods & allowed_methods
+        return permissions == permissions & inode.permissions
 
     async def check_existence(
         self, pursue_indirection: bool = True
@@ -102,52 +98,44 @@ class _Common:
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         pursue_indirection: bool = True,
     ) -> __.Inode:
-        inode_absent = __.Inode(
-            permissions = __.Permissions.Abstain,
-            species = __.LocationSpecies.Void,
-            supplement = { } )
         Error = __.partial_function(
             __.LocationExamineFailure, url = self.url )
-        async with _httpx.AsyncClient(
-            follow_redirects = pursue_indirection
-        ) as client:
-            #species, permissions = await self._inspect_permissions( client )
-            #if __.LocationSpecies.Void is species: return inode_absent
-            #if not __.Permissions.Retrieve & permissions:
-            #    raise __.LocationExamineFailure(
-            #        self.url, reason = "Retrieval request not allowed." )
-            response = await client.head( self.implement )
-        try: response.raise_for_status( )
-        except _httpx.HTTPStatusError as exc:
-            from http import HTTPStatus
-            if HTTPStatus.NOT_FOUND == exc.response.status_code:
-                return inode_absent
-            raise Error( reason = str( exc ) ) from exc
-        # TEMP HACK
-        permissions = __.Permissions.Retrieve
-        species = __.LocationSpecies.File
-        inode = _inode_from_headers(
-            headers = response.headers,
-            permissions = permissions,
-            species = species )
+        try:
+            inode = await self._inspect_permissions(
+                pursue_indirection = pursue_indirection )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
         return __.honor_inode_attributes(
             inode = inode, attributes = attributes, error_to_raise = Error )
 
     async def _inspect_permissions(
-        self, client: _httpx.AsynClient
-    ) -> ( __.LocationSpecies, __.Permissions ):
-        response = await client.options( self.implement )
-        try: response.raise_for_status( )
-        except _httpx.HTTPStatusError as exc:
-            from http import HTTPStatus
-            if HTTPStatus.NOT_FOUND == exc.response.status_code:
-                return __.LocationSpecies.Void, __.Permissions.Abstain
-            raise __.LocationExamineFailure(
-                self.url, reason = exc ) from exc
+        self, pursue_indirection: bool = True
+    ) -> __.Inode:
+        from http import HTTPStatus
+        inode_absent = __.Inode(
+            permissions = __.Permissions.Abstain,
+            species = __.LocationSpecies.Void,
+            supplement = { } )
+        async with _httpx.AsyncClient(
+            follow_redirects = pursue_indirection
+        ) as client:
+            response_h = await client.head( self.implement )
+            if HTTPStatus.NOT_FOUND == response_h.status_code:
+                return inode_absent
+            else: response_h.raise_for_status( )
+            response_o = await client.options( self.implement )
         species = __.LocationSpecies.File
+        if HTTPStatus.OK != response_o.status_code:
+            return __.Inode(
+                permissions = __.Permissions.Retrieve,
+                species = species,
+                supplement = response_h.headers )
         methods = frozenset( map(
-            str.upper, response.headers.get( 'Allow', '' ).split( ', ' ) ) )
-        return species, _methods_to_permissions( methods )
+            str.upper, response_o.headers.get( 'Allow', '' ).split( ', ' ) ) )
+        permissions = _methods_to_permissions( methods )
+        return __.Inode(
+            permissions = permissions,
+            species = species,
+            supplement = response_h.headers )
 
 
 class GeneralAdapter( _Common, __.GeneralAdapter ):
@@ -171,6 +159,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
             species_ = species if force else await self.discover_species(
                 pursue_indirection = pursue_indirection, species = species )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        ic( species_ )
         match species_:
             case __.LocationSpecies.File:
                 return FileAdapter( url = self.url )
@@ -389,31 +378,6 @@ def _methods_to_permissions(
     return permissions
 
 
-def _translate_newlines(
-    content: str, newline: __.Optional[ str ] = __.absent
-) -> str:
-    # TODO: Streaming version.
-    if newline in ( __.absent, '', '\n' ): return content
-    return newline.join( content.split( '\n' ) )
-
-
-def _permissions_to_methods(
-    permissions: __.Permissions
-) -> frozenset[ str ]:
-    methods = set( )
-    if permissions & __.Permissions.Retrieve:
-        methods.add( 'GET' )
-    if permissions & __.Permissions.Create:
-        methods.add( 'PUT' )
-    if permissions & __.Permissions.Update:
-        methods.update( ( 'PUT', 'PATCH' ) )
-    if permissions & __.Permissions.Delete:
-        methods.add( 'DELETE' )
-    if permissions & __.Permissions.Execute:
-        methods.add( 'POST' )
-    return frozenset( methods )
-
-
 def _react_http_status_error( response_error, headers, error_to_raise ):
     from http import HTTPStatus
     match response_error.response.status_code:
@@ -427,3 +391,11 @@ def _react_http_status_error( response_error, headers, error_to_raise ):
             if 'Content-Range' in headers:
                 reason = "Server does not support append operation."
                 raise error_to_raise( reason = reason )
+
+
+def _translate_newlines(
+    content: str, newline: __.Optional[ str ] = __.absent
+) -> str:
+    # TODO: Streaming version.
+    if newline in ( __.absent, '', '\n' ): return content
+    return newline.join( content.split( '\n' ) )
