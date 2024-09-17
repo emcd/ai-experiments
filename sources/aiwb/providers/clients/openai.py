@@ -127,7 +127,9 @@ def count_conversation_tokens( messages, special_data, controls ):
         'gpt-4-0613', 'gpt-4-32k-0613',
     ):
         tokens_per_message, tokens_per_name = 3, 1
-    elif model_name.startswith( ( 'gpt-3.5-turbo', 'gpt-4', ) ):
+    elif model_name.startswith(
+        ( 'chatgpt-4o-', 'gpt-3.5-turbo', 'gpt-4', 'o1-', )
+    ):
         # TODO: Use callback to warn about unknown model.
         tokens_per_message, tokens_per_name = 3, 1
     else: raise NotImplementedError( f"Unsupported model: {model_name}" )
@@ -201,10 +203,14 @@ async def invoke_function( request, controls ):
 
 
 def provide_chat_models( ):
+    model_prefixes = (
+        'chatgpt-4o-', 'gpt-3.5-turbo', 'gpt-4', 'o1-',
+    )
+    model_excludes = ( 'gpt-3.5-turbo-instruct', )
     return {
         name: attributes for name, attributes in _models.items( )
-        if name.startswith( ( 'gpt-3.5-turbo', 'gpt-4', ) )
-           and not name.startswith( ( 'gpt-3.5-turbo-instruct', ) )
+        if name.startswith( model_prefixes )
+           and not name.startswith( model_excludes )
     }
 
 
@@ -240,7 +246,10 @@ def select_default_model( models, auxdata ):
         return (
             next( iter( configuration[ 'providers' ] ) )[ 'default-model' ] )
     except KeyError: pass
-    for model_name in ( 'gpt-4o', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', ):
+    for model_name in (
+        'o1-preview', 'gpt-4o', 'chatgpt-4o-latest', 'o1-mini', 'gpt-4o-mini',
+        'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo',
+    ):
         if model_name in models: return model_name
     return next( iter( models ) )
 
@@ -299,23 +308,34 @@ def _create_canister_from_response( response ):
 # TODO: Move attribute associations to data file.
 # https://platform.openai.com/docs/guides/function-calling/supported-models
 _function_support_models = frozenset( (
+    # TODO: Confirm legacy function call support in gpt-4o and o1.
     'gpt-3.5-turbo', 'gpt-3.5-turbo-16k',
-    'gpt-4', 'gpt-4-32k', 'gpt-4-turbo', 'gpt-4o',
+    'gpt-4', 'gpt-4-32k', 'gpt-4-turbo',
+    'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest',
+    'o1-mini', 'o1-preview',
     'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
     'gpt-3.5-turbo-16k-0613',
     'gpt-4-0613', 'gpt-4-1106-preview', 'gpt-4-0125-preview',
     'gpt-4-32k-0613',
     'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
     'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
+    'gpt-4o-mini-2024-07-18',
     'gpt-4o-2024-05-13', 'gpt-4o-2024-08-06',
+    'o1-mini-2024-09-12',
+    'o1-preview-2024-09-12',
 ) )
 _multifunction_support_models = frozenset( (
-    'gpt-3.5.-turbo', 'gpt-4-turbo', 'gpt-4o',
+    'gpt-3.5-turbo', 'gpt-4-turbo',
+    'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest',
+    'o1-mini', 'o1-preview',
     'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
     'gpt-4-1106-preview', 'gpt-4-0125-preview',
     'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
     'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
+    'gpt-4o-mini-2024-07-18',
     'gpt-4o-2024-05-13', 'gpt-4o-2024-08-06',
+    'o1-mini-2024-09-12',
+    'o1-preview-2024-09-12',
 ) )
 # TODO: Multifunction support by model family.
 # https://platform.openai.com/docs/models
@@ -326,11 +346,15 @@ _model_family_context_window_sizes = __.DictionaryProxy( {
     'gpt-4-1106': 128_000,
     'gpt-4-turbo': 128_000,
     'gpt-4-vision': 128_000,
+    'gpt-4o-mini': 128_000,
     'gpt-4o': 128_000,
+    'o1-mini': 128_000,
+    'o1-preview': 128_000,
 } )
 _model_context_window_sizes = {
     'gpt-3.5-turbo-0301': 4_096,
     'gpt-3.5-turbo-0613': 4_096,
+    'chatgpt-4o-latest': 128_000,
 }
 # TODO: Track support for JSON output and StructuredOutput.
 # TODO? Track model response size limits.
@@ -346,7 +370,7 @@ async def _discover_models_from_api( ):
         #'gpt-3.5-turbo-0613': True,
         #'gpt-3.5-turbo-16k-0613': True,
         model_name: True for model_name in model_names
-        if model_name.startswith( 'gpt-4' ) } )
+        if model_name.startswith( ( 'chatgpt-4o-', 'gpt-4', 'o1-', ) ) } )
     function_support = ProducerDictionary( lambda: False )
     function_support.update( {
         model_name: True for model_name in model_names
