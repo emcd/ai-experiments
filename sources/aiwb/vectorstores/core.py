@@ -51,7 +51,7 @@ def derive_vectorstores_location( auxdata: __.Globals, url: str ) -> __.Path:
     match parts.scheme:
         case '' | 'file':
             return __.Path( parts.path.format(
-                application_name = auxdata.distribution.name,
+                application_name = auxdata.name,
                 custom_data = auxdata.provide_data_location( ),
                 user_data = auxdata.directories.user_data_path ),
                 user_home = __.Path.home( ) ) / 'vectorstores'

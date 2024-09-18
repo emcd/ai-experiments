@@ -26,6 +26,7 @@ from . import distribution as _distribution
 
 
 async def acquire(
+    application_name: str,
     distribution: _distribution.Information,
     directories: __.PlatformDirs
 ) -> __.AccretiveDictionary:
@@ -42,13 +43,13 @@ async def acquire(
     async with open_( location ) as file:
         configuration = loads( await( file.read( ) ) )
     includes = await _acquire_includes(
-        distribution, directories, configuration.get( 'includes', ( ) ) )
+        application_name, directories, configuration.get( 'includes', ( ) ) )
     for include in includes: configuration.update( include )
     return __.AccretiveDictionary( configuration )
 
 
 async def _acquire_includes(
-    distribution: _distribution.Information,
+    application_name: str,
     directories: __.PlatformDirs,
     specs: tuple[ str ]
 ) -> __.AbstractSequence[ dict ]:
@@ -58,7 +59,7 @@ async def _acquire_includes(
         __.Path( spec.format(
             user_configuration = directories.user_config_path,
             user_home = __.Path.home( ),
-            application_name = distribution.name ) )
+            application_name = application_name ) )
         for spec in specs )
     iterables = tuple(
         ( location.glob( '*.toml' ) if location.is_dir( ) else ( location, ) )

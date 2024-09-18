@@ -31,12 +31,9 @@ class Information:
     name: str
     location: __.Path
     editable: bool
-    publisher: str
 
     @classmethod
-    async def prepare(
-        selfclass, package: str, publisher: str, exits: __.Exits
-    ) -> __.a.Self:
+    async def prepare( selfclass, package: str, exits: __.Exits ) -> __.a.Self:
         ''' Acquires information about our package distribution. '''
         from importlib.metadata import packages_distributions
         from aiofiles import open as open_
@@ -59,8 +56,7 @@ class Information:
         return selfclass(
             editable = editable,
             location = location,
-            name = name,
-            publisher = publisher )
+            name = name )
 
     def provide_data_location( self, *appendages: str ) -> __.Path:
         ''' Provides location of distribution data. '''

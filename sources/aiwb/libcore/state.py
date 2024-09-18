@@ -39,11 +39,11 @@ class DirectorySpecies( __.Enum ): # TODO: Python 3.11: StrEnum
 class Globals:
     ''' Immutable global data. Required by many library functions. '''
 
-    # TODO: name (of application)
-    # TODO? execution_id
+    name: str # application name
     configuration: __.AccretiveDictionary
     directories: __.PlatformDirs
     distribution: _distribution.Information
+    # TODO? execution_id
     exits: __.Exits # TODO? Make accretive.
     notifications: _notifications.Queue
 
@@ -51,21 +51,29 @@ class Globals:
     async def prepare(
         selfclass,
         exits: __.Exits,
-        distribution: _distribution.Information = None,
+        application_name: __.Optional[ str ] = __.absent,
+        application_publisher: __.Optional[ str ] = __.absent,
+        application_version: __.Optional[ str ] = __.absent,
     ) -> __.a.Self:
         ''' Acquires data to create DTO. '''
-        if None is distribution:
-            distribution = (
-                await _distribution.Information.prepare(
-                    package = __package__.split( '.', maxsplit = 1 )[ 0 ],
-                    publisher = 'emcd',
-                    exits = exits ) )
-        directories = __.PlatformDirs(
-            distribution.name, distribution.publisher, ensure_exists = True )
+        package_name = __package__.split( '.', maxsplit = 1 )[ 0 ]
+        if __.absent is application_name: application_name = package_name
+        pdirs_arguments = __.AccretiveDictionary( dict(
+            appname = application_name, ensure_exists = True ) )
+        if __.absent is not application_publisher:
+            pdirs_arguments[ 'appauthor' ] = application_publisher
+        if __.absent is not application_version:
+            pdirs_arguments[ 'version' ] = application_version
+        directories = __.PlatformDirs( **pdirs_arguments )
+        distribution = (
+            await _distribution.Information.prepare(
+                package = package_name, exits = exits ) )
         configuration = (
-            await _configuration.acquire( distribution, directories ) )
+            await _configuration.acquire(
+                application_name, distribution, directories ) )
         notifications = _notifications.Queue( )
         return selfclass(
+            name = application_name,
             configuration = configuration,
             directories = directories,
             distribution = distribution,
@@ -94,7 +102,7 @@ class Globals:
             args = {
                 f"user_{species}": base,
                 'user_home': __.Path.home( ),
-                'application_name': self.distribution.name,
+                'application_name': self.name,
             }
             base = __.Path( spec.format( **args ) )
         if appendages: return base.joinpath( *appendages )
