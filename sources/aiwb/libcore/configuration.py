@@ -27,8 +27,8 @@ from . import distribution as _distribution
 
 async def acquire(
     application_name: str,
+    directories: __.PlatformDirs,
     distribution: _distribution.Information,
-    directories: __.PlatformDirs
 ) -> __.AccretiveDictionary:
     ''' Loads configuration as dictionary. '''
     from shutil import copyfile

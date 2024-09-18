@@ -45,4 +45,19 @@ async def prepare(
     auxdata = await _state.Globals.prepare( exits = exits )
     if environment: await _environment.update( auxdata )
     _inscription.prepare( auxdata, mode = scribe_mode )
+    _inscribe_preparation_report( auxdata )
     return auxdata
+
+
+def _inscribe_preparation_report( auxdata: _state.Globals ):
+    scribe = __.acquire_scribe( __package__ )
+    scribe.info( f"Application Name: {auxdata.name}" )
+    scribe.info( f"Execution ID: {auxdata.execution_id}" )
+    scribe.info( "Application Cache Location: {}".format(
+        auxdata.provide_cache_location( ) ) )
+    scribe.info( "Application Data Location: {}".format(
+        auxdata.provide_data_location( ) ) )
+    scribe.info( "Application State Location: {}".format(
+        auxdata.provide_state_location( ) ) )
+    scribe.info( "Package Data Location: {}".format(
+        auxdata.distribution.provide_data_location( ) ) )

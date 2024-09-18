@@ -43,7 +43,7 @@ class Globals:
     configuration: __.AccretiveDictionary
     directories: __.PlatformDirs
     distribution: _distribution.Information
-    # TODO? execution_id
+    execution_id: str
     exits: __.Exits # TODO? Make accretive.
     notifications: _notifications.Queue
 
@@ -54,6 +54,9 @@ class Globals:
         application_name: __.Optional[ str ] = __.absent,
         application_publisher: __.Optional[ str ] = __.absent,
         application_version: __.Optional[ str ] = __.absent,
+        execution_id: __.a.Annotation[
+            __.Optional[ str ], __.a.Doc( ''' Can be used for telemetry. ''' )
+        ] = __.absent,
     ) -> __.a.Self:
         ''' Acquires data to create DTO. '''
         package_name = __package__.split( '.', maxsplit = 1 )[ 0 ]
@@ -70,13 +73,17 @@ class Globals:
                 package = package_name, exits = exits ) )
         configuration = (
             await _configuration.acquire(
-                application_name, distribution, directories ) )
+                application_name = application_name,
+                directories = directories,
+                distribution = distribution ) )
+        if __.absent is execution_id: execution_id = __.uuid4( ).urn
         notifications = _notifications.Queue( )
         return selfclass(
             name = application_name,
             configuration = configuration,
             directories = directories,
             distribution = distribution,
+            execution_id = execution_id,
             exits = exits,
             notifications = notifications )
 
