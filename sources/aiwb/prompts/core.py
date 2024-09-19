@@ -104,7 +104,7 @@ class Store( __.a.Protocol ):
         name = descriptor[ 'name' ]
         location = __.location_adapter_from_url(
             descriptor[ 'location' ].format(
-                application_name = auxdata.name,
+                application_name = auxdata.application.name,
                 custom_data = auxdata.provide_data_location( ),
                 distribution_data = distribution.provide_data_location( ),
                 user_data = auxdata.directories.user_data_path,

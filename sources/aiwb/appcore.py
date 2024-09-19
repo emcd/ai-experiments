@@ -25,7 +25,7 @@ from . import __
 from . import libcore as _libcore
 
 
-@__.dataclass( frozen = True, kw_only = True, slots = True )
+@__.standard_dataclass
 class Globals( _libcore.Globals ):
     ''' Immutable global data. Required by many application functions. '''
 
@@ -42,7 +42,7 @@ class Globals( _libcore.Globals ):
         from importlib import import_module
         slots = ( 'invocables', 'prompts', 'providers', 'vectorstores' )
         modules = tuple(
-            import_module( f".{slot}", __package__ ) for slot in slots )
+            import_module( f".{slot}", __.package_name ) for slot in slots )
         attributes = await gather( *(
             module.prepare( base ) for module in modules ) )
         return selfclass(
@@ -51,42 +51,41 @@ class Globals( _libcore.Globals ):
             **dict( zip( slots, attributes ) ) )
 
 
-async def prepare( exits: __.Exits ) -> __.AccretiveNamespace:
+async def prepare(
+    exits: __.Exits, *,
+    application: __.Optional[ _libcore.ApplicationInformation ] = __.absent,
+) -> Globals:
     ''' Prepares AI-related functionality for applications. '''
-    _configure_logging_pre( )
+    _configure_logging( application = application )
+    # TODO: Configure metrics and traces emitters.
     auxdata_base = await _libcore.prepare(
+        application = application,
         environment = True,
         exits = exits,
         scribe_mode = _libcore.ScribeModes.Rich )
-    _configure_logging_post( auxdata_base )
     auxdata = await Globals.prepare( auxdata_base )
-    # TODO: Configure metrics and traces emitters.
     return auxdata
 
 
-def _configure_logging_pre( ):
-    ''' Configures standard Python logging during early initialization. '''
+def _configure_logging(
+    application: __.Optional[ _libcore.ApplicationInformation ] = __.absent
+):
+    ''' Configures standard Python logging for application. '''
     import logging
+    from os import environ
     from rich.console import Console
     from rich.logging import RichHandler
+    if __.absent is application:
+        application_name = __package__.split( '.', maxsplit = 1 )[ 0 ]
+    else: application_name = application.name
+    envvar_name = "{name}_LOG_LEVEL".format( name = application_name.upper( ) )
+    level = getattr( logging, environ.get( envvar_name, 'INFO' ) )
     handler = RichHandler(
         console = Console( stderr = True ),
         rich_tracebacks = True,
         show_time = False )
     logging.basicConfig(
         format = '%(name)s: %(message)s',
+        level = level,
         handlers = [ handler ] )
     logging.captureWarnings( True )
-
-
-def _configure_logging_post( auxdata: _libcore.Globals ):
-    ''' Configures standard Python logging after context available. '''
-    import logging
-    from os import environ
-    envvar_name = "{name}_LOG_LEVEL".format(
-        name = auxdata.distribution.name.upper( ) )
-    level = getattr( logging, environ.get( envvar_name, 'INFO' ) )
-    root_scribe = __.acquire_scribe( )
-    root_scribe.setLevel( level )
-    library_scribe = __.acquire_scribe( __package__ )
-    library_scribe.propagate = False # Prevent double-logging.

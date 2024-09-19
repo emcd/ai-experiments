@@ -22,6 +22,7 @@
 
 
 from . import __
+from . import application as _application
 from . import environment as _environment
 from . import inscription as _inscription
 from . import state as _state
@@ -29,6 +30,7 @@ from . import state as _state
 
 async def prepare(
     exits: __.Exits,
+    application: __.Optional[ _application.Information ] = __.absent,
     environment: bool = False,
     scribe_mode: _inscription.ScribeModes = _inscription.ScribeModes.Null,
 ) -> _state.Globals:
@@ -42,7 +44,8 @@ async def prepare(
         concurrently initialize other entities outside of the library, even
         though the library initialization, itself, is inherently sequential.
     '''
-    auxdata = await _state.Globals.prepare( exits = exits )
+    auxdata = await _state.Globals.prepare(
+        application = application, exits = exits )
     if environment: await _environment.update( auxdata )
     _inscription.prepare( auxdata, mode = scribe_mode )
     _inscribe_preparation_report( auxdata )
@@ -50,9 +53,9 @@ async def prepare(
 
 
 def _inscribe_preparation_report( auxdata: _state.Globals ):
-    scribe = __.acquire_scribe( __package__ )
-    scribe.info( f"Application Name: {auxdata.name}" )
-    scribe.info( f"Execution ID: {auxdata.execution_id}" )
+    scribe = __.acquire_scribe( __.package_name )
+    scribe.info( f"Application Name: {auxdata.application.name}" )
+    scribe.info( f"Execution ID: {auxdata.application.execution_id}" )
     scribe.info( "Application Cache Location: {}".format(
         auxdata.provide_cache_location( ) ) )
     scribe.info( "Application Data Location: {}".format(

@@ -28,8 +28,9 @@ from . import state as _state
 class ScribeModes( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Possible modes for logging output. '''
 
-    Null = __.enum.auto( )
-    Rich = __.enum.auto( )
+    Null = __.produce_enumeration_value( ) # suppress library logs
+    Pass = __.produce_enumeration_value( ) # pass library logs to root logger
+    Rich = __.produce_enumeration_value( ) # print rich library logs to stderr
 
 
 def prepare( auxdata: _state.Globals, mode: ScribeModes ):
@@ -46,6 +47,8 @@ def prepare_scribe_icecream( mode: ScribeModes ):
         case ScribeModes.Null:
             ic.configureOutput( **nomargs )
             ic.disable( )
+        case ScribeModes.Pass:
+            ic.configureOutput( **nomargs )
         case ScribeModes.Rich:
             from rich.pretty import pretty_repr
             ic.configureOutput( argToStringFunction = pretty_repr, **nomargs )
@@ -57,20 +60,24 @@ def prepare_scribe_logging( auxdata: _state.Globals, mode: ScribeModes ):
     # https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library
     import logging
     from os import environ
-    envvar_name = "{name}_LOG_LEVEL".format(
-        name = auxdata.distribution.name.upper( ) )
+    envvar_name = "{name}_LOG_LEVEL".format( name = __.package_name.upper( ) )
     level = getattr( logging, environ.get( envvar_name, 'INFO' ) )
-    scribe = __.acquire_scribe( __package__ )
+    scribe = __.acquire_scribe( __.package_name )
+    scribe.propagate = False # prevent double-logging
     scribe.setLevel( level )
     match mode:
         case ScribeModes.Null:
             scribe.addHandler( logging.NullHandler( ) )
+        case ScribeModes.Pass:
+            scribe.propagate = True
         case ScribeModes.Rich:
             from rich.console import Console
             from rich.logging import RichHandler
+            formatter = logging.Formatter( '%(name)s: %(message)s' )
             handler = RichHandler(
                 console = Console( stderr = True ),
                 rich_tracebacks = True,
                 show_time = False )
+            handler.setFormatter( formatter )
             scribe.addHandler( handler )
     scribe.debug( 'Logging initialized.' )

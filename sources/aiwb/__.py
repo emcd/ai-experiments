@@ -118,6 +118,7 @@ PossiblePath: a.TypeAlias = bytes | str | PathLike
 
 
 absent = Absent( ) #: Option with no default value.
+package_name = __package__.split( '.', maxsplit = 1 )[ 0 ]
 standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
 
 

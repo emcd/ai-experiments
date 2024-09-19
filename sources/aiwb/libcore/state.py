@@ -22,6 +22,7 @@
 
 
 from . import __
+from . import application as _application
 from . import configuration as _configuration
 from . import distribution as _distribution
 from . import notifications as _notifications
@@ -39,51 +40,38 @@ class DirectorySpecies( __.Enum ): # TODO: Python 3.11: StrEnum
 class Globals:
     ''' Immutable global data. Required by many library functions. '''
 
-    name: str # application name
+    application: _application.Information
     configuration: __.AccretiveDictionary
     directories: __.PlatformDirs
     distribution: _distribution.Information
-    execution_id: str
     exits: __.Exits # TODO? Make accretive.
     notifications: _notifications.Queue
 
     @classmethod
     async def prepare(
         selfclass,
-        exits: __.Exits,
-        application_name: __.Optional[ str ] = __.absent,
-        application_publisher: __.Optional[ str ] = __.absent,
-        application_version: __.Optional[ str ] = __.absent,
-        execution_id: __.a.Annotation[
-            __.Optional[ str ], __.a.Doc( ''' Can be used for telemetry. ''' )
-        ] = __.absent,
+        exits: __.Exits, *,
+        application: __.Optional[ _application.Information ] = __.absent,
     ) -> __.a.Self:
         ''' Acquires data to create DTO. '''
-        package_name = __package__.split( '.', maxsplit = 1 )[ 0 ]
-        if __.absent is application_name: application_name = package_name
-        pdirs_arguments = __.AccretiveDictionary( dict(
-            appname = application_name, ensure_exists = True ) )
-        if __.absent is not application_publisher:
-            pdirs_arguments[ 'appauthor' ] = application_publisher
-        if __.absent is not application_version:
-            pdirs_arguments[ 'version' ] = application_version
-        directories = __.PlatformDirs( **pdirs_arguments )
+        if __.absent is application:
+            application = _application.Information(
+                name = __.package_name, execution_id  = __.uuid4( ).urn )
+        directories = application.produce_platform_directories( )
         distribution = (
             await _distribution.Information.prepare(
-                package = package_name, exits = exits ) )
+                package = __.package_name, exits = exits ) )
         configuration = (
             await _configuration.acquire(
-                application_name = application_name,
+                application_name = application.name,
                 directories = directories,
                 distribution = distribution ) )
-        if __.absent is execution_id: execution_id = __.uuid4( ).urn
         notifications = _notifications.Queue( )
         return selfclass(
-            name = application_name,
+            application = application,
             configuration = configuration,
             directories = directories,
             distribution = distribution,
-            execution_id = execution_id,
             exits = exits,
             notifications = notifications )
 
@@ -109,7 +97,7 @@ class Globals:
             args = {
                 f"user_{species}": base,
                 'user_home': __.Path.home( ),
-                'application_name': self.name,
+                'application_name': self.application.name,
             }
             base = __.Path( spec.format( **args ) )
         if appendages: return base.joinpath( *appendages )

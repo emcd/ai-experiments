@@ -18,41 +18,26 @@
 #============================================================================#
 
 
-''' Core entities for use across broader library. '''
-
-# ruff: noqa: F401,F403
-# pylint: disable=unused-import
+''' Information about application. '''
 
 
 from . import __
-from . import application
-from . import base
-from . import configuration
-from . import distribution
-from . import environment
-from . import exceptions
-from . import inscription
-from . import locations
-from . import notifications
-from . import preparation
-from . import state
-
-from .application import Information as ApplicationInformation
-from .base import *
-from .configuration import acquire as acquire_configuration
-from .distribution import Information as DistributionInformation
-from .environment import update as update_environment
-from .exceptions import *
-from .inscription import (
-    ScribeModes,
-    prepare as prepare_scribes,
-    prepare_scribe_icecream,
-    prepare_scribe_logging,
-)
-from .locations.qaliases import *
-from .notifications import Queue as NotificationsQueue
-from .preparation import prepare
-from .state import DirectorySpecies, Globals
 
 
-__.reclassify_modules( globals( ) )
+@__.standard_dataclass
+class Information:
+    ''' Information about an application. '''
+
+    name: str
+    publisher: __.a.Nullable[ str ] = None
+    version: __.a.Nullable[ str ] = None
+    execution_id: __.a.Annotation[
+        __.a.Nullable[ str ], __.a.Doc( "For telemetry, etc..." )
+    ] = None
+
+    def produce_platform_directories( self ) -> __.PlatformDirs:
+        arguments = __.AccretiveDictionary( dict(
+            appname = self.name, ensure_exists = True ) )
+        if self.publisher: arguments[ 'appauthor' ] = self.publisher
+        if self.version: arguments[ 'version' ] = self.version
+        return __.PlatformDirs( **arguments )
