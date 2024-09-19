@@ -42,6 +42,8 @@ async def list_folder(
     if not isinstance( accessor, __.DirectoryAccessor ):
         return { 'error': 'Cannot list entries of non-directory.' }
     arguments_[ 'attributes' ] = __.InodeAttributes.Mimetype
+    if 'filters' not in arguments_:
+        arguments_[ 'filters' ] = ( '@gitignore', '+vcs', )
     try: result = await accessor.survey_entries( **arguments_ )
     except Exception as exc:
         # TODO? Generate apprisal notification.
