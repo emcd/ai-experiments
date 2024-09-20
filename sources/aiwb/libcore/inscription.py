@@ -61,7 +61,7 @@ def prepare_scribe_logging( auxdata: _state.Globals, mode: ScribeModes ):
     import logging
     from os import environ
     envvar_name = "{name}_LOG_LEVEL".format( name = __.package_name.upper( ) )
-    level = getattr( logging, environ.get( envvar_name, 'INFO' ) )
+    level = getattr( logging, environ.get( envvar_name, 'INFO' ).upper( ) )
     scribe = __.acquire_scribe( __.package_name )
     scribe.propagate = False # prevent double-logging
     scribe.setLevel( level )

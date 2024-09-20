@@ -29,6 +29,7 @@ dependencies = [
   'tomli', # TODO: Python 3.11: Remove.
   'tomli-w', # TODO? Remove. Use pretty JSON for machine-generated files.
   'typing-extensions',
+  'tyro', # TODO? Replace with alternative which supports PEP 727.
   'unstructured',
 
   # TODO: Install in environment context as needed.

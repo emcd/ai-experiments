@@ -54,9 +54,7 @@ class Globals:
         application: __.Optional[ _application.Information ] = __.absent,
     ) -> __.a.Self:
         ''' Acquires data to create DTO. '''
-        if __.absent is application:
-            application = _application.Information(
-                name = __.package_name, execution_id  = __.uuid4( ).urn )
+        if __.absent is application: application = _application.Information( )
         directories = application.produce_platform_directories( )
         distribution = (
             await _distribution.Information.prepare(

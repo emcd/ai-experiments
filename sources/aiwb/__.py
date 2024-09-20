@@ -78,6 +78,8 @@ from types import (
 from urllib.parse import urlparse
 from uuid import uuid4
 
+import tyro
+
 from accretive import reclassify_modules
 from accretive.qaliases import (
     AccretiveClass,
