@@ -30,12 +30,14 @@ from typing_extensions import (
     Callable,
     Doc,
     Generic,
+    Literal,
     Never,
     Optional as Nullable, # Prefer to <type> | None.
     Protocol,
     Self,
     TypeAlias,
     TypeVar,
+    Union, # Prefer to <T> | <U> for multiline forms.
     cast,
     runtime_checkable,
 )

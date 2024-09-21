@@ -20,13 +20,14 @@
 
 ''' Core entities for use across broader library. '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F401,F403,F405
 # pylint: disable=unused-import
 
 
 from . import __
 from . import application
 from . import base
+from . import cli
 from . import configuration
 from . import distribution
 from . import environment
@@ -39,6 +40,7 @@ from . import state
 
 from .application import Information as ApplicationInformation
 from .base import *
+from .cli import *
 from .configuration import acquire as acquire_configuration
 from .distribution import Information as DistributionInformation
 from .environment import update as update_environment
@@ -53,6 +55,11 @@ from .locations.qaliases import *
 from .notifications import Queue as NotificationsQueue
 from .preparation import prepare
 from .state import DirectorySpecies, Globals
+
+
+def main( ):
+    ''' Entrypoint for utility to inspect and test library core. '''
+    __.tyro.cli( Cli )( )
 
 
 __.reclassify_modules( globals( ) )
