@@ -21,8 +21,7 @@
 ''' Entrypoint for utility CLI to inspect and test library core. '''
 
 
-from . import __
-from .cli import Cli
+from .cli import execute_cli
 
 
-__.tyro.cli( Cli )( )
+execute_cli( )

@@ -59,7 +59,7 @@ from .state import DirectorySpecies, Globals
 
 def main( ):
     ''' Entrypoint for utility to inspect and test library core. '''
-    __.tyro.cli( Cli )( )
+    execute_cli( )
 
 
 __.reclassify_modules( globals( ) )

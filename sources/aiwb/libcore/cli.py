@@ -29,6 +29,14 @@ from . import inscription as _inscription
 from . import state as _state
 
 
+class DisplayTargets( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Target upon which to place output. '''
+
+    # TODO? File
+    Stderr =    'stderr'
+    Stdout =    'stdout'
+
+
 class DisplayFormats( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Format in which to display structured output. '''
 
@@ -38,10 +46,13 @@ class DisplayFormats( __.Enum ): # TODO: Python 3.11: StrEnum
     Toml =      'toml'
 
 
-# TODO: Python 3.12: type statement for aliases
-#DisplayFormats: __.a.TypeAlias = __.a.Literal[
-#    'json', 'pretty', 'rich', 'toml',
-#]
+class Inspectees( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Facet of application to inspect. '''
+
+    Configuration =     'configuration'
+    ''' Displays application configuration. '''
+    Environment =       'environment'
+    ''' Displays application-relevant process environment. '''
 
 
 @__.standard_dataclass
@@ -51,21 +62,22 @@ class Cli:
     application: _application.Information
     scribe_mode: _inscription.ScribeModes = _inscription.ScribeModes.Rich
     display_format: DisplayFormats = DisplayFormats.Rich
+    display_target: DisplayTargets = DisplayTargets.Stderr
     command: __.a.Union[
         __.a.Annotation[
-            ConfigurationCommand,
-            __.tyro.conf.subcommand( 'configuration', prefix_name = False ),
+            InspectCommand,
+            __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
         ],
         __.a.Annotation[
-            EnvironmentCommand,
-            __.tyro.conf.subcommand( 'environment', prefix_name = False ),
+            ReportCommand,
+            __.tyro.conf.subcommand( 'report', prefix_name = False ),
         ],
     ]
 
     def __call__( self ):
         ''' Invokes command after library preparation. '''
         from asyncio import run
-        from sys import stdout
+        from sys import stdout, stderr
         from .preparation import prepare
         # TODO: Use argument to choose output stream.
         with __.Exits( ) as exits:
@@ -75,7 +87,9 @@ class Cli:
                 exits = exits,
                 scribe_mode = self.scribe_mode ) )
             result = self.command( auxdata = auxdata )
-        stream = stdout
+        match self.display_target:
+            case DisplayTargets.Stdout: stream = stdout
+            case DisplayTargets.Stderr: stream = stderr
         match self.display_format:
             case DisplayFormats.Json:
                 from json import dump
@@ -94,20 +108,40 @@ class Cli:
 
 
 @__.standard_dataclass
-class ConfigurationCommand:
-    ''' Displays application configuration. '''
+class InspectCommand:
+    ''' Displays some facet of application. '''
+
+    inspectee: __.a.Annotation[
+        __.tyro.conf.Positional[ Inspectees ],
+        __.tyro.conf.arg( prefix_name = False ),
+    ] = Inspectees.Configuration
 
     def __call__( self, auxdata: _state.Globals ):
-        return dict( auxdata.configuration )
+        match self.inspectee:
+            case Inspectees.Configuration:
+                return dict( auxdata.configuration )
+            case Inspectees.Environment:
+                from os import environ
+                prefix = "{}_".format( auxdata.application.name.upper( ) )
+                return {
+                    name: value for name, value in environ.items( )
+                    if name.startswith( prefix ) }
 
 
 @__.standard_dataclass
-class EnvironmentCommand:
-    ''' Displays application-relevant process environment. '''
+class ReportCommand:
+    ''' Reports complete state of application. '''
 
     def __call__( self, auxdata: _state.Globals ):
-        from os import environ
-        prefix = "{}_".format( auxdata.application.name.upper( ) )
-        return {
-            name: value for name, value in environ.items( )
-            if name.startswith( prefix ) }
+        # TODO: Implement.
+        return ''
+
+
+def execute_cli( ):
+    default = Cli(
+        application = _application.Information( ),
+        scribe_mode = _inscription.ScribeModes.Rich,
+        display_format = DisplayFormats.Rich,
+        command = InspectCommand( ),
+    )
+    __.tyro.cli( Cli, default = default )( )
