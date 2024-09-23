@@ -26,6 +26,7 @@ from __future__ import annotations
 from . import __
 from . import application as _application
 from . import inscription as _inscription
+from . import locations as _locations
 from . import state as _state
 
 
@@ -78,24 +79,23 @@ class Cli:
             __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
         ],
         __.a.Annotation[
-            ReportCommand,
-            __.tyro.conf.subcommand( 'report', prefix_name = False ),
+            LocationCommand,
+            __.tyro.conf.subcommand( 'location', prefix_name = False ),
         ],
     ]
 
-    def __call__( self ):
+    async def __call__( self ):
         ''' Invokes command after library preparation. '''
-        from asyncio import run
         from sys import stdout, stderr
         from .preparation import prepare
         # TODO: Use argument to choose output stream.
         with __.Exits( ) as exits:
-            auxdata = run( prepare(
+            auxdata = await prepare(
                 application = self.application,
                 environment = True,
                 exits = exits,
-                scribe_mode = self.scribe_mode ) )
-            result = self.command( auxdata = auxdata )
+                scribe_mode = self.scribe_mode )
+            result = await self.command( auxdata = auxdata )
         match self.display_target:
             case DisplayTargets.Stdout: stream = stdout
             case DisplayTargets.Stderr: stream = stderr
@@ -118,14 +118,14 @@ class Cli:
 
 @__.standard_dataclass
 class InspectCommand:
-    ''' Displays some facet of application. '''
+    ''' Displays some facet of the application. '''
 
     inspectee: __.a.Annotation[
         __.tyro.conf.Positional[ Inspectees ],
         __.tyro.conf.arg( prefix_name = False ),
     ] = Inspectees.Configuration
 
-    def __call__( self, auxdata: _state.Globals ):
+    async def __call__( self, auxdata: _state.Globals ):
         match self.inspectee:
             case Inspectees.Configuration:
                 return dict( auxdata.configuration )
@@ -138,19 +138,71 @@ class InspectCommand:
 
 
 @__.standard_dataclass
-class ReportCommand:
-    ''' Reports complete state of application. '''
+class LocationCommand:
+    ''' Accesses a location via URL or local filesystem path. '''
 
-    def __call__( self, auxdata: _state.Globals ):
+    command: __.a.Union[
+        __.a.Annotation[
+            LocationSurveyDirectoryCommand,
+            __.tyro.conf.subcommand( 'list-folder', prefix_name = False ),
+        ],
+        __.a.Annotation[
+            LocationAcquireContentCommand,
+            __.tyro.conf.subcommand( 'read', prefix_name = False ),
+        ],
+        # TODO: LocationUpdateContentCommand (write)
+    ]
+
+    async def __call__( self, auxdata: _state.Globals ):
+        return await self.command( auxdata = auxdata )
+
+
+@__.standard_dataclass
+class LocationSurveyDirectoryCommand:
+    ''' Lists directory given by URL. '''
+
+    # TODO: Cache options.
+    filters: __.a.Annotation[
+        __.AbstractSequence[ str ],
+        __.tyro.conf.arg( prefix_name = False ),
+    ] = ( '@gitignore', '+vcs' )
+    recurse: __.a.Annotation[
+        bool,
+        __.tyro.conf.arg( prefix_name = False ),
+    ] = False
+    url: __.a.Annotation[
+        __.tyro.conf.Positional[ str ],
+        __.tyro.conf.arg( prefix_name = False ),
+    ]
+
+    async def __call__( self, auxdata: _state.Globals ):
+        accessor = (
+            await _locations.adapter_from_url( self.url )
+            .as_specific( species = _locations.LocationSpecies.Directory ) )
+        dirents = await accessor.survey_entries(
+            filters = self.filters, recurse = self.recurse )
         # TODO: Implement.
-        return ''
+        return dirents
+
+
+@__.standard_dataclass
+class LocationAcquireContentCommand:
+    ''' Reads content from file at given URL. '''
+
+    # TODO: Options
+    url: _locations.Url
+
+    async def __call__( self, auxdata: _state.Globals ):
+        # TODO: Implement.
+        pass
 
 
 def execute_cli( ):
+    from asyncio import run
     default = Cli(
         application = _application.Information( ),
         scribe_mode = _inscription.ScribeModes.Rich,
         display_format = DisplayFormats.Rich,
         command = InspectCommand( ),
     )
-    __.tyro.cli( Cli, default = default )( )
+    run( __.tyro.cli( Cli, default = default )( ) )
