@@ -60,9 +60,18 @@ class Cli:
     ''' Utility for inspection and tests of library core. '''
 
     application: _application.Information
-    scribe_mode: _inscription.ScribeModes = _inscription.ScribeModes.Rich
-    display_format: DisplayFormats = DisplayFormats.Rich
-    display_target: DisplayTargets = DisplayTargets.Stderr
+    scribe_mode: __.a.Annotation[
+        _inscription.ScribeModes,
+        __.tyro.conf.SelectFromEnumValues,
+    ] = _inscription.ScribeModes.Rich
+    display_format: __.a.Annotation[
+        DisplayFormats,
+        __.tyro.conf.SelectFromEnumValues,
+    ] = DisplayFormats.Rich
+    display_target: __.a.Annotation[
+        DisplayTargets,
+        __.tyro.conf.SelectFromEnumValues,
+    ] = DisplayTargets.Stderr
     command: __.a.Union[
         __.a.Annotation[
             InspectCommand,

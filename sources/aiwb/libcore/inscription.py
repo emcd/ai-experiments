@@ -28,9 +28,9 @@ from . import state as _state
 class ScribeModes( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Possible modes for logging output. '''
 
-    Null = __.produce_enumeration_value( ) # suppress library logs
-    Pass = __.produce_enumeration_value( ) # pass library logs to root logger
-    Rich = __.produce_enumeration_value( ) # print rich library logs to stderr
+    Null = 'null' # suppress library logs
+    Pass = 'pass' # pass library logs to root logger
+    Rich = 'rich' # print rich library logs to stderr
 
 
 def prepare( auxdata: _state.Globals, mode: ScribeModes ):

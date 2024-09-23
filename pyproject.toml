@@ -29,7 +29,7 @@ dependencies = [
   'tomli', # TODO: Python 3.11: Remove.
   'tomli-w', # TODO? Remove. Use pretty JSON for machine-generated files.
   'typing-extensions',
-  'tyro', # TODO? Replace with alternative which supports PEP 727.
+  'tyro @ git+https://github.com/emcd/tyro@enum-values',
   'unstructured',
 
   # TODO: Install in environment context as needed.
@@ -168,6 +168,8 @@ description = ''' Quality assurance environment. '''
 template = 'develop'
 [[tool.hatch.envs.qa.matrix]]
 python = [ '3.10', '3.11', '3.12' ]
+[tool.hatch.metadata]
+allow-direct-references = true
 [tool.hatch.version]
 path = 'sources/aiwb/__init__.py'
 
