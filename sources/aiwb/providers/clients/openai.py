@@ -259,7 +259,7 @@ def select_default_model( models, auxdata ):
 async def _cache_acquire_models( auxdata ):
     from json import dumps, loads
     from aiofiles import open as open_
-    from openai import APIConnectionError
+    from openai import APIError
     scribe = __.acquire_scribe( __package__ )
     file = auxdata.provide_cache_location(
         'providers', 'openai', 'models.json' )
@@ -271,7 +271,7 @@ async def _cache_acquire_models( auxdata ):
             async with open_( file ) as stream:
                 return loads( await stream.read( ) )
     try: models = await _discover_models_from_api( )
-    except APIConnectionError as exc:
+    except APIError as exc:
         if file.is_file( ):
             auxdata.notifications.enqueue_apprisal(
                 summary = "Connection error. Loading stale models cache.",
