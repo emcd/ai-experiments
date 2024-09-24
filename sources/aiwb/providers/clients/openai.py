@@ -106,11 +106,13 @@ def access_model_data( model_name, data_name ):
 
 
 async def chat( messages, special_data, controls, callbacks ):
+    model = controls[ 'model' ]
     messages = _nativize_messages( messages, controls[ 'model' ] )
     special_data = _nativize_special_data( special_data, controls )
     controls = _nativize_controls( controls )
     response = await _chat( messages, special_data, controls, callbacks )
-    if controls.get( 'stream', True ):
+    # TODO: Check 'supports_streaming' attribute.
+    if not model.startswith( 'o1-' ) and controls.get( 'stream', True ):
         return await _process_iterative_chat_response( response, callbacks )
     return _process_complete_chat_response( response, callbacks )
 
@@ -312,7 +314,7 @@ _function_support_models = frozenset( (
     'gpt-3.5-turbo', 'gpt-3.5-turbo-16k',
     'gpt-4', 'gpt-4-32k', 'gpt-4-turbo',
     'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest',
-    'o1-mini', 'o1-preview',
+    #'o1-mini', 'o1-preview',
     'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
     'gpt-3.5-turbo-16k-0613',
     'gpt-4-0613', 'gpt-4-1106-preview', 'gpt-4-0125-preview',
@@ -321,21 +323,17 @@ _function_support_models = frozenset( (
     'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
     'gpt-4o-mini-2024-07-18',
     'gpt-4o-2024-05-13', 'gpt-4o-2024-08-06',
-    'o1-mini-2024-09-12',
-    'o1-preview-2024-09-12',
 ) )
 _multifunction_support_models = frozenset( (
     'gpt-3.5-turbo', 'gpt-4-turbo',
     'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest',
-    'o1-mini', 'o1-preview',
+    #'o1-mini', 'o1-preview',
     'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
     'gpt-4-1106-preview', 'gpt-4-0125-preview',
     'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
     'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
     'gpt-4o-mini-2024-07-18',
     'gpt-4o-2024-05-13', 'gpt-4o-2024-08-06',
-    'o1-mini-2024-09-12',
-    'o1-preview-2024-09-12',
 ) )
 # TODO: Multifunction support by model family.
 # https://platform.openai.com/docs/models
@@ -364,13 +362,14 @@ async def _discover_models_from_api( ):
     from openai import AsyncOpenAI
     model_names = sorted( map(
         attrgetter( 'id' ), ( await AsyncOpenAI( ).models.list( ) ).data ) )
-    # TODO? Reevaluate current status 3.5 Turbo sysprompt adherence.
     sysprompt_honor = ProducerDictionary( lambda: False )
     sysprompt_honor.update( {
         #'gpt-3.5-turbo-0613': True,
         #'gpt-3.5-turbo-16k-0613': True,
         model_name: True for model_name in model_names
-        if model_name.startswith( ( 'chatgpt-4o-', 'gpt-4', 'o1-', ) ) } )
+        if model_name.startswith( (
+            'chatgpt-4o-', 'gpt-4', # 'o1-',
+        ) ) } )
     function_support = ProducerDictionary( lambda: False )
     function_support.update( {
         model_name: True for model_name in model_names
@@ -400,6 +399,13 @@ async def _discover_models_from_api( ):
         }
         for model_name in model_names
     }
+
+
+def _filter_messages_contingent( canister, model_name ):
+    # TODO: Consider 'ignores-system-prompt' attribute.
+    if model_name.startswith( 'o1-' ):
+        if 'Supervisor' == canister.role: return True
+    return False
 
 
 async def _gather_tool_call_chunks_legacy(
@@ -456,9 +462,27 @@ def _merge_messages_contingent( canister, message, model_name ):
     # TODO: Take advantage of array syntax for content in OpenAI API,
     #       rather than merging strings. Will need to do this for image data
     #       anyway; might be able to do this for text data for consistency.
-    if 'user' != message[ 'role' ]: return False
     # TODO: Handle content arrays.
     content = canister[ 0 ].data
+    attributes = canister.attributes
+    context = getattr( attributes, 'model_context', { } ).copy( )
+    if 'user' != message[ 'role' ]: return False
+    # TODO: Consider 'ignores-invocations' attribute.
+    if model_name.startswith( 'o1-' ):
+        if context:
+            # Merge invocation into previous user message.
+            message[ 'content' ] = '\n\n'.join( (
+                message[ 'content' ],
+                '## Tool Call ##',
+                content ) )
+            return True
+        if 'Function' == canister.role:
+            # Merge invocation result into previous user message.
+            message[ 'content' ] = '\n\n'.join( (
+                message[ 'content' ],
+                '## Tool Call Output ##',
+                content ) )
+            return True
     if 'Document' == canister.role:
         # Merge document into previous user message.
         message[ 'content' ] = '\n\n'.join( (
@@ -479,7 +503,10 @@ def _nativize_controls( controls ):
         name: value for name, value in controls.items( )
         if name in ( 'model', 'temperature', )
     }
-    nomargs[ 'stream' ] = True
+    model = nomargs[ 'model' ]
+    # TODO: Check for 'supports_streaming' attribute.
+    if not model.startswith( 'o1-' ): nomargs[ 'stream' ] = True
+    else: nomargs.pop( 'temperature', None )
     return nomargs
 
 
@@ -493,6 +520,9 @@ def _nativize_invocable( invoker, model_name ):
 def _nativize_messages( canisters, model_name ):
     messages = [ ]
     for canister in canisters:
+        if not messages and _filter_messages_contingent(
+            canister, model_name
+        ): continue
         if messages and _merge_messages_contingent(
             canister, messages[ -1 ], model_name
         ): continue
