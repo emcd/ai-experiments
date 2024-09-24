@@ -34,7 +34,6 @@ class DisplayFormats( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Format in which to display structured output. '''
 
     Json =      'json'
-    Pretty =    'pretty'
     Rich =      'rich'
     Toml =      'toml'
 
@@ -62,7 +61,7 @@ class Cli:
     ''' Utility for inspection and tests of library core. '''
 
     application: _application.Information
-    display: DisplayOptions
+    display: ConsoleDisplay
     scribe_mode: __.a.Annotation[
         _inscription.ScribeModes,
         __.tyro.conf.SelectFromEnumValues,
@@ -80,7 +79,6 @@ class Cli:
 
     async def __call__( self ):
         ''' Invokes command after library preparation. '''
-        from sys import stdout, stderr
         from .preparation import prepare
         # TODO: Use argument to choose output stream.
         with __.Exits( ) as exits:
@@ -89,31 +87,14 @@ class Cli:
                 environment = True,
                 exits = exits,
                 scribe_mode = self.scribe_mode )
-            result = await self.command( auxdata = auxdata )
-        match self.display.target:
-            case DisplayTargets.Stdout: stream = stdout
-            case DisplayTargets.Stderr: stream = stderr
-        match self.display.format:
-            case DisplayFormats.Json:
-                from json import dump
-                dump( result, fp = stream, indent = 2 )
-                print( file = stream ) # ensure final newline
-            case DisplayFormats.Pretty:
-                from pprint import pformat
-                print( pformat( result ), file = stream )
-            case DisplayFormats.Rich:
-                from rich.console import Console
-                from rich.pretty import pprint
-                pprint( result, console = Console( file = stream ) )
-            case DisplayFormats.Toml:
-                from tomli_w import dumps
-                print( dumps( result ).strip( ), file = stream )
+            await self.command( auxdata = auxdata, display = self.display )
 
 
 @__.standard_dataclass
-class DisplayOptions:
-    ''' Options for the display of command results. '''
+class ConsoleDisplay:
+    ''' Options and utilities for the display of command results. '''
 
+    colorize: __.a.Nullable[ bool ] = None
     format: __.a.Annotation[
         DisplayFormats,
         __.tyro.conf.SelectFromEnumValues,
@@ -123,6 +104,50 @@ class DisplayOptions:
         __.tyro.conf.SelectFromEnumValues,
     ] = DisplayTargets.Stderr
 
+    async def provide_printer( self ) -> __.a.Any: # TODO: Callable
+        ''' Providers printer for display format and target. '''
+        # TODO: async printer
+        stream = await self.stream_from_target( )
+        serializer = self.serializer_from_format( )
+        match self.format:
+            case DisplayFormats.Rich:
+                from rich.console import Console
+                from rich.pretty import pprint
+                if None is not self.colorize: no_color = not self.colorize
+                else: no_color = self.colorize
+                console = Console( file = stream, no_color = no_color )
+                return lambda obj: pprint( obj, console = console )
+            # TODO: Use pygments to colorize other formats.
+            #       Determine colorization with isatty if colorize is None.
+            case _:
+                return lambda obj: print( serializer( obj ), file = stream )
+
+    async def render( self, obj: __.a.Any ):
+        ''' Renders object according to options. '''
+        ( await self.provide_printer( ) )( obj )
+
+    def serializer_from_format( self ) -> __.a.Any: # TODO: Callable
+        ''' Provides serializer function for display format. '''
+        match self.format:
+            case DisplayFormats.Json:
+                from json import dumps
+                return lambda obj: dumps( obj, indent = 2 ) + '\n'
+            case DisplayFormats.Rich:
+                return lambda obj: obj
+            case DisplayFormats.Toml:
+                from tomli_w import dumps
+                return lambda obj: dumps( obj ).strip( )
+
+    async def stream_from_target( self ) -> __.a.Any: # TODO: io.writer
+        ''' Provides stream for display target. '''
+        # TODO: async context manager for async file streams
+        # TODO: return async stream - need async printers
+        from sys import stdout, stderr
+        match self.target:
+            case DisplayTargets.Stdout: return stdout
+            case DisplayTargets.Stderr: return stderr
+            # TODO: File?
+
 
 @__.standard_dataclass
 class InspectCommand:
@@ -130,19 +155,24 @@ class InspectCommand:
 
     inspectee: __.a.Annotation[
         __.tyro.conf.Positional[ Inspectees ],
+        __.tyro.conf.SelectFromEnumValues,
         __.tyro.conf.arg( prefix_name = False ),
     ] = Inspectees.Configuration
 
-    async def __call__( self, auxdata: _state.Globals ):
+    async def __call__(
+        self,
+        auxdata: _state.Globals,
+        display: ConsoleDisplay,
+    ):
         match self.inspectee:
             case Inspectees.Configuration:
-                return dict( auxdata.configuration )
+                await display.render( dict( auxdata.configuration ) )
             case Inspectees.Environment:
                 from os import environ
                 prefix = "{}_".format( auxdata.application.name.upper( ) )
-                return {
+                await display.render( {
                     name: value for name, value in environ.items( )
-                    if name.startswith( prefix ) }
+                    if name.startswith( prefix ) } )
 
 
 @__.standard_dataclass
@@ -161,8 +191,11 @@ class LocationCommand:
         # TODO: LocationUpdateContentCommand (write)
     ]
 
-    async def __call__( self, auxdata: _state.Globals ):
-        return await self.command( auxdata = auxdata )
+    async def __call__(
+        self,
+        auxdata: _state.Globals,
+        display: ConsoleDisplay,
+    ): await self.command( auxdata = auxdata, display = display )
 
 
 @__.standard_dataclass
@@ -183,14 +216,18 @@ class LocationSurveyDirectoryCommand:
         __.tyro.conf.arg( prefix_name = False ),
     ]
 
-    async def __call__( self, auxdata: _state.Globals ):
+    async def __call__(
+        self,
+        auxdata: _state.Globals,
+        display: ConsoleDisplay,
+    ):
         accessor = (
             await _locations.adapter_from_url( self.url )
             .as_specific( species = _locations.LocationSpecies.Directory ) )
         dirents = await accessor.survey_entries(
             filters = self.filters, recurse = self.recurse )
         # TODO: Implement.
-        return dirents
+        await display.render( dirents )
 
 
 @__.standard_dataclass
@@ -200,7 +237,11 @@ class LocationAcquireContentCommand:
     # TODO: Options
     url: _locations.Url
 
-    async def __call__( self, auxdata: _state.Globals ):
+    async def __call__(
+        self,
+        auxdata: _state.Globals,
+        display: ConsoleDisplay,
+    ):
         # TODO: Implement.
         pass
 
@@ -210,7 +251,7 @@ def execute_cli( ):
     default = Cli(
         application = _application.Information( ),
         scribe_mode = _inscription.ScribeModes.Rich,
-        display = DisplayOptions( ),
+        display = ConsoleDisplay( ),
         command = InspectCommand( ),
     )
     run( __.tyro.cli( Cli, default = default )( ) )
