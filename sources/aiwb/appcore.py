@@ -54,32 +54,41 @@ class Globals( _libcore.Globals ):
 async def prepare(
     exits: __.Exits, *,
     application: __.Optional[ _libcore.ApplicationInformation ] = __.absent,
+    inscription: __.Optional[ _libcore.InscriptionControl ] = __.absent,
 ) -> Globals:
     ''' Prepares AI-related functionality for applications. '''
-    _configure_logging( application = application )
+    if __.absent is application:
+        application = _libcore.ApplicationInformation( )
+    if __.absent is inscription:
+        inscription = (
+            _libcore.InscriptionControl(
+                mode = _libcore.InscriptionModes.Rich ) )
+    _configure_logging( application = application, inscription = inscription )
     # TODO: Configure metrics and traces emitters.
     auxdata_base = await _libcore.prepare(
         application = application,
         environment = True,
         exits = exits,
-        scribe_mode = _libcore.ScribeModes.Rich )
+        inscription = inscription )
     auxdata = await Globals.prepare( auxdata_base )
     return auxdata
 
 
 def _configure_logging(
-    application: __.Optional[ _libcore.ApplicationInformation ] = __.absent
+    application: _libcore.ApplicationInformation,
+    inscription: _libcore.InscriptionControl,
 ):
     ''' Configures standard Python logging for application. '''
     import logging
-    from os import environ
     from rich.console import Console
     from rich.logging import RichHandler
-    if __.absent is application:
-        application_name = __package__.split( '.', maxsplit = 1 )[ 0 ]
-    else: application_name = application.name
-    envvar_name = "{name}_LOG_LEVEL".format( name = application_name.upper( ) )
-    level = getattr( logging, environ.get( envvar_name, 'INFO' ) )
+    if None is inscription.level:
+        from os import environ
+        envvar_name = (
+            "{name}_LOG_LEVEL".format( name = application.name.upper( ) ) )
+        level_name = environ.get( envvar_name, 'INFO' )
+    else: level_name = inscription.level
+    level = getattr( logging, level_name.upper( ) )
     handler = RichHandler(
         console = Console( stderr = True ),
         rich_tracebacks = True,

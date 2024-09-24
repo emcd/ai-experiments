@@ -46,7 +46,8 @@ from .distribution import Information as DistributionInformation
 from .environment import update as update_environment
 from .exceptions import *
 from .inscription import (
-    ScribeModes,
+    Control as InscriptionControl,
+    Modes as InscriptionModes,
     prepare as prepare_scribes,
     prepare_scribe_icecream,
     prepare_scribe_logging,

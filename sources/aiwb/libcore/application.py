@@ -31,22 +31,18 @@ class Information:
     name: __.a.Annotation[
         str,
         __.a.Doc( "For derivation of platform directories." ),
-        __.tyro.conf.arg( prefix_name = False ),
     ] = __.package_name
     publisher: __.a.Annotation[
         __.a.Nullable[ str ],
         __.a.Doc( "For derivation of platform directories." ),
-        __.tyro.conf.arg( prefix_name = False ),
     ] = None
     version: __.a.Annotation[
         __.a.Nullable[ str ],
         __.a.Doc( "For derivation of platform directories." ),
-        __.tyro.conf.arg( prefix_name = False ),
     ] = None
     execution_id: __.a.Annotation[
         __.a.Nullable[ str ],
         __.a.Doc( "For telemetry, etc..." ),
-        __.tyro.conf.arg( prefix_name = False ),
     ] = __.dataclass_declare( default_factory = lambda: __.uuid4( ).urn )
 
     def produce_platform_directories( self ) -> __.PlatformDirs:

@@ -25,6 +25,7 @@
 
 
 import enum
+import io
 
 from abc import (
     ABCMeta as ABCFactory,

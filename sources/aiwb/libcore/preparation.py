@@ -32,7 +32,7 @@ async def prepare(
     exits: __.Exits,
     application: __.Optional[ _application.Information ] = __.absent,
     environment: bool = False,
-    scribe_mode: _inscription.ScribeModes = _inscription.ScribeModes.Null,
+    inscription: __.Optional[ _inscription.Control ] = __.absent,
 ) -> _state.Globals:
     ''' Prepares globals DTO for use with library functions.
 
@@ -47,7 +47,7 @@ async def prepare(
     auxdata = await _state.Globals.prepare(
         application = application, exits = exits )
     if environment: await _environment.update( auxdata )
-    _inscription.prepare( auxdata, mode = scribe_mode )
+    _inscription.prepare( auxdata, control = inscription )
     _inscribe_preparation_report( auxdata )
     return auxdata
 

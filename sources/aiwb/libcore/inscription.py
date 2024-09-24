@@ -25,7 +25,7 @@ from . import __
 from . import state as _state
 
 
-class ScribeModes( __.Enum ): # TODO: Python 3.11: StrEnum
+class Modes( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Possible modes for logging output. '''
 
     Null = 'null' # suppress library logs
@@ -33,44 +33,60 @@ class ScribeModes( __.Enum ): # TODO: Python 3.11: StrEnum
     Rich = 'rich' # print rich library logs to stderr
 
 
-def prepare( auxdata: _state.Globals, mode: ScribeModes ):
+@__.standard_dataclass
+class Control:
+    ''' Logging and debug printing behavior. '''
+
+    mode: Modes = Modes.Null
+    level: __.a.Nullable[ __.a.Literal[
+        'debug', 'info', 'warn', 'error', 'critical' # noqa: F821
+    ] ] = None
+
+    # TODO? Support capture file and stream choice.
+
+
+def prepare( auxdata: _state.Globals, control: Control ):
     ''' Prepares various scribes in a sensible manner. '''
-    prepare_scribe_icecream( mode = mode )
-    prepare_scribe_logging( auxdata, mode = mode )
+    prepare_scribe_icecream( control = control )
+    prepare_scribe_logging( control = control )
 
 
-def prepare_scribe_icecream( mode: ScribeModes ):
+def prepare_scribe_icecream( control: Control ):
     ''' Prepares Icecream debug printing. '''
     from icecream import ic, install
     nomargs = dict( includeContext = True, prefix = 'DEBUG    ' )
-    match mode:
-        case ScribeModes.Null:
+    match control.mode:
+        case Modes.Null:
             ic.configureOutput( **nomargs )
             ic.disable( )
-        case ScribeModes.Pass:
+        case Modes.Pass:
             ic.configureOutput( **nomargs )
-        case ScribeModes.Rich:
+        case Modes.Rich:
             from rich.pretty import pretty_repr
             ic.configureOutput( argToStringFunction = pretty_repr, **nomargs )
     install( )
 
 
-def prepare_scribe_logging( auxdata: _state.Globals, mode: ScribeModes ):
+def prepare_scribe_logging( control: Control ):
     ''' Prepares standard Python logging. '''
     # https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library
     import logging
-    from os import environ
-    envvar_name = "{name}_LOG_LEVEL".format( name = __.package_name.upper( ) )
-    level = getattr( logging, environ.get( envvar_name, 'INFO' ).upper( ) )
+    if None is control.level:
+        from os import environ
+        envvar_name = (
+            "{name}_LOG_LEVEL".format( name = __.package_name.upper( ) ) )
+        level_name = environ.get( envvar_name, 'INFO' )
+    else: level_name = control.level
+    level = getattr( logging, level_name.upper( ) )
     scribe = __.acquire_scribe( __.package_name )
     scribe.propagate = False # prevent double-logging
     scribe.setLevel( level )
-    match mode:
-        case ScribeModes.Null:
+    match control.mode:
+        case Modes.Null:
             scribe.addHandler( logging.NullHandler( ) )
-        case ScribeModes.Pass:
+        case Modes.Pass:
             scribe.propagate = True
-        case ScribeModes.Rich:
+        case Modes.Rich:
             from rich.console import Console
             from rich.logging import RichHandler
             formatter = logging.Formatter( '%(name)s: %(message)s' )
