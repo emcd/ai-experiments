@@ -30,14 +30,6 @@ from . import locations as _locations
 from . import state as _state
 
 
-class DisplayTargets( __.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Target upon which to place output. '''
-
-    # TODO? File
-    Stderr =    'stderr'
-    Stdout =    'stdout'
-
-
 class DisplayFormats( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Format in which to display structured output. '''
 
@@ -47,11 +39,20 @@ class DisplayFormats( __.Enum ): # TODO: Python 3.11: StrEnum
     Toml =      'toml'
 
 
+class DisplayTargets( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Target upon which to place output. '''
+
+    # TODO? File
+    Stderr =    'stderr'
+    Stdout =    'stdout'
+
+
 class Inspectees( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Facet of application to inspect. '''
 
     Configuration =     'configuration'
     ''' Displays application configuration. '''
+    # TODO: Directories.
     Environment =       'environment'
     ''' Displays application-relevant process environment. '''
 
@@ -61,18 +62,11 @@ class Cli:
     ''' Utility for inspection and tests of library core. '''
 
     application: _application.Information
+    display: DisplayOptions
     scribe_mode: __.a.Annotation[
         _inscription.ScribeModes,
         __.tyro.conf.SelectFromEnumValues,
     ] = _inscription.ScribeModes.Rich
-    display_format: __.a.Annotation[
-        DisplayFormats,
-        __.tyro.conf.SelectFromEnumValues,
-    ] = DisplayFormats.Rich
-    display_target: __.a.Annotation[
-        DisplayTargets,
-        __.tyro.conf.SelectFromEnumValues,
-    ] = DisplayTargets.Stderr
     command: __.a.Union[
         __.a.Annotation[
             InspectCommand,
@@ -96,10 +90,10 @@ class Cli:
                 exits = exits,
                 scribe_mode = self.scribe_mode )
             result = await self.command( auxdata = auxdata )
-        match self.display_target:
+        match self.display.target:
             case DisplayTargets.Stdout: stream = stdout
             case DisplayTargets.Stderr: stream = stderr
-        match self.display_format:
+        match self.display.format:
             case DisplayFormats.Json:
                 from json import dump
                 dump( result, fp = stream, indent = 2 )
@@ -114,6 +108,20 @@ class Cli:
             case DisplayFormats.Toml:
                 from tomli_w import dumps
                 print( dumps( result ).strip( ), file = stream )
+
+
+@__.standard_dataclass
+class DisplayOptions:
+    ''' Options for the display of command results. '''
+
+    format: __.a.Annotation[
+        DisplayFormats,
+        __.tyro.conf.SelectFromEnumValues,
+    ] = DisplayFormats.Rich
+    target: __.a.Annotation[
+        DisplayTargets,
+        __.tyro.conf.SelectFromEnumValues,
+    ] = DisplayTargets.Stderr
 
 
 @__.standard_dataclass
@@ -202,7 +210,7 @@ def execute_cli( ):
     default = Cli(
         application = _application.Information( ),
         scribe_mode = _inscription.ScribeModes.Rich,
-        display_format = DisplayFormats.Rich,
+        display = DisplayOptions( ),
         command = InspectCommand( ),
     )
     run( __.tyro.cli( Cli, default = default )( ) )
