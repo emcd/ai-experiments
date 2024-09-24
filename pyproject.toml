@@ -50,6 +50,7 @@ classifiers = [ # https://pypi.org/classifiers
 ]
 keywords = [ 'ai', 'llm', 'workbench', 'conversation' ]
 [project.scripts]
+aiwb-appcore = 'aiwb.appcore:main'
 aiwb-libcore = 'aiwb.libcore:main'
 [project.gui-scripts]
 aiwb = 'aiwb.gui:main'
