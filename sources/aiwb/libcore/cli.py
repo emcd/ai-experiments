@@ -36,34 +36,11 @@ __.tyro.conf.configure( __.tyro.conf.OmitArgPrefixes )(
         _application.Information )
 
 
-class DisplayFormats( __.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Format in which to display structured output. '''
-
-    Json =      'json'
-    Rich =      'rich'
-    Toml =      'toml'
-
-
-class DisplayStreams( __.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Stream upon which to place output. '''
-
-    Stderr =    'stderr'
-    Stdout =    'stdout'
-
-
-class Inspectees( __.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Facet of the application to inspect. '''
-
-    Configuration =     'configuration'
-    ''' Displays application configuration. '''
-    # TODO: Directories.
-    Environment =       'environment'
-    ''' Displays application-relevant process environment. '''
-
-
 @__.standard_dataclass
 class Cli:
     ''' Utility for inspection and tests of library core. '''
+
+    # TODO: configfile
 
     application: _application.Information
     display: ConsoleDisplay
@@ -89,6 +66,31 @@ class Cli:
                 exits = exits,
                 inscription = self.inscription )
             await self.command( auxdata = auxdata, display = self.display )
+
+
+class DisplayFormats( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Format in which to display structured output. '''
+
+    Json =      'json'
+    Rich =      'rich'
+    Toml =      'toml'
+
+
+class DisplayStreams( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Stream upon which to place output. '''
+
+    Stderr =    'stderr'
+    Stdout =    'stdout'
+
+
+class Inspectees( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Facet of the application to inspect. '''
+
+    Configuration =     'configuration'
+    ''' Displays application configuration. '''
+    # TODO: Directories.
+    Environment =       'environment'
+    ''' Displays application-relevant process environment. '''
 
 
 @__.standard_dataclass

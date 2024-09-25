@@ -52,6 +52,7 @@ class Globals:
         selfclass,
         exits: __.Exits, *,
         application: __.Optional[ _application.Information ] = __.absent,
+        configedits: __.AbstractSequence[ _configuration.Edit ] = ( ),
     ) -> __.a.Self:
         ''' Acquires data to create DTO. '''
         if __.absent is application: application = _application.Information( )
@@ -63,7 +64,8 @@ class Globals:
             await _configuration.acquire(
                 application_name = application.name,
                 directories = directories,
-                distribution = distribution ) )
+                distribution = distribution,
+                edits = configedits ) )
         notifications = _notifications.Queue( )
         return selfclass(
             application = application,

@@ -47,7 +47,12 @@ from .cli import (
     LocationCommand as CliLocationCommand,
     execute_cli,
 )
-from .configuration import acquire as acquire_configuration
+from .configuration import (
+    ArrayMembersEntryEdit as ArrayMembersEntryConfigurationEdit,
+    Edit as ConfigurationEdit,
+    SimpleEdit as SimpleConfigurationEdit,
+    acquire as acquire_configuration,
+)
 from .distribution import Information as DistributionInformation
 from .environment import update as update_environment
 from .exceptions import *

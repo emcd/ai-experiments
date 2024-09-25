@@ -28,6 +28,7 @@ from . import state as _state
 async def prepare(
     exits: __.Exits, *,
     application: __.Optional[ __.ApplicationInformation ] = __.absent,
+    configedits: __.AbstractSequence[ __.ConfigurationEdit ] = ( ),
     inscription: __.Optional[ __.InscriptionControl ] = __.absent,
 ) -> _state.Globals:
     ''' Prepares AI-related functionality for applications. '''
@@ -39,6 +40,7 @@ async def prepare(
     # TODO: Configure metrics and traces emitters.
     auxdata_base = await __.prepare(
         application = application,
+        configedits = configedits,
         environment = True,
         exits = exits,
         inscription = inscription )

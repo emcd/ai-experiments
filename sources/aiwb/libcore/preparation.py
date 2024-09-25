@@ -23,6 +23,7 @@
 
 from . import __
 from . import application as _application
+from . import configuration as _configuration
 from . import environment as _environment
 from . import inscription as _inscription
 from . import state as _state
@@ -31,6 +32,7 @@ from . import state as _state
 async def prepare(
     exits: __.Exits,
     application: __.Optional[ _application.Information ] = __.absent,
+    configedits: __.AbstractSequence[ _configuration.Edit ] = ( ),
     environment: bool = False,
     inscription: __.Optional[ _inscription.Control ] = __.absent,
 ) -> _state.Globals:
@@ -45,7 +47,9 @@ async def prepare(
         though the library initialization, itself, is inherently sequential.
     '''
     auxdata = await _state.Globals.prepare(
-        application = application, exits = exits )
+        application = application,
+        configedits = configedits,
+        exits = exits )
     if environment: await _environment.update( auxdata )
     _inscription.prepare( auxdata, control = inscription )
     _inscribe_preparation_report( auxdata )
