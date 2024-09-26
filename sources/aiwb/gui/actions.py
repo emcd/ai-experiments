@@ -218,7 +218,7 @@ async def _invoke_functions_if_desirable( components, message_components ):
         silent_extraction_failure = True )
 
 
-@__.produce_exit_manager
+@__.exit_manager
 def _update_conversation_progress( gui, message ):
     from .updaters import update_conversation_status
     yield update_conversation_status( gui, message, progress = True )

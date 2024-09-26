@@ -18,39 +18,31 @@
 #============================================================================#
 
 
-''' Qualified aliases to library core.
-
-    Useful for avoiding namespace collisions from attribute imports.
-'''
-
-# ruff: noqa: F401,F403
-# pylint: disable=unused-import
+''' Preparation of API server. '''
 
 
-from .application import Information as ApplicationInformation
-from .base import *
-from .cli import (
-    Cli as                  CoreCli,
-    ConsoleDisplay as       CliConsoleDisplay,
-    InspectCommand as       CoreCliInspectCommand,
-    LocationCommand as      CoreCliLocationCommand,
-)
-from .dictedits import (
-    Edit as                 DictionaryEdit,
-    Edits as                DictionaryEdits,
-    ElementsEntryEdit as    ElementsEntryDictionaryEdit,
-    SimpleEdit as           SimpleDictionaryEdit,
-)
-from .distribution import Information as DistributionInformation
-from .exceptions import *
-from .inscription import (
-    Control as InscriptionControl,
-    Modes as InscriptionModes,
-)
-from .locations.qaliases import *
-from .notifications import Queue as CoreNotificationsQueue
-from .preparation import prepare as prepare_core
-from .state import (
-    DirectorySpecies as     CoreDirectorySpecies,
-    Globals as              CoreGlobals,
-)
+from . import __
+from . import server as _server
+from . import state as _state
+
+
+async def prepare(
+    exits: __.ExitsAsync, *,
+    apiserver: _server.Control = _server.Control( ),
+    application: __.ApplicationInformation = __.ApplicationInformation( ),
+    configedits: __.DictionaryEdits = ( ),
+    configfile: __.Optional[ __.Url ] = __.absent,
+    environment: bool = True,
+    inscription: __.InscriptionControl = (
+        __.InscriptionControl( mode = __.InscriptionModes.Rich ) ),
+) -> _state.Globals:
+    ''' Prepares API server state. '''
+    auxdata_base = await __.prepare_application(
+        application = application,
+        configedits = configedits,
+        configfile = configfile,
+        environment = environment,
+        exits = exits,
+        inscription = inscription )
+    accessor = await _server.prepare( auxdata_base, control = apiserver )
+    return _state.Globals.from_base( auxdata_base, apiserver = accessor )

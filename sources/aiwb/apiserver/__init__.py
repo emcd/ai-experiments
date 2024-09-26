@@ -18,39 +18,25 @@
 #============================================================================#
 
 
-''' Qualified aliases to library core.
+''' API server. '''
 
-    Useful for avoiding namespace collisions from attribute imports.
-'''
-
-# ruff: noqa: F401,F403
+# ruff: noqa: F401,F403,F405
 # pylint: disable=unused-import
 
 
-from .application import Information as ApplicationInformation
-from .base import *
-from .cli import (
-    Cli as                  CoreCli,
-    ConsoleDisplay as       CliConsoleDisplay,
-    InspectCommand as       CoreCliInspectCommand,
-    LocationCommand as      CoreCliLocationCommand,
-)
-from .dictedits import (
-    Edit as                 DictionaryEdit,
-    Edits as                DictionaryEdits,
-    ElementsEntryEdit as    ElementsEntryDictionaryEdit,
-    SimpleEdit as           SimpleDictionaryEdit,
-)
-from .distribution import Information as DistributionInformation
-from .exceptions import *
-from .inscription import (
-    Control as InscriptionControl,
-    Modes as InscriptionModes,
-)
-from .locations.qaliases import *
-from .notifications import Queue as CoreNotificationsQueue
-from .preparation import prepare as prepare_core
-from .state import (
-    DirectorySpecies as     CoreDirectorySpecies,
-    Globals as              CoreGlobals,
-)
+from . import __
+from . import cli
+from . import preparation
+from . import state
+
+from .cli import Cli, execute_cli
+from .preparation import prepare
+from .state import Globals
+
+
+def main( ):
+    ''' Entrypoint to execute, inspect, and test API server. '''
+    execute_cli( )
+
+
+__.reclassify_modules( globals( ) )

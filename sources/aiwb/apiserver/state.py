@@ -18,39 +18,30 @@
 #============================================================================#
 
 
-''' Qualified aliases to library core.
-
-    Useful for avoiding namespace collisions from attribute imports.
-'''
-
-# ruff: noqa: F401,F403
-# pylint: disable=unused-import
+''' Immutable global state for API server. '''
 
 
-from .application import Information as ApplicationInformation
-from .base import *
-from .cli import (
-    Cli as                  CoreCli,
-    ConsoleDisplay as       CliConsoleDisplay,
-    InspectCommand as       CoreCliInspectCommand,
-    LocationCommand as      CoreCliLocationCommand,
-)
-from .dictedits import (
-    Edit as                 DictionaryEdit,
-    Edits as                DictionaryEdits,
-    ElementsEntryEdit as    ElementsEntryDictionaryEdit,
-    SimpleEdit as           SimpleDictionaryEdit,
-)
-from .distribution import Information as DistributionInformation
-from .exceptions import *
-from .inscription import (
-    Control as InscriptionControl,
-    Modes as InscriptionModes,
-)
-from .locations.qaliases import *
-from .notifications import Queue as CoreNotificationsQueue
-from .preparation import prepare as prepare_core
-from .state import (
-    DirectorySpecies as     CoreDirectorySpecies,
-    Globals as              CoreGlobals,
-)
+from . import __
+from . import server as _server
+
+
+@__.standard_dataclass
+class Globals( __.ApplicationGlobals ):
+    ''' Immutable global data for API server. '''
+
+    apiserver: _server.Accessor
+
+    @__.a.override
+    @classmethod
+    def from_base(
+        selfclass,
+        base: __.ApplicationGlobals, *,
+        apiserver: _server.Accessor,
+    ) -> __.a.Self:
+        ''' Produces DTO from base DTO plus attribute injections. '''
+        injections = __.DictionaryProxy( dict( apiserver = apiserver ) )
+        from dataclasses import fields
+        return selfclass(
+            **{ field.name: getattr( base, field.name )
+                for field in fields( base ) },
+            **injections )

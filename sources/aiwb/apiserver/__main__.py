@@ -18,39 +18,10 @@
 #============================================================================#
 
 
-''' Qualified aliases to library core.
-
-    Useful for avoiding namespace collisions from attribute imports.
-'''
-
-# ruff: noqa: F401,F403
-# pylint: disable=unused-import
+''' Entrypoint for CLI to execute, inspect, and test application. '''
 
 
-from .application import Information as ApplicationInformation
-from .base import *
-from .cli import (
-    Cli as                  CoreCli,
-    ConsoleDisplay as       CliConsoleDisplay,
-    InspectCommand as       CoreCliInspectCommand,
-    LocationCommand as      CoreCliLocationCommand,
-)
-from .dictedits import (
-    Edit as                 DictionaryEdit,
-    Edits as                DictionaryEdits,
-    ElementsEntryEdit as    ElementsEntryDictionaryEdit,
-    SimpleEdit as           SimpleDictionaryEdit,
-)
-from .distribution import Information as DistributionInformation
-from .exceptions import *
-from .inscription import (
-    Control as InscriptionControl,
-    Modes as InscriptionModes,
-)
-from .locations.qaliases import *
-from .notifications import Queue as CoreNotificationsQueue
-from .preparation import prepare as prepare_core
-from .state import (
-    DirectorySpecies as     CoreDirectorySpecies,
-    Globals as              CoreGlobals,
-)
+from .cli import execute_cli
+
+
+execute_cli( )

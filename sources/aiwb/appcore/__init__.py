@@ -35,7 +35,7 @@ from .state import Globals
 
 
 def main( ):
-    ''' Entrypoint for utility to inspect and test library core. '''
+    ''' Entrypoint for utility to inspect and test application core. '''
     execute_cli( )
 
 

@@ -44,9 +44,10 @@ from collections.abc import (
     Sequence as         AbstractSequence,
 )
 from contextlib import (
-    ExitStack as        Exits,
-    AsyncExitStack as   ExitsAsync,
-    contextmanager as   produce_exit_manager,
+    ExitStack as            Exits,
+    AsyncExitStack as       ExitsAsync,
+    contextmanager as       exit_manager,
+    asynccontextmanager as  exit_manager_async,
 )
 from dataclasses import (
     dataclass,

@@ -35,6 +35,7 @@ from . import __
 class Cli( __.CoreCli ):
     ''' Utility for configuration, inspection, and tests of application. '''
 
+    # TODO: Add commands for prompts, providers, and vectorstores.
     configuration: ConfigurationModifiers
 
     async def __call__( self ):
@@ -51,8 +52,6 @@ class Cli( __.CoreCli ):
         args = __.CoreCli.prepare_invocation_args( self )
         args[ 'configedits' ] = self.configuration.as_edits( )
         return args
-
-    # TODO: Add commands for prompts, providers, and vectorstores.
 
 
 class EnablementTristate( __.Enum ): # TODO: Python 3.11: StrEnum

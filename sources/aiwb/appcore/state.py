@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Immutable global state. '''
+''' Immutable global state for the application. '''
 
 
 from . import __
@@ -28,14 +28,38 @@ from . import __
 class Globals( __.CoreGlobals ):
     ''' Immutable global data. Required by many application functions. '''
 
+    # TODO: Use proper types.
     invocables: __.AccretiveNamespace
     prompts: __.DictionaryProxy
     providers: __.AccretiveDictionary
     vectorstores: dict
 
     @classmethod
+    def from_base(
+        selfclass,
+        base: __.CoreGlobals, *,
+        invocables: __.AccretiveNamespace,
+        prompts: __.DictionaryProxy,
+        providers: __.AccretiveDictionary,
+        vectorstores: dict,
+    ) -> __.a.Self:
+        ''' Produces DTO from base DTO plus attribute injections. '''
+        injections = __.DictionaryProxy( dict(
+            invocables = invocables,
+            prompts = prompts,
+            providers = providers,
+            vectorstores = vectorstores,
+        ) )
+        from dataclasses import fields
+        return selfclass(
+            **{ field.name: getattr( base, field.name )
+                for field in fields( base ) },
+            **injections )
+
+    @classmethod
     async def prepare( selfclass, base: __.CoreGlobals ) -> __.a.Self:
         ''' Acquires data to create DTO. '''
+        # TODO: Refactor into module preparation function.
         # TODO: Use __.gather_async
         from asyncio import gather # TODO: Python 3.11: TaskGroup
         from dataclasses import fields

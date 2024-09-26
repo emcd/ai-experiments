@@ -27,6 +27,9 @@
 # pylint: disable=unused-import
 
 
-from .cli import Cli as ApplicationCli
+from .cli import (
+    Cli as                      ApplicationCli,
+    ConfigurationModifiers as   ApplicationConfigurationModifiers,
+)
 from .preparation import prepare as prepare_application
 from .state import Globals as ApplicationGlobals
