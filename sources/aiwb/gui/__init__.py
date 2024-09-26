@@ -34,23 +34,38 @@ def main( ):
 
 
 async def _main( ):
-    from asyncio import get_running_loop, sleep
+    # TODO: Setup API and GUI servers in context manager.
+    scribe = __.acquire_scribe( __package__ )
+    from asyncio import Future, get_running_loop, sleep
+    from signal import SIGINT, SIGTERM
     loop = get_running_loop( )
+    signal_future = Future( )
+
+    def handler( signum ):
+        scribe.info( f"Received signal {signum.value!r}." )
+        signal_future.set_result( signum )
+
     #async with __.ExitsAsync( ) as exits:
     with __.Exits( ) as exits:
         auxdata = await core.prepare( exits = exits )
         api = auxdata.api
         api.thread.start( )
         try:
+            scribe.info( "Waiting for API server to start." )
             while not api.server.started: await sleep( 0.001 )
+            scribe.info( "Waiting for GUI server to start." )
             gui_thread = (
                 await loop.run_in_executor( None, _start_gui, auxdata ) )
         except Exception:
+            # TODO: Notify of error.
             _stop_api( auxdata )
             return
-        try:
-            while True: await sleep( 0.5 )
+        for signum in ( SIGINT, SIGTERM, ):
+            loop.add_signal_handler( signum, handler, signum )
+        try: await signal_future
+        # TODO: Notify of error.
         finally:
+            scribe.info( "Waiting for GUI server to stop." )
             gui_thread.stop( )
             _stop_api( auxdata )
 
@@ -60,6 +75,8 @@ def _start_gui( auxdata ):
         autoreload = True, threaded = True, title = 'AI Workbench' )
 
 def _stop_api( auxdata ):
+    scribe = __.acquire_scribe( __package__ )
+    scribe.info( "Waiting for API server to stop." )
     api = auxdata.api
     api.server.should_exit = True
     api.thread.join( )
