@@ -33,7 +33,9 @@ class Information:
     editable: bool
 
     @classmethod
-    async def prepare( selfclass, package: str, exits: __.Exits ) -> __.a.Self:
+    async def prepare(
+        selfclass, package: str, exits: __.ExitsAsync
+    ) -> __.a.Self:
         ''' Acquires information about our package distribution. '''
         from importlib.metadata import packages_distributions
         from aiofiles import open as open_

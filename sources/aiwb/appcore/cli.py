@@ -41,7 +41,7 @@ class Cli( __.Cli ):
         ''' Invokes command after application preparation. '''
         nomargs = self.prepare_invocation_args( )
         from .preparation import prepare
-        with __.Exits( ) as exits:
+        async with __.ExitsAsync( ) as exits:
             auxdata = await prepare( exits = exits, **nomargs )
             await self.command( auxdata = auxdata, display = self.display )
 

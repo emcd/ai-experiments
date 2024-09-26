@@ -31,7 +31,7 @@ from . import state as _state
 
 
 async def prepare(
-    exits: __.Exits,
+    exits: __.ExitsAsync,
     application: _application.Information = _application.Information( ),
     configedits: __.AbstractSequence[ _configuration.Edit ] = ( ),
     configfile: __.Optional[ _locations.Url ] = __.absent,

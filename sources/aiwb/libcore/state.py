@@ -45,13 +45,13 @@ class Globals:
     configuration: __.AccretiveDictionary
     directories: __.PlatformDirs
     distribution: _distribution.Information
-    exits: __.Exits # TODO? Make accretive.
+    exits: __.ExitsAsync # TODO? Make accretive.
     notifications: _notifications.Queue
 
     @classmethod
     async def prepare(
         selfclass,
-        exits: __.Exits, *,
+        exits: __.ExitsAsync, *,
         application: _application.Information,
         configedits: __.AbstractSequence[ _configuration.Edit ] = ( ),
         configfile: __.Optional[ _locations.Url ] = __.absent,

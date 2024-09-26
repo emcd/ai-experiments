@@ -42,11 +42,10 @@ async def _main( ):
     signal_future = Future( )
 
     def handler( signum ):
-        scribe.info( f"Received signal {signum.value!r}." )
+        scribe.info( f"Received signal {signum.name!r} ({signum.value!r})." )
         signal_future.set_result( signum )
 
-    #async with __.ExitsAsync( ) as exits:
-    with __.Exits( ) as exits:
+    async with __.ExitsAsync( ) as exits:
         auxdata = await core.prepare( exits = exits )
         api = auxdata.api
         api.thread.start( )
