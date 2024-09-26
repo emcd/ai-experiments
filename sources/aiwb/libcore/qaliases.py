@@ -18,38 +18,19 @@
 #============================================================================#
 
 
-''' Core entities for use across broader library. '''
+''' Qualified aliases to library core.
 
-# ruff: noqa: F401,F403,F405
+    Useful for avoiding namespace collisions from attribute imports.
+'''
+
+# ruff: noqa: F401,F403
 # pylint: disable=unused-import
 
-
-from . import __
-from . import application
-from . import base
-from . import cli
-from . import configuration
-from . import dictedits
-from . import distribution
-from . import environment
-from . import exceptions
-from . import inscription
-from . import locations
-from . import notifications
-from . import preparation
-from . import state
 
 from .application import Information as ApplicationInformation
 from .base import *
 from .cli import (
-    Cli,
-    ConsoleDisplay as CliConsoleDisplay,
-    InspectCommand as CliInspectCommand,
-    LocationCommand as CliLocationCommand,
-    execute_cli,
-)
-from .configuration import (
-    acquire as acquire_configuration,
+    Cli as CoreCli,
 )
 from .dictedits import (
     Edit as                 DictionaryEdit,
@@ -58,24 +39,15 @@ from .dictedits import (
     SimpleEdit as           SimpleDictionaryEdit,
 )
 from .distribution import Information as DistributionInformation
-from .environment import update as update_environment
 from .exceptions import *
 from .inscription import (
     Control as InscriptionControl,
     Modes as InscriptionModes,
-    prepare as prepare_scribes,
-    prepare_scribe_icecream,
-    prepare_scribe_logging,
 )
 from .locations.qaliases import *
-from .notifications import Queue as NotificationsQueue
-from .preparation import prepare
-from .state import DirectorySpecies, Globals
-
-
-def main( ):
-    ''' Entrypoint for utility to inspect and test library core. '''
-    execute_cli( )
-
-
-__.reclassify_modules( globals( ) )
+from .notifications import Queue as CoreNotificationsQueue
+from .preparation import prepare as prepare_core
+from .state import (
+    DirectorySpecies as     CoreDirectorySpecies,
+    Globals as              CoreGlobals,
+)

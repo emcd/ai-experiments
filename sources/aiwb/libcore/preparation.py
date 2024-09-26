@@ -23,7 +23,7 @@
 
 from . import __
 from . import application as _application
-from . import configuration as _configuration
+from . import dictedits as _dictedits
 from . import environment as _environment
 from . import inscription as _inscription
 from . import locations as _locations
@@ -33,7 +33,7 @@ from . import state as _state
 async def prepare(
     exits: __.ExitsAsync,
     application: _application.Information = _application.Information( ),
-    configedits: __.AbstractSequence[ _configuration.Edit ] = ( ),
+    configedits: _dictedits.Edits = ( ),
     configfile: __.Optional[ _locations.Url ] = __.absent,
     environment: bool = False,
     inscription: __.Optional[ _inscription.Control ] = __.absent,

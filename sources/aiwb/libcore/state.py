@@ -24,6 +24,7 @@
 from . import __
 from . import application as _application
 from . import configuration as _configuration
+from . import dictedits as _dictedits
 from . import distribution as _distribution
 from . import locations as _locations
 from . import notifications as _notifications
@@ -53,7 +54,7 @@ class Globals:
         selfclass,
         exits: __.ExitsAsync, *,
         application: _application.Information,
-        configedits: __.AbstractSequence[ _configuration.Edit ] = ( ),
+        configedits: _dictedits.Edits = ( ),
         configfile: __.Optional[ _locations.Url ] = __.absent,
     ) -> __.a.Self:
         ''' Acquires data to create DTO. '''

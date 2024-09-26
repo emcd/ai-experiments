@@ -146,11 +146,11 @@ class ConfigurationModifiers:
         __.tyro.conf.UseAppendAction,
     ] = ( )
 
-    def as_edits( self ) -> __.AbstractSequence[ __.ConfigurationEdit ]:
+    def as_edits( self ) -> __.DictionaryEdits:
         ''' Returns modifications as sequence of configuration edits. '''
         edits = [ ]
         if not self.maintenance.is_retain( ):
-            edits.append( __.SimpleConfigurationEdit(
+            edits.append( __.SimpleDictionaryEdit(
                 address = ( 'maintenance-mode', ),
                 value = bool( self.maintenance ) ) )
         for collection_name in (
@@ -158,7 +158,7 @@ class ConfigurationModifiers:
         ):
             collection = getattr( self, f"all_{collection_name}" )
             if not collection.is_retain( ):
-                edits.append( __.ArrayMembersEntryConfigurationEdit(
+                edits.append( __.ElementsEntryDictionaryEdit(
                     address = ( collection_name, ),
                     editee = ( 'enable', bool( collection ) ) ) )
             disables = frozenset(
@@ -167,12 +167,12 @@ class ConfigurationModifiers:
                 getattr( self, f"enable_{collection_name}" ) )
             # TODO: Raise error if intersection of sets is not empty.
             for disable in disables:
-                edits.append( __.ArrayMembersEntryConfigurationEdit(
+                edits.append( __.ElementsEntryDictionaryEdit(
                     address = ( collection_name, ),
                     identifier = ( 'name', disable ),
                     editee = ( 'enable', False ) ) )
             for enable in enables:
-                edits.append( __.ArrayMembersEntryConfigurationEdit(
+                edits.append( __.ElementsEntryDictionaryEdit(
                     address = ( collection_name, ),
                     identifier = ( 'name', enable ),
                     editee = ( 'enable', True ) ) )

@@ -22,83 +22,16 @@
 
 
 from . import __
+from . import dictedits as _dictedits
 from . import distribution as _distribution
 from . import locations as _locations
-
-
-@__.a.runtime_checkable
-@__.standard_dataclass
-class Edit( __.a.Protocol ):
-    ''' Base representation of an edit to configuration. '''
-    # TODO: Immutable class and instance attributes.
-
-    address: __.AbstractSequence[ str ]
-
-    @__.abstract_member_function
-    def __call__( self, configuration: __.AbstractMutableDictionary ):
-        ''' Performs edit. '''
-        raise NotImplementedError
-
-    def dereference(
-        self,
-        configuration: __.AbstractMutableDictionary
-    ) -> __.a.Any:
-        ''' Dereferences value at address in configuration. '''
-        configuration_ = configuration
-        for part in self.address:
-            # TODO: Error on missing part.
-            configuration_ = configuration_[ part ]
-        return configuration_
-
-    def inject(
-        self,
-        configuration: __.AbstractMutableDictionary,
-        value: __.a.Any
-    ):
-        ''' Injects value at address in configuration. '''
-        configuration_ = configuration
-        for part in self.address[ : -1 ]:
-            if part not in configuration_: configuration_[ part ] = { }
-            configuration_ = configuration_[ part ]
-        configuration_[ self.address[ -1 ] ] = value
-
-
-@__.standard_dataclass
-class ArrayMembersEntryEdit( Edit ):
-    ''' Applies entry edit to every matching dictionary in array. '''
-    # TODO: Immutable class and instance attributes.
-
-    editee: tuple[ str, __.a.Any ]
-    identifier: __.a.Nullable[ tuple[ str, __.a.Any ] ] = None
-
-    def __call__( self, configuration: __.AbstractMutableDictionary ):
-        array = self.dereference( configuration )
-        if self.identifier: iname, ivalue = self.identifier
-        else: iname, ivalue = None, None
-        ename, evalue = self.editee
-        for element in array:
-            if iname:
-                # TODO: Error on missing identifier.
-                if ivalue != element[ iname ]: continue
-            element[ ename ] = evalue
-
-
-@__.standard_dataclass
-class SimpleEdit( Edit ):
-    ''' Applies edit to single entity. '''
-    # TODO: Immutable class and instance attributes.
-
-    value: __.a.Any
-
-    def __call__( self, configuration: __.AbstractMutableDictionary ):
-        self.inject( configuration, self.value )
 
 
 async def acquire(
     application_name: str,
     directories: __.PlatformDirs,
     distribution: _distribution.Information,
-    edits: __.AbstractSequence[ Edit ] = ( ),
+    edits: _dictedits.Edits = ( ),
     file: __.Optional[ _locations.Url ] = __.absent,
 ) -> __.AccretiveDictionary:
     ''' Loads configuration as dictionary. '''

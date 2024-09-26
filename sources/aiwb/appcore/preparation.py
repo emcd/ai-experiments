@@ -28,7 +28,7 @@ from . import state as _state
 async def prepare(
     exits: __.ExitsAsync, *,
     application: __.ApplicationInformation = __.ApplicationInformation( ),
-    configedits: __.AbstractSequence[ __.ConfigurationEdit ] = ( ),
+    configedits: __.DictionaryEdits = ( ),
     configfile: __.Optional[ __.Url ] = __.absent,
     environment: bool = True,
     inscription: __.InscriptionControl = (
