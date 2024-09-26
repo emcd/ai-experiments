@@ -40,9 +40,8 @@ __.tyro.conf.configure( __.tyro.conf.OmitArgPrefixes )(
 class Cli:
     ''' Utility for inspection and tests of library core. '''
 
-    # TODO: configfile
-
     application: _application.Information
+    configfile: __.a.Nullable[ str ] = None
     display: ConsoleDisplay
     inscription: _inscription.Control
     command: __.a.Union[
@@ -58,14 +57,23 @@ class Cli:
 
     async def __call__( self ):
         ''' Invokes command after library preparation. '''
+        nomargs = self.prepare_invocation_args( )
         from .preparation import prepare
         with __.Exits( ) as exits:
-            auxdata = await prepare(
-                application = self.application,
-                environment = True,
-                exits = exits,
-                inscription = self.inscription )
+            auxdata = await prepare( exits = exits, **nomargs )
             await self.command( auxdata = auxdata, display = self.display )
+
+    def prepare_invocation_args(
+        self,
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        args = dict(
+            application = self.application,
+            environment = True,
+            inscription = self.inscription,
+        )
+        if self.configfile:
+            args[ 'configfile' ] = _locations.Url.from_url( self.configfile )
+        return args
 
 
 class DisplayFormats( __.Enum ): # TODO: Python 3.11: StrEnum

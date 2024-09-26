@@ -25,6 +25,7 @@ from . import __
 from . import application as _application
 from . import configuration as _configuration
 from . import distribution as _distribution
+from . import locations as _locations
 from . import notifications as _notifications
 
 
@@ -51,11 +52,11 @@ class Globals:
     async def prepare(
         selfclass,
         exits: __.Exits, *,
-        application: __.Optional[ _application.Information ] = __.absent,
+        application: _application.Information,
         configedits: __.AbstractSequence[ _configuration.Edit ] = ( ),
+        configfile: __.Optional[ _locations.Url ] = __.absent,
     ) -> __.a.Self:
         ''' Acquires data to create DTO. '''
-        if __.absent is application: application = _application.Information( )
         directories = application.produce_platform_directories( )
         distribution = (
             await _distribution.Information.prepare(
@@ -65,7 +66,8 @@ class Globals:
                 application_name = application.name,
                 directories = directories,
                 distribution = distribution,
-                edits = configedits ) )
+                edits = configedits,
+                file = configfile ) )
         notifications = _notifications.Queue( )
         return selfclass(
             application = application,

@@ -24,6 +24,14 @@
 from . import __
 
 
+# Note: We reuse a fixed execution ID across instances of this class
+#       which are default arguments to various preparation functions.
+#       This is done to improve import times with the understanding
+#       that not more than one execution ID should be needed during
+#       the lifetime of the process importing the library.
+_execution_id = __.uuid4( ).urn
+
+
 @__.standard_dataclass
 class Information:
     ''' Information about an application. '''
@@ -43,7 +51,7 @@ class Information:
     execution_id: __.a.Annotation[
         __.a.Nullable[ str ],
         __.a.Doc( "For telemetry, etc..." ),
-    ] = __.dataclass_declare( default_factory = lambda: __.uuid4( ).urn )
+    ] = _execution_id
 
     def produce_platform_directories( self ) -> __.PlatformDirs:
         arguments = __.AccretiveDictionary( dict(

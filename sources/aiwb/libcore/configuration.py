@@ -23,6 +23,7 @@
 
 from . import __
 from . import distribution as _distribution
+from . import locations as _locations
 
 
 @__.a.runtime_checkable
@@ -98,20 +99,23 @@ async def acquire(
     directories: __.PlatformDirs,
     distribution: _distribution.Information,
     edits: __.AbstractSequence[ Edit ] = ( ),
+    file: __.Optional[ _locations.Url ] = __.absent,
 ) -> __.AccretiveDictionary:
     ''' Loads configuration as dictionary. '''
-    # TODO: Support configfile override.
-    from shutil import copyfile
-    from aiofiles import open as open_
+    if __.absent is file:
+        from shutil import copyfile
+        path = directories.user_config_path / 'general.toml'
+        if not path.exists( ):
+            copyfile(
+                distribution.provide_data_location(
+                    'configuration', 'general.toml' ), path )
+        file = _locations.Url.from_url( path )
+    accessor = (
+        await _locations.adapter_from_url( file ).as_specific(
+            species = _locations.LocationSpecies.File ) )
+    # TODO: Assert scheme is '' or 'file'.
     from tomli import loads
-    location = directories.user_config_path / 'general.toml'
-    if not location.exists( ):
-        copyfile(
-            distribution.provide_data_location(
-                'configuration', 'general.toml' ), location )
-    # TODO: Raise error if location is not file.
-    async with open_( location ) as file:
-        configuration = loads( await( file.read( ) ) )
+    configuration = loads( ( await accessor.acquire_content( ) ).content )
     includes = await _acquire_includes(
         application_name, directories, configuration.get( 'includes', ( ) ) )
     for include in includes: configuration.update( include )

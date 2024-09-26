@@ -27,21 +27,21 @@ from . import state as _state
 
 async def prepare(
     exits: __.Exits, *,
-    application: __.Optional[ __.ApplicationInformation ] = __.absent,
+    application: __.ApplicationInformation = __.ApplicationInformation( ),
     configedits: __.AbstractSequence[ __.ConfigurationEdit ] = ( ),
-    inscription: __.Optional[ __.InscriptionControl ] = __.absent,
+    configfile: __.Optional[ __.Url ] = __.absent,
+    environment: bool = True,
+    inscription: __.InscriptionControl = (
+        __.InscriptionControl( mode = __.InscriptionModes.Rich ) ),
 ) -> _state.Globals:
     ''' Prepares AI-related functionality for applications. '''
-    if __.absent is application:
-        application = __.ApplicationInformation( )
-    if __.absent is inscription:
-        inscription = __.InscriptionControl( mode = __.InscriptionModes.Rich )
     _configure_logging( application = application, inscription = inscription )
     # TODO: Configure metrics and traces emitters.
     auxdata_base = await __.prepare(
         application = application,
         configedits = configedits,
-        environment = True,
+        configfile = configfile,
+        environment = environment,
         exits = exits,
         inscription = inscription )
     auxdata = await _state.Globals.prepare( auxdata_base )

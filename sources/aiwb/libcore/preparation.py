@@ -26,20 +26,22 @@ from . import application as _application
 from . import configuration as _configuration
 from . import environment as _environment
 from . import inscription as _inscription
+from . import locations as _locations
 from . import state as _state
 
 
 async def prepare(
     exits: __.Exits,
-    application: __.Optional[ _application.Information ] = __.absent,
+    application: _application.Information = _application.Information( ),
     configedits: __.AbstractSequence[ _configuration.Edit ] = ( ),
+    configfile: __.Optional[ _locations.Url ] = __.absent,
     environment: bool = False,
     inscription: __.Optional[ _inscription.Control ] = __.absent,
 ) -> _state.Globals:
     ''' Prepares globals DTO for use with library functions.
 
         Also:
-        * Configures logging for application or library mode.
+        * Configures logging for library package (not application).
         * Optionally, updates the process environment.
 
         Note that asynchronous preparation allows for applications to
@@ -49,6 +51,7 @@ async def prepare(
     auxdata = await _state.Globals.prepare(
         application = application,
         configedits = configedits,
+        configfile = configfile,
         exits = exits )
     if environment: await _environment.update( auxdata )
     _inscription.prepare( auxdata, control = inscription )

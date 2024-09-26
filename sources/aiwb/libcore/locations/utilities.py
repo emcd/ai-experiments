@@ -105,7 +105,7 @@ def encode_content(
     content: str,
     charset: __.Optional[ str ] = __.absent,
     charset_errors: __.Optional[ str ] = __.absent,
-) -> ( bytes, str ):
+) -> tuple[ bytes, str ]:
     if __.absent is charset:
         from locale import getpreferredencoding
         charset = getpreferredencoding( )

@@ -343,7 +343,8 @@ class FileAdapter( _Common, __.FileAdapter ):
             __.LocationAcquireContentFailure, url = self.url )
         bytes_result = (
             await self.acquire_content_bytes( attributes = attributes ) )
-        if __.absent is charset: charset = bytes_result.inode.charset
+        if __.absent is charset and bytes_result.inode.charset:
+            charset = bytes_result.inode.charset
         try:
             content = __.decode_content(
                 bytes_result.content,

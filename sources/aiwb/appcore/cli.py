@@ -39,14 +39,18 @@ class Cli( __.Cli ):
 
     async def __call__( self ):
         ''' Invokes command after application preparation. '''
+        nomargs = self.prepare_invocation_args( )
         from .preparation import prepare
         with __.Exits( ) as exits:
-            auxdata = await prepare(
-                application = self.application,
-                configedits = self.configuration.as_edits( ),
-                exits = exits,
-                inscription = self.inscription )
+            auxdata = await prepare( exits = exits, **nomargs )
             await self.command( auxdata = auxdata, display = self.display )
+
+    def prepare_invocation_args(
+        self,
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        args = __.Cli.prepare_invocation_args( self )
+        args[ 'configedits' ] = self.configuration.as_edits( )
+        return args
 
     # TODO: Add commands for prompts, providers, and vectorstores.
 
