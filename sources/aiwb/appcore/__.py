@@ -25,4 +25,4 @@
 
 
 from ..__ import *
-from ..libcore import *
+from ..libcore.qaliases import *

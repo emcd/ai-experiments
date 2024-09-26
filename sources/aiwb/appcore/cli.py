@@ -32,7 +32,7 @@ from . import __
 
 
 @__.standard_dataclass
-class Cli( __.Cli ):
+class Cli( __.CoreCli ):
     ''' Utility for configuration, inspection, and tests of application. '''
 
     configuration: ConfigurationModifiers
@@ -48,7 +48,7 @@ class Cli( __.Cli ):
     def prepare_invocation_args(
         self,
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        args = __.Cli.prepare_invocation_args( self )
+        args = __.CoreCli.prepare_invocation_args( self )
         args[ 'configedits' ] = self.configuration.as_edits( )
         return args
 

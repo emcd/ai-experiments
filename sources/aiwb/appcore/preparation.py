@@ -37,7 +37,7 @@ async def prepare(
     ''' Prepares AI-related functionality for applications. '''
     _configure_logging( application = application, inscription = inscription )
     # TODO: Configure metrics and traces emitters.
-    auxdata_base = await __.prepare(
+    auxdata_base = await __.prepare_core(
         application = application,
         configedits = configedits,
         configfile = configfile,

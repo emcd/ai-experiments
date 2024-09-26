@@ -18,25 +18,15 @@
 #============================================================================#
 
 
-''' Core entities for use with applications. '''
+''' Qualified aliases to application core.
 
-# ruff: noqa: F401,F403,F405
+    Useful for avoiding namespace collisions from attribute imports.
+'''
+
+# ruff: noqa: F401,F403
 # pylint: disable=unused-import
 
 
-from . import __
-from . import cli
-from . import preparation
-from . import state
-
-from .cli import Cli, execute_cli
-from .preparation import prepare
-from .state import Globals
-
-
-def main( ):
-    ''' Entrypoint for utility to inspect and test library core. '''
-    execute_cli( )
-
-
-__.reclassify_modules( globals( ) )
+from .cli import Cli as ApplicationCli
+from .preparation import prepare as prepare_application
+from .state import Globals as ApplicationGlobals

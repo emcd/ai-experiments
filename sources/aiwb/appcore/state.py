@@ -25,7 +25,7 @@ from . import __
 
 
 @__.standard_dataclass
-class Globals( __.Globals ):
+class Globals( __.CoreGlobals ):
     ''' Immutable global data. Required by many application functions. '''
 
     invocables: __.AccretiveNamespace
@@ -34,8 +34,9 @@ class Globals( __.Globals ):
     vectorstores: dict
 
     @classmethod
-    async def prepare( selfclass, base: __.Globals ) -> __.a.Self:
+    async def prepare( selfclass, base: __.CoreGlobals ) -> __.a.Self:
         ''' Acquires data to create DTO. '''
+        # TODO: Use __.gather_async
         from asyncio import gather # TODO: Python 3.11: TaskGroup
         from dataclasses import fields
         from importlib import import_module
