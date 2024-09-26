@@ -26,6 +26,8 @@
 
 
 from ..__ import *
+#from ..libcore.qaliases import *
+#from ..appcore.qaliases import *
 
 
 scribe = acquire_scribe( __package__ ) # TODO: Not on module import.

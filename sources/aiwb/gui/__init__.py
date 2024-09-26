@@ -28,47 +28,41 @@ from . import core
 def main( ):
     ''' Prepares and executes GUI. '''
     # Note: Cannot be async because Hatch does not support async entrypoints.
-    #       Also, the Bokeh Tornado server used by Panel has problems
-    #       launching from inside an async caller.
     # TODO? aiomisc.entrypoint
     from asyncio import run
-    from time import sleep
+    run( _main( ) )
+
+
+async def _main( ):
+    from asyncio import get_running_loop, sleep
+    loop = get_running_loop( )
+    #async with __.ExitsAsync( ) as exits:
     with __.Exits( ) as exits:
-        auxdata = run( core.prepare( exits = exits ) )
-        components = auxdata.gui.components
+        auxdata = await core.prepare( exits = exits )
         api = auxdata.api
         api.thread.start( )
         try:
-            while not api.server.started: sleep( 0.001 )
-            components.template__.show(
-                autoreload = True, title = 'AI Workbench' )
+            while not api.server.started: await sleep( 0.001 )
+            gui_thread = (
+                await loop.run_in_executor( None, _start_gui, auxdata ) )
+        except Exception:
+            _stop_api( auxdata )
+            return
+        try:
+            while True: await sleep( 0.5 )
         finally:
-            api.server.should_exit = True
-            api.thread.join( )
+            gui_thread.stop( )
+            _stop_api( auxdata )
 
 
-#def main( ):
-#    ''' Prepares and executes GUI. '''
-#    # Note: Cannot be async because Hatch does not support async entrypoints.
-#    # TODO? aiomisc.entrypoint
-#    from asyncio import run
-#    run( _main( ) )
-#
-#
-#async def _main( ):
-#    from asyncio import sleep
-#    async with __.ExitsAsync( ) as exits:
-#        auxdata = await core.prepare( exits = exits )
-#        components = auxdata.gui.components
-#        api = auxdata.api
-#        api.thread.start( )
-#        try:
-#            while not api.server.started: await sleep( 0.001 )
-#            components.template__.show(
-#                autoreload = True, title = 'AI Workbench' )
-#        finally:
-#            api.server.should_exit = True
-#            api.thread.join( )
+def _start_gui( auxdata ):
+    return auxdata.gui.components.template__.show(
+        autoreload = True, threaded = True, title = 'AI Workbench' )
+
+def _stop_api( auxdata ):
+    api = auxdata.api
+    api.server.should_exit = True
+    api.thread.join( )
 
 
 __.reclassify_modules( globals( ) )
