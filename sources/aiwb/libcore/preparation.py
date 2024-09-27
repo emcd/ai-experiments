@@ -23,10 +23,13 @@
 
 from . import __
 from . import application as _application
+from . import configuration as _configuration
 from . import dictedits as _dictedits
+from . import distribution as _distribution
 from . import environment as _environment
 from . import inscription as _inscription
 from . import locations as _locations
+from . import notifications as _notifications
 from . import state as _state
 
 
@@ -48,11 +51,25 @@ async def prepare(
         concurrently initialize other entities outside of the library, even
         though the library initialization, itself, is inherently sequential.
     '''
-    auxdata = await _state.Globals.prepare(
+    directories = application.produce_platform_directories( )
+    distribution = (
+        await _distribution.Information.prepare(
+            package = __.package_name, exits = exits ) )
+    configuration = (
+        await _configuration.acquire(
+            application_name = application.name,
+            directories = directories,
+            distribution = distribution,
+            edits = configedits,
+            file = configfile ) )
+    notifications = _notifications.Queue( )
+    auxdata = _state.Globals(
         application = application,
-        configedits = configedits,
-        configfile = configfile,
-        exits = exits )
+        configuration = configuration,
+        directories = directories,
+        distribution = distribution,
+        exits = exits,
+        notifications = notifications )
     if environment: await _environment.update( auxdata )
     _inscription.prepare( auxdata, control = inscription )
     _inscribe_preparation_report( auxdata )

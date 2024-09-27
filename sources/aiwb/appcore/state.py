@@ -50,26 +50,4 @@ class Globals( __.CoreGlobals ):
             providers = providers,
             vectorstores = vectorstores,
         ) )
-        from dataclasses import fields
-        return selfclass(
-            **{ field.name: getattr( base, field.name )
-                for field in fields( base ) },
-            **injections )
-
-    @classmethod
-    async def prepare( selfclass, base: __.CoreGlobals ) -> __.a.Self:
-        ''' Acquires data to create DTO. '''
-        # TODO: Refactor into module preparation function.
-        # TODO: Use __.gather_async
-        from asyncio import gather # TODO: Python 3.11: TaskGroup
-        from dataclasses import fields
-        from importlib import import_module
-        slots = ( 'invocables', 'prompts', 'providers', 'vectorstores' )
-        modules = tuple(
-            import_module( f".{slot}", __.package_name ) for slot in slots )
-        attributes = await gather( *(
-            module.prepare( base ) for module in modules ) )
-        return selfclass(
-            **{ field.name: getattr( base, field.name )
-                for field in fields( base ) },
-            **dict( zip( slots, attributes ) ) )
+        return selfclass( **base.as_dictionary( ), **injections )

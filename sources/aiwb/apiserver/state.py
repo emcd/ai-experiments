@@ -40,8 +40,4 @@ class Globals( __.ApplicationGlobals ):
     ) -> __.a.Self:
         ''' Produces DTO from base DTO plus attribute injections. '''
         injections = __.DictionaryProxy( dict( apiserver = apiserver ) )
-        from dataclasses import fields
-        return selfclass(
-            **{ field.name: getattr( base, field.name )
-                for field in fields( base ) },
-            **injections )
+        return selfclass( **base.as_dictionary( ), **injections )

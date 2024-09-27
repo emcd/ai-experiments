@@ -44,7 +44,14 @@ async def prepare(
         environment = environment,
         exits = exits,
         inscription = inscription )
-    auxdata = await _state.Globals.prepare( auxdata_base )
+    from importlib import import_module
+    names = ( 'invocables', 'prompts', 'providers', 'vectorstores' )
+    modules = tuple(
+        import_module( f".{name}", __.package_name ) for name in names )
+    attributes = await __.gather_async( *(
+        module.prepare( auxdata_base ) for module in modules ) )
+    auxdata = _state.Globals.from_base(
+        auxdata_base, **dict( zip( names, attributes ) ) )
     return auxdata
 
 

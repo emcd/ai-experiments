@@ -23,10 +23,7 @@
 
 from . import __
 from . import application as _application
-from . import configuration as _configuration
-from . import dictedits as _dictedits
 from . import distribution as _distribution
-from . import locations as _locations
 from . import notifications as _notifications
 
 
@@ -49,34 +46,12 @@ class Globals:
     exits: __.ExitsAsync # TODO? Make accretive.
     notifications: _notifications.Queue
 
-    @classmethod
-    async def prepare(
-        selfclass,
-        exits: __.ExitsAsync, *,
-        application: _application.Information,
-        configedits: _dictedits.Edits = ( ),
-        configfile: __.Optional[ _locations.Url ] = __.absent,
-    ) -> __.a.Self:
-        ''' Acquires data to create DTO. '''
-        directories = application.produce_platform_directories( )
-        distribution = (
-            await _distribution.Information.prepare(
-                package = __.package_name, exits = exits ) )
-        configuration = (
-            await _configuration.acquire(
-                application_name = application.name,
-                directories = directories,
-                distribution = distribution,
-                edits = configedits,
-                file = configfile ) )
-        notifications = _notifications.Queue( )
-        return selfclass(
-            application = application,
-            configuration = configuration,
-            directories = directories,
-            distribution = distribution,
-            exits = exits,
-            notifications = notifications )
+    def as_dictionary( self ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Returns shallow copy of state. '''
+        from dataclasses import fields
+        return {
+            field.name: getattr( self, field.name )
+            for field in fields( self ) }
 
     def provide_cache_location( self, *appendages: str ) -> __.Path:
         ''' Provides cache location from configuration. '''
