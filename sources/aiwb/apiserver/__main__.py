@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Entrypoint for CLI to execute, inspect, and test application. '''
+''' Entrypoint for CLI to execute, inspect, and test API server. '''
 
 
 from .cli import execute_cli

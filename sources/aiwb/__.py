@@ -71,6 +71,7 @@ from logging import (
 from os import PathLike
 from pathlib import Path
 from queue import SimpleQueue
+from threading import Thread
 from time import time_ns
 from types import (
     MappingProxyType as DictionaryProxy,

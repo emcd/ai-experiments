@@ -22,10 +22,10 @@
 
 
 from . import __
-from . import core as _core
+from . import state as _state
 
 
-async def prepare( auxdata: _core.Globals ):
+async def prepare( auxdata: _state.Globals ):
     ''' Registers component inspectors and transformers. '''
     await _prepare_icons_cache( auxdata )
     _register_transformers( auxdata )
@@ -40,7 +40,7 @@ async def _prepare_icons_cache( auxdata ):
 
 
 def _register_transformers( auxdata ):
-    auxdata.gui.transformers = __.AccretiveDictionary( {
+    auxdata.gui.transformers.update( {
         name: transformer for name, transformer
         in (
             ( 'use-local-icon', _use_local_icon ),

@@ -18,26 +18,10 @@
 #============================================================================#
 
 
-''' GUI with Holoviz Panel widgets. '''
-
-# ruff: noqa: F401,F403,F405
-# pylint: disable=unused-import
+''' Entrypoint for CLI to execute, inspect, and test GUI. '''
 
 
-from . import __
-from . import cli
-# TODO: Expose other modules.
-
-from .cli import Cli, execute_cli
-# TODO: Re-export other important elements.
+from .cli import execute_cli
 
 
-def main( ):
-    ''' Prepares and executes GUI. '''
-    # Note: Cannot be async because Hatch does not support async entrypoints.
-    # TODO? aiomisc.entrypoint
-    execute_cli( )
-
-
-__.reclassify_modules( globals( ) )
-__class__ = __.AccretiveModule
+execute_cli( )

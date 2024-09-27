@@ -22,7 +22,7 @@
 
 
 from . import __
-from . import core as _core
+from . import state as _state
 
 
 def add_conversation_indicator( components, descriptor, position = 0 ):
@@ -205,7 +205,7 @@ def populate_conversation( gui ):
     update_conversation_postpopulate( gui )
 
 
-async def populate_dashboard( auxdata: _core.Globals ):
+async def populate_dashboard( auxdata: _state.Globals ):
     ''' Populates entire conversations dashboard. '''
     from .classes import ConversationDescriptor
     from .layouts import conversations_manager_layout, dashboard_layout

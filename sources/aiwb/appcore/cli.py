@@ -23,12 +23,8 @@
 
 from __future__ import annotations
 
-from ..libcore.cli import (
-    # Direct imports as public symbols for intentional re-export.
-    ConsoleDisplay,
-    InspectCommand,
-)
 from . import __
+from . import state as _state
 
 
 @__.standard_dataclass
@@ -178,6 +174,41 @@ class ConfigurationModifiers:
         return tuple( edits )
 
 
+@__.standard_dataclass
+class ExecuteServerCommand( metaclass = __.ABCFactory ):
+    ''' Runs API server until signal. '''
+    # Note: Cannot use protocol class becaue Tyro chokes on that.
+    #
+    #       tyro._instantiators.UnsupportedTypeAnnotationError:
+    #           Default values for generic subparsers are not supported.
+
+    @__.abstract_member_function
+    async def __call__(
+        self,
+        auxdata: _state.Globals,
+        display: __.CliConsoleDisplay,
+    ): raise NotImplementedError
+
+    async def execute_until_signal(
+        self,
+        auxdata: _state.Globals,
+        display: __.CliConsoleDisplay,
+        scribe: __.Scribe,
+    ):
+        from asyncio import Future, get_running_loop
+        from signal import SIGINT, SIGTERM
+        signal_future = Future( )
+
+        def react_to_signal( signum ):
+            scribe.info( f"Received signal {signum.name} ({signum.value})." )
+            signal_future.set_result( signum )
+
+        loop = get_running_loop( )
+        for signum in ( SIGINT, SIGTERM, ):
+            loop.add_signal_handler( signum, react_to_signal, signum )
+        await signal_future
+
+
 def execute_cli( ):
     from asyncio import run
     config = (
@@ -187,8 +218,8 @@ def execute_cli( ):
     default = Cli(
         application = __.ApplicationInformation( ),
         configuration = ConfigurationModifiers( ),
-        display = ConsoleDisplay( ),
+        display = __.CliConsoleDisplay( ),
         inscription = __.InscriptionControl( mode = __.InscriptionModes.Rich ),
-        command = InspectCommand( ),
+        command = __.CoreCliInspectCommand( ),
     )
     run( __.tyro.cli( Cli, config = config, default = default )( ) )

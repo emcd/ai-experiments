@@ -18,26 +18,26 @@
 #============================================================================#
 
 
-''' GUI with Holoviz Panel widgets. '''
-
-# ruff: noqa: F401,F403,F405
-# pylint: disable=unused-import
+''' Immutable global state for GUI. '''
 
 
 from . import __
-from . import cli
-# TODO: Expose other modules.
-
-from .cli import Cli, execute_cli
-# TODO: Re-export other important elements.
+from . import server as _server # TODO? Different module.
 
 
-def main( ):
-    ''' Prepares and executes GUI. '''
-    # Note: Cannot be async because Hatch does not support async entrypoints.
-    # TODO? aiomisc.entrypoint
-    execute_cli( )
+@__.standard_dataclass
+class Globals( __.ApiServerGlobals ):
+    ''' Immutable global data for GUI. '''
 
+    gui: _server.Accessor
 
-__.reclassify_modules( globals( ) )
-__class__ = __.AccretiveModule
+    @__.a.override
+    @classmethod
+    def from_base(
+        selfclass,
+        base: __.ApiServerGlobals, *,
+        gui: _server.Accessor,
+    ) -> __.a.Self:
+        ''' Produces DTO from base DTO plus attribute injections. '''
+        injections = __.DictionaryProxy( dict( gui = gui ) )
+        return selfclass( **base.as_dictionary( ), **injections )

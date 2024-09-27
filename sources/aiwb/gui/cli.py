@@ -23,24 +23,69 @@
 
 from __future__ import annotations
 
-#from ..libcore.cli import (
-#    # Direct imports as public symbols for intentional re-export.
-#    ConsoleDisplay,
-#    InspectCommand,
-#)
 from . import __
-
-
-#@__.standard_dataclass
-#class Cli( __.ApplicationCli ):
-#    ''' Configuration and execution of GUI application. '''
-#
-#    # TODO: Implement __call__
-#    # TODO: Implement prepare_invocation_args
+from . import server as _server
+from . import state as _state
 
 
 @__.standard_dataclass
-class GuiCommand:
-    ''' Initializes and executes GUI engine. '''
+class Cli( __.ApiServerCli ):
+    ''' Configuration and execution of GUI application. '''
 
-    # TODO: Implement.
+    guiserver: _server.Control = _server.Control( )
+    command: __.a.Union[
+        __.a.Annotation[
+            __.CoreCliInspectCommand,
+            __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
+        ],
+        __.a.Annotation[
+            ExecuteServerCommand,
+            __.tyro.conf.subcommand( 'execute', prefix_name = False ),
+        ],
+    ]
+
+    async def __call__( self ):
+        ''' Invokes command after GUI server preparation. '''
+        nomargs = self.prepare_invocation_args( )
+        from .preparation import prepare
+        async with __.ExitsAsync( ) as exits:
+            auxdata = await prepare( exits = exits, **nomargs )
+            await self.command( auxdata = auxdata, display = self.display )
+
+    def prepare_invocation_args(
+        self,
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        args = __.ApiServerCli.prepare_invocation_args( self )
+        args[ 'guiserver' ] = self.guiserver
+        return args
+
+
+@__.standard_dataclass
+class ExecuteServerCommand( __.ApplicationCliExecuteServerCommand ):
+    ''' Runs GUI server until signal. '''
+
+    async def __call__(
+        self,
+        auxdata: _state.Globals,
+        display: __.CliConsoleDisplay,
+    ):
+        scribe = __.acquire_scribe( __package__ )
+        await self.execute_until_signal(
+            auxdata = auxdata, display = display, scribe = scribe )
+
+
+def execute_cli( ):
+    from asyncio import run
+    config = (
+        #__.tyro.conf.OmitSubcommandPrefixes,
+        __.tyro.conf.SelectFromEnumValues,
+    )
+    default = Cli(
+        apiserver = __.ApiServerControl( ),
+        application = __.ApplicationInformation( ),
+        configuration = __.ApplicationCliConfigurationModifiers( ),
+        display = __.CliConsoleDisplay( ),
+        inscription = __.InscriptionControl( mode = __.InscriptionModes.Rich ),
+        command = ExecuteServerCommand( ),
+    )
+    run( __.tyro.cli( Cli, config = config, default = default )( ) )

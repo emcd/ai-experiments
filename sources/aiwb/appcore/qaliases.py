@@ -29,7 +29,8 @@
 
 from .cli import (
     Cli as                      ApplicationCli,
-    ConfigurationModifiers as   ApplicationConfigurationModifiers,
+    ConfigurationModifiers as   ApplicationCliConfigurationModifiers,
+    ExecuteServerCommand as     ApplicationCliExecuteServerCommand,
 )
 from .preparation import prepare as prepare_application
 from .state import Globals as ApplicationGlobals

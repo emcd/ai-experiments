@@ -61,7 +61,7 @@ class Cli( __.ApplicationCli ):
 
 
 @__.standard_dataclass
-class ExecuteServerCommand:
+class ExecuteServerCommand( __.ApplicationCliExecuteServerCommand ):
     ''' Runs API server until signal. '''
 
     async def __call__(
@@ -73,25 +73,6 @@ class ExecuteServerCommand:
         await self.execute_until_signal(
             auxdata = auxdata, display = display, scribe = scribe )
 
-    async def execute_until_signal(
-        self,
-        auxdata: _state.Globals,
-        display: __.CliConsoleDisplay,
-        scribe: __.Scribe,
-    ):
-        from asyncio import Future, get_running_loop
-        from signal import SIGINT, SIGTERM
-        signal_future = Future( )
-
-        def react_to_signal( signum ):
-            scribe.info( f"Received signal {signum.name} ({signum.value})." )
-            signal_future.set_result( signum )
-
-        loop = get_running_loop( )
-        for signum in ( SIGINT, SIGTERM, ):
-            loop.add_signal_handler( signum, react_to_signal, signum )
-        await signal_future
-
 
 def execute_cli( ):
     from asyncio import run
@@ -101,7 +82,7 @@ def execute_cli( ):
     )
     default = Cli(
         application = __.ApplicationInformation( ),
-        configuration = __.ApplicationConfigurationModifiers( ),
+        configuration = __.ApplicationCliConfigurationModifiers( ),
         display = __.CliConsoleDisplay( ),
         inscription = __.InscriptionControl( mode = __.InscriptionModes.Rich ),
         command = ExecuteServerCommand( ),

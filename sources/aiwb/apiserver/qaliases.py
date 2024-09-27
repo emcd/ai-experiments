@@ -18,26 +18,19 @@
 #============================================================================#
 
 
-''' GUI with Holoviz Panel widgets. '''
+''' Qualified aliases to API server.
 
-# ruff: noqa: F401,F403,F405
+    Useful for avoiding namespace collisions from attribute imports.
+'''
+
+# ruff: noqa: F401,F403
 # pylint: disable=unused-import
 
 
-from . import __
-from . import cli
-# TODO: Expose other modules.
-
-from .cli import Cli, execute_cli
-# TODO: Re-export other important elements.
-
-
-def main( ):
-    ''' Prepares and executes GUI. '''
-    # Note: Cannot be async because Hatch does not support async entrypoints.
-    # TODO? aiomisc.entrypoint
-    execute_cli( )
-
-
-__.reclassify_modules( globals( ) )
-__class__ = __.AccretiveModule
+from .cli import Cli as ApiServerCli
+from .preparation import prepare as prepare_apiserver
+from .server import (
+    Accessor as     ApiServerAccessor,
+    Control as      ApiServerControl,
+)
+from .state import Globals as ApiServerGlobals

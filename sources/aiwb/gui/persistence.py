@@ -25,7 +25,7 @@
 
 
 from . import __
-from . import core as _core
+from . import state as _state
 
 
 async def collect_conversation( components ):
@@ -171,7 +171,7 @@ async def restore_conversation_messages( components, column_name, state ):
         add_message( components, canister )
 
 
-async def restore_conversations_index( auxdata: _core.Globals ):
+async def restore_conversations_index( auxdata: _state.Globals ):
     ''' Restores index of conversations from persistent storage. '''
     from aiofiles import open as open_
     from tomli import loads

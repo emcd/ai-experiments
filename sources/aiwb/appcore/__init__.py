@@ -29,7 +29,12 @@ from . import cli
 from . import preparation
 from . import state
 
-from .cli import Cli, execute_cli
+from .cli import (
+    Cli,
+    ConfigurationModifiers as   CliConfigurationModifiers,
+    ExecuteServerCommand as     CliExecuteServerCommand,
+    execute_cli,
+)
 from .preparation import prepare
 from .state import Globals
 

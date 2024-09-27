@@ -18,32 +18,69 @@
 #============================================================================#
 
 
-''' FastAPI server for GUI support. '''
+''' Data structures and utilities for API server. '''
 
-# https://bugfactory.io/articles/starting-and-stopping-uvicorn-in-the-background/
 
+from __future__ import annotations
 
 from . import __
 
 
-async def prepare( auxdata ):
-    ''' Prepares and executes FastAPI server. '''
-    from socket import socket
-    from threading import Thread
-    from fastapi import FastAPI
-    from uvicorn import Config, Server
-    app = FastAPI( )
-    app.get( '/' )( _http_get_root )
-    config = Config( app = app, reload = True )
-    server = Server( config = config )
-    ( sock := socket( ) ).bind( ( '127.0.0.1', 0 ) )
-    # TODO? Use async thread pool executor.
-    thread = Thread( target = server.run, kwargs = { "sockets": [ sock ] } )
-    address, port = sock.getsockname( )
-    ic( address, port )
-    return __.AccretiveNamespace(
-        server = server, thread = thread, address = address, port = port )
+@__.standard_dataclass
+class Accessor:
+    ''' Accessor for server properties and thread. '''
+
+    control: Control
+    thread: __.Thread
 
 
-async def _http_get_root( ):
-    return { 'message': 'Hello World' }
+@__.standard_dataclass
+class Control:
+    ''' Binding address and port, etc... for server. '''
+
+    address: str = '127.0.0.1'
+    port: int = 0
+    reload: bool = True
+
+    def with_address_and_port( self, address: str, port: int ) -> __.a.Self:
+        ''' Returns new instance with mutated address and port. '''
+        # TODO: Generic 'with_attributes' method.
+        return type( self )(
+            address = address, port = port, reload = self.reload )
+
+
+async def prepare(
+    auxdata: __.ApiServerGlobals,
+    components: __.SimpleNamespace,
+    control: Control,
+) -> Accessor:
+    ''' Prepares server accessor from control information. '''
+    # TODO: Honor address and port for listener socket binding.
+    thread = await auxdata.exits.enter_async_context(
+        _execute_server_thread(
+            components = components, control = control ) )
+    return Accessor( control = control, thread = thread )
+
+
+@__.exit_manager_async
+async def _execute_server_thread(
+    components: __.SimpleNamespace, control: Control
+) -> __.AbstractGenerator:
+    scribe = __.acquire_scribe( __package__ )
+    from asyncio import get_running_loop
+    loop = get_running_loop( )
+    scribe.info( "Waiting for GUI server to start." )
+    thread = await loop.run_in_executor(
+        None, _start_gui, components, control )
+    yield thread
+    scribe.info( "Waiting for GUI server to stop." )
+    thread.stop( )
+
+
+def _start_gui(
+    components: __.SimpleNamespace, control: Control
+) -> __.a.Any: # TODO: Proper type.
+    return components.template__.show(
+        autoreload = control.reload,
+        threaded = True,
+        title = 'AI Workbench' )
