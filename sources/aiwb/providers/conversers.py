@@ -27,14 +27,59 @@ from . import __
 from . import core as _core
 
 
-@__.dataclass( frozen = True, kw_only = True, slots = True )
+class ConverserModalities( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Supportable input modalities for AI chat models. '''
+
+    Audio       = 'audio'
+    Pictures    = 'pictures'
+    Text        = 'text'
+    # TODO: Video
+
+
+@__.standard_dataclass
+class ConverserTokensLimits:
+    ''' Various limits on number of tokens in chat completion. '''
+
+    # TODO? per_prompt
+    per_response: int = 0
+    total: int = 0
+
+
+@__.a.runtime_checkable
+class ConversationTokenizer( __.a.Protocol ):
+    ''' Tokenizes conversation for counting. '''
+
+    # TODO: count_conversation_tokens
+
+    @__.abstract_member_function
+    def count_text_tokens( self, auxdata: __.CoreGlobals, text: str ) -> int:
+        ''' Counts tokens in plain text. '''
+        raise NotImplementedError
+
+
+@__.standard_dataclass
+class ConverserAttributes:
+    ''' Common attributes for AI chat models. '''
+
+    accepts_response_multiplicity: bool = False # TODO: Via controls.
+    accepts_supervisor_instructions: bool = False
+    modalities: __.AbstractSequence[ ConverserModalities ] = (
+        ConverserModalities.Text, )
+    supports_continuous_response: bool = False
+    supports_invocations: bool = False
+    tokenizer: ConversationTokenizer
+    tokens_limits: ConverserTokensLimits = ConverserTokensLimits( )
+
+
+@__.standard_dataclass
 class ConverserModel( _core.Model ):
     ''' Represents an AI chat model. '''
 
     @__.abstract_member_function
     async def converse(
+        self,
         messages: __.AbstractSequence[ __.MessageCanister ],
-        controls: __.AbstractDictionary[ __.Control ],
+        controls: __.AbstractDictionary[ str, __.Control ],
         specials, # TODO: Annotate.
         callbacks, # TODO: Annotate.
     ): # TODO: Annotate return value.

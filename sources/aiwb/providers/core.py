@@ -27,7 +27,7 @@ from . import __
 
 
 @__.a.runtime_checkable
-@__.dataclass( frozen = True, kw_only = True, slots = True )
+@__.standard_dataclass
 class Client( __.a.Protocol ):
     ''' Interacts with AI provider. '''
 
@@ -61,9 +61,22 @@ class Client( __.a.Protocol ):
         ''' Produces client from descriptor dictionary. '''
         raise NotImplementedError
 
+    @__.abstract_member_function
+    async def survey_models(
+        self, auxdata: __.CoreGlobals
+    ) -> __.AbstractSequence[ Model ]:
+        ''' Returns models available from provider. '''
+        raise NotImplementedError
+
+    # TODO? survey_audiogen_models
+    #       survey_conversation_models
+    #       survey_picturegen_models
+    #       survey_tts_models
+    #       survey_videogen_models
+
 
 @__.a.runtime_checkable
-@__.dataclass( frozen = True, kw_only = True, slots = True )
+@__.standard_dataclass
 class Factory( __.a.Protocol ):
     ''' Produces clients. '''
 
@@ -78,7 +91,7 @@ class Factory( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-@__.dataclass( frozen = True, kw_only = True, slots = True )
+@__.standard_dataclass
 class Model( __.a.Protocol ):
     ''' Represents an AI model. '''
 
