@@ -83,6 +83,42 @@ class Client( _core.Client ):
         # TODO: Implement.
         pass
 
+    ## TEMP: Wrappers for Legacy Module-Level Interface
+    # TODO: Transition to model-level methods.
+
+    def access_model_data( self, model_name, data_name ):
+        return access_model_data( model_name, data_name )
+
+    async def chat( self, messages, special_data, controls, callbacks ):
+        return await chat( messages, special_data, controls, callbacks )
+
+    def count_conversation_tokens( self, messages, special_data, controls ):
+        return count_conversation_tokens( messages, special_data, controls )
+
+    def count_text_tokens( self, text, model_name ):
+        return count_text_tokens( text, model_name )
+
+    def extract_invocation_requests( self, canister, auxdata, invocables ):
+        return extract_invocation_requests( canister, auxdata, invocables )
+
+    async def invoke_function( self, request, controls ):
+        return await invoke_function( request, controls )
+
+    def parse_data( self, content, controls ):
+        return parse_data( content, controls )
+
+    def provide_chat_models( self ):
+        return provide_chat_models( )
+
+    def provide_format_name( self, controls ):
+        return provide_format_name( controls )
+
+    def render_data( self, content, controls ):
+        return render_data( content, controls )
+
+    def select_default_model( self, models, auxdata ):
+        return select_default_model( models, auxdata )
+
 
 # TODO: AzureClient
 

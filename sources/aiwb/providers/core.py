@@ -175,9 +175,8 @@ async def prepare_clients(
                 summary = f"Could not load AI provider {name!r}."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
-            case __.g.Value( future ):
-                # TODO: Register client future rather than module.
-                clients[ name ] = future.module
+            case __.g.Value( client ):
+                clients[ name ] = client
     return clients
 
 
