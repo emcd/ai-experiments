@@ -1,0 +1,12 @@
+format-version = 1
+
+[converser]
+name-regex = '^o1-.*$'
+accepts-supervisor-instructions = false
+inherits-controls = false
+modalities = [ 'text' ]
+supports-continuous-response = false
+supports-invocations = false
+
+[converser.tokens-limits]
+per-response = 32_768

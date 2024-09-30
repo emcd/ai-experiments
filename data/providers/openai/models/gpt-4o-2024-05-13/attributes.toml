@@ -1,0 +1,7 @@
+format-version = 1
+
+[converser]
+name-regex = 'gpt-4o-2024-05-13'
+
+[converser.tokens-limits]
+per-response = 4_096

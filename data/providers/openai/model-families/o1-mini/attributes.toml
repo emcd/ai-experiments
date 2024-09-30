@@ -1,0 +1,7 @@
+format-version = 1
+
+[converser]
+name-regex = '^o1-mini(-.*)?$'
+
+[converser.tokens-limits]
+per-response = 65_536

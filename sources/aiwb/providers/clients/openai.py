@@ -28,9 +28,8 @@ from . import __
 class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Degree to which invocations are supported. '''
 
-    Null        = 'null'
-    Single      = 'single'
-    Concurrent  = 'concurrent'
+    Single      = 'single'      # Mid-2023.
+    Concurrent  = 'concurrent'  # Late 2023 and beyond.
 
 
 @__.standard_dataclass
@@ -57,7 +56,7 @@ class ConverserAttributes( __.ConverserAttributes ):
     accepts_behavior_adjustment: bool = False # TODO: Via controls.
     honors_supervisor_instructions: bool = False
     invocations_support_level: InvocationsSupportLevel = (
-        InvocationsSupportLevel.Null )
+        InvocationsSupportLevel.Single )
 
 
 @__.standard_dataclass
@@ -352,7 +351,7 @@ def _create_canister_from_response( response ):
 # TODO: Move attribute associations to data file.
 # https://platform.openai.com/docs/guides/function-calling/supported-models
 _function_support_models = frozenset( (
-    # TODO: Confirm legacy function call support in gpt-4o and o1.
+    # TODO: Confirm legacy function call support in gpt-4o.
     'gpt-3.5-turbo', 'gpt-3.5-turbo-16k',
     'gpt-4', 'gpt-4-32k', 'gpt-4-turbo',
     'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest',

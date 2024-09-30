@@ -1,0 +1,67 @@
+format-version = 1
+
+# https://docs.anthropic.com/en/docs/about-claude/models
+# https://docs.anthropic.com/en/api/messages
+
+[converser]
+name-regex = '^claude-3-.*$'
+accepts-supervisor-instructions = true
+modalities = [ 'text', 'pictures' ]
+inherits-controls = true
+supports-continuous-response = true
+supports-invocations = true
+
+[converser.tokens-limits]
+per-response = 4_096
+total = 200_000
+
+# TODO: Move controls to library and reference the library.
+
+[[converser.controls]]
+name = 'temperature'
+species = 'discrete-interval'
+attributes = { label = 'Temperature' }
+default = 1.0
+minimum = 0.0
+maximum = 1.0
+grade = 0.1
+
+[[converser.controls]]
+name = 'max-tokens'
+species = 'discrete-interval'
+attributes = { label = 'Maximum Completion Tokens' }
+default-from-expression = '{attribute:maximum}'
+minimum = 1
+maximum-from-expression = '{variable:tokens-limits.per-response}'
+grade = 1
+
+[[converser.controls]]
+name = 'miscellany'
+species = 'sequence'
+attributes = { collapsible = true, label = 'Additional Controls' }
+
+[[converser.controls.elements]]
+name = 'top-k'
+optional = true
+species = 'discrete-interval'
+attributes = { label = 'Top K Samples' }
+default = 1
+minimum = 0
+grade = 1
+
+[[converser.controls.elements]]
+name = 'top-p'
+optional = true
+species = 'discrete-interval'
+attributes = { label = 'Probability Mass Cutoff' }
+default = 1.0
+minimum = 0.0
+maximum = 1.0
+grade = 0.01
+
+[[converser.controls.elements]]
+name = 'stop-sequences'
+species = 'sequence'
+optional = true
+attributes = { label = 'Stop Sequences' }
+# TODO: Discover maximum number of stop sequences.

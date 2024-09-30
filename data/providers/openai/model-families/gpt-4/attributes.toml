@@ -1,0 +1,12 @@
+format-version = 1
+
+[converser]
+name-regex = '^gpt-4(-.*)?$'
+modalities = [ 'text' ]
+
+[converser.special]
+invocations-support-level = 'single'
+
+[converser.tokens-limits]
+per-response = 8_192
+total = 8_192

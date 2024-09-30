@@ -1,0 +1,136 @@
+format-version = 1
+
+# https://platform.openai.com/docs/models
+# https://platform.openai.com/docs/api-reference/chat/create
+# https://platform.openai.com/docs/guides/function-calling/which-models-support-function-calling
+# https://platform.openai.com/docs/guides/reasoning/beta-limitations
+
+[converser]
+name-regex = '^(chatgpt-4o(-.*)?|gpt-(3.5-turbo|4o?)(-.*)?|o1-(mini|preview)(-.*)?)$'
+accepts-supervisor-instructions = true
+inherits-controls = true
+modalities = [ 'text', 'pictures' ]
+supports-continuous-response = true
+supports-invocations = true
+
+[converser.special]
+honors-supervisor-instructions = true
+invocations-support-level = 'concurrent'
+
+[converser.tokens-limits]
+per-response = 4_096
+total = 128_000
+
+# TODO: Move controls to library and reference the library.
+
+[[converser.controls]]
+name = 'n'
+species = 'discrete-interval'
+attributes = { label = 'Response Multiplicity' }
+default = 1
+minimum = 1
+grade = 1
+
+[[converser.controls]]
+name = 'temperature'
+species = 'discrete-interval'
+attributes = { label = 'Temperature' }
+default = 1.0 # TODO? 0.0 for consistency with existing settings
+minimum = 0.0
+maximum = 2.0
+grade = 0.1
+
+[[converser.controls]]
+name = 'max-completion-tokens'
+species = 'discrete-interval'
+attributes = { label = 'Maximum Completion Tokens' }
+default-from-expression = '{attribute:maximum}'
+minimum = 1
+maximum-from-expression = '{variable:tokens-limits.per-response}'
+grade = 1
+
+[[converser.controls]]
+name = 'miscellany'
+species = 'sequence'
+attributes = { collapsible = true, label = 'Additional Controls' }
+
+[[converser.controls.elements]]
+name = 'top-p'
+optional = true
+species = 'discrete-interval'
+attributes = { label = 'Probability Mass Cutoff' }
+default = 1.0
+minimum = 0.0
+maximum = 1.0
+grade = 0.01
+
+[[converser.controls.elements]]
+name = 'stop'
+species = 'sequence'
+optional = true
+attributes = { label = 'Stop Sequences' }
+maximum = 4
+
+[[converser.controls.elements.definition]]
+species = 'text'
+
+[[converser.controls.elements]]
+name = 'frequency-penalty'
+species = 'discrete-interval'
+optional = true
+attributes = { label = 'Frequency Penalty' }
+default = 0.0
+minimum = -2.0
+maximum = +2.0
+grade = 0.1
+
+[[converser.controls.elements]]
+name = 'presence-penalty'
+species = 'discrete-interval'
+optional = true
+attributes = { label = 'Presence Penalty' }
+default = 0.0
+minimum = -2.0
+maximum = +2.0
+grade = 0.1
+
+[[converser.controls.elements]]
+name = 'logit-bias'
+optional = true
+species = 'dictionary'
+attributes = { label = 'Logit Bias' }
+
+[[converser.controls.elements.index-definition]]
+species = 'number'
+attributes = { label = 'Token ID' }
+
+[[converser.controls.elements.value-definition]]
+species = 'discrete-interval'
+attributes = { label = 'Bias' }
+default = 0.0
+minimum = -100.0
+maximum = +100.0
+grade = 0.1
+
+[[converser.controls.elements]]
+name = 'logprobs'
+species = 'boolean'
+optional = true
+attributes = { label = 'Log Probabilities' }
+default = false
+
+[[converser.controls.elements]]
+name = 'top-logprobs'
+species = 'discrete-interval'
+optional = true
+attributes = { label = 'Top N Log Probabilities' }
+default = 0
+minimum = 0
+maximum = 20
+grade = 1
+
+[[converser.controls.elements]]
+name = 'seed'
+species = 'number'
+optional = true
+attributes = { label = 'Seed Value' }

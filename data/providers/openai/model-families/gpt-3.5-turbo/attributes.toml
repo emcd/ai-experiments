@@ -1,0 +1,12 @@
+format-version = 1
+
+[converser]
+name-regex = '^gpt-3.5-turbo(-.*)?$' # Assumes 0613 and earlier not in list.
+modalities = [ 'text' ]
+
+[converser.special]
+honors-supervisor-instructions = true # Maybe, unverified....
+invocations-support-level = 'concurrent'
+
+[converser.tokens-limits]
+total = 16_385
