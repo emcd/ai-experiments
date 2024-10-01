@@ -201,7 +201,10 @@ class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with httpx. '''
     # TODO: Immutable class and object attributes.
 
-    async def acquire_content_bytes_result(
+    async def acquire_content( self ) -> bytes:
+        return ( await self.acquire_content_result( ) ).content
+
+    async def acquire_content_result(
         self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
     ) -> __.AcquireContentBytesResult:
         Error = __.partial_function(
@@ -223,32 +226,7 @@ class FileAdapter( _Common, __.FileAdapter ):
         return __.AcquireContentBytesResult(
             content = response.content, inode = inode )
 
-    async def acquire_content_text_result(
-        self,
-        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
-        charset: __.Optional[ str ] = __.absent,
-        charset_errors: __.Optional[ str ] = __.absent,
-        newline: __.Optional[ str ] = __.absent,
-    ) -> __.AcquireContentTextResult:
-        Error = __.partial_function(
-            __.LocationAcquireContentFailure, url = self.url )
-        bytes_result = (
-            await self.acquire_content_bytes_result(
-                attributes = attributes ) )
-        if __.absent is charset: charset = bytes_result.inode.charset
-        try:
-            content = __.decode_content(
-                bytes_result.content,
-                charset = charset,
-                charset_errors = charset_errors )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        try: content_nl = __.normalize_newlines( content, newline = newline )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        inode = bytes_result.inode.with_attributes( charset = charset )
-        return __.AcquireContentTextResult(
-            content = content_nl, inode = inode )
-
-    async def update_content_from_bytes(
+    async def update_content(
         self,
         content: bytes,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
@@ -275,31 +253,6 @@ class FileAdapter( _Common, __.FileAdapter ):
             attributes = attributes,
             error_to_raise = Error,
             content = content )
-
-    async def update_content_from_text(
-        self,
-        content: str,
-        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
-        charset: __.Optional[ str ] = __.absent,
-        charset_errors: __.Optional[ str ] = __.absent,
-        newline: __.Optional[ str ] = __.absent,
-        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
-    ) -> __.Inode:
-        Error = __.partial_function(
-            __.LocationUpdateContentFailure, url = self.url )
-        content_nl = _translate_newlines( content, newline = newline )
-        try:
-            content_bytes, charset = __.encode_content(
-                content_nl,
-                charset = charset,
-                charset_errors = charset_errors )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        inode = await self.update_content_from_bytes(
-            content_bytes,
-            attributes = attributes,
-            options = options )
-        charset = inode.charset or charset
-        return inode.with_attributes( charset = charset )
 
 
 def _expiration_from_headers(
@@ -401,11 +354,3 @@ def _react_http_status_error( response_error, headers, error_to_raise ):
             if 'Content-Range' in headers:
                 reason = "Server does not support append operation."
                 raise error_to_raise( reason = reason )
-
-
-def _translate_newlines(
-    content: str, newline: __.Optional[ str ] = __.absent
-) -> str:
-    # TODO: Streaming version.
-    if newline in ( __.absent, '', '\n' ): return content
-    return newline.join( content.split( '\n' ) )

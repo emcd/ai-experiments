@@ -45,19 +45,25 @@ class AdapterInode( metaclass = __.ABCFactory ):
 
 
 @__.standard_dataclass
-class AcquireContentBytesResult:
-    ''' Result, as raw bytes, from content acquisition operation. '''
+class AcquireContentResult:
+    ''' Inode and arbitrary content from acquisition operation. '''
 
-    content: bytes
+    content: __.a.Any
     inode: Inode
 
 
 @__.standard_dataclass
-class AcquireContentTextResult:
-    ''' Result, as Unicode string, from content acquisition operation. '''
+class AcquireContentBytesResult( AcquireContentResult ):
+    ''' Inode and content, as raw bytes, from acquisition operation. '''
+
+    content: bytes
+
+
+@__.standard_dataclass
+class AcquireContentTextResult( AcquireContentResult ):
+    ''' Inode and content, as Unicode string, from acquisition operation. '''
 
     content: str
-    inode: Inode
 
 
 class AlienResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum

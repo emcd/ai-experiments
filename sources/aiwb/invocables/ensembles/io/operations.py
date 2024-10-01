@@ -122,13 +122,14 @@ async def _accessor_from_arguments(
     adapter = __.location_adapter_from_url( url )
     if adapter.is_cache_manager( ): accessor = adapter.produce_cache( )
     else: accessor = adapter
+    if __.LocationSpecies.File is species: return accessor.as_file( )
     return await accessor.as_specific( species = species )
 
 
 async def _read_as_bytes(
     accessor: __.FileAccessor, context: __.Context, arguments: __.Arguments
 ) -> __.AbstractDictionary:
-    try: result = await accessor.acquire_content_bytes_result( )
+    try: result = await accessor.acquire_content_result( )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
@@ -146,10 +147,9 @@ async def _read_as_bytes(
 async def _read_as_string(
     accessor: __.FileAccessor, context: __.Context, arguments: __.Arguments
 ) -> __.AbstractDictionary:
-    try:
-        result = (
-            await accessor.acquire_content_text_result(
-                charset = '#DETECT#' ) )
+    presenter = __.text_file_presenter_from_accessor(
+        accessor = accessor, charset = '#DETECT#' )
+    try: result = await presenter.acquire_content_result( )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
@@ -164,6 +164,7 @@ async def _read_as_string(
 async def _write_as_string(
     accessor: __.FileAccessor, context: __.Context, arguments: __.Arguments
 ) -> __.AbstractDictionary:
+    presenter = __.text_file_presenter_from_accessor( accessor = accessor )
     content = arguments[ 'content' ]
     options = arguments.get( 'options', ( ) )
     options_ = __.FileUpdateOptions.Defaults
@@ -172,10 +173,7 @@ async def _write_as_string(
             options_ |= __.FileUpdateOptions.Append
         if 'error-if-exists' == option:
             options_ |= __.FileUpdateOptions.Absence
-    try:
-        result = (
-            await accessor.update_content_from_text(
-                content, options = options_ ) )
+    try: result = await presenter.update_content( content, options = options_ )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }

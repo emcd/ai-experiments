@@ -338,7 +338,10 @@ class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with aiofiles and pathlib. '''
     # TODO: Immutable class and object attributes.
 
-    async def acquire_content_bytes_result(
+    async def acquire_content( self ) -> bytes:
+        return ( await self.acquire_content_result( ) ).content
+
+    async def acquire_content_result(
         self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
     ) -> __.AcquireContentBytesResult:
         Error = __.partial_function(
@@ -358,33 +361,7 @@ class FileAdapter( _Common, __.FileAdapter ):
             content = content )
         return __.AcquireContentBytesResult( content = content, inode = inode )
 
-    async def acquire_content_text_result(
-        self,
-        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
-        charset: __.Optional[ str ] = __.absent,
-        charset_errors: __.Optional[ str ] = __.absent,
-        newline: __.Optional[ str ] = __.absent,
-    ) -> __.AcquireContentTextResult:
-        Error = __.partial_function(
-            __.LocationAcquireContentFailure, url = self.url )
-        bytes_result = (
-            await self.acquire_content_bytes_result(
-                attributes = attributes ) )
-        if __.absent is charset and bytes_result.inode.charset:
-            charset = bytes_result.inode.charset
-        try:
-            content = __.decode_content(
-                bytes_result.content,
-                charset = charset,
-                charset_errors = charset_errors )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        try: content_nl = __.normalize_newlines( content, newline = newline )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        inode = bytes_result.inode.with_attributes( charset = charset )
-        return __.AcquireContentTextResult(
-            content = content_nl, inode = inode )
-
-    async def update_content_from_bytes(
+    async def update_content(
         self,
         content: bytes,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
@@ -407,30 +384,6 @@ class FileAdapter( _Common, __.FileAdapter ):
             attributes = attributes,
             error_to_raise = Error,
             content = content )
-
-    async def update_content_from_text(
-        self,
-        content: str,
-        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
-        charset: __.Optional[ str ] = __.absent,
-        charset_errors: __.Optional[ str ] = __.absent,
-        newline: __.Optional[ str ] = __.absent,
-        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
-    ) -> __.Inode:
-        Error = __.partial_function(
-            __.LocationUpdateContentFailure, url = self.url )
-        content_nl = _nativize_newlines( content, newline = newline )
-        try:
-            content_bytes, charset = __.encode_content(
-                content_nl,
-                charset = charset,
-                charset_errors = charset_errors )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        inode = await self.update_content_from_bytes(
-            content_bytes,
-            attributes = attributes,
-            options = options )
-        return inode.with_attributes( charset = charset )
 
 
 def _access_mode_from_permissions(
@@ -510,17 +463,6 @@ def _inode_from_stat( stat: _StatResult ) -> __.Inode:
         content_id = content_id,
         mimetype = mimetype, charset = charset,
         mtime = mtime, etime = etime )
-
-
-def _nativize_newlines(
-    content: str, newline: __.Optional[ str ] = __.absent
-) -> str:
-    # TODO: Streaming version.
-    if newline in ( '', '\n' ): return content
-    if __.absent is newline:
-        from os import linesep
-        newline = linesep
-    return newline.join( content.split( '\n' ) )
 
 
 def _permissions_from_stat( inode: _StatResult ) -> __.Permissions:

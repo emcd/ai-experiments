@@ -37,6 +37,8 @@ AdaptersRegistry: __.a.TypeAlias = (
     __.AbstractDictionary[ str, type[ _interfaces.GeneralAdapter ] ] )
 CachesRegistry: __.a.TypeAlias = (
     __.AbstractDictionary[ str, type[ _interfaces.CacheManager ] ] )
+FilePresentersRegistry: __.a.TypeAlias = (
+    __.AbstractDictionary[ str, type[ _interfaces.FilePresenter ] ] )
 # TODO: Content filters versus dirent filters.
 FiltersRegistry: __.a.TypeAlias = (
     __.AbstractDictionary[ str, type[ _interfaces.Filter ] ] )
@@ -45,6 +47,7 @@ FiltersRegistry: __.a.TypeAlias = (
 # TODO: Use accretive validator dictionaries for registries.
 adapters_registry: AdaptersRegistry = __.AccretiveDictionary( )
 caches_registry: CachesRegistry = __.AccretiveDictionary( )
+file_presenters_registry: FilePresentersRegistry = __.AccretiveDictionary( )
 filters_registry: FiltersRegistry = __.AccretiveDictionary( )
 
 
@@ -98,6 +101,69 @@ def file_adapter_from_url(
 ) -> _interfaces.FileAdapter:
     ''' Produces file access adapter from URL. '''
     return adapter_from_url( url ).as_file( )
+
+
+async def file_presenter_from_accessor(
+    accessor: _interfaces.FileAccessor,
+    mimetype: __.Optional[ str ] = __.absent,
+) -> _interfaces.FileAccessor | _interfaces.FilePresenter:
+    ''' Produces file content presenter from accessor, if possible.
+
+        If no registered MIME type, then returns bare file accessor.
+    '''
+    if __.absent is mimetype:
+        inode = await accessor.examine(
+            attributes = _core.InodeAttributes.Mimetype )
+        mimetype = inode.mimetype
+    if mimetype in file_presenters_registry:
+        return file_presenters_registry[ mimetype ]( accessor = accessor )
+    mimetype = '/'.join( ( mimetype.split( '/', maxsplit = 1 )[ 0 ], '*' ) )
+    if mimetype in file_presenters_registry:
+        return file_presenters_registry[ mimetype ]( accessor = accessor )
+    return accessor
+
+
+async def file_presenter_from_url(
+    url: _core.PossibleUrl,
+    mimetype: __.Optional[ str ] = __.absent,
+) -> _interfaces.FileAccessor | _interfaces.FilePresenter:
+    ''' Produces file content presenter from URL, if possible.
+
+        If no registered MIME type, then returns bare file accessor.
+    '''
+    adapter = adapter_from_url( url ).as_file( )
+    return await file_presenter_from_accessor( accessor = adapter )
+
+
+def text_file_presenter_from_accessor(
+    accessor: _interfaces.FileAccessor,
+    charset: __.Optional[ str ] = __.absent,
+    charset_errors: str = 'strict',
+    newline: __.Optional[ str ] = __.absent,
+) -> _interfaces.FilePresenter:
+    ''' Produces text file content presenter from accessor. '''
+    charset_ = None if __.absent is charset else charset
+    newline_ = None if __.absent is newline else newline
+    return file_presenters_registry[ 'text/*' ](
+        accessor = accessor,
+        charset = charset_,
+        charset_errors = charset_errors,
+        newline = newline_ )
+
+
+def text_file_presenter_from_url(
+    url: _core.PossibleUrl,
+    charset: __.Optional[ str ] = __.absent,
+    charset_errors: str = 'strict',
+    newline: __.Optional[ str ] = __.absent,
+) -> _interfaces.FilePresenter:
+    ''' Produces text file content presenter from URL. '''
+    adapter = adapter_from_url( url ).as_file( )
+    return text_file_presenter_from_accessor(
+        accessor = adapter,
+        charset = charset,
+        charset_errors = charset_errors,
+        newline = newline )
 
 
 def filters_from_specifiers(

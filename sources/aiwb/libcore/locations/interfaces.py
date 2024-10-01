@@ -37,6 +37,8 @@ from . import exceptions as _exceptions
 
 
 class _Common( __.a.Protocol ):
+    # TODO: Make public so that implemenation commons can inherit.
+    #       (Typechecker appeasement.)
 
     def __str__( self ) -> str: return str( self.as_url( ) )
 
@@ -109,6 +111,7 @@ class Filter( __.a.Protocol ):
 class DirectoryOperations( __.a.Protocol ):
     ''' Standard operations on directories. '''
 
+    @__.abstract_member_function
     async def create_directory(
         self,
         name: PossibleRelativeLocator,
@@ -119,6 +122,7 @@ class DirectoryOperations( __.a.Protocol ):
         ''' Creates directory relative to URL of this accessor. '''
         raise NotImplementedError
 
+    @__.abstract_member_function
     async def create_file(
         self,
         name: PossibleRelativeLocator,
@@ -131,6 +135,7 @@ class DirectoryOperations( __.a.Protocol ):
 
     # TODO: create_indirection
 
+    @__.abstract_member_function
     async def delete_directory(
         self,
         name: PossibleRelativeLocator,
@@ -141,6 +146,7 @@ class DirectoryOperations( __.a.Protocol ):
         ''' Deletes directory relative to URL of this accessor. '''
         raise NotImplementedError
 
+    @__.abstract_member_function
     async def delete_file(
         self,
         name: PossibleRelativeLocator,
@@ -151,12 +157,14 @@ class DirectoryOperations( __.a.Protocol ):
 
     # TODO: delete_indirection
 
+    @__.abstract_member_function
     def produce_entry_accessor(
         self, name: PossibleRelativeLocator
     ) -> GeneralAccessor:
         ''' Derives new accessor relative to URL of this accessor. '''
         raise NotImplementedError
 
+    @__.abstract_member_function
     async def survey_entries(
         self,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
@@ -173,39 +181,24 @@ class DirectoryOperations( __.a.Protocol ):
 class FileOperations( __.a.Protocol ):
     ''' Standard operations on files. '''
 
-    # TODO: Simplify by removing text interface.
-    #       Develop concept of an interpreter or presenter that can sit on
-    #       top of accessors. E.g., TextPresenter for Python Unicode strings,
-    #       PicturePresenter for graphic images as PIL objects?
+    @__.abstract_member_function
+    async def acquire_content( self ) -> bytes:
+        ''' Returns content of file as raw bytes. '''
+        raise NotImplementedError
 
-    # TODO: acquire_content_as_bytes
-
-    # TODO: acquire_content_as_bytes_continuous
+    # TODO: acquire_content_continuous
     #       Returns iterator which has inode attribute.
 
-    # TODO: acquire_content_as_text
-
-    # TODO: acquire_content_as_text_continuous
-    #       Returns iterator which has inode attribute.
-
-    async def acquire_content_bytes_result(
+    @__.abstract_member_function
+    async def acquire_content_result(
         self,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
     ) -> _core.AcquireContentBytesResult:
-        ''' Returns inode and complete content of file as raw bytes. '''
+        ''' Returns inode and content of file as raw bytes. '''
         raise NotImplementedError
 
-    async def acquire_content_text_result(
-        self,
-        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
-        charset: __.Optional[ str ] = __.absent,
-        charset_errors: __.Optional[ str ] = __.absent,
-        newline: __.Optional[ str ] = __.absent,
-    ) -> _core.AcquireContentTextResult:
-        ''' Returns inode and complete content of file as Unicode string. '''
-        raise NotImplementedError
-
-    async def update_content_from_bytes(
+    @__.abstract_member_function
+    async def update_content(
         self,
         content: bytes,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
@@ -214,21 +207,7 @@ class FileOperations( __.a.Protocol ):
         ''' Updates content of file from raw bytes. Returns inode. '''
         raise NotImplementedError
 
-    async def update_content_from_text(
-        self,
-        content: str,
-        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
-        charset: __.Optional[ str ] = __.absent,
-        charset_errors: __.Optional[ str ] = __.absent,
-        newline: __.Optional[ str ] = __.absent,
-        options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
-    ) -> _core.Inode:
-        ''' Updates content of file from Unicode string. Returns inode. '''
-        raise NotImplementedError
-
-    # TODO: update_content_from_bytes_continuous
-
-    # TODO: update_content_from_text_continuous
+    # TODO: update_content_continuous
 
 
 @__.a.runtime_checkable
@@ -309,6 +288,7 @@ class ReconciliationOperations( __.a.Protocol ):
 
     # TODO? clear
 
+    @__.abstract_member_function
     async def commit(
         self, *,
         aliens: _core.AlienResolutionActions
@@ -321,16 +301,19 @@ class ReconciliationOperations( __.a.Protocol ):
         ''' Commits cache to sources. '''
         raise NotImplementedError
 
+    @__.abstract_member_function
     async def difference(
         self
     ) -> __.AbstractSequence[ _core.CacheDifferenceBase ]:
         ''' Reports differences between cache and sources. '''
         raise NotImplementedError
 
+    @__.abstract_member_function
     async def is_divergent( self ) -> bool:
         ''' Checks if cache matches sources. '''
         raise NotImplementedError
 
+    @__.abstract_member_function
     async def reingest(
         self, *,
         aliens: _core.AlienResolutionActions
@@ -341,18 +324,6 @@ class ReconciliationOperations( __.a.Protocol ):
             = _core.ImpurityResolutionActions.Ignore,
     ) -> __.a.Self: # TODO: Return dirents of affected locations.
         ''' Reingests cache from sources. '''
-        raise NotImplementedError
-
-
-@__.a.runtime_checkable
-class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
-    ''' General location access adapter. '''
-    # TODO: Immutable class and object attributes.
-
-    @classmethod
-    @__.abstract_member_function
-    def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
-        ''' Produces adapter from URL. '''
         raise NotImplementedError
 
 
@@ -369,27 +340,15 @@ class FileAdapter( AdapterBase, FileOperations, __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-class GeneralCache( CacheBase, GeneralOperations, __.a.Protocol ):
-    ''' General location cache. '''
+class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
+    ''' General location access adapter. '''
     # TODO: Immutable class and object attributes.
 
     @classmethod
     @__.abstract_member_function
     def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
-        ''' Produces cache from URL. '''
+        ''' Produces adapter from URL. '''
         raise NotImplementedError
-
-
-@__.a.runtime_checkable
-class DirectoryCache( CacheBase, DirectoryOperations, __.a.Protocol ):
-    ''' Directory cache. '''
-    # TODO: Immutable class and object attributes.
-
-
-@__.a.runtime_checkable
-class FileCache( CacheBase, FileOperations, __.a.Protocol ):
-    ''' File cache. '''
-    # TODO: Immutable class and object attributes.
 
 
 @__.a.runtime_checkable
@@ -415,6 +374,67 @@ class CacheManager( ReconciliationOperations, __.a.Protocol ):
     def produce_cache( self, adapter: GeneralAdapter ) -> GeneralCache:
         ''' Produces cache from general location access adapter. '''
         raise NotImplementedError
+
+
+@__.a.runtime_checkable
+class DirectoryCache( CacheBase, DirectoryOperations, __.a.Protocol ):
+    ''' Directory cache. '''
+    # TODO: Immutable class and object attributes.
+
+
+@__.a.runtime_checkable
+class FileCache( CacheBase, FileOperations, __.a.Protocol ):
+    ''' File cache. '''
+    # TODO: Immutable class and object attributes.
+
+
+@__.a.runtime_checkable
+class GeneralCache( CacheBase, GeneralOperations, __.a.Protocol ):
+    ''' General location cache. '''
+    # TODO: Immutable class and object attributes.
+
+    @classmethod
+    @__.abstract_member_function
+    def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
+        ''' Produces cache from URL. '''
+        raise NotImplementedError
+
+
+@__.a.runtime_checkable
+@__.standard_dataclass
+class FilePresenter( __.a.Protocol ):
+    ''' Presenter with standard operations on files. '''
+    # TODO: Immutable class attributes.
+
+    accessor: FileAccessor
+
+    @__.abstract_member_function
+    async def acquire_content( self ) -> __.a.Any:
+        ''' Returns content of file as specific type. '''
+        raise NotImplementedError
+
+    # TODO: acquire_content_continuous
+    #       Returns iterator which has inode attribute.
+
+    @__.abstract_member_function
+    async def acquire_content_result(
+        self, *,
+        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
+    ) -> _core.AcquireContentResult:
+        ''' Returns inode and content of file as specific type. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def update_content(
+        self,
+        content: __.a.Any,
+        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
+        options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
+    ) -> _core.Inode:
+        ''' Updates content of file from specific type. Returns inode. '''
+        raise NotImplementedError
+
+    # TODO: update_content_continuous
 
 
 # TODO: Python 3.12: type statement for aliases

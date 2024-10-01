@@ -18,17 +18,21 @@
 #============================================================================#
 
 
-''' Location access caches. '''
+''' Location content presenters.
+
+    A presenter builds on top of a location accessor and uses its underlying
+    methods to access content at a location. This content is then transformed
+    into a different format or type by the presenter.
+'''
 
 # ruff: noqa: F401
 # pylint: disable=unused-import
 
 
 from . import __
-from . import simple
-# TODO: archive (tarball, zip)
-# TODO? edit
-# TODO? expiry
+from . import text
+
+from .text import FilePresenter as TextFilePresenter
 
 
 __.reclassify_modules( globals( ) )
