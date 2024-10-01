@@ -173,7 +173,22 @@ class DirectoryOperations( __.a.Protocol ):
 class FileOperations( __.a.Protocol ):
     ''' Standard operations on files. '''
 
-    async def acquire_content(
+    # TODO: acquire_content  (as bytes)
+
+    # TODO: acquire_content_continuous
+
+    # TODO: acquire_content_as_text
+
+    # TODO: acquire_content_as_text_continuous
+
+    async def acquire_content_bytes_result(
+        self,
+        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
+    ) -> _core.AcquireContentBytesResult:
+        ''' Returns complete content of file as raw bytes. '''
+        raise NotImplementedError
+
+    async def acquire_content_text_result(
         self,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
         charset: __.Optional[ str ] = __.absent,
@@ -182,17 +197,6 @@ class FileOperations( __.a.Protocol ):
     ) -> _core.AcquireContentTextResult:
         ''' Returns complete content of file as Unicode string. '''
         raise NotImplementedError
-
-    # TODO: acquire_content_continuous
-
-    async def acquire_content_bytes(
-        self,
-        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
-    ) -> _core.AcquireContentBytesResult:
-        ''' Returns complete content of file as raw bytes. '''
-        raise NotImplementedError
-
-    # TODO: acquire_content_bytes_continuous
 
     async def update_content(
         self,

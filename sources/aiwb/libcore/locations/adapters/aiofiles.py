@@ -338,32 +338,7 @@ class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with aiofiles and pathlib. '''
     # TODO: Immutable class and object attributes.
 
-    async def acquire_content(
-        self,
-        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
-        charset: __.Optional[ str ] = __.absent,
-        charset_errors: __.Optional[ str ] = __.absent,
-        newline: __.Optional[ str ] = __.absent,
-    ) -> __.AcquireContentTextResult:
-        Error = __.partial_function(
-            __.LocationAcquireContentFailure, url = self.url )
-        bytes_result = (
-            await self.acquire_content_bytes( attributes = attributes ) )
-        if __.absent is charset and bytes_result.inode.charset:
-            charset = bytes_result.inode.charset
-        try:
-            content = __.decode_content(
-                bytes_result.content,
-                charset = charset,
-                charset_errors = charset_errors )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        try: content_nl = __.normalize_newlines( content, newline = newline )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        inode = bytes_result.inode.with_attributes( charset = charset )
-        return __.AcquireContentTextResult(
-            content = content_nl, inode = inode )
-
-    async def acquire_content_bytes(
+    async def acquire_content_bytes_result(
         self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
     ) -> __.AcquireContentBytesResult:
         Error = __.partial_function(
@@ -382,6 +357,32 @@ class FileAdapter( _Common, __.FileAdapter ):
             error_to_raise = Error,
             content = content )
         return __.AcquireContentBytesResult( content = content, inode = inode )
+
+    async def acquire_content_text_result(
+        self,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+    ) -> __.AcquireContentTextResult:
+        Error = __.partial_function(
+            __.LocationAcquireContentFailure, url = self.url )
+        bytes_result = (
+            await self.acquire_content_bytes_result(
+                attributes = attributes ) )
+        if __.absent is charset and bytes_result.inode.charset:
+            charset = bytes_result.inode.charset
+        try:
+            content = __.decode_content(
+                bytes_result.content,
+                charset = charset,
+                charset_errors = charset_errors )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        try: content_nl = __.normalize_newlines( content, newline = newline )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        inode = bytes_result.inode.with_attributes( charset = charset )
+        return __.AcquireContentTextResult(
+            content = content_nl, inode = inode )
 
     async def update_content(
         self,

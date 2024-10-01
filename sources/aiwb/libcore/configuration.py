@@ -46,7 +46,8 @@ async def acquire(
     accessor = _locations.file_adapter_from_url( file )
     # TODO: Assert scheme is '' or 'file'.
     from tomli import loads
-    configuration = loads( ( await accessor.acquire_content( ) ).content )
+    configuration = loads(
+        ( await accessor.acquire_content_text_result( ) ).content )
     includes = await _acquire_includes(
         application_name, directories, configuration.get( 'includes', ( ) ) )
     for include in includes: configuration.update( include )

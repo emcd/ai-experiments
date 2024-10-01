@@ -100,7 +100,7 @@ async def _prepare_favicon(
         __.file_adapter_from_url(
             auxdata.distribution.provide_data_location(
                 'icons/favicon-32.png' ) ) )
-    icon = ( await file.acquire_content_bytes( ) ).content
+    icon = ( await file.acquire_content_bytes_result( ) ).content
     from base64 import b64encode
     icon_b64 = b64encode( icon ).decode( )
     icon_uri = f"data:image/png;base64,{icon_b64}"

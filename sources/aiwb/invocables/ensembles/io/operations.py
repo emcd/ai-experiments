@@ -128,7 +128,7 @@ async def _accessor_from_arguments(
 async def _read_as_bytes(
     accessor: __.FileAccessor, context: __.Context, arguments: __.Arguments
 ) -> __.AbstractDictionary:
-    try: result = await accessor.acquire_content_bytes( )
+    try: result = await accessor.acquire_content_bytes_result( )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
@@ -146,7 +146,10 @@ async def _read_as_bytes(
 async def _read_as_string(
     accessor: __.FileAccessor, context: __.Context, arguments: __.Arguments
 ) -> __.AbstractDictionary:
-    try: result = await accessor.acquire_content( charset = '#DETECT#' )
+    try:
+        result = (
+            await accessor.acquire_content_text_result(
+                charset = '#DETECT#' ) )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }

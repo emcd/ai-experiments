@@ -405,28 +405,28 @@ class FileCache( _Common, __.FileCache ):
     adapter: __.DirectoryAdapter
 
     @_ensures_cache
-    async def acquire_content(
+    async def acquire_content_bytes_result(
+        self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
+    ) -> __.AcquireContentBytesResult:
+        cache_adapter = __.file_adapter_from_url( self.cache_url )
+        return (
+            await cache_adapter.acquire_content_bytes_result(
+                attributes = attributes ) )
+
+    @_ensures_cache
+    async def acquire_content_text_result(
         self,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         charset: __.Optional[ str ] = __.absent,
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
     ) -> __.AcquireContentTextResult:
-        cache_adapter = __.adapter_from_url( self.cache_url )
-        return await cache_adapter.acquire_content(
+        cache_adapter = __.file_adapter_from_url( self.cache_url )
+        return await cache_adapter.acquire_content_text_result(
             attributes = attributes,
             charset = charset,
             charset_errors = charset_errors,
             newline = newline )
-
-    @_ensures_cache
-    async def acquire_content_bytes(
-        self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
-    ) -> __.AcquireContentBytesResult:
-        cache_adapter = __.adapter_from_url( self.cache_url )
-        return (
-            await cache_adapter.acquire_content_bytes(
-                attributes = attributes ) )
 
     async def update_content(
         self,
@@ -462,7 +462,7 @@ class FileCache( _Common, __.FileCache ):
             source_url = self.adapter.as_url( ), cache_url = self.cache_url )
         try:
             cache_adapter = await self._create_cache_file_if_absent( )
-            acquisition = await self.adapter.acquire_content_bytes( )
+            acquisition = await self.adapter.acquire_content_bytes_result( )
             await cache_adapter.update_content_bytes( acquisition.content )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
 
