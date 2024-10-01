@@ -128,6 +128,12 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
     def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
         return selfclass( url = __.Url.from_url( url ) )
 
+    def as_directory( self ) -> __.DirectoryAdapter:
+        return DirectoryAdapter( url = self.url )
+
+    def as_file( self ) -> __.FileAdapter:
+        return FileAdapter( url = self.url )
+
     async def as_specific(
         self,
         force: bool = False,

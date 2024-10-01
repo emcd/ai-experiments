@@ -146,6 +146,16 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
     def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
         return selfclass( url = __.Url.from_url( url ) )
 
+    def as_directory( self ) -> __.DirectoryAdapter:
+        Error = __.partial_function(
+            __.LocationAccessorDerivationFailure,
+            entity_name = _entity_name, url = self.url )
+        reason = "No derivative available for directory."
+        raise Error( reason = reason )
+
+    def as_file( self ) -> __.FileAdapter:
+        return FileAdapter( url = self.url )
+
     async def as_specific(
         self,
         force: bool = False,
@@ -159,7 +169,6 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
             species_ = species if force else await self.discover_species(
                 pursue_indirection = pursue_indirection, species = species )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        ic( species_ )
         match species_:
             case __.LocationSpecies.File:
                 return FileAdapter( url = self.url )

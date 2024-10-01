@@ -97,10 +97,9 @@ async def _prepare_favicon(
     # https://github.com/holoviz/panel/blob/2bacc0ee8162b962537ca8ba71fa302ba01a57f5/panel/template/base.py#L789-L792
     # https://news.ycombinator.com/item?id=30347043
     file = (
-        await __.location_adapter_from_url(
+        __.file_adapter_from_url(
             auxdata.distribution.provide_data_location(
-                'icons/favicon-32.png' ) )
-        .as_specific( species = __.LocationSpecies.File ) )
+                'icons/favicon-32.png' ) ) )
     icon = ( await file.acquire_content_bytes( ) ).content
     from base64 import b64encode
     icon_b64 = b64encode( icon ).decode( )

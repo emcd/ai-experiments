@@ -86,6 +86,20 @@ def cache_from_url(
     return manager.produce_cache( adapter )
 
 
+def directory_adapter_from_url(
+    url: _core.PossibleUrl
+) -> _interfaces.DirectoryAdapter:
+    ''' Produces directory access adapter from URL. '''
+    return adapter_from_url( url ).as_directory( )
+
+
+def file_adapter_from_url(
+    url: _core.PossibleUrl
+) -> _interfaces.FileAdapter:
+    ''' Produces file access adapter from URL. '''
+    return adapter_from_url( url ).as_file( )
+
+
 def filters_from_specifiers(
     filters: __.AbstractIterable[ _interfaces.PossibleFilter ]
 ) -> __.AbstractSequence[ _interfaces.Filter ]:

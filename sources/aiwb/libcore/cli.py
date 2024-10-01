@@ -256,9 +256,7 @@ class LocationSurveyDirectoryCommand:
         auxdata: _state.Globals,
         display: ConsoleDisplay,
     ):
-        accessor = (
-            await _locations.adapter_from_url( self.url )
-            .as_specific( species = _locations.LocationSpecies.Directory ) )
+        accessor = _locations.directory_adapter_from_url( self.url )
         dirents = await accessor.survey_entries(
             filters = self.filters, recurse = self.recurse )
         # TODO: Implement.

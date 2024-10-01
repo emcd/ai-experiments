@@ -43,9 +43,7 @@ async def acquire(
                 distribution.provide_data_location(
                     'configuration', 'general.toml' ), path )
         file = _locations.Url.from_url( path )
-    accessor = (
-        await _locations.adapter_from_url( file ).as_specific(
-            species = _locations.LocationSpecies.File ) )
+    accessor = _locations.file_adapter_from_url( file )
     # TODO: Assert scheme is '' or 'file'.
     from tomli import loads
     configuration = loads( ( await accessor.acquire_content( ) ).content )

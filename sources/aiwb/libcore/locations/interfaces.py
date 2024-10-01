@@ -95,8 +95,6 @@ class AdapterBase( _Common, __.a.Protocol ):
 class CacheBase( _Common, __.a.Protocol ):
     ''' Common functionality for all caches. '''
 
-    manager: CacheManager
-
 
 @__.a.runtime_checkable
 class Filter( __.a.Protocol ):
@@ -217,6 +215,7 @@ class FileOperations( __.a.Protocol ):
         options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
     ) -> _core.Inode:
         ''' Updates content of file from raw bytes. '''
+        raise NotImplementedError
 
     # TODO: update_content_bytes_continuous
 
@@ -224,6 +223,32 @@ class FileOperations( __.a.Protocol ):
 @__.a.runtime_checkable
 class GeneralOperations( __.a.Protocol ):
     ''' Standard operations on locations of indeterminate species. '''
+
+    @__.abstract_member_function
+    def as_directory( self ) -> DirectoryAccessor:
+        ''' Returns directory accessor without sanity checks.
+
+            Only use this if you are certain that the entity is a directory.
+        '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def as_file( self ) -> FileAccessor:
+        ''' Returns file accessor without sanity checks.
+
+            Only use this if you are certain that the entity is a file.
+        '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def as_specific(
+        self,
+        force: bool = False,
+        pursue_indirection: bool = True,
+        species: __.Optional[ _core.LocationSpecies ] = __.absent,
+    ) -> SpecificAccessor:
+        ''' Discovers appropriate specific accessor for location. '''
+        raise NotImplementedError
 
     async def discover_species(
         self,
@@ -319,16 +344,6 @@ class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
         ''' Produces adapter from URL. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
-    async def as_specific(
-        self,
-        force: bool = False,
-        pursue_indirection: bool = True,
-        species: __.Optional[ _core.LocationSpecies ] = __.absent,
-    ) -> SpecificAdapter:
-        ''' Returns appropriate specific adapter for location. '''
-        raise NotImplementedError
-
 
 @__.a.runtime_checkable
 class DirectoryAdapter( AdapterBase, DirectoryOperations, __.a.Protocol ):
@@ -351,14 +366,6 @@ class GeneralCache( CacheBase, GeneralOperations, __.a.Protocol ):
     @__.abstract_member_function
     def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
         ''' Produces cache from URL. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def as_specific(
-        self,
-        species: __.Optional[ _core.LocationSpecies ] = __.absent,
-    ) -> SpecificAdapter:
-        ''' Returns appropriate specific cache for location. '''
         raise NotImplementedError
 
 

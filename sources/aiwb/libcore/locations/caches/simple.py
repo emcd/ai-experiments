@@ -203,6 +203,14 @@ class GeneralCache( _Common, __.GeneralCache ):
 
     adapter: __.GeneralAdapter
 
+    def as_directory( self ) -> __.DirectoryCache:
+        adapter = self.adapter.as_file( )
+        return DirectoryCache( adapter = adapter, cache_url = self.cache_url )
+
+    def as_file( self ) -> __.FileCache:
+        adapter = self.adapter.as_file( )
+        return FileCache( adapter = adapter, cache_url = self.cache_url )
+
     async def as_specific(
         self,
         force: bool = False,

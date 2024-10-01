@@ -42,8 +42,10 @@ from .interfaces import (
     SpecificAccessor as     SpecificLocationAccessor,
 )
 from .registries import (
-    adapter_from_url as     location_adapter_from_url,
-    adapters_registry as    location_adapters_registry,
-    cache_from_url as       location_cache_from_url,
-    caches_registry as      location_caches_registry,
+    adapter_from_url as         location_adapter_from_url,
+    adapters_registry as        location_adapters_registry,
+    cache_from_url as           location_cache_from_url,
+    caches_registry as          location_caches_registry,
+    directory_adapter_from_url,
+    file_adapter_from_url,
 )
