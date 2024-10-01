@@ -173,19 +173,26 @@ class DirectoryOperations( __.a.Protocol ):
 class FileOperations( __.a.Protocol ):
     ''' Standard operations on files. '''
 
-    # TODO: acquire_content  (as bytes)
+    # TODO: Simplify by removing text interface.
+    #       Develop concept of an interpreter or presenter that can sit on
+    #       top of accessors. E.g., TextPresenter for Python Unicode strings,
+    #       PicturePresenter for graphic images as PIL objects?
 
-    # TODO: acquire_content_continuous
+    # TODO: acquire_content_as_bytes
+
+    # TODO: acquire_content_as_bytes_continuous
+    #       Returns iterator which has inode attribute.
 
     # TODO: acquire_content_as_text
 
     # TODO: acquire_content_as_text_continuous
+    #       Returns iterator which has inode attribute.
 
     async def acquire_content_bytes_result(
         self,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
     ) -> _core.AcquireContentBytesResult:
-        ''' Returns complete content of file as raw bytes. '''
+        ''' Returns inode and complete content of file as raw bytes. '''
         raise NotImplementedError
 
     async def acquire_content_text_result(
@@ -195,10 +202,19 @@ class FileOperations( __.a.Protocol ):
         charset_errors: __.Optional[ str ] = __.absent,
         newline: __.Optional[ str ] = __.absent,
     ) -> _core.AcquireContentTextResult:
-        ''' Returns complete content of file as Unicode string. '''
+        ''' Returns inode and complete content of file as Unicode string. '''
         raise NotImplementedError
 
-    async def update_content(
+    async def update_content_from_bytes(
+        self,
+        content: bytes,
+        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
+        options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
+    ) -> _core.Inode:
+        ''' Updates content of file from raw bytes. Returns inode. '''
+        raise NotImplementedError
+
+    async def update_content_from_text(
         self,
         content: str,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
@@ -207,21 +223,12 @@ class FileOperations( __.a.Protocol ):
         newline: __.Optional[ str ] = __.absent,
         options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
     ) -> _core.Inode:
-        ''' Updates content of file from Unicode string. '''
+        ''' Updates content of file from Unicode string. Returns inode. '''
         raise NotImplementedError
 
-    # TODO: update_content_continuous
+    # TODO: update_content_from_bytes_continuous
 
-    async def update_content_bytes(
-        self,
-        content: bytes,
-        attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
-        options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
-    ) -> _core.Inode:
-        ''' Updates content of file from raw bytes. '''
-        raise NotImplementedError
-
-    # TODO: update_content_bytes_continuous
+    # TODO: update_content_from_text_continuous
 
 
 @__.a.runtime_checkable

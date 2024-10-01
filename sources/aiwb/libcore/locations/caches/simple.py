@@ -428,32 +428,14 @@ class FileCache( _Common, __.FileCache ):
             charset_errors = charset_errors,
             newline = newline )
 
-    async def update_content(
-        self,
-        content: str,
-        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
-        charset: __.Optional[ str ] = __.absent,
-        charset_errors: __.Optional[ str ] = __.absent,
-        newline: __.Optional[ str ] = __.absent,
-        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
-    ) -> __.Inode:
-        cache_adapter = await self._create_cache_file_if_absent( )
-        return await cache_adapter.update_content(
-            content,
-            attributes = attributes,
-            charset = charset,
-            charset_errors = charset_errors,
-            newline = newline,
-            options = options )
-
-    async def update_content_bytes(
+    async def update_content_from_bytes(
         self,
         content: bytes,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.Inode:
         cache_adapter = await self._create_cache_file_if_absent( )
-        return await cache_adapter.update_content_bytes(
+        return await cache_adapter.update_content_from_bytes(
             content, attributes = attributes, options = options )
 
     async def _ingest( self ):
@@ -463,8 +445,27 @@ class FileCache( _Common, __.FileCache ):
         try:
             cache_adapter = await self._create_cache_file_if_absent( )
             acquisition = await self.adapter.acquire_content_bytes_result( )
-            await cache_adapter.update_content_bytes( acquisition.content )
+            await cache_adapter.update_content_from_bytes(
+                acquisition.content )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
+
+    async def update_content_from_text(
+        self,
+        content: str,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+    ) -> __.Inode:
+        cache_adapter = await self._create_cache_file_if_absent( )
+        return await cache_adapter.update_content_from_text(
+            content,
+            attributes = attributes,
+            charset = charset,
+            charset_errors = charset_errors,
+            newline = newline,
+            options = options )
 
     async def _create_cache_file_if_absent( self ) -> __.FileAdapter:
         path = __.Path( self.cache_url.path )

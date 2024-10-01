@@ -384,31 +384,7 @@ class FileAdapter( _Common, __.FileAdapter ):
         return __.AcquireContentTextResult(
             content = content_nl, inode = inode )
 
-    async def update_content(
-        self,
-        content: str,
-        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
-        charset: __.Optional[ str ] = __.absent,
-        charset_errors: __.Optional[ str ] = __.absent,
-        newline: __.Optional[ str ] = __.absent,
-        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
-    ) -> __.Inode:
-        Error = __.partial_function(
-            __.LocationUpdateContentFailure, url = self.url )
-        content_nl = _nativize_newlines( content, newline = newline )
-        try:
-            content_bytes, charset = __.encode_content(
-                content_nl,
-                charset = charset,
-                charset_errors = charset_errors )
-        except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        inode = await self.update_content_bytes(
-            content_bytes,
-            attributes = attributes,
-            options = options )
-        return inode.with_attributes( charset = charset )
-
-    async def update_content_bytes(
+    async def update_content_from_bytes(
         self,
         content: bytes,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
@@ -431,6 +407,30 @@ class FileAdapter( _Common, __.FileAdapter ):
             attributes = attributes,
             error_to_raise = Error,
             content = content )
+
+    async def update_content_from_text(
+        self,
+        content: str,
+        attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
+        charset: __.Optional[ str ] = __.absent,
+        charset_errors: __.Optional[ str ] = __.absent,
+        newline: __.Optional[ str ] = __.absent,
+        options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
+    ) -> __.Inode:
+        Error = __.partial_function(
+            __.LocationUpdateContentFailure, url = self.url )
+        content_nl = _nativize_newlines( content, newline = newline )
+        try:
+            content_bytes, charset = __.encode_content(
+                content_nl,
+                charset = charset,
+                charset_errors = charset_errors )
+        except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        inode = await self.update_content_from_bytes(
+            content_bytes,
+            attributes = attributes,
+            options = options )
+        return inode.with_attributes( charset = charset )
 
 
 def _access_mode_from_permissions(

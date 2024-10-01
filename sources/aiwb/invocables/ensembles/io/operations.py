@@ -172,7 +172,10 @@ async def _write_as_string(
             options_ |= __.FileUpdateOptions.Append
         if 'error-if-exists' == option:
             options_ |= __.FileUpdateOptions.Absence
-    try: result = await accessor.update_content( content, options = options_ )
+    try:
+        result = (
+            await accessor.update_content_from_text(
+                content, options = options_ ) )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
