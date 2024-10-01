@@ -185,10 +185,6 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
             raise __.LocationIsIndirectionFailure(
                 url = self.url, reason = str( exc ) ) from exc
 
-# TODO? Perform registrations as part of module preparation function.
-__.adapters_registry[ '' ] = GeneralAdapter
-__.adapters_registry[ 'file' ] = GeneralAdapter
-
 
 class DirectoryAdapter( _Common, __.DirectoryAdapter ):
     ''' Directory access adapter with aiofiles and pathlib. '''
@@ -384,6 +380,12 @@ class FileAdapter( _Common, __.FileAdapter ):
             attributes = attributes,
             error_to_raise = Error,
             content = content )
+
+
+async def register_defaults( ):
+    for scheme in ( '', 'file' ):
+        if scheme in __.adapters_registry: continue
+        __.adapters_registry[ scheme ] = GeneralAdapter
 
 
 def _access_mode_from_permissions(

@@ -192,10 +192,6 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
             response = await client.head( self.implement )
             return response.is_redirect
 
-# TODO? Perform registrations as part of module preparation function.
-__.adapters_registry[ 'http' ] = GeneralAdapter
-__.adapters_registry[ 'https' ] = GeneralAdapter
-
 
 class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with httpx. '''
@@ -253,6 +249,12 @@ class FileAdapter( _Common, __.FileAdapter ):
             attributes = attributes,
             error_to_raise = Error,
             content = content )
+
+
+async def register_defaults( ):
+    for scheme in ( 'http', 'https' ):
+        if scheme in __.adapters_registry: continue
+        __.adapters_registry[ scheme ] = GeneralAdapter
 
 
 def _expiration_from_headers(

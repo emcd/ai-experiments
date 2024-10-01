@@ -123,5 +123,8 @@ class FilePresenter( __.FilePresenter ):
                     .replace( '\r', '\r\n' ) )
             # TODO: Error on invalid case.
 
-# TODO: Register via preparation function.
-__.file_presenters_registry[ 'text/*' ] = FilePresenter
+
+async def register_defaults( ):
+    for mimetype in ( 'text/*', ):
+        if mimetype in __.file_presenters_registry: continue
+        __.file_presenters_registry[ mimetype ] = FilePresenter

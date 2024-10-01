@@ -18,26 +18,26 @@
 #============================================================================#
 
 
-''' Abstractions and common implementations for various kinds of locations. '''
-
-# ruff: noqa: F401,F403
-# pylint: disable=unused-import
+''' Registration of default location access adapters, etc.... '''
 
 
 from . import __
-from . import adapters
-from . import caches
-from . import core
-from . import exceptions
-from . import filters
-from . import interfaces
-from . import preparation
-from . import presenters
-from . import registries
-from . import utilities
-
-from .preparation import register_defaults
-from ._api import *
 
 
-__.reclassify_modules( globals( ) )
+async def register_defaults( ):
+    ''' Registers default location access adapters, etc.... '''
+    from importlib import import_module
+    from inspect import ismodule
+    genera_modules = (
+        import_module( f".{name}", __package__ )
+        for name in ( 'adapters', 'presenters' ) )
+    species_modules = (
+        import_module( f".{name}", genus_module.__package__ )
+        for genus_module in genera_modules
+        for name, attribute in vars( genus_module ).items( )
+        if not name.startswith( '_' ) and ismodule( attribute ) )
+    registrators = tuple(
+        species_module.register_defaults( )
+        for species_module in species_modules
+        if hasattr( species_module, 'register_defaults' ) )
+    await __.gather_async( *registrators )

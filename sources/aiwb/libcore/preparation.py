@@ -45,12 +45,13 @@ async def prepare(
 
         Also:
         * Configures logging for library package (not application).
-        * Optionally, updates the process environment.
+        * Optionally, loads process environment from files.
 
         Note that asynchronous preparation allows for applications to
         concurrently initialize other entities outside of the library, even
         though the library initialization, itself, is inherently sequential.
     '''
+    await _locations.register_defaults( )
     directories = application.produce_platform_directories( )
     distribution = (
         await _distribution.Information.prepare(
