@@ -18,31 +18,61 @@
 #============================================================================#
 
 
-''' Base converser classes and functions for AI providers. '''
+''' Abstract base classes and interfaces. '''
 
 
 from __future__ import annotations
 
 from . import __
-from . import core as _core
 
 
-class ConverserModalities( __.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Supportable input modalities for AI chat models. '''
-
-    Audio       = 'audio'
-    Pictures    = 'pictures'
-    Text        = 'text'
-    # TODO: Video
-
-
+@__.a.runtime_checkable
 @__.standard_dataclass
-class ConverserTokensLimits:
-    ''' Various limits on number of tokens in chat completion. '''
+class Client( __.a.Protocol ):
+    ''' Interacts with AI provider. '''
 
-    # TODO? per_prompt
-    per_response: int = 0
-    total: int = 0
+    name: str
+
+    @classmethod
+    @__.abstract_member_function
+    async def assert_environment(
+        selfclass,
+        auxdata: __.CoreGlobals,
+    ):
+        ''' Asserts necessary environment for client. '''
+        raise NotImplementedError
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        auxdata: __.CoreGlobals,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
+        return __.AccretiveDictionary( name = descriptor[ 'name' ] )
+
+    @classmethod
+    @__.abstract_member_function
+    async def prepare(
+        selfclass,
+        auxdata: __.CoreGlobals,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        ''' Produces client from descriptor dictionary. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def survey_models(
+        self, auxdata: __.CoreGlobals
+    ) -> __.AbstractSequence[ Model ]:
+        ''' Returns models available from provider. '''
+        raise NotImplementedError
+
+    # TODO? survey_audiogen_models
+    #       survey_conversation_models
+    #       survey_picturegen_models
+    #       survey_tts_models
+    #       survey_videogen_models
 
 
 @__.a.runtime_checkable
@@ -57,23 +87,36 @@ class ConversationTokenizer( __.a.Protocol ):
         raise NotImplementedError
 
 
+@__.a.runtime_checkable
 @__.standard_dataclass
-class ConverserAttributes:
-    ''' Common attributes for AI chat models. '''
+class Factory( __.a.Protocol ):
+    ''' Produces clients. '''
 
-    accepts_response_multiplicity: bool = False # TODO: Via controls.
-    accepts_supervisor_instructions: bool = False
-    modalities: __.AbstractSequence[ ConverserModalities ] = (
-        ConverserModalities.Text, )
-    supports_continuous_response: bool = False
-    supports_invocations: bool = False
-    tokenizer: ConversationTokenizer
-    tokens_limits: ConverserTokensLimits = ConverserTokensLimits( )
+    @__.abstract_member_function
+    async def client_from_descriptor(
+        self,
+        auxdata: __.CoreGlobals,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ]
+    ) -> Client:
+        ''' Produces client from descriptor dictionary. '''
+        raise NotImplementedError
 
 
+@__.a.runtime_checkable
 @__.standard_dataclass
-class ConverserModel( _core.Model ):
+class Model( __.a.Protocol ):
+    ''' Represents an AI model. '''
+
+    name: str
+    provider: Client
+
+
+@__.a.runtime_checkable
+@__.standard_dataclass
+class ConverserModel( Model, __.a.Protocol ):
     ''' Represents an AI chat model. '''
+
+    tokenizer: ConversationTokenizer
 
     @__.abstract_member_function
     async def converse(

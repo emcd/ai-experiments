@@ -24,12 +24,11 @@
 
 * Architecture and Design
 
-    - Refactor `providers` subpackage to be more like `libcore.locations` in
-      structure (i.e., `core` and `interfaces` modules).
     - Return compound object from models preparation which has both providers
       and models, similar to how promptstores preparation returns both
       promptstores and prompts.
     - Build out utility functions to extract different kinds of models.
+    - Create model matchers from attributes specifications in package data.
 
     - Rework GUI to pass immutable conversation object through functions
       instead of components namespace. Cannot pass GUI globals object, since

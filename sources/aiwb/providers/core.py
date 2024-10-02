@@ -26,79 +26,6 @@ from __future__ import annotations
 from . import __
 
 
-@__.a.runtime_checkable
-@__.standard_dataclass
-class Client( __.a.Protocol ):
-    ''' Interacts with AI provider. '''
-
-    name: str
-
-    @classmethod
-    def init_args_from_descriptor(
-        selfclass,
-        auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        ''' Extracts dictionary of initializer arguments from descriptor. '''
-        return __.AccretiveDictionary( name = descriptor[ 'name' ] )
-
-    @classmethod
-    @__.abstract_member_function
-    async def assert_environment(
-        selfclass,
-        auxdata: __.Globals,
-    ):
-        ''' Asserts necessary environment for client. '''
-        raise NotImplementedError
-
-    @classmethod
-    @__.abstract_member_function
-    async def prepare(
-        selfclass,
-        auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
-        ''' Produces client from descriptor dictionary. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def survey_models(
-        self, auxdata: __.CoreGlobals
-    ) -> __.AbstractSequence[ Model ]:
-        ''' Returns models available from provider. '''
-        raise NotImplementedError
-
-    # TODO? survey_audiogen_models
-    #       survey_conversation_models
-    #       survey_picturegen_models
-    #       survey_tts_models
-    #       survey_videogen_models
-
-
-@__.a.runtime_checkable
-@__.standard_dataclass
-class Factory( __.a.Protocol ):
-    ''' Produces clients. '''
-
-    @__.abstract_member_function
-    async def client_from_descriptor(
-        self,
-        auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ]
-    ) -> Client:
-        ''' Produces client from descriptor dictionary. '''
-        raise NotImplementedError
-
-
-@__.a.runtime_checkable
-@__.standard_dataclass
-class Model( __.a.Protocol ):
-    ''' Represents an AI model. '''
-
-    name: str
-    provider: Client
-
-
 class ChatCompletionError( Exception ): pass
 
 
@@ -116,90 +43,40 @@ class ChatCallbacks:
         lambda tokens_count: None )
     success_notifier: __.a.Callable[ [ __.a.Any ], None ] = (
         lambda status: None )
-    updater: __.a.Callable[ [ __.a.Any, str ], None ] = (
+    updater: __.a.Callable[ [ __.a.Any ], None ] = (
         lambda handle: None )
+
+
+class ConverserModalities( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Supportable input modalities for AI chat models. '''
+
+    Audio       = 'audio'
+    Pictures    = 'pictures'
+    Text        = 'text'
+    # TODO: Video
+
+
+@__.standard_dataclass
+class ConverserTokensLimits:
+    ''' Various limits on number of tokens in chat completion. '''
+
+    # TODO? per_prompt
+    per_response: int = 0
+    total: int = 0
+
+
+@__.standard_dataclass
+class ConverserAttributes:
+    ''' Common attributes for AI chat models. '''
+
+    accepts_response_multiplicity: bool = False # TODO: Via controls.
+    accepts_supervisor_instructions: bool = False
+    modalities: __.AbstractSequence[ ConverserModalities ] = (
+        ConverserModalities.Text, )
+    supports_continuous_response: bool = False
+    supports_invocations: bool = False
+    tokens_limits: ConverserTokensLimits = ConverserTokensLimits( )
 
 
 chat_callbacks_minimal = ChatCallbacks( )
 # TODO: Use accretive validator dictionary for preparers registry.
-preparers = __.AccretiveDictionary( )
-
-
-def descriptors_from_configuration(
-    auxdata: __.Globals
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
-    ''' Validates and returns descriptors from configuration. '''
-    scribe = __.acquire_scribe( __package__ )
-    descriptors = [ ]
-    for descriptor in auxdata.configuration.get( 'providers', ( ) ):
-        if 'name' not in descriptor:
-            auxdata.notifications.enqueue_error(
-                ValueError( "Descriptor missing name." ),
-                "Could not load AI provider from configuration.",
-                details = descriptor,
-                scribe = scribe )
-            continue
-        if not descriptor.get( 'enable', True ): continue
-        descriptors.append( descriptor )
-    return tuple( descriptors )
-
-
-async def prepare( auxdata: __.Globals ) -> __.AccretiveDictionary:
-    ''' Prepares clients from configuration and returns futures to them. '''
-    factories = await prepare_factories( auxdata )
-    return await prepare_clients( auxdata, factories )
-
-
-async def prepare_clients(
-    auxdata: __.Globals,
-    factories: __.AbstractDictionary[ str, Factory ],
-) -> __.AbstractDictionary[ str, Client ]:
-    ''' Prepares clients from configuration. '''
-    # TODO: Return futures for background loading.
-    #       https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
-    scribe = __.acquire_scribe( __package__ )
-    clients = __.AccretiveDictionary( )
-    descriptors = descriptors_from_configuration( auxdata )
-    names = tuple( descriptor[ 'name' ] for descriptor in descriptors )
-    factories_per_client = tuple(
-        factories[ descriptor.get( 'factory', name ) ]
-        for name, descriptor in zip( names, descriptors ) )
-    results = await __.gather_async(
-        *(  factory.client_from_descriptor( auxdata, descriptor )
-            for factory, descriptor
-            in zip( factories_per_client, descriptors ) ),
-        return_exceptions = True )
-    for name, descriptor, result in zip( names, descriptors, results ):
-        match result:
-            case __.g.Error( error ):
-                summary = f"Could not load AI provider {name!r}."
-                auxdata.notifications.enqueue_error(
-                    error, summary, scribe = scribe )
-            case __.g.Value( client ):
-                clients[ name ] = client
-    return clients
-
-
-async def prepare_factories(
-    auxdata: __.Globals
-) -> __.AbstractDictionary[ str, Factory ]:
-    ''' Prepares factories from configuration. '''
-    scribe = __.acquire_scribe( __package__ )
-    descriptors = descriptors_from_configuration( auxdata )
-    names = frozenset(
-        descriptor.get( 'factory', descriptor[ 'name' ] )
-        for descriptor in descriptors )
-    preparers_ = __.DictionaryProxy(
-        { name: preparers[ name ]( auxdata ) for name in names } )
-    results = await __.gather_async(
-        *preparers_.values( ), return_exceptions = True )
-    factories = { }
-    for name, result in zip( preparers_.keys( ), results ):
-        match result:
-            case __.g.Error( error ):
-                summary = "Could not prepare AI provider factory {name!r}."
-                auxdata.notifications.enqueue_error(
-                    error, summary, scribe = scribe )
-            case __.g.Value( factory ):
-                factories[ name ] = factory
-    return factories

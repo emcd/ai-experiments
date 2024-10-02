@@ -21,7 +21,7 @@
 ''' Implementation of interface to OpenAI. '''
 
 
-from .. import core as _core
+from .. import preparation as _preparation
 from . import __
 
 
@@ -60,14 +60,14 @@ class ConverserAttributes( __.ConverserAttributes ):
 
 
 @__.standard_dataclass
-class Client( _core.Client ):
+class Client( __.Client ):
 
     module: __.Module # TEMP: Hack until we can use object rather than module.
 
     @classmethod
     def init_args_from_descriptor(
         selfclass,
-        auxdata: __.Globals,
+        auxdata: __.CoreGlobals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
         from sys import modules
@@ -129,7 +129,7 @@ class OpenAIClient( Client ):
     @classmethod
     async def assert_environment(
         selfclass,
-        auxdata: __.Globals,
+        auxdata: __.CoreGlobals,
     ):
         from os import environ
         if 'OPENAI_API_KEY' not in environ:
@@ -139,7 +139,7 @@ class OpenAIClient( Client ):
     @classmethod
     async def prepare(
         selfclass,
-        auxdata: __.Globals,
+        auxdata: __.CoreGlobals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
         await selfclass.assert_environment( auxdata )
@@ -150,12 +150,12 @@ class OpenAIClient( Client ):
             .init_args_from_descriptor( auxdata, descriptor ) )
 
 
-@__.dataclass( frozen = True, kw_only = True, slots = True )
-class Factory( _core.Factory ):
+@__.standard_dataclass
+class Factory( __.Factory ):
 
     async def client_from_descriptor(
         self,
-        auxdata: __.Globals,
+        auxdata: __.CoreGlobals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ]
     ):
         #variant = descriptor.get( 'variant' )
@@ -164,13 +164,13 @@ class Factory( _core.Factory ):
         return await OpenAIClient.prepare( auxdata, descriptor )
 
 
-async def prepare( auxdata: __.Globals ):
+async def prepare( auxdata: __.CoreGlobals ):
     ''' Installs dependencies and returns factory. '''
     # TODO: Install dependencies in isolated environment, if necessary.
     #       Packages: openai, tiktoken
     return Factory( )
 
-_core.preparers[ 'openai' ] = prepare
+_preparation.preparers[ 'openai' ] = prepare
 
 
 # TODO: Maintain models with ModelsManager class.
@@ -370,7 +370,7 @@ async def _chat( messages, special_data, controls, callbacks ):
         return await client.chat.completions.create(
             messages = messages, **special_data, **controls )
     except OpenAIError as exc:
-        raise _core.ChatCompletionError( f"Error: {exc}" ) from exc
+        raise __.ChatCompletionError( f"Error: {exc}" ) from exc
 
 
 def _create_canister_from_response( response ):
@@ -686,7 +686,7 @@ async def _process_iterative_chat_response( response, callbacks ):
         while True:
             try: chunk = await anext( response )
             except StopIteration as exc:
-                raise _core.ChatCompletionError(
+                raise __.ChatCompletionError(
                     'Error: Empty response from AI.' ) from exc
             chunks.append( chunk )
             delta = chunk.choices[ 0 ].delta
@@ -705,7 +705,7 @@ async def _process_iterative_chat_response( response, callbacks ):
                 canister, response_, handle, callbacks )
     except OpenAIError as exc:
         if handle: callbacks.deallocator( handle )
-        raise _core.ChatCompletionError( f"Error: {exc}" ) from exc
+        raise __.ChatCompletionError( f"Error: {exc}" ) from exc
     return handle
 
 

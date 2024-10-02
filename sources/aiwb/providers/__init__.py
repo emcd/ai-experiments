@@ -28,9 +28,11 @@ from . import __
 from . import clients
 from . import core
 from . import exceptions
+from . import interfaces
+from . import preparation
 
-from .core import *
-from .exceptions import *
+from ._api import *
+from .preparation import prepare
 
 
 __.reclassify_modules( globals( ) )

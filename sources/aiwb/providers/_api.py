@@ -18,11 +18,12 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for AI provider clients. '''
+''' Internal aggregation of providers API. '''
 
 # ruff: noqa: F401,F403
 # pylint: disable=unused-import
 
 
-from ..__ import *
-from .._api import *
+from .core import *
+from .exceptions import *
+from .interfaces import *
