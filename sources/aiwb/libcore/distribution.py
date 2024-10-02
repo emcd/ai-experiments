@@ -22,6 +22,7 @@
 
 
 from . import __
+from . import locations as _locations
 
 
 @__.standard_dataclass
@@ -65,3 +66,9 @@ class Information:
         base = self.location / 'data'
         if appendages: return base.joinpath( *appendages )
         return base
+
+    def provide_data_location_accessor(
+        self, *appendages: str
+    ) -> _locations.GeneralAccessor:
+        return _locations.adapter_from_url(
+            self.provide_data_location( *appendages ) )
