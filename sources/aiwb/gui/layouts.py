@@ -557,8 +557,8 @@ user_prompts_layout = {
             max_width = sizes.prompt_width, width = sizes.prompt_width,
         ),
         event_functions = dict(
-            latent_value = 'on_change_freeform_prompt',
-            submission_value = 'on_submit_freeform_prompt',
+            content_update_event = 'on_change_freeform_prompt',
+            submission_event = 'on_submit_freeform_prompt',
         ),
     ),
     # TODO? Convert to column and place to right of prompts column.

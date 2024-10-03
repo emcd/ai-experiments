@@ -62,7 +62,10 @@ async def on_adjust_documents_count( components, event ):
 
 
 async def on_change_freeform_prompt( components, event ):
+    if not event.new: return
     from .updaters import update_search_button, update_token_count
+    source = components.text_freeform_prompt
+    source.content_update_event = False
     update_token_count( components )
     update_search_button( components )
 
@@ -167,9 +170,10 @@ async def on_select_user_prompt_class( components, event ):
 
 
 async def on_submit_freeform_prompt( components, event ):
+    if not event.new: return
     source = components.text_freeform_prompt
-    if not source.submission_value: return
-    source.submission_value = ''
+    if not source.value: return
+    source.submission_event = False
     from .actions import chat
     await chat( components )
 

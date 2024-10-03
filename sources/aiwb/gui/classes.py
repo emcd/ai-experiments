@@ -300,16 +300,21 @@ pre, code {
 }
 '''
 
-class AdaptiveTextArea( ReactiveHTML ):
 
-    latent_value = param.String( default = '' )
+class AdaptiveTextArea( ReactiveHTML ):
+    ''' Dynamically-sized text area which posts update and submit events. '''
+
     # TODO: 'max_length' breaks object serialization for some reason;
     #       need to find out why and fix.
+
     #max_length = param.Integer( default = 32767 )
     placeholder = param.String( default = '' )
     submission_behavior = param.String( default = 'slack-alt' )
-    submission_value = param.String( default = '' )
     value = param.String( default = '' )
+
+    content_update_event = param.Event( )
+    submission_event = param.Event( )
+
     _style_css__ = param.String( default = '' )
 
     _style_default__ = __.DictionaryProxy( {
@@ -322,39 +327,11 @@ class AdaptiveTextArea( ReactiveHTML ):
     }
 
     _scripts = {
-        'my_keydown': '''
-            if ('Enter' !== event.key) return true;
-            if (!data.submission_behavior) return true;
-            const modifiers = new Set();
-            if (event.altKey) modifiers.add('alt');
-            if (event.ctrlKey) modifiers.add('ctrl');
-            if (event.metaKey) modifiers.add('meta');
-            if (event.shiftKey) modifiers.add('shift');
-            const onMac = (0 <= navigator.userAgent.indexOf("Mac"));
-            var toSubmit = false;
-            if ('chatgpt' == data.submission_behavior) {
-                toSubmit = (0 === modifiers.size);
-            }
-            else if (1 === modifiers.size) {
-                if ('slack-alt' == data.submission_behavior) {
-                    toSubmit = modifiers.has(onMac ? 'meta' : 'ctrl');
-                }
-                else if ('jupyter' == data.submission_behavior) {
-                    toSubmit = modifiers.has('shift');
-                }
-            }
-            modifiers.clear();
-            if (toSubmit) {
-                event.preventDefault();
-                data.submission_value = data.value;
-                // XXX: Hack to trigger event.
-                data.latent_value = data.value + '\\n';
-                return false;
-            }
-            return true;''',
-        'my_keyup': '''data.value = textarea.value;''',
-        'value': '''
-            textarea.value = data.value;
+        'init': '''
+            state.debounce_timer = null;
+            textarea.value = data.value || '';
+            self.auto_resize();''',
+        'auto_resize': '''
             const taMinHeight = model.min_height || 0;
             const taMaxHeight = model.max_height || Infinity;
             // Account for border and padding.
@@ -365,15 +342,48 @@ class AdaptiveTextArea( ReactiveHTML ):
             model.height = taOffset + Math.min(
                 Math.max(textarea.scrollHeight, taMinHeight), taMaxHeight);
             textarea.style.height = `${model.height}px`;
-            if (!state.timer_active) {
-                state.timer_active = true;
-                setTimeout(
+            if (!state.debounce_timer) {
+                state.debouce_timer = setTimeout(
                     function() {
-                        data.latent_value = textarea.value;
-                        state.timer_active = false;
+                        self._send_content_update_event();
+                        state.debounce_timer = null;
                     }, 400);
+            }''',
+        'handle_keydown': '''
+            if ('Enter' !== event.key) return true;
+            if (!data.submission_behavior) return true;
+            const modifiers = new Set();
+            if (event.altKey) modifiers.add('alt');
+            if (event.ctrlKey) modifiers.add('ctrl');
+            if (event.metaKey) modifiers.add('meta');
+            if (event.shiftKey) modifiers.add('shift');
+            const isMac = 0 <= navigator.platform.toUpperCase().indexOf('MAC');
+            let toSubmit = false;
+            if ('chatgpt' == data.submission_behavior) {
+                toSubmit = (0 === modifiers.size);
+            }
+            else if ('slack-alt' == data.submission_behavior) {
+                toSubmit = modifiers.has(isMac ? 'meta' : 'ctrl');
+            }
+            else if ('jupyter' == data.submission_behavior) {
+                toSubmit = modifiers.has('shift');
+            }
+            if (toSubmit) {
+                event.preventDefault();
+                self._send_submission_event();
+                textarea.value = '';
+                self.auto_resize();
+                return false;
             }
             return true;''',
+        '_send_content_update_event': '''
+            console.log('Sending update event.');
+            data.value = textarea.value;
+            data.content_update_event = true;''',
+        '_send_submission_event': '''
+            console.log('Sending submission event.');
+            data.value = textarea.value;
+            data.submission_event = true;''',
     }
 
     _stylesheets = [ _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
@@ -381,14 +391,11 @@ class AdaptiveTextArea( ReactiveHTML ):
     _template = '''
         <textarea id="textarea"
             class="my-no-scrollbar bk-input"
-            maxlength="32767"
-            onkeydown="${script('my_keydown')}"
-            onkeyup="${script('my_keyup')}"
+            oninput="${script('auto_resize')}"
+            onkeydown="${script('handle_keydown')}"
             placeholder="${placeholder}"
             style="${_style_css__}; height: ${model.height}px; width: ${model.width}px;"
-        >
-        ${value}
-        </textarea>'''
+        ></textarea>'''
 
     def __init__( self, **params ):
         super( ).__init__( **params )
