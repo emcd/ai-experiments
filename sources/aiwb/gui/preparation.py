@@ -73,6 +73,8 @@ async def _prepare_components_base(
     auxdata: __.ApiServerGlobals,
 ) -> __.SimpleNamespace:
     ''' Prepares foundation for GUI components tracker. '''
+    from panel import extension
+    extension( 'mathjax' )
     # Designs and Themes: https://panel.holoviz.org/api/panel.theme.html
     from panel.theme import Native
     from .templates.default import DefaultTemplate
