@@ -73,9 +73,9 @@ class ConfigurationModifiers:
     ''' Configuration injectors/modifiers. '''
 
     maintenance: __.a.Annotation[
-        EnablementTristate,
+        __.a.Nullable[ bool ],
         __.tyro.conf.arg( name = 'maintenance-mode', prefix_name = False ),
-    ] = EnablementTristate.Retain
+    ] = None
     all_promptstores: __.a.Annotation[
         EnablementTristate,
         __.tyro.conf.arg( prefix_name = False ),
@@ -144,10 +144,10 @@ class ConfigurationModifiers:
     def as_edits( self ) -> __.DictionaryEdits:
         ''' Returns modifications as sequence of configuration edits. '''
         edits = [ ]
-        if not self.maintenance.is_retain( ):
+        if None is not self.maintenance:
             edits.append( __.SimpleDictionaryEdit(
                 address = ( 'maintenance-mode', ),
-                value = bool( self.maintenance ) ) )
+                value = self.maintenance ) )
         for collection_name in (
             'promptstores', 'providers', 'vectorizers', 'vectorstores',
         ):
