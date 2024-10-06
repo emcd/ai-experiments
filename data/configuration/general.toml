@@ -63,6 +63,11 @@ enable = true
 #variant = 'azure'
 #enable = true
 
+[[providers]]
+name = 'Anthropic'
+factory = 'anthropic'
+enable = false
+
 
 ### Vector Stores
 

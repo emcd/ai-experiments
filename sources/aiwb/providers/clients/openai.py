@@ -21,7 +21,6 @@
 ''' Implementation of interface to OpenAI. '''
 
 
-from .. import preparation as _preparation
 from . import __
 
 
@@ -130,13 +129,12 @@ class Client( __.Client ):
 class OpenAIClient( Client ):
 
     @classmethod
-    async def assert_environment(
-        selfclass,
-        auxdata: __.CoreGlobals,
-    ):
+    async def assert_environment( selfclass, auxdata: __.CoreGlobals ):
         from os import environ
-        if 'OPENAI_API_KEY' not in environ:
-            raise LookupError( "Missing 'OPENAI_API_KEY'." )
+        api_key_name = 'OPENAI_API_KEY'
+        if api_key_name not in environ:
+            # TODO: Raise appropriate error.
+            raise LookupError( f"Missing {api_key_name!r}." )
         # TODO: Warn on missing 'OPENAI_ORG_ID' and 'OPENAI_PROJECT_ID'.
 
     @classmethod
@@ -180,7 +178,7 @@ async def prepare( auxdata: __.CoreGlobals ):
     #       Packages: openai, tiktoken
     return Factory( )
 
-_preparation.preparers[ 'openai' ] = prepare
+__.preparers_registry[ _module_name ] = prepare
 
 
 # TODO: Maintain models with ModelsManager class.

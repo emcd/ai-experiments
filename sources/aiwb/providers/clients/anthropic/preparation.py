@@ -18,16 +18,18 @@
 #============================================================================#
 
 
-''' AI provider clients, including locally-hosted providers. '''
-
-# ruff: noqa: F401
-# pylint: disable=unused-import
+''' Preparation for Anthropic AI provider. '''
 
 
 from . import __
-from . import anthropic
-from . import openai
-# TODO: Local Providers: Ollama, Vllm, etc...
+from . import core as _core
 
 
-__.reclassify_modules( globals( ) )
+async def prepare( auxdata: __.CoreGlobals ):
+    ''' Installs dependencies and returns factory. '''
+    # TODO: Install dependencies in isolated environment, if necessary.
+    #       Packages: anthropic
+    return _core.Factory( )
+
+_package_name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
+__.preparers_registry[ _package_name ] = prepare

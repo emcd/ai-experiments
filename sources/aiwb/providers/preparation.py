@@ -23,9 +23,7 @@
 
 from . import __
 from . import interfaces as _interfaces
-
-
-preparers = __.AccretiveDictionary( )
+from . import registries as _registries
 
 
 def descriptors_from_configuration(
@@ -92,12 +90,13 @@ async def prepare_factories(
     names = frozenset(
         descriptor.get( 'factory', descriptor[ 'name' ] )
         for descriptor in descriptors )
-    preparers_ = __.DictionaryProxy(
-        { name: preparers[ name ]( auxdata ) for name in names } )
+    preparers = __.DictionaryProxy(
+        {   name: _registries.preparers_registry[ name ]( auxdata )
+            for name in names } )
     results = await __.gather_async(
-        *preparers_.values( ), return_exceptions = True )
+        *preparers.values( ), return_exceptions = True )
     factories = { }
-    for name, result in zip( preparers_.keys( ), results ):
+    for name, result in zip( preparers.keys( ), results ):
         match result:
             case __.g.Error( error ):
                 summary = f"Could not prepare AI provider factory {name!r}."

@@ -18,16 +18,10 @@
 #============================================================================#
 
 
-''' AI provider clients, including locally-hosted providers. '''
+''' Internal imports and utilities for Anthropic AI provider. '''
 
-# ruff: noqa: F401
+# ruff: noqa: F401,F403
 # pylint: disable=unused-import
 
 
-from . import __
-from . import anthropic
-from . import openai
-# TODO: Local Providers: Ollama, Vllm, etc...
-
-
-__.reclassify_modules( globals( ) )
+from ..__ import *
