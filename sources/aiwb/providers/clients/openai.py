@@ -25,6 +25,9 @@ from .. import preparation as _preparation
 from . import __
 
 
+_module_name = __name__.replace( f"{__package__}.", '' )
+
+
 class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Degree to which invocations are supported. '''
 
@@ -145,6 +148,13 @@ class OpenAIClient( Client ):
         await selfclass.assert_environment( auxdata )
         # TODO: Return future which acquires models in background.
         _models.update( await _cache_acquire_models( auxdata ) )
+#        integrators = (
+#            await __.acquire_models_integrators( auxdata, _module_name ) )
+#        for model_name in _models:
+#            attributes = { }
+#            for integrator in integrators[ __.ModelSpecies.Converser ]:
+#                attributes = integrator( model_name, attributes )
+#            ic( model_name, attributes )
         return selfclass(
             **super( OpenAIClient, OpenAIClient )
             .init_args_from_descriptor( auxdata, descriptor ) )

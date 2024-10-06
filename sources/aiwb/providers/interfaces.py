@@ -68,12 +68,6 @@ class Client( __.a.Protocol ):
         ''' Returns models available from provider. '''
         raise NotImplementedError
 
-    # TODO? survey_audiogen_models
-    #       survey_conversation_models
-    #       survey_picturegen_models
-    #       survey_tts_models
-    #       survey_videogen_models
-
 
 @__.a.runtime_checkable
 class ConversationTokenizer( __.a.Protocol ):

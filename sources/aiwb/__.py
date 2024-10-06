@@ -26,6 +26,7 @@
 
 import enum
 import io
+import re
 
 from abc import (
     ABCMeta as ABCFactory,

@@ -8,7 +8,6 @@ format-version = 1
 [converser]
 name-regex = '^(chatgpt-4o(-.*)?|gpt-(3.5-turbo|4o?)(-.*)?|o1-(mini|preview)(-.*)?)$'
 accepts-supervisor-instructions = true
-inherits-controls = true
 modalities = [ 'text', 'pictures' ]
 supports-continuous-response = true
 supports-invocations = true

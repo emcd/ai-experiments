@@ -7,7 +7,6 @@ format-version = 1
 name-regex = '^claude-3-.*$'
 accepts-supervisor-instructions = true
 modalities = [ 'text', 'pictures' ]
-inherits-controls = true
 supports-continuous-response = true
 supports-invocations = true
 

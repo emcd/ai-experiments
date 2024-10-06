@@ -2,8 +2,8 @@ format-version = 1
 
 [converser]
 name-regex = '^o1-.*$'
+replaces-controls = true
 accepts-supervisor-instructions = false
-inherits-controls = false
 modalities = [ 'text' ]
 supports-continuous-response = false
 supports-invocations = false

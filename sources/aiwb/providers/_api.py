@@ -27,3 +27,4 @@
 from .core import *
 from .exceptions import *
 from .interfaces import *
+from .utilities import *

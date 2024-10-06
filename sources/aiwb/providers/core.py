@@ -78,5 +78,81 @@ class ConverserAttributes:
     tokens_limits: ConverserTokensLimits = ConverserTokensLimits( )
 
 
+class ModelIntegrationBehaviors( __.enum.IntFlag ):
+
+    Default             = 0
+    ReplaceControls     = __.produce_enumeration_value( )
+
+
+@__.standard_dataclass
+class ModelsIntegrator:
+    ''' Integrates attributes from configuration for matching models. '''
+    # TODO: Immutable class attributes.
+
+    attributes: __.AbstractDictionary[ str, __.a.Any ]
+    behaviors: ModelIntegrationBehaviors
+    regex: __.re.Pattern
+
+    @classmethod
+    def from_descriptor(
+        selfclass, descriptor: __.AbstractDictionary[ str, __.a.Any ]
+    ) -> __.a.Self:
+        ''' Instance from configuration. '''
+        desc = dict( descriptor )
+        # TODO: Error if 'name-regex' is missing.
+        regex = __.re.compile( desc.pop( 'name-regex' ) )
+        behaviors = ModelIntegrationBehaviors.Default
+        if desc.pop( 'replaces-controls', False ):
+            behaviors |= ModelIntegrationBehaviors.ReplaceControls
+        attributes = __.DictionaryProxy( desc )
+        return selfclass(
+            attributes = attributes, behaviors = behaviors, regex = regex )
+
+    def __call__(
+        self, name: str, attributes: __.AbstractDictionary[ str, __.a.Any ]
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Returns integrated copy of model attributes. '''
+        if not self.regex.match( name ): return attributes
+        ours = dict( self.attributes )
+        theirs = dict( attributes )
+        controls = ours.pop( 'controls', [ ] )
+        if (    'controls' not in theirs
+            or  self.behaviors & ModelIntegrationBehaviors.ReplaceControls
+        ): theirs[ 'controls' ] = controls
+        else: theirs[ 'controls' ].extend( controls )
+        _merge_dictionaries_recursive( theirs, ours )
+        return __.DictionaryProxy( theirs )
+
+
+class ModelSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Available species for models. '''
+
+    # Note: Not including domain-specific classifiers or text completers
+    #       unless there is a compelling reason.
+    AudioGenerator =    'audiogenerator'
+    AudioTts =          'audiotts'
+    Converser =         'converser'
+    PictureGenerator =  'picturegenerator'
+    Vectorizer =        'vectorizer'
+    VideoGenerator =    'videogenerator'
+
+
 chat_callbacks_minimal = ChatCallbacks( )
 # TODO: Use accretive validator dictionary for preparers registry.
+
+
+def _merge_dictionaries_recursive(
+    theirs: __.AbstractMutableDictionary[ str, __.a.Any ],
+    ours: __.AbstractDictionary[ str, __.a.Any ],
+):
+    for name, our_value in ours.items( ):
+        if name not in theirs:
+            theirs[ name ] = our_value
+            continue
+        their_value = theirs[ name ]
+        if (    not isinstance( their_value, __.AbstractDictionary )
+            or  not isinstance( our_value, __.AbstractDictionary )
+        ):
+            theirs[ name ] = our_value
+            continue
+        _merge_dictionaries_recursive( their_value, our_value )
