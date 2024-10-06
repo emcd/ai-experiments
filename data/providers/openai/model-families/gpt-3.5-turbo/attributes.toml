@@ -1,7 +1,7 @@
 format-version = 1
 
 [converser]
-name-regex = '^gpt-3.5-turbo(-.*)?$' # Assumes 0613 and earlier not in list.
+name-regex = '^gpt-3\.5-turbo(-.*)?$' # Assumes 0613 and earlier not in list.
 modalities = [ 'text' ]
 
 [converser.special]

@@ -1,0 +1,4 @@
+format-version = 1
+
+[converser]
+name-regex = '^claude-3-(haiku|sonnet|opus)(-.*)?$'
