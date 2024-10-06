@@ -25,13 +25,44 @@ from . import __
 from . import v0 as _v0
 
 
+_supported_model_species = frozenset( (
+    __.ModelSpecies.Converser,
+) )
+
+
 class Client( __.Client ):
 
     async def survey_models(
         self, auxdata: __.CoreGlobals
     ) -> __.AbstractSequence[ __.Model ]:
-        # TODO: Implement.
-        pass
+        integrators = (
+            await __.acquire_models_integrators( auxdata, __.provider_name ) )
+        # TODO: Use list of names rather than dictionary.
+        names = await _cache_acquire_models( auxdata )
+        models = [ ]
+        for name in names:
+            for species in _supported_model_species:
+                descriptor: __.AbstractDictionary[ str, __.a.Any ] = { }
+                for integrator in integrators[ species ]:
+                    descriptor = integrator( name, descriptor )
+                if not descriptor: continue
+                #ic( name, descriptor )
+                models.append( self._model_from_descriptor(
+                    name = name, species = species, descriptor = descriptor ) )
+        return tuple( models )
+
+    def _model_from_descriptor(
+        self,
+        name: str,
+        species: __.ModelSpecies,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.Model:
+        match species:
+            case __.ModelSpecies.Converser:
+                from . import conversers
+                return conversers.Model.from_descriptor(
+                    client = self, name = name, descriptor = descriptor )
+        # TODO: Raise error on unmatched case.
 
     ## TEMP: Wrappers for Legacy Module-Level Interface
     # TODO: Transition to model-level methods.
@@ -97,13 +128,6 @@ class OpenAIClient( Client ):
         # TODO: Cache models on 'survey_models' operation.
         #       Remove dependency on legacy module-level cache.
         _v0.models_.update( await _cache_acquire_models( auxdata ) )
-#        integrators = (
-#            await __.acquire_models_integrators( auxdata, _module_name ) )
-#        for model_name in _models:
-#            attributes = { }
-#            for integrator in integrators[ __.ModelSpecies.Converser ]:
-#                attributes = integrator( model_name, attributes )
-#            ic( model_name, attributes )
         return selfclass(
             **super( ).init_args_from_descriptor( auxdata, descriptor ) )
 

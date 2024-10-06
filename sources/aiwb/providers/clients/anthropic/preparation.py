@@ -31,5 +31,4 @@ async def prepare( auxdata: __.CoreGlobals ):
     #       Packages: anthropic
     return _clients.Factory( )
 
-_package_name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
-__.preparers_registry[ _package_name ] = prepare
+__.preparers_registry[ __.provider_name ] = prepare

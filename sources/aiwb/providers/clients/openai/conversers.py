@@ -52,7 +52,52 @@ class Tokenizer( __.ConversationTokenizer ):
 class Attributes( __.ConverserAttributes ):
     ''' Common attributes for OpenAI chat models. '''
 
-    accepts_behavior_adjustment: bool = False # TODO: Via controls.
     honors_supervisor_instructions: bool = False
     invocations_support_level: InvocationsSupportLevel = (
         InvocationsSupportLevel.Single )
+
+    @classmethod
+    def from_descriptor(
+        selfclass,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        args = (
+            super( Attributes, Attributes )
+            .init_args_from_descriptor( descriptor ) )
+        sdescriptor = descriptor.get( 'special', { } )
+        for arg_name in ( 'honors-supervisor-instructions', ):
+            arg = sdescriptor.get( arg_name )
+            if None is arg: continue
+            arg_name_ = arg_name.replace( '-', '_' )
+            args[ arg_name_ ] = arg
+        if 'invocations-support-level' in sdescriptor:
+            args[ 'invocations_support_level' ] = (
+                InvocationsSupportLevel(
+                    sdescriptor[ 'invocations-support-level' ] ) )
+        return selfclass( **args )
+
+
+@__.standard_dataclass
+class Model( __.ConverserModel ):
+
+    @classmethod
+    def from_descriptor(
+        selfclass,
+        client: __.Client,
+        name: str,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        descriptor_ = dict( descriptor )
+        attributes = Attributes.from_descriptor( descriptor_ )
+        return selfclass(
+            name = name, client = client, attributes = attributes )
+
+    async def converse_v0(
+        self,
+        messages: __.AbstractSequence[ __.MessageCanister ],
+        controls: __.AbstractDictionary[ str, __.Control ],
+        specials,
+        callbacks,
+    ):
+        # TODO: Implement.
+        pass

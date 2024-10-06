@@ -47,8 +47,12 @@ def descriptors_from_configuration(
 
 async def prepare( auxdata: __.CoreGlobals ) -> __.AccretiveDictionary:
     ''' Prepares clients from configuration and returns futures to them. '''
+    # TODO: Return clients and models.
     factories = await prepare_factories( auxdata )
-    return await prepare_clients( auxdata, factories )
+    clients = await prepare_clients( auxdata, factories )
+    #for client_name, client in clients.items( ):
+    #    ic( client_name, await client.survey_models( auxdata ) )
+    return clients
 
 
 async def prepare_clients(

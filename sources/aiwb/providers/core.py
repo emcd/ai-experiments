@@ -53,7 +53,6 @@ class ConverserModalities( __.Enum ): # TODO: Python 3.11: StrEnum
     Audio       = 'audio'
     Pictures    = 'pictures'
     Text        = 'text'
-    # TODO: Video
 
 
 @__.standard_dataclass
@@ -64,18 +63,55 @@ class ConverserTokensLimits:
     per_response: int = 0
     total: int = 0
 
+    @classmethod
+    def from_descriptor(
+        selfclass,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        args = __.AccretiveDictionary( )
+        for arg_name in ( 'per-response', 'total' ):
+            arg = descriptor.get( arg_name )
+            if None is arg: continue
+            arg_name_ = arg_name.replace( '-', '_' )
+            args[ arg_name_ ] = arg
+        return selfclass( **args )
+
 
 @__.standard_dataclass
 class ConverserAttributes:
     ''' Common attributes for AI chat models. '''
 
-    accepts_response_multiplicity: bool = False # TODO: Via controls.
     accepts_supervisor_instructions: bool = False
     modalities: __.AbstractSequence[ ConverserModalities ] = (
         ConverserModalities.Text, )
     supports_continuous_response: bool = False
     supports_invocations: bool = False
     tokens_limits: ConverserTokensLimits = ConverserTokensLimits( )
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
+        args = __.AccretiveDictionary( )
+        for arg_name in (
+            'accepts-supervisor-instructions',
+            'supports-continuous-response',
+            'supports-invocations',
+        ):
+            arg = descriptor.get( arg_name )
+            if None is arg: continue
+            arg_name_ = arg_name.replace( '-', '_' )
+            args[ arg_name_ ] = arg
+        modalities = [ ]
+        for modality_name in descriptor.get( 'modalities', ( ) ):
+            modalities.append( ConverserModalities( modality_name ) )
+        args[ 'modalities' ] = tuple( modalities )
+        tokens_limits = ConverserTokensLimits.from_descriptor(
+            descriptor.get( 'tokens-limits', { } ) )
+        args[ 'tokens_limits' ] = tokens_limits
+        return args
 
 
 class ModelIntegrationBehaviors( __.enum.IntFlag ):

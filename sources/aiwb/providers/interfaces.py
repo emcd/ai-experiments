@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 from . import __
+from . import core as _core
 
 
 @__.a.runtime_checkable
@@ -105,7 +106,7 @@ class Model( __.a.Protocol ):
     # TODO: Immutable class attributes.
 
     name: str
-    provider: Client
+    client: Client
 
 
 @__.a.runtime_checkable
@@ -113,10 +114,10 @@ class Model( __.a.Protocol ):
 class ConverserModel( Model, __.a.Protocol ):
     ''' Represents an AI chat model. '''
 
-    tokenizer: ConversationTokenizer
+    attributes: _core.ConverserAttributes
 
     @__.abstract_member_function
-    async def converse(
+    async def converse_v0(
         self,
         messages: __.AbstractSequence[ __.MessageCanister ],
         controls: __.AbstractDictionary[ str, __.Control ],
@@ -125,3 +126,5 @@ class ConverserModel( Model, __.a.Protocol ):
     ): # TODO: Annotate return value.
         ''' Interacts with model to complete a round of conversation. '''
         raise NotImplementedError
+
+    # TODO: provide_tokenizer

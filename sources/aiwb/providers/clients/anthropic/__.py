@@ -25,3 +25,6 @@
 
 
 from ..__ import *
+
+
+provider_name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
