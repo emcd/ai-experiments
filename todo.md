@@ -28,7 +28,7 @@
       and models, similar to how promptstores preparation returns both
       promptstores and prompts.
     - Build out utility functions to extract different kinds of models.
-    - Create model matchers from attributes specifications in package data.
+    - Convert 'openai' module into subpackage.
 
     - Rework GUI to pass immutable conversation object through functions
       instead of components namespace. Cannot pass GUI globals object, since
