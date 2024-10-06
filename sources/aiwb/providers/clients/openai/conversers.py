@@ -18,17 +18,41 @@
 #============================================================================#
 
 
-''' Implementation of OpenAI AI provider. '''
-
-# ruff: noqa: F401
-# pylint: disable=unused-import
+''' Converser models for OpenAI AI provider. '''
 
 
 from . import __
-from . import clients
-from . import conversers
-from . import preparation
-from . import v0  # TODO: Remove after cutover to model and provider objects.
 
 
-__.reclassify_modules( globals( ) )
+class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Degree to which invocations are supported. '''
+
+    Single      = 'single'      # Mid-2023.
+    Concurrent  = 'concurrent'  # Late 2023 and beyond.
+
+
+@__.standard_dataclass
+class Tokenizer( __.ConversationTokenizer ):
+
+    extra_tokens_per_message: int = 3
+    extra_tokens_for_name: int = 1
+    model_name: str
+
+    # TODO: count_conversation_tokens
+
+    def count_text_tokens( self, auxdata: __.CoreGlobals, text: str ) -> int:
+        from tiktoken import encoding_for_model, get_encoding
+        try: encoding = encoding_for_model( self.model_name )
+        # TODO: Warn about unknown model via callback.
+        except KeyError: encoding = get_encoding( 'cl100k_base' )
+        return len( encoding.encode( text ) )
+
+
+@__.standard_dataclass
+class Attributes( __.ConverserAttributes ):
+    ''' Common attributes for OpenAI chat models. '''
+
+    accepts_behavior_adjustment: bool = False # TODO: Via controls.
+    honors_supervisor_instructions: bool = False
+    invocations_support_level: InvocationsSupportLevel = (
+        InvocationsSupportLevel.Single )

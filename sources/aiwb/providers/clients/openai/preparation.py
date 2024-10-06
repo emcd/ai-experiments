@@ -22,14 +22,14 @@
 
 
 from . import __
-from . import core as _core
+from . import clients as _clients
 
 
 async def prepare( auxdata: __.CoreGlobals ):
     ''' Installs dependencies and returns factory. '''
     # TODO: Install dependencies in isolated environment, if necessary.
     #       Packages: openai, tiktoken
-    return _core.Factory( )
+    return _clients.Factory( )
 
 _package_name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
 __.preparers_registry[ _package_name ] = prepare

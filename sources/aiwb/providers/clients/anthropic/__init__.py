@@ -25,6 +25,7 @@
 
 
 from . import __
+from . import clients
 from . import preparation
 
 
