@@ -30,6 +30,7 @@ from . import __
 @__.standard_dataclass
 class Client( __.a.Protocol ):
     ''' Interacts with AI provider. '''
+    # TODO: Immutable class attributes.
 
     name: str
 
@@ -72,6 +73,7 @@ class Client( __.a.Protocol ):
 @__.a.runtime_checkable
 class ConversationTokenizer( __.a.Protocol ):
     ''' Tokenizes conversation for counting. '''
+    # TODO: Immutable class attributes.
 
     # TODO: count_conversation_tokens
 
@@ -82,9 +84,9 @@ class ConversationTokenizer( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-@__.standard_dataclass
 class Factory( __.a.Protocol ):
     ''' Produces clients. '''
+    # TODO: Immutable class attributes.
 
     @__.abstract_member_function
     async def client_from_descriptor(
@@ -100,6 +102,7 @@ class Factory( __.a.Protocol ):
 @__.standard_dataclass
 class Model( __.a.Protocol ):
     ''' Represents an AI model. '''
+    # TODO: Immutable class attributes.
 
     name: str
     provider: Client

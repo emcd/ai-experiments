@@ -61,23 +61,7 @@ class ConverserAttributes( __.ConverserAttributes ):
         InvocationsSupportLevel.Single )
 
 
-@__.standard_dataclass
 class Client( __.Client ):
-
-    module: __.Module # TEMP: Hack until we can use object rather than module.
-
-    @classmethod
-    def init_args_from_descriptor(
-        selfclass,
-        auxdata: __.CoreGlobals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        from sys import modules
-        args = (
-            super( Client, Client )
-            .init_args_from_descriptor( auxdata, descriptor ) )
-        args.update( module = modules[ __name__ ] )
-        return args
 
     async def survey_models(
         self, auxdata: __.CoreGlobals
@@ -125,7 +109,6 @@ class Client( __.Client ):
 # TODO: AzureClient
 
 
-@__.standard_dataclass
 class OpenAIClient( Client ):
 
     @classmethod
@@ -158,7 +141,6 @@ class OpenAIClient( Client ):
             .init_args_from_descriptor( auxdata, descriptor ) )
 
 
-@__.standard_dataclass
 class Factory( __.Factory ):
 
     async def client_from_descriptor(
