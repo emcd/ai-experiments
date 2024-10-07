@@ -35,8 +35,7 @@ class Client( __.Client ):
     async def survey_models(
         self, auxdata: __.CoreGlobals
     ) -> __.AbstractSequence[ __.Model ]:
-        integrators = (
-            await __.acquire_models_integrators( auxdata, __.provider_name ) )
+        integrators = await _cache_acquire_models_integrators( auxdata )
         # TODO: Use list of names rather than dictionary.
         names = await _cache_acquire_models( auxdata )
         models = [ ]
@@ -175,6 +174,23 @@ async def _cache_acquire_models( auxdata ):
     async with open_( file, 'w' ) as stream:
         await stream.write( dumps( models, indent = 4 ) )
     return models
+
+
+# TODO? models integrators cache as cell variable of wrapper function
+_models_integrators_cache = { }
+
+
+async def _cache_acquire_models_integrators(
+    auxdata: __.CoreGlobals, force: bool = False
+):
+    # TODO: Register watcher on package data directory to flag updates.
+    #       Maybe 'watchfiles.awatch' as asyncio callback with this function.
+    # TODO? async mutex in case of clear-update during access
+    if force or not _models_integrators_cache:
+        _models_integrators_cache.clear( )
+        _models_integrators_cache.update(
+            await __.acquire_models_integrators( auxdata, __.provider_name ) )
+    return __.DictionaryProxy( _models_integrators_cache )
 
 
 # https://platform.openai.com/docs/guides/function-calling/supported-models
