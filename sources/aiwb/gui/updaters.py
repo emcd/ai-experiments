@@ -234,10 +234,14 @@ async def populate_models_selector( components ):
     provider = (
         components.selector_provider.auxdata__[
             components.selector_provider.value ] )
-    models = provider.provide_chat_models( )
-    components.selector_model.auxdata__ = models
+    models = (
+        await provider.survey_models(
+            auxdata = components.auxdata__,
+            genus = __.AiModelGenera.Converser ) )
+    components.selector_model.auxdata__ = {
+        model.name: model for model in models }
     components.selector_model.value = None
-    components.selector_model.options = list( models.keys( ) )
+    components.selector_model.options = [ model.name for model in models ]
     components.selector_model.value = (
         provider.select_default_model( models, components.auxdata__ ) )
 
@@ -408,8 +412,9 @@ def update_conversation_hilite( gui, new_descriptor = None ):
     conversations.extend( indicators )
 
 
-def update_conversation_postpopulate( gui ):
-    update_functions_prompt( gui )
+def update_conversation_postpopulate( components ):
+    update_invocations_prompt( components )
+    update_supervisor_prompt( components )
 
 
 def update_conversation_status( gui, text = None, progress = False ):
@@ -440,27 +445,32 @@ def update_conversation_timestamp( gui ):
     sort_conversations_index( gui )
 
 
-def update_functions_prompt( gui ):
-    # TODO: For models which do not explicitly support functions,
-    #       weave selected functions into system prompt.
-    #       Then, functions prompt row should always be visible.
-    supports_functions = gui.selector_model.auxdata__[
-        gui.selector_model.value ][ 'supports-functions' ]
-    gui.row_functions_prompt.visible = supports_functions
-    if supports_functions:
-        attributes = gui.auxdata__.prompts.definitions[
-            gui.selector_system_prompt.value ].attributes
+def update_invocations_prompt( components ):
+    supports_invocations = (
+        components.selector_model.auxdata__[ components.selector_model.value ]
+        .attributes.supports_invocations )
+    components.row_functions_prompt.visible = supports_invocations
+    if supports_invocations:
+        attributes = components.auxdata__.prompts.definitions[
+            components.selector_system_prompt.value ].attributes
         associated_functions = attributes.get( 'functions', { } )
     else: associated_functions = { }
-    invokers = gui.auxdata__.invocables.invokers
-    gui.multichoice_functions.value = [ ]
-    gui.multichoice_functions.options = [
+    invokers = components.auxdata__.invocables.invokers
+    components.multichoice_functions.value = [ ]
+    components.multichoice_functions.options = [
         name for name in invokers.keys( )
         if name in associated_functions ]
-    gui.multichoice_functions.value = [
+    components.multichoice_functions.value = [
         name for name in invokers.keys( )
         if associated_functions.get( name, False ) ]
-    update_active_functions( gui )
+    update_active_functions( components )
+
+
+def update_supervisor_prompt( components ):
+    accepts_instructions = (
+        components.selector_model.auxdata__[ components.selector_model.value ]
+        .attributes.accepts_supervisor_instructions )
+    components.row_system_prompt.visible = accepts_instructions
 
 
 def update_messages_post_summarization( gui ):
@@ -502,8 +512,9 @@ def update_token_count( gui ):
     provider = gui.auxdata__.providers[ gui.selector_provider.value ]
     tokens_count = provider.count_conversation_tokens(
         messages, special_data, controls )
-    tokens_limit = gui.selector_model.auxdata__[
-        gui.selector_model.value ][ 'tokens-limit' ]
+    tokens_limit = (
+        gui.selector_model.auxdata__[ gui.selector_model.value ]
+        .attributes.tokens_limits.total )
     tokens_report = f"{tokens_count} / {tokens_limit}"
     tokens_usage = tokens_count / tokens_limit
     if tokens_usage >= 1:

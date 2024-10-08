@@ -229,6 +229,7 @@ system_prompts_layout = {
     ),
     'row_system_prompt': dict(
         component_class = Row,
+        component_arguments = dict( visible = False ),
         contains = [
             'spacer_left_system_prompt',
             'row_system_prompt_header',

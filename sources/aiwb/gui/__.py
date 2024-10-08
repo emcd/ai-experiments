@@ -26,9 +26,10 @@
 
 
 from ..__ import *
-from ..libcore.qaliases import *
-from ..appcore.qaliases import *
 from ..apiserver.qaliases import *
+from ..appcore.qaliases import *
+from ..libcore.qaliases import *
+from ..providers.qaliases import *
 
 
 scribe = acquire_scribe( __package__ ) # TODO: Not on module import.
@@ -148,12 +149,13 @@ def package_messages( gui ):
 
 def package_special_data( components ):
     ''' Packages special data from GUI to ship to AI provider. '''
-    # TODO? Move to aiwb.gui.controls.
+    # TODO: Move to aiwb.gui.invocables.
     from .invocables import provide_active_invocables
     special_data = { }
-    supports_functions = components.selector_model.auxdata__[
-        components.selector_model.value ][ 'supports-functions' ]
-    if supports_functions:
+    supports_invocations = (
+        components.selector_model.auxdata__[ components.selector_model.value ]
+        .attributes.supports_invocations )
+    if supports_invocations:
         invocables = provide_active_invocables( components )
         if invocables: special_data[ 'invocables' ] = invocables
     return special_data

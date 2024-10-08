@@ -131,18 +131,6 @@ async def invoke_function( request, controls ):
     return canister
 
 
-def provide_chat_models( ):
-    model_prefixes = (
-        'chatgpt-4o-', 'gpt-3.5-turbo', 'gpt-4', 'o1-',
-    )
-    model_excludes = ( 'gpt-3.5-turbo-instruct', )
-    return {
-        name: attributes for name, attributes in models_.items( )
-        if name.startswith( model_prefixes )
-           and not name.startswith( model_excludes )
-    }
-
-
 def provide_format_mime_type( controls ): return 'application/json'
 
 

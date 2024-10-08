@@ -143,14 +143,17 @@ async def on_select_functions( components, event ):
 
 
 async def on_select_model( components, event ):
-    from .updaters import update_functions_prompt
-    update_functions_prompt( components )
+    from .updaters import (
+        update_invocations_prompt, update_supervisor_prompt )
+    update_invocations_prompt( components )
+    update_supervisor_prompt( components )
 
 
 async def on_select_system_prompt( components, event ):
-    from .updaters import populate_prompt_variables, update_functions_prompt
+    from .updaters import (
+        populate_prompt_variables, update_invocations_prompt )
     populate_prompt_variables( components, species = 'supervisor' )
-    update_functions_prompt( components )
+    update_invocations_prompt( components )
 
 
 async def on_select_user_prompt_class( components, event ):

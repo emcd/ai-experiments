@@ -96,9 +96,6 @@ class Client( __.Client ):
     def parse_data( self, content, controls ):
         return _v0.parse_data( content, controls )
 
-    def provide_chat_models( self ):
-        return _v0.provide_chat_models( )
-
     def provide_format_name( self, controls ):
         return _v0.provide_format_name( controls )
 
