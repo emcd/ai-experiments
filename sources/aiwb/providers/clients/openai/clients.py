@@ -25,39 +25,46 @@ from . import __
 from . import v0 as _v0
 
 
-_supported_model_species = frozenset( (
-    __.ModelSpecies.Converser,
+_supported_model_genera = frozenset( (
+    __.ModelGenera.Converser,
 ) )
 
 
 class Client( __.Client ):
 
     async def survey_models(
-        self, auxdata: __.CoreGlobals
+        self,
+        auxdata: __.CoreGlobals,
+        genus: __.Optional[ __.ModelGenera ] = __.absent,
     ) -> __.AbstractSequence[ __.Model ]:
         integrators = await _cache_acquire_models_integrators( auxdata )
         # TODO: Use list of names rather than dictionary.
         names = await _cache_acquire_models( auxdata )
         models = [ ]
+        supported_genera = (
+            _supported_model_genera if __.absent is genus
+            else _supported_model_genera & { genus } )
         for name in names:
-            for species in _supported_model_species:
+            for genus_ in supported_genera:
                 descriptor: __.AbstractDictionary[ str, __.a.Any ] = { }
-                for integrator in integrators[ species ]:
+                for integrator in integrators[ genus_ ]:
                     descriptor = integrator( name, descriptor )
                 if not descriptor: continue
                 #ic( name, descriptor )
                 models.append( self._model_from_descriptor(
-                    name = name, species = species, descriptor = descriptor ) )
+                    name = name,
+                    genus = genus_,
+                    descriptor = descriptor ) )
         return tuple( models )
 
     def _model_from_descriptor(
         self,
         name: str,
-        species: __.ModelSpecies,
+        genus: __.ModelGenera,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.Model:
-        match species:
-            case __.ModelSpecies.Converser:
+        match genus:
+            case __.ModelGenera.Converser:
                 from . import conversers
                 return conversers.Model.from_descriptor(
                     client = self, name = name, descriptor = descriptor )

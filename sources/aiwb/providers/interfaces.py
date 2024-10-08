@@ -65,7 +65,9 @@ class Client( __.a.Protocol ):
 
     @__.abstract_member_function
     async def survey_models(
-        self, auxdata: __.CoreGlobals
+        self,
+        auxdata: __.CoreGlobals,
+        genus: __.Optional[ _core.ModelGenera ] = __.absent,
     ) -> __.AbstractSequence[ Model ]:
         ''' Returns models available from provider. '''
         raise NotImplementedError

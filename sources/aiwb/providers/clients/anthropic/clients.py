@@ -27,7 +27,9 @@ from . import __
 class Client( __.Client ):
 
     async def survey_models(
-        self, auxdata: __.CoreGlobals
+        self,
+        auxdata: __.CoreGlobals,
+        genus: __.Optional[ __.ModelGenera ] = __.absent,
     ) -> __.AbstractSequence[ __.Model ]:
         # TODO: Implement.
         pass

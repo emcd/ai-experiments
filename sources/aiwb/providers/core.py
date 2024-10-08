@@ -160,8 +160,8 @@ class ModelsIntegrator:
         return __.DictionaryProxy( theirs )
 
 
-class ModelSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Available species for models. '''
+class ModelGenera( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Available genera for models. '''
 
     # Note: Not including domain-specific classifiers or text completers
     #       unless there is a compelling reason.

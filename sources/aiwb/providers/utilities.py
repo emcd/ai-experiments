@@ -28,9 +28,9 @@ from . import core as _core
 async def acquire_models_integrators(
     auxdata: __.CoreGlobals, name: str
 ) -> __.AbstractDictionary[
-    _core.ModelSpecies, __.AbstractSequence[ _core.ModelsIntegrator ]
+    _core.ModelGenera, __.AbstractSequence[ _core.ModelsIntegrator ]
 ]:
-    ''' Returns models integrators, general to specific, by species. '''
+    ''' Returns models integrators, general to specific, by genus. '''
     from collections import defaultdict
     from tomli import loads
     # TODO: Account for custom models, such as fine-tunes.
@@ -56,13 +56,13 @@ async def acquire_models_integrators(
     configurations = tuple(
         loads( content ) for content in await __.gather_async( *acquirers ) )
     for cfile, configuration in zip( cfiles, configurations ):
-        for species in _core.ModelSpecies:
-            descriptor = configuration.get( species.value )
+        for genus in _core.ModelGenera:
+            descriptor = configuration.get( genus.value )
             if not descriptor: continue
             # TODO: Improve error handling.
             #       Catch regex errors and provide proper context.
-            integrators[ species ].append(
+            integrators[ genus ].append(
                 _core.ModelsIntegrator.from_descriptor( descriptor ) )
     return __.DictionaryProxy( {
-        species: tuple( sequence ) for species, sequence
+        genus: tuple( sequence ) for genus, sequence
         in integrators.items( ) } )
