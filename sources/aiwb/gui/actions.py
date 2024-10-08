@@ -22,6 +22,9 @@
 
 
 from . import __
+from . import conversations as _conversations
+from . import invocables as _invocables
+from . import providers as _providers
 
 
 def _update_conversation_status_on_error( invocable ):
@@ -61,7 +64,7 @@ async def chat( components ):
         components, 'Generating AI response...'
     ): canister_components = await _chat( components )
     canister_components.canister__.attributes.behaviors = [ 'active' ]
-    __.assimilate_canister_dto_to_gui( canister_components )
+    _conversations.assimilate_canister_dto_to_gui( canister_components )
     await _add_conversation_indicator_if_necessary( components )
     await update_and_save_conversations_index( components )
     if summarization:
@@ -82,8 +85,8 @@ async def invoke_functions(
     from .invocables import extract_invocation_requests
     from .updaters import truncate_conversation
     truncate_conversation( components, index )
-    provider = __.access_ai_provider_current( components )
-    controls = __.package_controls( components )
+    provider = _providers.access_provider_selection( components )
+    controls = _providers.package_controls( components )
     try: requests = extract_invocation_requests( components )
     except InvocationFormatError:
         if silent_extraction_failure: return
@@ -158,10 +161,9 @@ def _add_message( gui, canister ):
 
 async def _chat( components ):
     from ..providers import ChatCallbacks
-    from .__ import access_ai_provider_current
-    messages = __.package_messages( components )
-    controls = __.package_controls( components )
-    special_data = __.package_special_data( components )
+    messages = _conversations.package_messages( components )
+    controls = _providers.package_controls( components )
+    special_data = _invocables.package_invocables( components )
     callbacks = ChatCallbacks(
         allocator = (
             lambda canister: _add_message( components, canister ) ),
@@ -172,7 +174,7 @@ async def _chat( components ):
             lambda canister_components:
                 _update_gui_on_chat( components, canister_components ) ),
     )
-    provider = access_ai_provider_current( components )
+    provider = _providers.access_provider_selection( components )
     return await provider.chat( messages, special_data, controls, callbacks )
 
 
@@ -188,23 +190,24 @@ def _detect_ai_completion( gui, component = None ):
 async def _generate_conversation_title( components ):
     from ..messages.core import Canister
     from ..providers import chat_callbacks_minimal
-    from .__ import access_ai_provider_current
-    provider = access_ai_provider_current( components )
-    controls = __.package_controls( components )
+    scribe = __.acquire_scribe( __package__ )
+    provider = _providers.access_provider_selection( components )
+    controls = _providers.package_controls( components )
     provider_format_name = provider.provide_format_name( controls )
     prompt = (
         components.auxdata__.prompts.definitions[ 'Title + Labels' ]
         .produce_prompt( values = { 'format': provider_format_name } ) )
     canister = Canister( role = 'Human' ).add_content(
         prompt.render( components.auxdata__ ) )
-    messages = [ *__.package_messages( components )[ 1 : ], canister ]
+    messages = [
+        *_conversations.package_messages( components )[ 1 : ], canister ]
     with _update_conversation_progress(
         components, 'Generating conversation title...'
     ):
         ai_canister = await provider.chat(
             messages, { }, controls, chat_callbacks_minimal )
     response = ai_canister[ 0 ].data
-    __.scribe.info( f"New conversation title: {response}" )
+    scribe.info( f"New conversation title: {response}" )
     response = provider.parse_data( response, controls )
     return response[ 'title' ], response[ 'labels' ]
 
@@ -226,9 +229,8 @@ def _update_conversation_progress( gui, message ):
 
 
 def _update_gui_on_chat( gui, canister_gui ):
-    from .__ import assimilate_canister_dto_to_gui
     from .updaters import autoscroll_document
-    assimilate_canister_dto_to_gui( canister_gui )
+    _conversations.assimilate_canister_dto_to_gui( canister_gui )
     #setattr(
     #    handle.text_message, 'object',
     #    getattr( handle.text_message, 'object' ) + content )

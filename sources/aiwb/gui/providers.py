@@ -18,14 +18,22 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for Holoviz Panel GUI. '''
-
-# ruff: noqa: F403
-# pylint: disable=unused-import
+''' Management of AI providers for Holoviz Panel GUI. '''
 
 
-from ..__ import *
-from ..apiserver.qaliases import *
-from ..appcore.qaliases import *
-from ..libcore.qaliases import *
-from ..providers.qaliases import *
+#from . import __
+
+
+def access_provider_selection( components ):
+    # TODO: Replace with something that can honor multiple providers.
+    return components.auxdata__.providers[ components.selector_provider.value ]
+
+
+def package_controls( components ):
+    ''' Assimilates from GUI control values for AI models. '''
+    # TODO: Dynamic, depending on AI model.
+    return dict(
+        provider = components.selector_provider.value,
+        model = components.selector_model.value,
+        temperature = components.slider_temperature.value,
+    )

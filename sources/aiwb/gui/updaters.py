@@ -23,6 +23,9 @@
 
 from . import __
 from . import components as _components
+from . import conversations as _conversations
+from . import invocables as _invocables
+from . import providers as _providers
 from . import state as _state
 
 
@@ -63,15 +66,40 @@ def autoscroll_document( gui ):
     gui.text_autoscroll_status.value = 'automatic'
 
 
+_roles_emoji = {
+    'AI': '🤖',
+    'Document': '📄',
+    'Function': '\N{Hammer and Wrench}\uFE0F',
+    'Human': '🧑',
+}
+_roles_styles = {
+    # TODO: Use style variables.
+    'AI': {
+        'background-color': 'WhiteSmoke',
+    },
+    'Document': {
+        'background-color': 'White',
+        'border-top': '2px dashed LightGray',
+        'padding': '3px',
+    },
+    'Function': {
+        'background-color': 'White',
+        #'border-top': '2px dashed LightGray',
+        #'padding': '3px',
+    },
+    'Human': {
+        'background-color': 'White',
+    },
+}
 def configure_message_interface( canister_gui, dto ):
     from .invocables import extract_invocation_requests
     gui = canister_gui.parent__
     canister = canister_gui.row_canister
     behaviors = dto.attributes.behaviors
     role = dto.role
-    canister.styles.update( __.roles_styles[ role ] )
+    canister.styles.update( _roles_styles[ role ] )
     # TODO: Use user-supplied logos, when available.
-    canister_gui.toggle_active.name = __.roles_emoji[ role ]
+    canister_gui.toggle_active.name = _roles_emoji[ role ]
     if 'AI' == role:
         canister_gui.button_fork.visible = True
         try:
@@ -154,8 +182,9 @@ async def delete_conversation( components, descriptor ):
         if indicator.identity__ != descriptor.identity ]
     conversations.objects = indicators
     descriptor.indicator = None # break possible GC cycles
-    path = __.calculate_conversations_path( components ).joinpath(
-        f"{descriptor.identity}.json" )
+    path = (
+        _conversations.provide_location(
+            components, f"{descriptor.identity}.json" ) )
     if path.exists( ): path.unlink( )
     await save_conversations_index( components )
 
@@ -501,13 +530,13 @@ def update_token_count( gui ):
     if not gui.selector_provider.options: return
     if not gui.selector_model.options: return
     from ..messages.core import Canister
-    messages = __.package_messages( gui )
+    messages = _conversations.package_messages( gui )
     if 'freeform' == gui.selector_user_prompt_class.value:
         content = gui.text_freeform_prompt.value
     else: content = gui.text_canned_prompt.object
     messages.append( Canister( role = 'Human' ).add_content( content ) )
-    controls = __.package_controls( gui )
-    special_data = __.package_special_data( gui )
+    controls = _providers.package_controls( gui )
+    special_data = _invocables.package_invocables( gui )
     provider = gui.auxdata__.providers[ gui.selector_provider.value ]
     tokens_count = provider.count_conversation_tokens(
         messages, special_data, controls )

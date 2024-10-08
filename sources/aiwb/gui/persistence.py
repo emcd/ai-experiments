@@ -25,6 +25,7 @@
 
 
 from . import __
+from . import conversations as _conversations
 from . import state as _state
 
 
@@ -147,8 +148,8 @@ async def restore_conversation( components ):
     from json import loads
     from aiofiles import open as open_
     file = (
-        __.calculate_conversations_path( components )
-        / f"{components.identity__}.json" )
+        _conversations.provide_location(
+            components, f"{components.identity__}.json" ) )
     async with open_( file ) as stream:
         state = loads( await stream.read( ) )
     await inject_conversation( components, state )
@@ -181,7 +182,7 @@ async def restore_conversations_index( auxdata: _state.Globals ):
         sort_conversations_index,
     )
     components = auxdata.gui.components
-    conversations_path = __.calculate_conversations_path( components )
+    conversations_path = _conversations.provide_location( components )
     index_path = conversations_path / 'index.toml'
     if not index_path.exists( ):
         return await save_conversations_index( components )
@@ -226,8 +227,8 @@ async def save_conversation( components ):
     if descriptor.identity != components.identity__: return
     state = await collect_conversation( components )
     file = (
-        __.calculate_conversations_path( components )
-        / f"{components.identity__}.json" )
+        _conversations.provide_location(
+            components, f"{components.identity__}.json" ) )
     async with open_( file, 'w' ) as stream:
         await stream.write( dumps( state, indent = 2 ) )
 
@@ -240,7 +241,7 @@ async def save_conversation_messages( components, column_name ):
         canister.gui__
         for canister in getattr( components, column_name, ( ) ) )
     for canister_components in canisters_components:
-        __.assimilate_canister_dto_from_gui( canister_components )
+        _conversations.assimilate_canister_dto_from_gui( canister_components )
     savers = tuple(
         canister_components.canister__.save( manager )
         for canister_components in canisters_components )
@@ -252,7 +253,7 @@ async def save_conversations_index( components ):
     ''' Saves index of conversations to persistent storage. '''
     from aiofiles import open as open_
     from tomli_w import dumps
-    conversations_path = __.calculate_conversations_path( components )
+    conversations_path = _conversations.provide_location( components )
     conversations_path.mkdir( exist_ok = True, parents = True )
     index_file = conversations_path / 'index.toml'
     conversations = components.column_conversations_indicators
@@ -290,7 +291,7 @@ async def upgrade_conversation( components, identity ):
     from ..messages.core import DirectoryManager, restore_canister
     directory_manager = DirectoryManager( components.auxdata__ )
     # TODO: Use directory manager for conversation location.
-    conversations_location = __.calculate_conversations_path( components )
+    conversations_location = _conversations.provide_location( components )
     file = conversations_location / f"{identity}.json"
     # Conversation may have disappeared for some reason.
     if not file.exists( ): return
@@ -318,7 +319,7 @@ async def upgrade_conversations( components ):
     ''' Upgrades conversations from older formats to latest format. '''
     from aiofiles import open as open_
     from tomli import loads
-    conversations_location = __.calculate_conversations_path( components )
+    conversations_location = _conversations.provide_location( components )
     index_file = conversations_location / 'index.toml'
     async with open_( index_file ) as stream:
         index = loads( await stream.read( ) )

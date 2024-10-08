@@ -22,6 +22,7 @@
 
 
 from . import __
+from . import providers as _providers
 
 
 def extract_invocation_requests(
@@ -35,16 +36,28 @@ def extract_invocation_requests(
     # TODO: Use selected multichoice values instead of all possible.
     invocables = components.auxdata__.invocables
     auxdata = __.SimpleNamespace(
-        controls = __.package_controls( components ),
+        controls = _providers.package_controls( components ),
         **{ field.name: getattr( components.auxdata__, field.name )
             for field in fields( components.auxdata__ ) } )
-    provider = __.access_ai_provider_current( components )
+    provider = _providers.access_provider_selection( components )
     requests = provider.extract_invocation_requests(
         canister, auxdata, invocables )
     if close_invokers:
         for request in requests:
             request[ 'invocable__' ].close( )
     return requests
+
+
+def package_invocables( components ):
+    ''' Packages special data from GUI to ship to AI provider. '''
+    special_data = { }
+    supports_invocations = (
+        components.selector_model.auxdata__[ components.selector_model.value ]
+        .attributes.supports_invocations )
+    if supports_invocations:
+        invocables = provide_active_invocables( components )
+        if invocables: special_data[ 'invocables' ] = invocables
+    return special_data
 
 
 def provide_active_invocables( components ):
