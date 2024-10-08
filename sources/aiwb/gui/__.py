@@ -159,18 +159,6 @@ def package_special_data( components ):
     return special_data
 
 
-def populate_component( gui, layout, component_name ):
-    # TODO: Move to aiwb.gui.components.
-    from . import updaters as registry # pylint: disable=cyclic-import
-    entry = layout[ component_name ]
-    for element_name in entry.get( 'contains', ( ) ):
-        populate_component( gui, layout, element_name )
-    function_name = entry.get( 'populator_function' )
-    if None is function_name: return
-    function = getattr( registry, function_name )
-    function( gui )
-
-
 def register_event_callbacks( gui, layout, component_name ):
     # TODO: Move to aiwb.gui.components.
     from . import events as registry # pylint: disable=cyclic-import

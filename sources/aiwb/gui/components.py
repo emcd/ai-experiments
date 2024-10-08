@@ -25,6 +25,23 @@ from . import __
 from . import state as _state
 
 
+async def populate( components, layout, component_name ):
+    ''' Recursively populates components within GUI namespace. '''
+    from . import updaters as registry # pylint: disable=cyclic-import
+    entry = layout[ component_name ]
+    # TODO: Parallel fanout once we can guarantee dependency ordering.
+    #populators = (
+    #    populate( components, layout, element_name )
+    #    for element_name in entry.get( 'contains', ( ) ) )
+    #await __.gather_async( *populators )
+    for element_name in entry.get( 'contains', ( ) ):
+        await populate( components, layout, element_name )
+    function_name = entry.get( 'populator_function' )
+    if None is function_name: return
+    function = getattr( registry, function_name )
+    await function( components )
+
+
 async def prepare( auxdata: _state.Globals ):
     ''' Registers component inspectors and transformers. '''
     await _prepare_icons_cache( auxdata )

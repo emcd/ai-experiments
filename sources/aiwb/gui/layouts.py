@@ -278,7 +278,7 @@ system_prompts_layout = {
             align = 'center',
         ),
         event_functions = dict( value = 'on_select_system_prompt' ),
-        populator_function = 'populate_system_prompts_selector',
+        populator_function = 'populate_supervisor_prompts_selector',
     ),
     'toggle_system_prompt_display': dict(
         component_class = Toggle,

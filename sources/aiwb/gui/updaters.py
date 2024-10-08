@@ -22,6 +22,7 @@
 
 
 from . import __
+from . import components as _components
 from . import state as _state
 
 
@@ -111,7 +112,7 @@ async def create_conversation( components, descriptor, state = None ):
     components_.identity__ = descriptor.identity
     components_.parent__ = components
     descriptor.gui = components_
-    populate_conversation( components_ )
+    await populate_conversation( components_ )
     if state: await inject_conversation( components_, state )
     return components_
 
@@ -193,16 +194,18 @@ async def fork_conversation( components, index: int ):
     await create_and_display_conversation( components, state = state )
 
 
-def populate_conversation( gui ):
+async def populate_conversation( components ):
     from . import layouts
     from .layouts import conversation_container_names
     for component_name in conversation_container_names:
         layout = getattr( layouts, f"{component_name}_layout" )
-        __.populate_component( gui, layout, f"column_{component_name}" )
+        await _components.populate(
+            components, layout, f"column_{component_name}" )
     for component_name in conversation_container_names:
         layout = getattr( layouts, f"{component_name}_layout" )
-        __.register_event_callbacks( gui, layout, f"column_{component_name}" )
-    update_conversation_postpopulate( gui )
+        __.register_event_callbacks(
+            components, layout, f"column_{component_name}" )
+    update_conversation_postpopulate( components )
 
 
 async def populate_dashboard( auxdata: _state.Globals ):
@@ -226,25 +229,27 @@ async def populate_dashboard( auxdata: _state.Globals ):
     await create_and_display_conversation( components )
 
 
-def populate_models_selector( gui ):
-    provider = gui.selector_provider.auxdata__[ gui.selector_provider.value ]
+async def populate_models_selector( components ):
+    # TODO: Different models selectors per model genus.
+    provider = (
+        components.selector_provider.auxdata__[
+            components.selector_provider.value ] )
     models = provider.provide_chat_models( )
-    # TODO: Provide image-to-text, and text-to-image, text-to-speech models.
-    gui.selector_model.auxdata__ = models
-    gui.selector_model.value = None
-    gui.selector_model.options = list( models.keys( ) )
-    gui.selector_model.value = provider.select_default_model(
-        models, gui.auxdata__ )
+    components.selector_model.auxdata__ = models
+    components.selector_model.value = None
+    components.selector_model.options = list( models.keys( ) )
+    components.selector_model.value = (
+        provider.select_default_model( models, components.auxdata__ ) )
 
 
-def populate_providers_selector( gui ):
-    providers = gui.auxdata__.providers
+async def populate_providers_selector( components ):
+    providers = components.auxdata__.providers
     # TODO: Drop this auxdata and rely on main GUI auxdata instead.
-    gui.selector_provider.auxdata__ = providers
-    gui.selector_provider.value = None
+    components.selector_provider.auxdata__ = providers
+    components.selector_provider.value = None
     names = list( providers.keys( ) )
-    gui.selector_provider.options = names
-    gui.selector_provider.value = next( iter( names ) )
+    components.selector_provider.options = names
+    components.selector_provider.value = next( iter( names ) )
 
 
 def populate_prompt_variables( gui, species, data = None ):
@@ -273,20 +278,21 @@ def populate_prompt_variables( gui, species, data = None ):
     elif 'supervisor' == species: postpopulate_system_prompt_variables( gui )
 
 
-def populate_system_prompts_selector( gui ):
-    _populate_prompts_selector( gui, species = 'supervisor' )
-    populate_prompt_variables( gui, species = 'supervisor' )
+async def populate_supervisor_prompts_selector( components ):
+    _populate_prompts_selector( components, species = 'supervisor' )
+    populate_prompt_variables( components, species = 'supervisor' )
 
 
-def populate_canned_prompts_selector( gui ):
-    _populate_prompts_selector( gui, species = 'user' )
-    populate_prompt_variables( gui, species = 'user' )
+async def populate_canned_prompts_selector( components ):
+    # TODO? Rename 'canned' to 'user'.
+    _populate_prompts_selector( components, species = 'user' )
+    populate_prompt_variables( components, species = 'user' )
 
 
-def populate_vectorstores_selector( gui ):
-    vectorstores = gui.auxdata__.vectorstores
-    gui.selector_vectorstore.options = list( vectorstores.keys( ) )
-    update_search_button( gui )
+async def populate_vectorstores_selector( components ):
+    vectorstores = components.auxdata__.vectorstores
+    components.selector_vectorstore.options = list( vectorstores.keys( ) )
+    update_search_button( components )
 
 
 def postpopulate_canned_prompt_variables( gui ):
