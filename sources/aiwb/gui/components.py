@@ -25,8 +25,31 @@ from . import __
 from . import state as _state
 
 
+def generate( components, layout, component_name ):
+    ''' Recursively generates components from layout specification. '''
+    entry = layout[ component_name ]
+    elements = [ ]
+    for element_name in entry.get( 'contains', ( ) ):
+        elements.append( generate( components, layout, element_name ) )
+    if entry.get( 'virtual', False ): return None
+    component_class = entry[ 'component_class' ]
+    component_arguments = entry.get( 'component_arguments', { } )
+    auxdata = (
+        components.auxdata__ if hasattr( components, 'auxdata__' )
+        else components.parent__.auxdata__ )
+    for transformer in auxdata.gui.transformers.values( ):
+        component_class, component_arguments = (
+            transformer( auxdata, component_class, component_arguments ) )
+    component = component_class( *elements, **component_arguments )
+    setattr( components, component_name, component )
+    interpolant_id = entry.get( 'interpolant_id' )
+    if interpolant_id:
+        components.template__.add_panel( interpolant_id, component )
+    return component
+
+
 async def populate( components, layout, component_name ):
-    ''' Recursively populates components within GUI namespace. '''
+    ''' Recursively populates components with values. '''
     from . import updaters as registry # pylint: disable=cyclic-import
     entry = layout[ component_name ]
     # TODO: Parallel fanout once we can guarantee dependency ordering.
@@ -46,6 +69,29 @@ async def prepare( auxdata: _state.Globals ):
     ''' Registers component inspectors and transformers. '''
     await _prepare_icons_cache( auxdata )
     _register_transformers( auxdata )
+
+
+def register_event_reactors( components, layout, component_name ):
+    ''' Recursively registers callbacks for components. '''
+    from . import events as registry # pylint: disable=cyclic-import
+    entry = layout[ component_name ]
+    for element_name in entry.get( 'contains', ( ) ):
+        register_event_reactors( components, layout, element_name )
+    if not hasattr( components, component_name ): return
+    component = getattr( components, component_name )
+    functions = entry.get( 'event_functions', { } )
+    for event_name, function_name in functions.items( ):
+        function = __.partial_function(
+            getattr( registry, function_name ), components )
+        if 'on_click' == event_name:
+            component.on_click( function )
+            continue
+        component.param.watch( function, event_name )
+    function_name = entry.get( 'javascript_cb_generator' )
+    if function_name:
+        cb_generator = getattr( registry, function_name )
+        component.jscallback(
+            **cb_generator( components, layout, component_name ) )
 
 
 _icons_cache = __.AccretiveDictionary( )

@@ -100,28 +100,6 @@ def calculate_conversations_path( gui ):
     return gui.auxdata__.provide_state_location( 'conversations' )
 
 
-def generate_component( gui, layout, component_name ):
-    # TODO: Move to aiwb.gui.components.
-    entry = layout[ component_name ]
-    elements = [ ]
-    for element_name in entry.get( 'contains', ( ) ):
-        elements.append( generate_component( gui, layout, element_name ) )
-    if entry.get( 'virtual', False ): return None
-    component_class = entry[ 'component_class' ]
-    component_arguments = entry.get( 'component_arguments', { } )
-    auxdata = (
-        gui.auxdata__ if hasattr( gui, 'auxdata__' )
-        else gui.parent__.auxdata__ )
-    for transformer in auxdata.gui.transformers.values( ):
-        component_class, component_arguments = (
-            transformer( auxdata, component_class, component_arguments ) )
-    component = component_class( *elements, **component_arguments )
-    setattr( gui, component_name, component )
-    interpolant_id = entry.get( 'interpolant_id' )
-    if interpolant_id: gui.template__.add_panel( interpolant_id, component )
-    return component
-
-
 def package_controls( gui ):
     # TODO: Move to aiwb.gui.controls.
     return dict(
@@ -159,24 +137,3 @@ def package_special_data( components ):
         invocables = provide_active_invocables( components )
         if invocables: special_data[ 'invocables' ] = invocables
     return special_data
-
-
-def register_event_callbacks( gui, layout, component_name ):
-    # TODO: Move to aiwb.gui.components.
-    from . import events as registry # pylint: disable=cyclic-import
-    entry = layout[ component_name ]
-    for element_name in entry.get( 'contains', ( ) ):
-        register_event_callbacks( gui, layout, element_name )
-    if not hasattr( gui, component_name ): return
-    component = getattr( gui, component_name )
-    functions = entry.get( 'event_functions', { } )
-    for event_name, function_name in functions.items( ):
-        function = partial_function( getattr( registry, function_name ), gui )
-        if 'on_click' == event_name:
-            component.on_click( function )
-            continue
-        component.param.watch( function, event_name )
-    function_name = entry.get( 'javascript_cb_generator' )
-    if function_name:
-        cb_generator = getattr( registry, function_name )
-        component.jscallback( **cb_generator( gui, layout, component_name ) )

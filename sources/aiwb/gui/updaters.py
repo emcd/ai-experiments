@@ -33,13 +33,13 @@ def add_conversation_indicator( components, descriptor, position = 0 ):
     from .layouts import conversation_indicator_layout as layout
     container_components = __.SimpleNamespace(
         parent__ = components, identity__ = descriptor.identity )
-    __.generate_component( container_components, layout, 'column_indicator' )
+    _components.generate( container_components, layout, 'column_indicator' )
     container_components.rehtml_indicator = indicator = (
         ConversationIndicator( container_components ) )
     container_components.text_title.object = descriptor.title
     indicator.param.watch(
         __.partial_function( on_select_conversation, components ), 'clicked' )
-    __.register_event_callbacks(
+    _components.register_event_reactors(
         container_components, layout, 'column_indicator' )
     conversations = components.column_conversations_indicators
     if 'END' == position: conversations.append( indicator )
@@ -106,8 +106,7 @@ async def create_conversation( components, descriptor, state = None ):
     components_ = __.SimpleNamespace( **components.__dict__ )
     for component_name in conversation_container_names:
         layout = getattr( layouts, f"{component_name}_layout" )
-        __.generate_component(
-            components_, layout, f"column_{component_name}" )
+        _components.generate( components_, layout, f"column_{component_name}" )
     components_.auxdata__ = components.auxdata__
     components_.identity__ = descriptor.identity
     components_.parent__ = components
@@ -125,7 +124,7 @@ def create_message( gui, dto ):
         index__ = None,
         layout__ = layout,
         parent__ = gui )
-    widget = __.generate_component( gui_, layout, 'row_canister' )
+    widget = _components.generate( gui_, layout, 'row_canister' )
     widget.gui__ = gui_
     gui_.row_content.gui__ = gui_
     # TODO: Handle non-textual messages and text messages with attachments.
@@ -136,7 +135,7 @@ def create_message( gui, dto ):
     dto.attributes.behaviors = getattr(
         dto.attributes, 'behaviors', [ 'active' ] )
     configure_message_interface( gui_, dto )
-    __.register_event_callbacks( gui_, layout, 'row_canister' )
+    _components.register_event_reactors( gui_, layout, 'row_canister' )
     return gui_
 
 
@@ -203,7 +202,7 @@ async def populate_conversation( components ):
             components, layout, f"column_{component_name}" )
     for component_name in conversation_container_names:
         layout = getattr( layouts, f"{component_name}_layout" )
-        __.register_event_callbacks(
+        _components.register_event_reactors(
             components, layout, f"column_{component_name}" )
     update_conversation_postpopulate( components )
 
@@ -214,7 +213,7 @@ async def populate_dashboard( auxdata: _state.Globals ):
     from .layouts import conversations_manager_layout, dashboard_layout
     from .persistence import restore_conversations_index
     components = auxdata.gui.components
-    __.generate_component( components, dashboard_layout, 'dashboard' )
+    _components.generate( components, dashboard_layout, 'dashboard' )
     conversations = components.column_conversations_indicators
     conversations.descriptors__ = { }
     conversations.current_descriptor__ = ConversationDescriptor( )
@@ -222,7 +221,7 @@ async def populate_dashboard( auxdata: _state.Globals ):
     if auxdata.configuration.get( 'maintenance-mode', False ):
         components.button_remove_orphans.visible = True
         components.button_upgrade_conversations.visible = True
-    __.register_event_callbacks(
+    _components.register_event_reactors(
         components,
         conversations_manager_layout,
         'column_conversations_manager' )
