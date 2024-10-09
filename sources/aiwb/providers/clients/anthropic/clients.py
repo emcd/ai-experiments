@@ -26,6 +26,15 @@ from . import __
 
 class Client( __.Client ):
 
+    async def access_model(
+        self,
+        auxdata: __.CoreGlobals,
+        genus: __.ModelGenera,
+        name: str,
+    ) -> __.Model:
+        # TODO: Implement.
+        pass
+
     async def survey_models(
         self,
         auxdata: __.CoreGlobals,

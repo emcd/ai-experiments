@@ -32,6 +32,24 @@ _supported_model_genera = frozenset( (
 
 class Client( __.Client ):
 
+    async def access_model(
+        self,
+        auxdata: __.CoreGlobals,
+        genus: __.ModelGenera,
+        name: str,
+    ) -> __.Model:
+        # TODO? Cache nested dictionary of models for performance.
+        try:
+            return next(
+                model for model
+                in await self.survey_models( auxdata, genus = genus )
+                if name == model.name )
+        except StopIteration:
+            # TODO: Raise appropriate type of error.
+            raise LookupError(
+                f"Could not access model {name!r} of genus {genus.value!r} "
+                f"on provider {self.name!r}." ) from None
+
     async def survey_models(
         self,
         auxdata: __.CoreGlobals,
@@ -72,9 +90,6 @@ class Client( __.Client ):
 
     ## TEMP: Wrappers for Legacy Module-Level Interface
     # TODO: Transition to model-level methods.
-
-    def access_model_data( self, model_name, data_name ):
-        return _v0.access_model_data( model_name, data_name )
 
     async def chat( self, messages, special_data, controls, callbacks ):
         return await _v0.chat( messages, special_data, controls, callbacks )

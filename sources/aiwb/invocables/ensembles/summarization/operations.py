@@ -46,10 +46,14 @@ async def analyze(
         control = arguments.get( 'control' ) )
 
 
-def _access_tokens_limit( auxdata ):
+async def _access_tokens_limit( auxdata ):
+    from ....providers import ModelGenera
     provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
     model_name = auxdata.controls[ 'model' ]
-    return provider.access_model_data( model_name, 'tokens-limit' )
+    return (
+        await provider.access_model(
+            auxdata, genus = ModelGenera.Converser, name = model_name )
+        .attributes.tokens_limits.total )
 
 
 async def _analyze_file( auxdata, path, control = None ):
@@ -65,7 +69,7 @@ async def _analyze_file( auxdata, path, control = None ):
         auxdata.prompts.definitions[ 'Automation: File Analysis' ]
         .produce_prompt( values = { 'format': provider_format_name } ) )
     chunk_reader, mime_type = _determine_chunk_reader( path )
-    for chunk in chunk_reader( auxdata, path ):
+    for chunk in await chunk_reader( auxdata, path ):
         messages = [
             Canister( role = 'Supervisor' ).add_content(
                 supervisor_prompt.render( auxdata ) ) ]
@@ -172,7 +176,7 @@ async def _list_directory_as_cell( *posargs, **nomargs ):
 async def _operate( auxdata, source, operators, control = None ):
     # TODO: Support wildcards.
     tokens_total = 0
-    tokens_max = _access_tokens_limit( auxdata ) * 3 // 4
+    tokens_max = ( await _access_tokens_limit( auxdata ) ) * 3 // 4
     components = __.urlparse( source )
     has_file_scheme = not components.scheme or 'file' == components.scheme
     if has_file_scheme:
@@ -198,8 +202,8 @@ async def _operate( auxdata, source, operators, control = None ):
 
 
 # TODO: Process stream.
-def _read_chunks_destructured( auxdata, path ):
-    tokens_max = _access_tokens_limit( auxdata ) // 4
+async def _read_chunks_destructured( auxdata, path ):
+    tokens_max = ( await _access_tokens_limit( auxdata ) ) // 4
     blocks = [ ]
     tokens_total = 0
     hint = 'first chunk'
@@ -220,8 +224,8 @@ def _read_chunks_destructured( auxdata, path ):
 
 
 # TODO: Process stream.
-def _read_chunks_naively( auxdata, path ):
-    tokens_max = _access_tokens_limit( auxdata ) // 4
+async def _read_chunks_naively( auxdata, path ):
+    tokens_max = ( await _access_tokens_limit( auxdata ) ) // 4
     lines = [ ]
     tokens_total = 0
     hint = 'first chunk'

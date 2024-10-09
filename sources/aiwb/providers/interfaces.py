@@ -64,12 +64,26 @@ class Client( __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
+    async def access_model(
+        self,
+        auxdata: __.CoreGlobals,
+        genus: _core.ModelGenera,
+        name: str,
+    ) -> Model:
+        ''' Returns specific model available from provider, if it exists. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
     async def survey_models(
         self,
         auxdata: __.CoreGlobals,
         genus: __.Optional[ _core.ModelGenera ] = __.absent,
     ) -> __.AbstractSequence[ Model ]:
-        ''' Returns models available from provider. '''
+        ''' Returns models available from provider.
+
+            Accepts optional model genus as filter. If not supplied, then
+            models from all genera are returned.
+        '''
         raise NotImplementedError
 
 
