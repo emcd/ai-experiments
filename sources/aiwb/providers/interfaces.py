@@ -34,6 +34,7 @@ class Client( __.a.Protocol ):
     # TODO: Immutable class attributes.
 
     name: str
+    attributes: _core.ClientAttributes
 
     @classmethod
     @__.abstract_member_function
@@ -51,7 +52,12 @@ class Client( __.a.Protocol ):
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
-        return __.AccretiveDictionary( name = descriptor[ 'name' ] )
+        descriptor_ = dict( descriptor )
+        # TODO: Raise error on missing name.
+        name = descriptor_.pop( 'name' )
+        attributes = _core.ClientAttributes.from_descriptor(
+            descriptor_.pop( 'attributes', { } ) )
+        return __.AccretiveDictionary( name = name, attributes = attributes )
 
     @classmethod
     @__.abstract_member_function

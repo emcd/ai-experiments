@@ -30,6 +30,7 @@ _supported_model_genera = frozenset( (
 ) )
 
 
+@__.standard_dataclass
 class Client( __.Client ):
 
     async def access_model(
@@ -49,6 +50,14 @@ class Client( __.Client ):
             raise LookupError(
                 f"Could not access model {name!r} of genus {genus.value!r} "
                 f"on provider {self.name!r}." ) from None
+
+    async def access_model_default(
+        self,
+        auxdata: __.CoreGlobals,
+        genus: __.ModelGenera,
+    ) -> __.Model:
+        # TODO: Implement.
+        pass
 
     async def survey_models(
         self,
@@ -124,6 +133,7 @@ class Client( __.Client ):
 # TODO: AzureClient
 
 
+@__.standard_dataclass
 class OpenAIClient( Client ):
 
     @classmethod
@@ -147,7 +157,8 @@ class OpenAIClient( Client ):
         #       Remove dependency on legacy module-level cache.
         _v0.models_.update( await _cache_acquire_models( auxdata ) )
         return selfclass(
-            **super( ).init_args_from_descriptor( auxdata, descriptor ) )
+            **super( OpenAIClient, OpenAIClient )
+            .init_args_from_descriptor( auxdata, descriptor ) )
 
 
 class Factory( __.Factory ):

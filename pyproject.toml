@@ -303,6 +303,9 @@ dummy-variables-rgx = '''_$'''
 ignored-argument-names = '''_.*'''
 redefining-builtins-modules = [ 'builtins', 'io' ]
 
+[tool.pyright]
+reportSelfClsParameterName = false
+
 [tool.pytest.ini_options]
 # Note: Cannot run doctests from Pytest, because Pytest tries to update '_'
 #       attribute on protected modules. Instead, we use Sphinx to run doctests.

@@ -266,12 +266,13 @@ async def populate_models_selector( components ):
         await provider.survey_models(
             auxdata = components.auxdata__,
             genus = __.AiModelGenera.Converser ) )
+    model_names = tuple( model.name for model in models )
     components.selector_model.auxdata__ = {
         model.name: model for model in models }
     components.selector_model.value = None
-    components.selector_model.options = [ model.name for model in models ]
+    components.selector_model.options = list( model_names )
     components.selector_model.value = (
-        provider.select_default_model( models, components.auxdata__ ) )
+        provider.select_default_model( model_names, components.auxdata__ ) )
 
 
 async def populate_providers_selector( components ):

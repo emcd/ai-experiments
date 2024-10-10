@@ -25,37 +25,42 @@ from . import __
 from . import core as _core
 
 
+async def acquire_provider_configuration(
+    auxdata: __.CoreGlobals, name: str
+) -> __.AbstractDictionary[ str, __.a.Any ]:
+    ''' Returns configuration dictionary for AI provider. '''
+    directory = auxdata.distribution.provide_data_location( 'providers', name )
+    # TODO: Raise error if provider data directory does not exist.
+    configuration = { }
+    for configuration_ in await __.gather_async(
+        _acquire_configuration( auxdata, directory ),
+        _acquire_configurations( auxdata, directory, 'model-families' ),
+        _acquire_configurations( auxdata, directory, 'models' )
+    ): configuration.update( configuration_ )
+    return __.DictionaryProxy( configuration )
+
+
 async def acquire_models_integrators(
     auxdata: __.CoreGlobals, name: str
 ) -> __.AbstractDictionary[
     _core.ModelGenera, __.AbstractSequence[ _core.ModelsIntegrator ]
 ]:
     ''' Returns models integrators, general to specific, by genus. '''
-    from collections import defaultdict
-    from tomli import loads
-    # TODO: Account for custom models, such as fine-tunes.
-    #       Attributes integrators will come from application configuration
-    #       rather than package data.
-    cfile_name = 'attributes.toml'
-    cfiles = [ ]
-    integrators = defaultdict( list )
-    directory = auxdata.distribution.provide_data_location( 'providers', name )
-    # TODO: Raise error if provider data directory does not exist.
-    cfiles.append( directory / cfile_name )
+    # TODO: Use provider configuration directly rather than loading.
+    p_configuration = await acquire_provider_configuration( auxdata, name )
     # Longest model family names go last under the assumption that they are
     # more specific than shorter model family names with the same prefix and
     # thus should override them.
-    cfiles.extend( sorted(
-        directory.rglob( f"model-families/*/{cfile_name}" ),
-        key = lambda f: len( f.parent.name ) ) )
+    mf_configurations = sorted(
+        p_configuration.get( 'model-families', ( ) ),
+        key = lambda mfc: len( mfc[ 'name' ] ) )
+    m_configurations = p_configuration.get( 'models', ( ) )
+    # Model families always go after the provider.
     # Specific models (and their aliases) always go after model families.
-    cfiles.extend( directory.rglob( f"models/*/{cfile_name}" ) )
-    acquirers = tuple(
-        __.text_file_presenter_from_url( cfile ).acquire_content( )
-        for cfile in cfiles )
-    configurations = tuple(
-        loads( content ) for content in await __.gather_async( *acquirers ) )
-    for cfile, configuration in zip( cfiles, configurations ):
+    configurations = ( p_configuration, *mf_configurations, *m_configurations )
+    from collections import defaultdict
+    integrators = defaultdict( list )
+    for configuration in configurations:
         for genus in _core.ModelGenera:
             descriptor = configuration.get( genus.value )
             if not descriptor: continue
@@ -66,3 +71,39 @@ async def acquire_models_integrators(
     return __.DictionaryProxy( {
         genus: tuple( sequence ) for genus, sequence
         in integrators.items( ) } )
+
+
+async def _acquire_configuration(
+    auxdata: __.CoreGlobals, directory: __.Path
+) -> __.AbstractDictionary[ str, __.a.Any ]:
+    from tomli import loads
+    files = directory.glob( '*.toml' )
+    acquirers = tuple(
+        __.text_file_presenter_from_url( file ).acquire_content( )
+        for file in files )
+    configuration = { }
+    for content in await __.gather_async( *acquirers ):
+        configuration.update( loads( content ) )
+    return configuration
+
+
+async def _acquire_configurations(
+    auxdata: __.CoreGlobals, directory: __.Path, index_name: str
+) -> __.AbstractDictionary[ str, __.a.Any ]:
+    subdirectories = tuple(
+        entity for entity in directory.rglob( f"{index_name}/*" )
+        if entity.is_dir( ) )
+    acquirers = tuple(
+        _acquire_configuration( auxdata, subdirectory )
+        for subdirectory in subdirectories )
+    configurations = await __.gather_async( *acquirers )
+    configurations_ = [ ]
+    for subdirectory, configuration in zip( subdirectories, configurations ):
+        configuration_ = { 'name': subdirectory.name }
+        configuration_.update( configuration )
+        configurations_.append( __.DictionaryProxy( configuration_ ) )
+    for configuration in auxdata.configuration.get( index_name, ( ) ):
+        # TODO: Raise error if no name.
+        configurations_.append( __.DictionaryProxy( configuration ) )
+    # TODO: Sort lexicographically on name.
+    return __.DictionaryProxy( { index_name: tuple( configurations_ ) } )

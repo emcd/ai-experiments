@@ -47,6 +47,56 @@ class ChatCallbacks:
         lambda handle: None )
 
 
+@__.standard_dataclass
+class ClientDefaults:
+    ''' Collection of default values for AI provider. '''
+
+    converser_model: __.AbstractSequence[ str ] = ( )
+
+    @classmethod
+    def from_descriptor(
+        selfclass,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        ''' Produces client defaults instance from descriptor. '''
+        args = __.AccretiveDictionary( )
+        for arg_name in ( 'converser-model', ):
+            arg = descriptor.get( arg_name )
+            if None is arg: continue
+            if isinstance( arg, str ): arg = ( arg, )
+            arg_name_ = arg_name.replace( '-', '_' )
+            args[ arg_name_ ] = arg
+        return selfclass( **args )
+
+
+@__.standard_dataclass
+class ClientAttributes:
+    ''' Common attributes for AI provider clients. '''
+
+    defaults: ClientDefaults = ClientDefaults( )
+
+    @classmethod
+    def from_descriptor(
+        selfclass,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        ''' Produces client attributes instance from descriptor. '''
+        return selfclass(
+            **selfclass.init_args_from_descriptor( descriptor ) )
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
+        args = __.AccretiveDictionary( )
+        args[ 'defaults' ] = (
+            ClientDefaults.from_descriptor(
+                descriptor.get( 'defaults', { } ) ) )
+        return args
+
+
 class ConverserModalities( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Supportable input modalities for AI chat models. '''
 
