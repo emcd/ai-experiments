@@ -48,7 +48,7 @@ class Client( __.Client ):
         except StopIteration:
             # TODO: Raise appropriate type of error.
             raise LookupError(
-                f"Could not access model {name!r} of genus {genus.value!r} "
+                f"Could not access {genus.value} model {name!r} "
                 f"on provider {self.name!r}." ) from None
 
     async def access_model_default(
@@ -56,8 +56,19 @@ class Client( __.Client ):
         auxdata: __.CoreGlobals,
         genus: __.ModelGenera,
     ) -> __.Model:
-        # TODO: Implement.
-        pass
+        defaults = getattr( self.attributes.defaults, f"{genus.value}_model" )
+        models = await self.survey_models( auxdata = auxdata, genus = genus )
+        models_by_name = __.DictionaryProxy( {
+            model.name: model for model in models } )
+        try:
+            return next(
+                models_by_name[ default ] for default in defaults
+                if default in models_by_name )
+        except StopIteration:
+            # TODO: Raise appropriate type of error.
+            raise LookupError(
+                f"Could not access default {genus.value} model "
+                f"on provider {self.name!r}." ) from None
 
     async def survey_models(
         self,
@@ -126,9 +137,6 @@ class Client( __.Client ):
     def render_data( self, content, controls ):
         return _v0.render_data( content, controls )
 
-    def select_default_model( self, models, auxdata ):
-        return _v0.select_default_model( models, auxdata )
-
 
 # TODO: AzureClient
 
@@ -146,9 +154,10 @@ class OpenAIClient( Client ):
         # TODO: Warn on missing 'OPENAI_ORG_ID' and 'OPENAI_PROJECT_ID'.
 
     @classmethod
-    async def prepare(
+    async def from_descriptor(
         selfclass,
         auxdata: __.CoreGlobals,
+        factory: __.Factory,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
         await selfclass.assert_environment( auxdata )
@@ -156,22 +165,28 @@ class OpenAIClient( Client ):
         # TODO: Cache models on 'survey_models' operation.
         #       Remove dependency on legacy module-level cache.
         _v0.models_.update( await _cache_acquire_models( auxdata ) )
-        return selfclass(
-            **super( OpenAIClient, OpenAIClient )
-            .init_args_from_descriptor( auxdata, descriptor ) )
+        return selfclass( **(
+            super( OpenAIClient, OpenAIClient )
+            .init_args_from_descriptor(
+                auxdata = auxdata,
+                factory = factory,
+                descriptor = descriptor ) ) )
 
 
+@__.standard_dataclass
 class Factory( __.Factory ):
 
-    async def client_from_descriptor(
+    async def produce_client(
         self,
         auxdata: __.CoreGlobals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ]
     ):
         #variant = descriptor.get( 'variant' )
         # TODO: Produce Azure variant, if requested.
+        client_class = OpenAIClient
         # TODO: Return future.
-        return await OpenAIClient.prepare( auxdata, descriptor )
+        return await client_class.from_descriptor(
+            auxdata = auxdata, factory = self, descriptor = descriptor )
 
 
 async def _cache_acquire_models( auxdata ):

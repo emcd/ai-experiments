@@ -37,6 +37,14 @@ async def acquire_provider_configuration(
         _acquire_configurations( auxdata, directory, 'model-families' ),
         _acquire_configurations( auxdata, directory, 'models' )
     ): configuration.update( configuration_ )
+    # Extend from custom configuration.
+    for index_name in ( 'model-families', 'models', ):
+        configurations_ = _copy_custom_provider_configurations(
+            auxdata, provider_name = name, index_name = index_name )
+        # TODO: Raise error if no name in an entry.
+        configuration[ index_name ] = tuple( sorted(
+            configuration[ index_name ] + configurations_,
+            key = lambda cfg: cfg[ 'name' ] ) )
     return __.DictionaryProxy( configuration )
 
 
@@ -102,8 +110,17 @@ async def _acquire_configurations(
         configuration_ = { 'name': subdirectory.name }
         configuration_.update( configuration )
         configurations_.append( __.DictionaryProxy( configuration_ ) )
-    for configuration in auxdata.configuration.get( index_name, ( ) ):
-        # TODO: Raise error if no name.
-        configurations_.append( __.DictionaryProxy( configuration ) )
-    # TODO: Sort lexicographically on name.
     return __.DictionaryProxy( { index_name: tuple( configurations_ ) } )
+
+
+def _copy_custom_provider_configurations(
+    auxdata: __.CoreGlobals, provider_name: str, index_name: str
+) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+    factory_descriptors = (
+        auxdata.configuration.get( 'provider-factories', ( ) ) )
+    try:
+        configurations = next(
+            descriptor for descriptor in factory_descriptors
+            if provider_name == descriptor[ 'name' ] )
+    except StopIteration: configurations = { }
+    return tuple( configurations.get( index_name, ( ) ) )

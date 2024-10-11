@@ -259,20 +259,20 @@ async def populate_dashboard( auxdata: _state.Globals ):
 
 async def populate_models_selector( components ):
     # TODO: Different models selectors per model genus.
+    auxdata = components.auxdata__
+    genus = __.AiModelGenera.Converser
     provider = (
         components.selector_provider.auxdata__[
             components.selector_provider.value ] )
-    models = (
-        await provider.survey_models(
-            auxdata = components.auxdata__,
-            genus = __.AiModelGenera.Converser ) )
+    models = await provider.survey_models( auxdata = auxdata, genus = genus )
     model_names = tuple( model.name for model in models )
     components.selector_model.auxdata__ = {
         model.name: model for model in models }
     components.selector_model.value = None
     components.selector_model.options = list( model_names )
     components.selector_model.value = (
-        provider.select_default_model( model_names, components.auxdata__ ) )
+        ( await provider.access_model_default(
+            auxdata = auxdata, genus = genus ) ).name )
 
 
 async def populate_providers_selector( components ):

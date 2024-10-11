@@ -155,22 +155,6 @@ def render_data( content, controls ):
     return mime_type, text
 
 
-def select_default_model( models, auxdata ):
-    configuration = auxdata.configuration
-    # TODO: Merge configuration on provider instantiation.
-    try:
-        # TEMP HACK
-        return (
-            next( iter( configuration[ 'providers' ] ) )[ 'default-model' ] )
-    except KeyError: pass
-    for model_name in (
-        'o1-preview', 'gpt-4o', 'chatgpt-4o-latest', 'o1-mini', 'gpt-4o-mini',
-        'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo',
-    ):
-        if model_name in models: return model_name
-    return next( iter( models ) )
-
-
 async def _chat( messages, special_data, controls, callbacks ):
     from openai import AsyncOpenAI, OpenAIError
     client = AsyncOpenAI( )

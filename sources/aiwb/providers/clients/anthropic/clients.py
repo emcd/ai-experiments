@@ -24,6 +24,7 @@
 from . import __
 
 
+@__.standard_dataclass
 class Client( __.Client ):
 
     async def access_model(
@@ -31,6 +32,14 @@ class Client( __.Client ):
         auxdata: __.CoreGlobals,
         genus: __.ModelGenera,
         name: str,
+    ) -> __.Model:
+        # TODO: Implement.
+        pass
+
+    async def access_model_default(
+        self,
+        auxdata: __.CoreGlobals,
+        genus: __.ModelGenera,
     ) -> __.Model:
         # TODO: Implement.
         pass
@@ -44,6 +53,7 @@ class Client( __.Client ):
         pass
 
 
+@__.standard_dataclass
 class AnthropicClient( Client ):
 
     @classmethod
@@ -55,14 +65,19 @@ class AnthropicClient( Client ):
             raise LookupError( f"Missing {api_key_name!r}." )
 
     @classmethod
-    async def prepare(
+    async def from_descriptor(
         selfclass,
         auxdata: __.CoreGlobals,
+        factory: __.Factory,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
         await selfclass.assert_environment( auxdata )
-        return selfclass(
-            **super( ).init_args_from_descriptor( auxdata, descriptor ) )
+        return selfclass( **(
+            super( AnthropicClient, AnthropicClient )
+            .init_args_from_descriptor(
+                auxdata = auxdata,
+                factory = factory,
+                descriptor = descriptor ) ) )
 
 
 # TODO: AwsBedrockClient
@@ -73,12 +88,14 @@ class AnthropicClient( Client ):
 
 class Factory( __.Factory ):
 
-    async def client_from_descriptor(
+    async def produce_client(
         self,
         auxdata: __.CoreGlobals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ]
     ):
         #variant = descriptor.get( 'variant' )
         # TODO: Produce AWS Bedrock or Google Vertex variant, if requested.
+        client_class = AnthropicClient
         # TODO: Return future.
-        return await AnthropicClient.prepare( auxdata, descriptor )
+        return await client_class.from_descriptor(
+            auxdata = auxdata, factory = self, descriptor = descriptor )

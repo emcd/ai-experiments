@@ -70,7 +70,7 @@ async def prepare_clients(
         factories[ descriptor.get( 'factory', name ) ]
         for name, descriptor in zip( names, descriptors ) )
     results = await __.gather_async(
-        *(  factory.client_from_descriptor( auxdata, descriptor )
+        *(  factory.produce_client( auxdata, descriptor )
             for factory, descriptor
             in zip( factories_per_client, descriptors ) ),
         return_exceptions = True )

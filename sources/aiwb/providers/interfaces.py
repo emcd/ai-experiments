@@ -35,6 +35,7 @@ class Client( __.a.Protocol ):
 
     name: str
     attributes: _core.ClientAttributes
+    factory: Factory
 
     @classmethod
     @__.abstract_member_function
@@ -46,28 +47,30 @@ class Client( __.a.Protocol ):
         raise NotImplementedError
 
     @classmethod
+    @__.abstract_member_function
+    async def from_descriptor(
+        selfclass,
+        auxdata: __.CoreGlobals,
+        factory: Factory,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        ''' Produces client from descriptor dictionary. '''
+        raise NotImplementedError
+
+    @classmethod
     def init_args_from_descriptor(
         selfclass,
         auxdata: __.CoreGlobals,
+        factory: Factory,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         descriptor_ = dict( descriptor )
         # TODO: Raise error on missing name.
         name = descriptor_.pop( 'name' )
-        attributes = _core.ClientAttributes.from_descriptor(
-            descriptor_.pop( 'attributes', { } ) )
-        return __.AccretiveDictionary( name = name, attributes = attributes )
-
-    @classmethod
-    @__.abstract_member_function
-    async def prepare(
-        selfclass,
-        auxdata: __.CoreGlobals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
-        ''' Produces client from descriptor dictionary. '''
-        raise NotImplementedError
+        attributes = _core.ClientAttributes.from_descriptor( descriptor_ )
+        return __.AccretiveDictionary(
+            name = name, attributes = attributes, factory = factory )
 
     @__.abstract_member_function
     async def access_model(
@@ -76,7 +79,16 @@ class Client( __.a.Protocol ):
         genus: _core.ModelGenera,
         name: str,
     ) -> Model:
-        ''' Returns specific model available from provider, if it exists. '''
+        ''' Returns named model available from provider, if it exists. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def access_model_default(
+        self,
+        auxdata: __.CoreGlobals,
+        genus: _core.ModelGenera,
+    ) -> Model:
+        ''' Returns default model available from provider, if it exists. '''
         raise NotImplementedError
 
     @__.abstract_member_function
@@ -107,12 +119,17 @@ class ConversationTokenizer( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
+@__.standard_dataclass
 class Factory( __.a.Protocol ):
     ''' Produces clients. '''
     # TODO: Immutable class attributes.
 
+    name: str
+    # TODO: Regenerative dictionary for configuration.
+    configuration: __.AbstractDictionary[ str, __.a.Any ]
+
     @__.abstract_member_function
-    async def client_from_descriptor(
+    async def produce_client(
         self,
         auxdata: __.CoreGlobals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ]
