@@ -30,8 +30,15 @@ from . import __
 class Accessor:
     ''' Accessor for server properties and thread. '''
 
+    components: __.SimpleNamespace
     control: Control
-    thread: __.Thread
+
+    async def execute( self, auxdata: __.ApiServerGlobals ):
+        ''' Runs server in thread. '''
+        await auxdata.exits.enter_async_context(
+            _execute_server_thread(
+                components = self.components,
+                control = self.control ) )
 
 
 @__.standard_dataclass
@@ -49,37 +56,27 @@ class Control:
             address = address, port = port, reload = self.reload )
 
 
-async def prepare(
-    auxdata: __.ApiServerGlobals,
-    components: __.SimpleNamespace,
-    control: Control,
-) -> Accessor:
-    ''' Prepares server accessor from control information. '''
-    # TODO: Honor address and port for listener socket binding.
-    thread = await auxdata.exits.enter_async_context(
-        _execute_server_thread(
-            components = components, control = control ) )
-    return Accessor( control = control, thread = thread )
-
-
 @__.exit_manager_async
 async def _execute_server_thread(
     components: __.SimpleNamespace, control: Control
 ) -> __.AbstractGenerator:
     scribe = __.acquire_scribe( __package__ )
-    from asyncio import get_running_loop
+    from asyncio import get_running_loop, sleep
     loop = get_running_loop( )
     scribe.info( "Waiting for GUI server to start." )
     thread = await loop.run_in_executor(
         None, _start_gui, components, control )
+    while not thread.is_alive( ): await sleep( 0.001 )
     yield thread
     scribe.info( "Waiting for GUI server to stop." )
     thread.stop( )
+    thread.join( )
 
 
 def _start_gui(
     components: __.SimpleNamespace, control: Control
 ) -> __.a.Any: # TODO: Proper type.
+    # TODO: Honor address and port for listener socket binding.
     return components.template__.show(
         autoreload = control.reload,
         threaded = True,

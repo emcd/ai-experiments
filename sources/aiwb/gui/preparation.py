@@ -56,8 +56,7 @@ async def prepare(
         exits = exits,
         inscription = inscription )
     components = await _prepare_components_base( auxdata_base )
-    server = await _server.prepare(
-        auxdata_base, components = components, control = guiserver )
+    server = _server.Accessor( components = components, control = guiserver )
     manager = Manager(
         components = components,
         server = server,
@@ -66,6 +65,9 @@ async def prepare(
     auxdata = _state.Globals.from_base( auxdata_base, gui = manager )
     components.auxdata__ = auxdata # Hack for legacy.
     await _prepare_components_complete( auxdata )
+    await server.execute( auxdata )
+    # TODO: Debug failure of GUI server exit handler to trigger on exception.
+    #       assert False
     return auxdata
 
 
