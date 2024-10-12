@@ -283,7 +283,7 @@ def execute_cli( ):
     from asyncio import run
     config = (
         #__.tyro.conf.OmitSubcommandPrefixes,
-        __.tyro.conf.SelectFromEnumValues,
+        __.tyro.conf.EnumChoicesFromValues,
     )
     default = Cli(
         application = _application.Information( ),

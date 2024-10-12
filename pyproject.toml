@@ -29,7 +29,7 @@ dependencies = [
   'tomli', # TODO: Python 3.11: Remove.
   'tomli-w', # TODO? Remove. Use pretty JSON for machine-generated files.
   'typing-extensions',
-  'tyro @ git+https://github.com/emcd/tyro@enum-values',
+  'tyro', # @ git+https://github.com/emcd/tyro@enum-values
   'unstructured',
 
   # TODO: Install in environment context as needed.
