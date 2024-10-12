@@ -80,7 +80,7 @@ repos:
     name: 'Lint: Semgrep (Python)'
     # https://semgrep.dev/explore
     args: [ '--config', 'p/python', '--error', '--skip-unknown-extensions' ]
-    stages: [ 'push' ]
+    stages: [ 'pre-push' ]
     fail_fast: true
 
 #- repo: local
