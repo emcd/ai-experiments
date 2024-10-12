@@ -61,13 +61,16 @@ async def _analyze_file( auxdata, path, control = None ):
     from ....providers import chat_callbacks_minimal
     ai_messages = [ ]
     provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
-    provider_format_name = provider.provide_format_name( auxdata.controls )
+    model = await provider.access_model(
+        genus = provider.ModelGenera.Converser,
+        name = auxdata.controls[ 'model' ] )
+    format_name = model.attributes.format_preferences.request_data.value
     summarization_prompt = (
         auxdata.prompts.definitions[ 'Concatenate: AI Responses' ]
         .produce_prompt( ) )
     supervisor_prompt = (
         auxdata.prompts.definitions[ 'Automation: File Analysis' ]
-        .produce_prompt( values = { 'format': provider_format_name } ) )
+        .produce_prompt( values = { 'format': format_name } ) )
     chunk_reader, mime_type = _determine_chunk_reader( path )
     for chunk in await chunk_reader( auxdata, path ):
         messages = [
@@ -80,7 +83,7 @@ async def _analyze_file( auxdata, path, control = None ):
                 summarization_prompt.render( auxdata ) ) )
             messages.append( Canister( role = 'AI' ).add_content(
                 '\n\n'.join( ai_messages ) ) )
-        _, content = _render_analysis_prompt(
+        _, content = await _render_analysis_prompt(
             auxdata, control, chunk, mime_type )
         messages.append( Canister( role = 'Human' ).add_content( content ) )
         ai_canister = await provider.chat(
@@ -120,10 +123,13 @@ async def _discriminate_dirents( auxdata, dirents, control = None ):
     from ....messages import Canister
     from ....providers import chat_callbacks_minimal
     provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
-    provider_format_name = provider.provide_format_name( auxdata.controls )
+    model = await provider.access_model(
+        genus = provider.ModelGenera.Converser,
+        name = auxdata.controls[ 'model' ] )
+    format_name = model.attributes.format_preferences.request_data.value
     prompt = (
         auxdata.prompts.definitions[ 'Discriminate Directory Entries' ]
-        .produce_prompt( values = { 'format': provider_format_name } ) )
+        .produce_prompt( values = { 'format': format_name } ) )
     supervisor_message = prompt.render( auxdata )
     complete_result = [ ]
     # TODO: Python 3.12: itertools.batches
@@ -135,13 +141,13 @@ async def _discriminate_dirents( auxdata, dirents, control = None ):
         messages = [
             Canister( role = 'Supervisor' ).add_content( supervisor_message )
         ]
-        _, content = _render_analysis_prompt(
+        _, content = await _render_analysis_prompt(
             auxdata, control, dirents_batch, 'directory-entries' )
         messages.append( Canister( role = 'Human' ).add_content( content ) )
         ai_canister = await provider.chat(
             messages, { }, auxdata.controls, chat_callbacks_minimal )
         #ic( ai_canister[ 0 ].data )
-        result = provider.parse_data( ai_canister[ 0 ].data, auxdata.controls )
+        result = model.deserialize_data( ai_canister[ 0 ].data )
         ic( result[ 'blacklist' ] )
         complete_result.extend( result[ 'whitelist' ] )
     return complete_result
@@ -289,7 +295,7 @@ def _read_http_core( auxdata, url ):
     return file.name
 
 
-def _render_analysis_prompt( auxdata, control, content, mime_type ):
+async def _render_analysis_prompt( auxdata, control, content, mime_type ):
     control = control or { }
     instructions = control.get( 'instructions', '' )
     if control.get( 'mode', 'supplement' ):
@@ -300,6 +306,8 @@ def _render_analysis_prompt( auxdata, control, content, mime_type ):
                     mime_type = mime_type, instructions = instructions ) )
             .render( auxdata ) )
     provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
-    return provider.render_data(
-        dict( content = content, instructions = instructions ),
-        auxdata.controls )
+    model = await provider.access_model(
+        genus = provider.ModelGenera.Converser,
+        name = auxdata.controls[ 'model' ] )
+    return model.serialize_data(
+        dict( content = content, instructions = instructions ) )

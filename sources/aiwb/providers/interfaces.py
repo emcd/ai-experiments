@@ -33,6 +33,9 @@ class Client( __.a.Protocol ):
     ''' Interacts with AI provider. '''
     # TODO: Immutable class attributes.
 
+    ModelGenera: __.a.ClassVar[ type[ _core.ModelGenera ] ] = (
+        _core.ModelGenera )
+
     name: str
     attributes: _core.ClientAttributes
     factory: Factory
@@ -167,3 +170,13 @@ class ConverserModel( Model, __.a.Protocol ):
         raise NotImplementedError
 
     # TODO: provide_tokenizer
+
+    @__.abstract_member_function
+    def deserialize_data( self, data: str ) -> __.a.Any:
+        ''' Deserializes text in preferred format of model to data. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def serialize_data( self, data: __.a.Any ) -> str:
+        ''' Serializes data to text in preferred format of model. '''
+        raise NotImplementedError

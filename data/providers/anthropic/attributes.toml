@@ -10,6 +10,10 @@ modalities = [ 'text', 'pictures' ]
 supports-continuous-response = true
 supports-invocations = true
 
+[converser.format-preferences]
+request-data = 'JSON'
+response-data = 'JSON'
+
 [converser.tokens-limits]
 per-response = 4_096
 total = 200_000

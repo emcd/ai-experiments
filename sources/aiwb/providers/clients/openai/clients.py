@@ -128,15 +128,6 @@ class Client( __.Client ):
     async def invoke_function( self, request, controls ):
         return await _v0.invoke_function( request, controls )
 
-    def parse_data( self, content, controls ):
-        return _v0.parse_data( content, controls )
-
-    def provide_format_name( self, controls ):
-        return _v0.provide_format_name( controls )
-
-    def render_data( self, content, controls ):
-        return _v0.render_data( content, controls )
-
 
 # TODO: AzureClient
 

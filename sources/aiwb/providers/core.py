@@ -97,12 +97,65 @@ class ClientAttributes:
         return args
 
 
+class DataFormatPreferences( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Preferred data formats for AI model input or output. '''
+
+    Indefinite =    '#indefinite#'
+    JSON =          'JSON'
+    XML =           'XML'
+
+
+class MathFormatPreferences( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Preferred math expression formats for AI model input or output. '''
+
+    Indefinite =    '#indefinite#'
+    MathJax =       'MathJax' # $$ .. $$, \[ .. \], \( .. \)
+
+
+class TextFormatPreferences( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Preferred text prose formats for AI model input or output. '''
+
+    Indefinite =    '#indefinite#'
+    Markdown =      'Markdown'
+
+
 class ConverserModalities( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Supportable input modalities for AI chat models. '''
 
     Audio       = 'audio'
     Pictures    = 'pictures'
     Text        = 'text'
+
+
+@__.standard_dataclass
+class ConverserFormatPreferences:
+    ''' Preferred formats for converser model requests and responses. '''
+
+    request_data: DataFormatPreferences = DataFormatPreferences.Indefinite
+    request_math: MathFormatPreferences = MathFormatPreferences.Indefinite
+    request_text: TextFormatPreferences = TextFormatPreferences.Indefinite
+    response_data: DataFormatPreferences = DataFormatPreferences.Indefinite
+    response_math: MathFormatPreferences = MathFormatPreferences.Indefinite
+    response_text: TextFormatPreferences = TextFormatPreferences.Indefinite
+
+    @classmethod
+    def from_descriptor(
+        selfclass,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        args = __.AccretiveDictionary( )
+        for arg_species in ( 'data', 'math', 'text' ):
+            match arg_species:
+                case 'data': preferences_class = DataFormatPreferences
+                case 'math': preferences_class = MathFormatPreferences
+                case 'text': preferences_class = TextFormatPreferences
+            for arg_genus in ( 'request', 'response' ):
+                arg_name = f"{arg_genus}-{arg_species}"
+                arg = descriptor.get( arg_name )
+                if None is arg: continue
+                arg_name_ = arg_name.replace( '-', '_' )
+                args[ arg_name_ ] = preferences_class( arg )
+        return selfclass( **args )
 
 
 @__.standard_dataclass
@@ -132,6 +185,8 @@ class ConverserAttributes:
     ''' Common attributes for AI chat models. '''
 
     accepts_supervisor_instructions: bool = False
+    format_preferences: ConverserFormatPreferences = (
+        ConverserFormatPreferences( ) )
     modalities: __.AbstractSequence[ ConverserModalities ] = (
         ConverserModalities.Text, )
     supports_continuous_response: bool = False
@@ -154,13 +209,15 @@ class ConverserAttributes:
             if None is arg: continue
             arg_name_ = arg_name.replace( '-', '_' )
             args[ arg_name_ ] = arg
-        modalities = [ ]
-        for modality_name in descriptor.get( 'modalities', ( ) ):
-            modalities.append( ConverserModalities( modality_name ) )
-        args[ 'modalities' ] = tuple( modalities )
-        tokens_limits = ConverserTokensLimits.from_descriptor(
-            descriptor.get( 'tokens-limits', { } ) )
-        args[ 'tokens_limits' ] = tokens_limits
+        args[ 'format_preferences' ] = (
+            ConverserFormatPreferences.from_descriptor(
+                descriptor.get( 'format-preferences', { } ) ) )
+        args[ 'modalities' ] = tuple(
+            ConverserModalities( modality )
+            for modality in descriptor.get( 'modalities', ( ) ) )
+        args[ 'tokens_limits' ] = (
+            ConverserTokensLimits.from_descriptor(
+                descriptor.get( 'tokens-limits', { } ) ) )
         return args
 
 

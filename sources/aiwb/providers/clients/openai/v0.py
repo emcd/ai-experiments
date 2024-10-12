@@ -134,18 +134,6 @@ async def invoke_function( request, controls ):
 def provide_format_mime_type( controls ): return 'application/json'
 
 
-def provide_format_name( controls ): return 'JSON'
-
-
-def parse_data( content, controls ):
-    mime_type = provide_format_mime_type( controls )
-    if 'application/json' == mime_type:
-        from ....codecs.json import loads
-        text = loads( content )
-    else: raise NotImplementedError( f"Cannot parse '{mime_type}'." )
-    return text
-
-
 def render_data( content, controls ):
     mime_type = provide_format_mime_type( controls )
     if 'application/json' == mime_type:

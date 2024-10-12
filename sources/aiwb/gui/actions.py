@@ -192,11 +192,12 @@ async def _generate_conversation_title( components ):
     from ..providers import chat_callbacks_minimal
     scribe = __.acquire_scribe( __package__ )
     provider = _providers.access_provider_selection( components )
+    model = _providers.access_model_selection( components )
     controls = _providers.package_controls( components )
-    provider_format_name = provider.provide_format_name( controls )
+    format_name = model.attributes.format_preferences.response_data.value
     prompt = (
         components.auxdata__.prompts.definitions[ 'Title + Labels' ]
-        .produce_prompt( values = { 'format': provider_format_name } ) )
+        .produce_prompt( values = { 'format': format_name } ) )
     canister = Canister( role = 'Human' ).add_content(
         prompt.render( components.auxdata__ ) )
     messages = [
@@ -208,7 +209,7 @@ async def _generate_conversation_title( components ):
             messages, { }, controls, chat_callbacks_minimal )
     response = ai_canister[ 0 ].data
     scribe.info( f"New conversation title: {response}" )
-    response = provider.parse_data( response, controls )
+    response = model.deserialize_data( response )
     return response[ 'title' ], response[ 'labels' ]
 
 

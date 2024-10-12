@@ -28,6 +28,7 @@ from typing_extensions import (
     Annotated as Annotation,
     Any,
     Callable,
+    ClassVar,
     Doc,
     Generic,
     Literal,

@@ -101,3 +101,21 @@ class Model( __.ConverserModel ):
     ):
         # TODO: Implement.
         pass
+
+    def deserialize_data( self, data: str ) -> __.a.Any:
+        data_format = self.attributes.format_preferences.response_data
+        match data_format:
+            case __.DataFormatPreferences.JSON:
+                from ....codecs.json import loads
+                return loads( data )
+        raise __.SupportError(
+            f"Cannot deserialize data from {data_format.value} format." )
+
+    def serialize_data( self, data: __.a.Any ) -> str:
+        data_format = self.attributes.format_preferences.request_data
+        match data_format:
+            case __.DataFormatPreferences.JSON:
+                from json import dumps
+                return dumps( data )
+        raise __.SupportError(
+            f"Cannot serialize data to {data_format.value} format." )

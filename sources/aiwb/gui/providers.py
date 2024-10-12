@@ -25,8 +25,17 @@
 
 
 def access_provider_selection( components ):
+    ''' Returns currently selected provider. '''
     # TODO: Replace with something that can honor multiple providers.
     return components.auxdata__.providers[ components.selector_provider.value ]
+
+
+def access_model_selection( components ):
+    ''' Returns currently selected model. '''
+    # TODO: Replace with something that can honor multiple models.
+    return (
+        components.selector_model.auxdata__
+        [ components.selector_model.value ] )
 
 
 def package_controls( components ):

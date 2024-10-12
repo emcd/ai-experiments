@@ -12,6 +12,10 @@ modalities = [ 'text', 'pictures' ]
 supports-continuous-response = true
 supports-invocations = true
 
+[converser.format-preferences]
+request-data = 'JSON'
+response-data = 'JSON'
+
 [converser.special]
 honors-supervisor-instructions = true
 invocations-support-level = 'concurrent'
