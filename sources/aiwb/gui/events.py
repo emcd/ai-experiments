@@ -101,11 +101,6 @@ async def on_click_fork_conversation( components, event ):
     await fork_conversation( components.parent__, components.index__ )
 
 
-async def on_click_invoke_function( components, event ):
-    from .actions import invoke_functions
-    await invoke_functions( components.parent__, components.index__ )
-
-
 async def on_click_remove_orphans( components, event ):
     from .persistence import remove_orphans
     await remove_orphans( components )
@@ -125,6 +120,11 @@ async def on_click_uncan_prompt( components, event ):
 async def on_click_upgrade_conversations( components, event ):
     from .persistence import upgrade_conversations
     await upgrade_conversations( components )
+
+
+async def on_click_use_invocables( components, event ):
+    from .actions import use_invocables
+    await use_invocables( components.parent__, components.index__ )
 
 
 async def on_select_canned_prompt( components, event ):

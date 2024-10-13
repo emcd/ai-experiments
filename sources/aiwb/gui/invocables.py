@@ -25,9 +25,7 @@ from . import __
 from . import providers as _providers
 
 
-def extract_invocation_requests(
-    components, component = None, close_invokers = False
-):
+def extract_invocation_requests( components, component = None ):
     ''' Extracts invocation requests from message canister GUI component. '''
     if None is component:
         component = components.column_conversation_history[ -1 ]
@@ -42,9 +40,6 @@ def extract_invocation_requests(
         supplements = supplements,
         canister = canister,
         invocables = invocables )
-    if close_invokers:
-        for request in requests:
-            request[ 'invocable__' ].close( )
     return requests
 
 

@@ -71,11 +71,11 @@ async def chat( components ):
         update_messages_post_summarization( components )
         components.toggle_summarize.value = False
     await update_and_save_conversation( components )
-    await _invoke_functions_if_desirable( components, canister_components )
+    await _use_invocables_if_desirable( components, canister_components )
 
 
 @_update_conversation_status_on_error
-async def invoke_functions(
+async def use_invocables(
     components,
     index,
     silent_extraction_failure = False,
@@ -210,11 +210,11 @@ async def _generate_conversation_title( components ):
     return response[ 'title' ], response[ 'labels' ]
 
 
-async def _invoke_functions_if_desirable( components, message_components ):
+async def _use_invocables_if_desirable( components, message_components ):
     if 'AI' != message_components.canister__.role: return
     if not message_components.toggle_active.value: return
     if not components.checkbox_auto_functions.value: return
-    await invoke_functions(
+    await use_invocables(
         components, message_components.index__,
         silent_extraction_failure = True )
 

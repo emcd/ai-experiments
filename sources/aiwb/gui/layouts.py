@@ -894,7 +894,7 @@ conversation_message_common_layout = {
             visible = False,
             **_icon_button_attributes,
         ),
-        event_functions = dict( on_click = 'on_click_invoke_function' ),
+        event_functions = dict( on_click = 'on_click_use_invocables' ),
     ),
     'button_regenerate': dict(
         component_class = Button,
