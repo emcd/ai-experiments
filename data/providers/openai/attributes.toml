@@ -17,6 +17,8 @@ request-data = 'JSON'
 response-data = 'JSON'
 
 [converser.special]
+extra-tokens-for-actor-name = 1
+extra-tokens-per-message = 3
 honors-supervisor-instructions = true
 invocations-support-level = 'concurrent'
 

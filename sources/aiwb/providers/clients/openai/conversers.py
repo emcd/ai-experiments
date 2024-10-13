@@ -20,6 +20,7 @@
 
 ''' Converser models for OpenAI AI provider. '''
 
+from __future__ import annotations
 
 from . import __
 
@@ -32,26 +33,11 @@ class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 @__.standard_dataclass
-class Tokenizer( __.ConversationTokenizer ):
-
-    extra_tokens_per_message: int = 3
-    extra_tokens_for_name: int = 1
-    model_name: str
-
-    # TODO: count_conversation_tokens
-
-    def count_text_tokens( self, auxdata: __.CoreGlobals, text: str ) -> int:
-        from tiktoken import encoding_for_model, get_encoding
-        try: encoding = encoding_for_model( self.model_name )
-        # TODO: Warn about unknown model via callback.
-        except KeyError: encoding = get_encoding( 'cl100k_base' )
-        return len( encoding.encode( text ) )
-
-
-@__.standard_dataclass
 class Attributes( __.ConverserAttributes ):
     ''' Common attributes for OpenAI chat models. '''
 
+    extra_tokens_for_actor_name: int = 0
+    extra_tokens_per_message: int = 0
     honors_supervisor_instructions: bool = False
     invocations_support_level: InvocationsSupportLevel = (
         InvocationsSupportLevel.Single )
@@ -65,7 +51,11 @@ class Attributes( __.ConverserAttributes ):
             super( Attributes, Attributes )
             .init_args_from_descriptor( descriptor ) )
         sdescriptor = descriptor.get( 'special', { } )
-        for arg_name in ( 'honors-supervisor-instructions', ):
+        for arg_name in (
+            'extra-tokens-for-actor-name',
+            'extra-tokens-per-message',
+            'honors-supervisor-instructions',
+        ):
             arg = sdescriptor.get( arg_name )
             if None is arg: continue
             arg_name_ = arg_name.replace( '-', '_' )
@@ -92,16 +82,6 @@ class Model( __.ConverserModel ):
         return selfclass(
             name = name, client = client, attributes = attributes )
 
-    async def converse_v0(
-        self,
-        messages: __.AbstractSequence[ __.MessageCanister ],
-        controls: __.AbstractDictionary[ str, __.Control ],
-        specials,
-        callbacks,
-    ):
-        # TODO: Implement.
-        pass
-
     def deserialize_data( self, data: str ) -> __.a.Any:
         data_format = self.attributes.format_preferences.response_data
         match data_format:
@@ -119,3 +99,63 @@ class Model( __.ConverserModel ):
                 return dumps( data )
         raise __.SupportError(
             f"Cannot serialize data to {data_format.value} format." )
+
+    def produce_tokenizer( self ) -> Tokenizer:
+        return Tokenizer( model = self )
+
+    async def converse_v0(
+        self,
+        messages: __.AbstractSequence[ __.MessageCanister ],
+        controls: __.AbstractDictionary[ str, __.Control ],
+        specials,
+        callbacks,
+    ):
+        # TODO: Implement.
+        pass
+
+    def nativize_invocable_v0(
+        self,
+        invocable, # TODO: Signature
+    ):
+        # TODO: Port from v0.
+        from . import v0
+        return v0._nativize_invocable( invocable, model_name = self.name )
+
+    def nativize_messages_v0(
+        self,
+        messages: __.AbstractIterable[ __.MessageCanister ],
+    ):
+        # TODO: Port from v0.
+        from . import v0
+        return v0._nativize_messages( messages, model_name = self.name )
+
+
+@__.standard_dataclass
+class Tokenizer( __.ConversationTokenizer ):
+
+    def count_text_tokens( self, text: str ) -> int:
+        from tiktoken import encoding_for_model, get_encoding
+        try: encoding = encoding_for_model( self.model.name )
+        # TODO? Warn about unknown model via callback.
+        except KeyError: encoding = get_encoding( 'cl100k_base' )
+        return len( encoding.encode( text ) )
+
+    def count_conversation_tokens_v0( self, messages, special_data ) -> int:
+        # https://github.com/openai/openai-cookbook/blob/2e9704b3b34302c30174e7d8e7211cb8da603ca9/examples/How_to_count_tokens_with_tiktoken.ipynb
+        from json import dumps
+        model = self.model
+        tokens_per_message = model.attributes.extra_tokens_per_message
+        tokens_for_actor_name = model.attributes.extra_tokens_for_actor_name
+        tokens_count = 0
+        for message in model.nativize_messages_v0( messages ):
+            tokens_count += tokens_per_message
+            for index, value in message.items( ):
+                value_ = value if isinstance( value, str ) else dumps( value )
+                tokens_count += self.count_text_tokens( value_ )
+                if 'name' == index: tokens_count += tokens_for_actor_name
+        for invoker in special_data.get( 'invocables', ( ) ):
+            tokens_count += (
+                self.count_text_tokens( dumps(
+                    model.nativize_invocable_v0( invoker ) ) ) )
+            # TODO: Determine if metadata from multifunctions adds more tokens.
+        return tokens_count

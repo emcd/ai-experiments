@@ -114,13 +114,6 @@ class Client( __.Client ):
     async def chat( self, messages, special_data, controls, callbacks ):
         return await _v0.chat( messages, special_data, controls, callbacks )
 
-    def count_conversation_tokens( self, messages, special_data, controls ):
-        return _v0.count_conversation_tokens(
-            messages, special_data, controls )
-
-    def count_text_tokens( self, text, model_name ):
-        return _v0.count_text_tokens( text, model_name )
-
     def extract_invocation_requests( self, canister, auxdata, invocables ):
         return _v0.extract_invocation_requests(
             canister, auxdata, invocables )

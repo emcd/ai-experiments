@@ -98,10 +98,13 @@ async def _analyze_http( auxdata, url, control = None ):
     return await _analyze_file( auxdata, file_name, control = control )
 
 
-def _count_tokens( auxdata, content ):
+async def _count_tokens( auxdata, content ):
     provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
-    model_name = auxdata.controls[ 'model' ]
-    return provider.count_text_tokens( str( content ), model_name )
+    model = await provider.access_model(
+        genus = provider.ModelGenera.Converser,
+        name = auxdata.controls[ 'model' ] )
+    tokenizer = model.produce_tokenizer( )
+    return tokenizer.count_text_tokens( str( content ) )
 
 
 # TODO: Process bytes buffer.
@@ -215,7 +218,7 @@ async def _read_chunks_destructured( auxdata, path ):
     hint = 'first chunk'
     from unstructured.partition.auto import partition
     for element in partition( filename = str( path ) ):
-        tokens_count = _count_tokens( auxdata, element )
+        tokens_count = await _count_tokens( auxdata, element )
         if tokens_max < tokens_total + tokens_count:
             ic( path, hint, tokens_total )
             yield dict( content = blocks, hint = hint )
@@ -237,7 +240,7 @@ async def _read_chunks_naively( auxdata, path ):
     hint = 'first chunk'
     with path.open( ) as file:
         for line_number, line in enumerate( file, start = 1 ):
-            tokens_count = _count_tokens( auxdata, line )
+            tokens_count = await _count_tokens( auxdata, line )
             if tokens_max < tokens_total + tokens_count:
                 ic( path, hint, tokens_total )
                 yield dict( content = ''.join( lines ), hint = hint )

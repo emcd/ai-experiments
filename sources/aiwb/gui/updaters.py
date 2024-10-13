@@ -527,23 +527,21 @@ def update_summarization_toggle( gui ):
         'canned' == gui.selector_user_prompt_class.value and summarizes )
 
 
-def update_token_count( gui ):
-    if not gui.selector_provider.options: return
-    if not gui.selector_model.options: return
+def update_token_count( components ):
+    if not components.selector_provider.options: return
+    if not components.selector_model.options: return
     from ..messages.core import Canister
-    messages = _conversations.package_messages( gui )
-    if 'freeform' == gui.selector_user_prompt_class.value:
-        content = gui.text_freeform_prompt.value
-    else: content = gui.text_canned_prompt.object
+    messages = _conversations.package_messages( components )
+    if 'freeform' == components.selector_user_prompt_class.value:
+        content = components.text_freeform_prompt.value
+    else: content = components.text_canned_prompt.object
     messages.append( Canister( role = 'Human' ).add_content( content ) )
-    controls = _providers.package_controls( gui )
-    special_data = _invocables.package_invocables( gui )
-    provider = gui.auxdata__.providers[ gui.selector_provider.value ]
-    tokens_count = provider.count_conversation_tokens(
-        messages, special_data, controls )
-    tokens_limit = (
-        gui.selector_model.auxdata__[ gui.selector_model.value ]
-        .attributes.tokens_limits.total )
+    special_data = _invocables.package_invocables( components )
+    model = _providers.access_model_selection( components )
+    tokenizer = model.produce_tokenizer( )
+    tokens_count = (
+        tokenizer.count_conversation_tokens_v0( messages, special_data ) )
+    tokens_limit = model.attributes.tokens_limits.total
     tokens_report = f"{tokens_count} / {tokens_limit}"
     tokens_usage = tokens_count / tokens_limit
     if tokens_usage >= 1:
@@ -551,8 +549,8 @@ def update_token_count( gui ):
     elif tokens_usage >= 0.75:
         tokens_report = f"{tokens_report} \N{Warning Sign}\uFE0F"
     else: tokens_report = f"{tokens_report} 👌"
-    gui.text_tokens_total.value = tokens_report
-    update_chat_button( gui )
+    components.text_tokens_total.value = tokens_report
+    update_chat_button( components )
 
 
 def _populate_prompts_selector( gui, species ):

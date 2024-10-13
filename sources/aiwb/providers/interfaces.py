@@ -109,15 +109,26 @@ class Client( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
+@__.standard_dataclass
 class ConversationTokenizer( __.a.Protocol ):
-    ''' Tokenizes conversation for counting. '''
+    ''' Tokenizes conversation or piece of text for counting. '''
     # TODO: Immutable class attributes.
+
+    model: ConverserModel
 
     # TODO: count_conversation_tokens
 
     @__.abstract_member_function
-    def count_text_tokens( self, auxdata: __.CoreGlobals, text: str ) -> int:
-        ''' Counts tokens in plain text. '''
+    def count_text_tokens( self, text: str ) -> int:
+        ''' Counts tokens, using tokenizer for model, in text. '''
+        raise NotImplementedError
+
+    ## v0 Compatibility Functions ##
+    # TODO: Remove once cutover to conversation objects is complete.
+
+    @__.abstract_member_function
+    def count_conversation_tokens_v0( self, messages, special_data ) -> int:
+        ''' Counts tokens across entire conversation. '''
         raise NotImplementedError
 
 
@@ -159,19 +170,6 @@ class ConverserModel( Model, __.a.Protocol ):
     attributes: _core.ConverserAttributes
 
     @__.abstract_member_function
-    async def converse_v0(
-        self,
-        messages: __.AbstractSequence[ __.MessageCanister ],
-        controls: __.AbstractDictionary[ str, __.Control ],
-        specials, # TODO: Annotate.
-        callbacks, # TODO: Annotate.
-    ): # TODO: Annotate return value.
-        ''' Interacts with model to complete a round of conversation. '''
-        raise NotImplementedError
-
-    # TODO: provide_tokenizer
-
-    @__.abstract_member_function
     def deserialize_data( self, data: str ) -> __.a.Any:
         ''' Deserializes text in preferred format of model to data. '''
         raise NotImplementedError
@@ -179,4 +177,39 @@ class ConverserModel( Model, __.a.Protocol ):
     @__.abstract_member_function
     def serialize_data( self, data: __.a.Any ) -> str:
         ''' Serializes data to text in preferred format of model. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def produce_tokenizer( self ) -> ConversationTokenizer:
+        ''' Provides appropriate tokenizer for conversations. '''
+        raise NotImplementedError
+
+    ## v0 Compatibility Functions ##
+    # TODO: Remove once cutover to conversation objects is complete.
+
+    @__.abstract_member_function
+    async def converse_v0(
+        self,
+        messages: __.AbstractSequence[ __.MessageCanister ],
+        controls: __.AbstractDictionary[ str, __.Control ],
+        specials, # TODO: Annotate.
+        callbacks, # TODO: Annotate.
+    ):
+        ''' Interacts with model to complete a round of conversation. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def nativize_invocable_v0(
+        self,
+        invocable, # TODO: Signature
+    ):
+        ''' Converts normalized invocable into native tool call. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def nativize_messages_v0(
+        self,
+        messages: __.AbstractIterable[ __.MessageCanister ],
+    ):
+        ''' Converts normalized message canisters into native messages. '''
         raise NotImplementedError
