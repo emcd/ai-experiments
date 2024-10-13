@@ -171,8 +171,9 @@ async def _chat( components ):
             lambda canister_components:
                 _update_gui_on_chat( components, canister_components ) ),
     )
-    provider = _providers.access_provider_selection( components )
-    return await provider.chat( messages, special_data, controls, callbacks )
+    model = _providers.access_model_selection( components )
+    return await model.converse_v0(
+        messages, special_data, controls, callbacks )
 
 
 def _detect_ai_completion( gui, component = None ):
@@ -188,7 +189,6 @@ async def _generate_conversation_title( components ):
     from ..messages.core import Canister
     from ..providers import chat_callbacks_minimal
     scribe = __.acquire_scribe( __package__ )
-    provider = _providers.access_provider_selection( components )
     model = _providers.access_model_selection( components )
     controls = _providers.package_controls( components )
     format_name = model.attributes.format_preferences.response_data.value
@@ -202,7 +202,7 @@ async def _generate_conversation_title( components ):
     with _update_conversation_progress(
         components, 'Generating conversation title...'
     ):
-        ai_canister = await provider.chat(
+        ai_canister = await model.converse_v0(
             messages, { }, controls, chat_callbacks_minimal )
     response = ai_canister[ 0 ].data
     scribe.info( f"New conversation title: {response}" )

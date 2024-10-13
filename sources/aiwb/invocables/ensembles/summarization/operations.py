@@ -57,7 +57,6 @@ async def _analyze_file( context, path, control = None ):
     auxdata = context.auxdata
     controls = context.supplements[ 'controls' ]
     model = context.supplements[ 'model' ]
-    provider = model.client
     ai_messages = [ ]
     format_name = model.attributes.format_preferences.request_data.value
     summarization_prompt = (
@@ -81,7 +80,7 @@ async def _analyze_file( context, path, control = None ):
         _, content = _render_analysis_prompt(
             context, control, chunk, mime_type )
         messages.append( Canister( role = 'Human' ).add_content( content ) )
-        ai_canister = await provider.chat(
+        ai_canister = await model.converse_v0(
             messages, { }, controls, chat_callbacks_minimal )
         # TODO: Handle combination of analysis and metadata.
         ai_messages.append( ai_canister[ 0 ].data )
@@ -120,7 +119,6 @@ async def _discriminate_dirents( context, dirents, control = None ):
     auxdata = context.auxdata
     controls = context.supplements[ 'controls' ]
     model = context.supplements[ 'model' ]
-    provider = model.client
     format_name = model.attributes.format_preferences.request_data.value
     prompt = (
         auxdata.prompts.definitions[ 'Discriminate Directory Entries' ]
@@ -139,7 +137,7 @@ async def _discriminate_dirents( context, dirents, control = None ):
         _, content = _render_analysis_prompt(
             context, control, dirents_batch, 'directory-entries' )
         messages.append( Canister( role = 'Human' ).add_content( content ) )
-        ai_canister = await provider.chat(
+        ai_canister = await model.converse_v0(
             messages, { }, controls, chat_callbacks_minimal )
         #ic( ai_canister[ 0 ].data )
         result = model.deserialize_data( ai_canister[ 0 ].data )

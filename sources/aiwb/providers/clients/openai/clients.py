@@ -108,12 +108,6 @@ class Client( __.Client ):
                     client = self, name = name, descriptor = descriptor )
         # TODO: Raise error on unmatched case.
 
-    ## TEMP: Wrappers for Legacy Module-Level Interface
-    # TODO: Transition to model-level methods.
-
-    async def chat( self, messages, special_data, controls, callbacks ):
-        return await _v0.chat( messages, special_data, controls, callbacks )
-
 
 # TODO: AzureClient
 

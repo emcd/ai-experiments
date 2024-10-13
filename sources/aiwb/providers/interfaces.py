@@ -188,7 +188,14 @@ class ConverserModel( Model, __.a.Protocol ):
         invocables: __.AbstractIterable[ __.Invocable ],
     ):
         ''' Converts invocation requests into invoker coroutines. '''
+        # TODO: Move to InvocationProcessor class.
         # TODO: Return InvocationRequest instance.
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
+        ''' Converts normalized invocable into native tool call. '''
+        # TODO: Move to InvocationProcessor class.
         raise NotImplementedError
 
     @__.abstract_member_function
@@ -203,6 +210,7 @@ class ConverserModel( Model, __.a.Protocol ):
         request: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.MessageCanister:
         ''' Uses invocable to produce result for conversation. '''
+        # TODO: Move to InvocationProcessor class.
         raise NotImplementedError
 
     ## v0 Compatibility Functions ##
@@ -212,19 +220,11 @@ class ConverserModel( Model, __.a.Protocol ):
     async def converse_v0(
         self,
         messages: __.AbstractSequence[ __.MessageCanister ],
+        supplements, # TODO: Annotate.
         controls: __.AbstractDictionary[ str, __.Control ],
-        specials, # TODO: Annotate.
-        callbacks, # TODO: Annotate.
+        reactors, # TODO: Annotate.
     ):
         ''' Interacts with model to complete a round of conversation. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    def nativize_invocable_v0(
-        self,
-        invocable, # TODO: Signature
-    ):
-        ''' Converts normalized invocable into native tool call. '''
         raise NotImplementedError
 
     @__.abstract_member_function

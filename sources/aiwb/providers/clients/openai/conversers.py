@@ -139,6 +139,12 @@ class Model( __.ConverserModel ):
             requests_.append( request_ )
         return requests_
 
+    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
+        return dict(
+            name = invoker.name,
+            description = invoker.invocable.__doc__,
+            parameters = invoker.argschema )
+
     def produce_tokenizer( self ) -> Tokenizer:
         return Tokenizer( model = self )
 
@@ -168,20 +174,23 @@ class Model( __.ConverserModel ):
     async def converse_v0(
         self,
         messages: __.AbstractSequence[ __.MessageCanister ],
+        supplements,
         controls: __.AbstractDictionary[ str, __.Control ],
-        specials,
-        callbacks,
+        reactors,
     ):
-        # TODO: Implement.
-        pass
-
-    def nativize_invocable_v0(
-        self,
-        invocable, # TODO: Signature
-    ):
+        messages_native = self.nativize_messages_v0( messages )
+        controls_native = _nativize_controls_v0( self, controls )
+        supplements_native = _nativize_supplements_v0( self, supplements )
         # TODO: Port from v0.
         from . import v0
-        return v0._nativize_invocable( invocable, model_name = self.name )
+        response = await v0._chat(
+            messages_native, supplements_native, controls_native, reactors )
+        should_stream = controls_native.get( 'stream', True )
+        if self.attributes.supports_continuous_response and should_stream:
+            return (
+                await v0._process_iterative_chat_response(
+                    response, reactors ) )
+        return v0._process_complete_chat_response( response, reactors )
 
     def nativize_messages_v0(
         self,
@@ -218,6 +227,42 @@ class Tokenizer( __.ConversationTokenizer ):
         for invoker in special_data.get( 'invocables', ( ) ):
             tokens_count += (
                 self.count_text_tokens( dumps(
-                    model.nativize_invocable_v0( invoker ) ) ) )
+                    model.nativize_invocable( invoker ) ) ) )
             # TODO: Determine if metadata from multifunctions adds more tokens.
         return tokens_count
+
+
+def _nativize_controls_v0(
+    model: Model,
+    controls: __.AbstractDictionary[ str, __.Control ],
+):
+    # TODO: Port from v0.
+    from . import v0
+    return v0._nativize_controls( controls )
+
+
+def _nativize_invocables(
+    model: Model,
+    invokers: __.AbstractIterable[ __.Invoker ],
+) -> __.a.Any:
+    if not model.attributes.supports_invocations: return { }
+    nomargs = { }
+    match model.attributes.invocations_support_level:
+        case InvocationsSupportLevel.Concurrent:
+            nomargs[ 'tools' ] = [
+                {   'type': 'function',
+                    'function': model.nativize_invocable( invoker ) }
+                for invoker in invokers ]
+        case InvocationsSupportLevel.Single:
+            nomargs[ 'functions' ] = [
+                model.nativize_invocable( invoker )
+                for invoker in invokers ]
+    return nomargs
+
+
+def _nativize_supplements_v0( model: Model, supplements ):
+    nomargs = { }
+    if 'invocables' in supplements:
+        nomargs.update(
+            _nativize_invocables( model, supplements[ 'invocables' ] ) )
+    return nomargs

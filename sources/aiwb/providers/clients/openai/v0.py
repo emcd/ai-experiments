@@ -32,18 +32,6 @@ def access_model_data( model_name, data_name ):
     return models_[ model_name ][ data_name ]
 
 
-async def chat( messages, special_data, controls, callbacks ):
-    model = controls[ 'model' ]
-    messages = _nativize_messages( messages, controls[ 'model' ] )
-    special_data = _nativize_special_data( special_data, controls )
-    controls = _nativize_controls( controls )
-    response = await _chat( messages, special_data, controls, callbacks )
-    # TODO: Check 'supports_streaming' attribute.
-    if not model.startswith( 'o1-' ) and controls.get( 'stream', True ):
-        return await _process_iterative_chat_response( response, callbacks )
-    return _process_complete_chat_response( response, callbacks )
-
-
 async def _chat( messages, special_data, controls, callbacks ):
     from openai import AsyncOpenAI, OpenAIError
     client = AsyncOpenAI( )
@@ -174,13 +162,6 @@ def _nativize_controls( controls ):
     return nomargs
 
 
-def _nativize_invocable( invoker, model_name ):
-    return dict(
-        name = invoker.name,
-        description = invoker.invocable.__doc__,
-        parameters = invoker.argschema )
-
-
 def _nativize_messages( canisters, model_name ):
     messages = [ ]
     for canister in canisters:
@@ -229,22 +210,6 @@ def _nativize_multifunction_invocation_contingent( canister ):
             if 'tool_calls' in attributes.model_context:
                 return None, attributes.model_context
     return content, { }
-
-
-def _nativize_special_data( data, controls ):
-    model_name = controls[ 'model' ]
-    nomargs = { }
-    if 'invocables' in data:
-        if access_model_data( model_name, 'supports-multifunctions' ):
-            nomargs[ 'tools' ] = [
-                {   'type': 'function',
-                    'function': _nativize_invocable( invoker, model_name ) }
-                for invoker in data[ 'invocables' ] ]
-        elif access_model_data( model_name, 'supports-functions' ):
-            nomargs[ 'functions' ] = [
-                _nativize_invocable( invoker, model_name )
-                for invoker in data[ 'invocables' ] ]
-    return nomargs
 
 
 def _process_complete_chat_response( response, callbacks ):
