@@ -85,15 +85,12 @@ async def invoke_functions(
     from .invocables import extract_invocation_requests
     from .updaters import truncate_conversation
     truncate_conversation( components, index )
-    provider = _providers.access_provider_selection( components )
-    controls = _providers.package_controls( components )
+    model = _providers.access_model_selection( components )
     try: requests = extract_invocation_requests( components )
     except InvocationFormatError:
         if silent_extraction_failure: return
         raise
-    invokers = tuple(
-        provider.invoke_function( request, controls )
-        for request in requests )
+    invokers = tuple( model.use_invocable( request ) for request in requests )
     with _update_conversation_progress( components, 'Invoking tools...' ):
         canisters = await __.gather_async( *invokers )
     for canister in canisters: _add_message( components, canister )

@@ -129,17 +129,41 @@ class Model( __.ConverserModel ):
             if name not in invokers:
                 raise Error( f"Tool {name!r} is not available." )
             arguments = request.get( 'arguments', { } )
-            request_[ 'invocable__' ] = (
-                invokers[ name ](
-                    auxdata = auxdata,
-                    arguments = arguments,
-                    supplements = supplements ) )
+            request_[ 'invocable__' ] = __.partial_function(
+                invokers[ name ],
+                auxdata = auxdata,
+                arguments = arguments,
+                supplements = supplements )
+            # TODO: Validate tool calls with model.
             if tool_calls: request_[ 'context__' ] = tool_calls[ i ]
             requests_.append( request_ )
         return requests_
 
     def produce_tokenizer( self ) -> Tokenizer:
         return Tokenizer( model = self )
+
+    async def use_invocable(
+        self,
+        # TODO: Use InvocationRequest instance as argument.
+        request: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.MessageCanister:
+        request_context = request[ 'context__' ]
+        result = await request[ 'invocable__' ]( )
+        # TODO? Include provider and model in result context.
+        if 'id' in request_context: # late 2023+ format: parallel tool calls
+            result_context = dict(
+                name = request_context[ 'function' ][ 'name' ],
+                role = 'tool',
+                tool_call_id = request_context[ 'id' ] )
+        else: # mid-2023 format: single function call
+            result_context = dict(
+                name = request[ 'name' ], role = 'function' )
+        from json import dumps
+        message = dumps( result )
+        canister = __.MessageCanister( 'Function' )
+        canister.add_content( message, mimetype = 'application/json' )
+        canister.attributes.model_context = result_context # TODO? Immutable
+        return canister
 
     async def converse_v0(
         self,

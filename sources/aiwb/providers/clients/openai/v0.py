@@ -44,35 +44,6 @@ async def chat( messages, special_data, controls, callbacks ):
     return _process_complete_chat_response( response, callbacks )
 
 
-async def invoke_function( request, controls ):
-    request_context = request[ 'context__' ]
-    result = await request[ 'invocable__' ]
-    if 'id' in request_context:
-        result_context = dict(
-            name = request_context[ 'function' ][ 'name' ],
-            role = 'tool',
-            tool_call_id = request_context[ 'id' ],
-        )
-    else: result_context = dict( name = request[ 'name' ], role = 'function' )
-    mimetype, message = render_data( result, controls )
-    canister = __.MessageCanister( 'Function' )
-    canister.add_content( message, mimetype = mimetype )
-    canister.attributes.model_context = result_context
-    return canister
-
-
-def provide_format_mime_type( controls ): return 'application/json'
-
-
-def render_data( content, controls ):
-    mime_type = provide_format_mime_type( controls )
-    if 'application/json' == mime_type:
-        from json import dumps
-        text = dumps( content )
-    else: raise NotImplementedError( f"Cannot render '{mime_type}' as text." )
-    return mime_type, text
-
-
 async def _chat( messages, special_data, controls, callbacks ):
     from openai import AsyncOpenAI, OpenAIError
     client = AsyncOpenAI( )

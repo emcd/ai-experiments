@@ -188,11 +188,21 @@ class ConverserModel( Model, __.a.Protocol ):
         invocables: __.AbstractIterable[ __.Invocable ],
     ):
         ''' Converts invocation requests into invoker coroutines. '''
+        # TODO: Return InvocationRequest instance.
         raise NotImplementedError
 
     @__.abstract_member_function
     def produce_tokenizer( self ) -> ConversationTokenizer:
         ''' Provides appropriate tokenizer for conversations. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    async def use_invocable(
+        self,
+        # TODO: Use InvocationRequest instance as argument.
+        request: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.MessageCanister:
+        ''' Uses invocable to produce result for conversation. '''
         raise NotImplementedError
 
     ## v0 Compatibility Functions ##

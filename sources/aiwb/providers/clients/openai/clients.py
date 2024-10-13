@@ -114,9 +114,6 @@ class Client( __.Client ):
     async def chat( self, messages, special_data, controls, callbacks ):
         return await _v0.chat( messages, special_data, controls, callbacks )
 
-    async def invoke_function( self, request, controls ):
-        return await _v0.invoke_function( request, controls )
-
 
 # TODO: AzureClient
 
