@@ -180,6 +180,17 @@ class ConverserModel( Model, __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
+    def extract_invocation_requests(
+        self,
+        auxdata: __.CoreGlobals,
+        supplements: __.AccretiveDictionary,
+        canister: __.MessageCanister,
+        invocables: __.AbstractIterable[ __.Invocable ],
+    ):
+        ''' Converts invocation requests into invoker coroutines. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
     def produce_tokenizer( self ) -> ConversationTokenizer:
         ''' Provides appropriate tokenizer for conversations. '''
         raise NotImplementedError

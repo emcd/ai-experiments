@@ -29,19 +29,19 @@ def extract_invocation_requests(
     components, component = None, close_invokers = False
 ):
     ''' Extracts invocation requests from message canister GUI component. '''
-    from dataclasses import fields
     if None is component:
         component = components.column_conversation_history[ -1 ]
     canister = component.gui__.canister__
     # TODO: Use selected multichoice values instead of all possible.
     invocables = components.auxdata__.invocables
-    auxdata = __.SimpleNamespace(
-        controls = _providers.package_controls( components ),
-        **{ field.name: getattr( components.auxdata__, field.name )
-            for field in fields( components.auxdata__ ) } )
-    provider = _providers.access_provider_selection( components )
-    requests = provider.extract_invocation_requests(
-        canister, auxdata, invocables )
+    supplements = __.AccretiveDictionary(
+        controls = _providers.package_controls( components ) )
+    model = _providers.access_model_selection( components )
+    requests = model.extract_invocation_requests(
+        auxdata = components.auxdata__,
+        supplements = supplements,
+        canister = canister,
+        invocables = invocables )
     if close_invokers:
         for request in requests:
             request[ 'invocable__' ].close( )

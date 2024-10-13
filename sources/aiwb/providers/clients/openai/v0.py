@@ -44,34 +44,6 @@ async def chat( messages, special_data, controls, callbacks ):
     return _process_complete_chat_response( response, callbacks )
 
 
-def extract_invocation_requests( canister, auxdata, invocables ):
-    ''' Converts tool use requests into invoker coroutines. '''
-    from ....codecs.json import loads
-    Error = __.InvocationFormatError
-    try: requests = loads( canister[ 0 ].data )
-    except Exception as exc:
-        raise Error( str( exc ) ) from exc
-    if not isinstance( requests, __.AbstractSequence ):
-        raise Error( 'Tool use requests is not sequence.' )
-    invokers = invocables.invokers
-    model_context = getattr( canister.attributes, 'model_context', { } )
-    tool_calls = model_context.get( 'tool_calls' )
-    # TODO? Build new list of requests.
-    for i, request in enumerate( requests ):
-        if not isinstance( request, __.AbstractDictionary ):
-            raise Error( 'Tool use request is not dictionary.' )
-        if 'name' not in request:
-            raise Error( 'Name is missing from tool use request.' )
-        name = request[ 'name' ]
-        if name not in invokers:
-            raise Error( f"Tool {name!r} is not available." )
-        arguments = request.get( 'arguments', { } )
-        # TODO: Pass extra context to invocable.
-        request[ 'invocable__' ] = invokers[ name ]( auxdata, arguments )
-        if tool_calls: request[ 'context__' ] = tool_calls[ i ]
-    return requests
-
-
 async def invoke_function( request, controls ):
     request_context = request[ 'context__' ]
     result = await request[ 'invocable__' ]

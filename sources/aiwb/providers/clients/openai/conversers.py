@@ -100,6 +100,44 @@ class Model( __.ConverserModel ):
         raise __.SupportError(
             f"Cannot serialize data to {data_format.value} format." )
 
+    def extract_invocation_requests(
+        self,
+        auxdata: __.CoreGlobals,
+        supplements: __.AccretiveDictionary,
+        canister: __.MessageCanister,
+        invocables: __.AbstractIterable[ __.Invocable ],
+    ) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+        # TODO? Generalize - most does not need to be provider-specific.
+        supplements[ 'model' ] = self
+        from ....codecs.json import loads
+        Error = __.InvocationFormatError
+        try: requests = loads( canister[ 0 ].data )
+        except Exception as exc: raise Error( str( exc ) ) from exc
+        if not isinstance( requests, __.AbstractSequence ):
+            raise Error( 'Tool use requests is not sequence.' )
+        invokers = invocables.invokers
+        model_context = getattr( canister.attributes, 'model_context', { } )
+        tool_calls = model_context.get( 'tool_calls' )
+        requests_ = [ ]
+        for i, request in enumerate( requests ):
+            if not isinstance( request, __.AbstractDictionary ):
+                raise Error( 'Tool use request is not dictionary.' )
+            if 'name' not in request:
+                raise Error( 'Name is missing from tool use request.' )
+            request_ = dict( request )
+            name = request[ 'name' ]
+            if name not in invokers:
+                raise Error( f"Tool {name!r} is not available." )
+            arguments = request.get( 'arguments', { } )
+            request_[ 'invocable__' ] = (
+                invokers[ name ](
+                    auxdata = auxdata,
+                    arguments = arguments,
+                    supplements = supplements ) )
+            if tool_calls: request_[ 'context__' ] = tool_calls[ i ]
+            requests_.append( request_ )
+        return requests_
+
     def produce_tokenizer( self ) -> Tokenizer:
         return Tokenizer( model = self )
 

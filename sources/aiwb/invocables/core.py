@@ -37,7 +37,7 @@ class Context:
     ''' Context data transfer object. '''
 
     auxdata: __.Globals
-    invoker: __.Invoker
+    invoker: Invoker
     supplements: __.AccretiveNamespace
 
 

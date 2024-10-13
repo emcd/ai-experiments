@@ -40,30 +40,25 @@ async def analyze(
         tokens_counter = None,
     )
     return await _operate(
-        context.auxdata,
+        context,
         arguments[ 'source' ],
         operators,
         control = arguments.get( 'control' ) )
 
 
-async def _access_tokens_limit( auxdata ):
-    from ....providers import ModelGenera
-    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
-    model_name = auxdata.controls[ 'model' ]
-    return (
-        await provider.access_model(
-            auxdata, genus = ModelGenera.Converser, name = model_name )
-        .attributes.tokens_limits.total )
+def _access_tokens_limit( context ):
+    model = context.supplements[ 'model' ]
+    return model.attributes.tokens_limits.total
 
 
-async def _analyze_file( auxdata, path, control = None ):
+async def _analyze_file( context, path, control = None ):
     from ....messages import Canister
     from ....providers import chat_callbacks_minimal
+    auxdata = context.auxdata
+    controls = context.supplements[ 'controls' ]
+    model = context.supplements[ 'model' ]
+    provider = model.client
     ai_messages = [ ]
-    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
-    model = await provider.access_model(
-        genus = provider.ModelGenera.Converser,
-        name = auxdata.controls[ 'model' ] )
     format_name = model.attributes.format_preferences.request_data.value
     summarization_prompt = (
         auxdata.prompts.definitions[ 'Concatenate: AI Responses' ]
@@ -83,26 +78,23 @@ async def _analyze_file( auxdata, path, control = None ):
                 summarization_prompt.render( auxdata ) ) )
             messages.append( Canister( role = 'AI' ).add_content(
                 '\n\n'.join( ai_messages ) ) )
-        _, content = await _render_analysis_prompt(
-            auxdata, control, chunk, mime_type )
+        _, content = _render_analysis_prompt(
+            context, control, chunk, mime_type )
         messages.append( Canister( role = 'Human' ).add_content( content ) )
         ai_canister = await provider.chat(
-            messages, { }, auxdata.controls, chat_callbacks_minimal )
+            messages, { }, controls, chat_callbacks_minimal )
         # TODO: Handle combination of analysis and metadata.
         ai_messages.append( ai_canister[ 0 ].data )
     return ai_messages
 
 
-async def _analyze_http( auxdata, url, control = None ):
-    file_name = _read_http_core( auxdata, url )
-    return await _analyze_file( auxdata, file_name, control = control )
+async def _analyze_http( context, url, control = None ):
+    file_name = _read_http_core( context, url )
+    return await _analyze_file( context, file_name, control = control )
 
 
-async def _count_tokens( auxdata, content ):
-    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
-    model = await provider.access_model(
-        genus = provider.ModelGenera.Converser,
-        name = auxdata.controls[ 'model' ] )
+def _count_tokens( context, content ):
+    model = context.supplements[ 'model' ]
     tokenizer = model.produce_tokenizer( )
     return tokenizer.count_text_tokens( str( content ) )
 
@@ -122,13 +114,13 @@ def _determine_chunk_reader( path, mime_type = None ):
     return reader, mime_type
 
 
-async def _discriminate_dirents( auxdata, dirents, control = None ):
+async def _discriminate_dirents( context, dirents, control = None ):
     from ....messages import Canister
     from ....providers import chat_callbacks_minimal
-    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
-    model = await provider.access_model(
-        genus = provider.ModelGenera.Converser,
-        name = auxdata.controls[ 'model' ] )
+    auxdata = context.auxdata
+    controls = context.supplements[ 'controls' ]
+    model = context.supplements[ 'model' ]
+    provider = model.client
     format_name = model.attributes.format_preferences.request_data.value
     prompt = (
         auxdata.prompts.definitions[ 'Discriminate Directory Entries' ]
@@ -144,11 +136,11 @@ async def _discriminate_dirents( auxdata, dirents, control = None ):
         messages = [
             Canister( role = 'Supervisor' ).add_content( supervisor_message )
         ]
-        _, content = await _render_analysis_prompt(
-            auxdata, control, dirents_batch, 'directory-entries' )
+        _, content = _render_analysis_prompt(
+            context, control, dirents_batch, 'directory-entries' )
         messages.append( Canister( role = 'Human' ).add_content( content ) )
         ai_canister = await provider.chat(
-            messages, { }, auxdata.controls, chat_callbacks_minimal )
+            messages, { }, controls, chat_callbacks_minimal )
         #ic( ai_canister[ 0 ].data )
         result = model.deserialize_data( ai_canister[ 0 ].data )
         ic( result[ 'blacklist' ] )
@@ -156,7 +148,7 @@ async def _discriminate_dirents( auxdata, dirents, control = None ):
     return complete_result
 
 
-async def _list_directory( auxdata, path, control = None ):
+async def _list_directory( context, path, control = None ):
     # TODO: Configurable filter behavior.
     from os import walk # TODO: Python 3.12: Use 'Pathlib.walk'.
     from gitignorefile import Cache
@@ -175,17 +167,17 @@ async def _list_directory( auxdata, path, control = None ):
             dirents.append( dict(
                 location = dirent_fqname,
                 mime_type = from_file( dirent, mime = True ) ) )
-    return await _discriminate_dirents( auxdata, dirents, control = control )
+    return await _discriminate_dirents( context, dirents, control = control )
 
 
 async def _list_directory_as_cell( *posargs, **nomargs ):
     return [ await _list_directory( *posargs, **nomargs ) ]
 
 
-async def _operate( auxdata, source, operators, control = None ):
+async def _operate( context, source, operators, control = None ):
     # TODO: Support wildcards.
     tokens_total = 0
-    tokens_max = ( await _access_tokens_limit( auxdata ) ) * 3 // 4
+    tokens_max = _access_tokens_limit( context ) * 3 // 4
     components = __.urlparse( source )
     has_file_scheme = not components.scheme or 'file' == components.scheme
     if has_file_scheme:
@@ -197,28 +189,28 @@ async def _operate( auxdata, source, operators, control = None ):
         elif path.is_dir( ): operator = operators.from_directory
         # TODO: Handle symlinks, named pipes, etc....
         else: return f"Error: Type of entity at '{path}' not supported."
-        result = await operator( auxdata, path, control = control )
+        result = await operator( context, path, control = control )
         if operators.tokens_counter:
-            tokens_total += operators.tokens_counter( auxdata, result )
+            tokens_total += operators.tokens_counter( context, result )
             if tokens_total > tokens_max:
                 return (
                     f"Error: Input is {tokens_total} tokens in size, "
                     f"which exceeds the safe limit, {tokens_max}." )
         return result
     if components.scheme in ( 'http', 'https', ):
-        return await operators.from_http( auxdata, source, control = control )
+        return await operators.from_http( context, source, control = control )
     return f"Error: URL scheme, '{components.scheme}', not supported."
 
 
 # TODO: Process stream.
-async def _read_chunks_destructured( auxdata, path ):
-    tokens_max = ( await _access_tokens_limit( auxdata ) ) // 4
+async def _read_chunks_destructured( context, path ):
+    tokens_max = _access_tokens_limit( context ) // 4
     blocks = [ ]
     tokens_total = 0
     hint = 'first chunk'
     from unstructured.partition.auto import partition
     for element in partition( filename = str( path ) ):
-        tokens_count = await _count_tokens( auxdata, element )
+        tokens_count = _count_tokens( context, element )
         if tokens_max < tokens_total + tokens_count:
             ic( path, hint, tokens_total )
             yield dict( content = blocks, hint = hint )
@@ -233,14 +225,14 @@ async def _read_chunks_destructured( auxdata, path ):
 
 
 # TODO: Process stream.
-async def _read_chunks_naively( auxdata, path ):
-    tokens_max = ( await _access_tokens_limit( auxdata ) ) // 4
+async def _read_chunks_naively( context, path ):
+    tokens_max = _access_tokens_limit( context ) // 4
     lines = [ ]
     tokens_total = 0
     hint = 'first chunk'
     with path.open( ) as file:
         for line_number, line in enumerate( file, start = 1 ):
-            tokens_count = await _count_tokens( auxdata, line )
+            tokens_count = _count_tokens( context, line )
             if tokens_max < tokens_total + tokens_count:
                 ic( path, hint, tokens_total )
                 yield dict( content = ''.join( lines ), hint = hint )
@@ -253,37 +245,7 @@ async def _read_chunks_naively( auxdata, path ):
     yield dict( content = ''.join( lines ), hint = 'last chunk' )
 
 
-async def _read_file( auxdata, dirent ):
-    from aiofiles import open as open_
-    file = __.Path( dirent[ 'location' ] )
-    try:
-        async with open_( file ) as stream:
-            contents = await stream.read( )
-        if 'mime_type' not in dirent:
-            from magic import from_buffer
-            dirent[ 'mime_type' ] = from_buffer( contents, mime = True )
-        return dict( contents = contents, **dirent )
-    except Exception as exc:
-        exc_type = type( exc ).__qualname__
-        return dict( error = f"{exc_type}: {exc}", **dirent )
-
-
-async def _read_http( auxdata, url ):
-    from aiofiles import open as open_
-    dirent = dict( location = url )
-    try:
-        file_name = _read_http_core( auxdata, url )
-        async with open_( file_name ) as stream:
-            contents = await stream.read( )
-        from magic import from_buffer
-        dirent[ 'mime_type' ] = from_buffer( contents, mime = True )
-        return dict( contents = contents, **dirent )
-    except Exception as exc:
-        exc_type = type( exc ).__qualname__
-        return dict( error = f"{exc_type}: {exc}", **dirent )
-
-
-def _read_http_core( auxdata, url ):
+def _read_http_core( context, url ):
     # TODO: async - aiohttp
     from shutil import copyfileobj
     from tempfile import NamedTemporaryFile
@@ -298,7 +260,9 @@ def _read_http_core( auxdata, url ):
     return file.name
 
 
-async def _render_analysis_prompt( auxdata, control, content, mime_type ):
+def _render_analysis_prompt( context, control, content, mime_type ):
+    auxdata = context.auxdata
+    model = context.supplements[ 'model' ]
     control = control or { }
     instructions = control.get( 'instructions', '' )
     if control.get( 'mode', 'supplement' ):
@@ -308,9 +272,5 @@ async def _render_analysis_prompt( auxdata, control, content, mime_type ):
                 values = dict(
                     mime_type = mime_type, instructions = instructions ) )
             .render( auxdata ) )
-    provider = auxdata.providers[ auxdata.controls[ 'provider' ] ]
-    model = await provider.access_model(
-        genus = provider.ModelGenera.Converser,
-        name = auxdata.controls[ 'model' ] )
     return model.serialize_data(
         dict( content = content, instructions = instructions ) )

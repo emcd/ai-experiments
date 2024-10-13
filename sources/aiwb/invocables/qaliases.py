@@ -18,14 +18,15 @@
 #============================================================================#
 
 
-''' Internal imports and utilities for AI providers. '''
+''' Qualified aliases to invocables.
+
+    Useful for avoiding namespace collisions from attribute imports.
+'''
 
 # ruff: noqa: F401,F403
 # pylint: disable=unused-import
 
 
-from ..__ import *
-from ..controls.qaliases import *
-from ..invocables.qaliases import *
-from ..libcore.qaliases import *
-from ..messages.qaliases import *
+from .core import (
+    Invocable,
+)
