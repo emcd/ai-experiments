@@ -31,16 +31,6 @@ steps:
    pipx install hatch
    ```
 
-If you intend to develop on this project, then additionally perform:
-1. Install Git pre-commit and pre-push hooks:
-   ```
-   hatch --env develop run pre-commit install --config .auxiliary/configuration/pre-commit.yaml
-   ```
-   and validate the installation with:
-   ```
-   hatch --env develop run pre-commit run --config .auxiliary/configuration/pre-commit.yaml --all-files
-   ```
-
 ## Installation Updates
 
 1. Run:
@@ -104,3 +94,28 @@ or equivalent, to avoid exposing sensitive credentials.
    ```
    OPENAI_PROJECT_ID=<your project ID>
    ```
+
+# Development
+
+If you intend to develop on this project (i.e., enhance the library, rather
+than simply use it), then please consider the following suggestions.
+
+## Installation
+
+1. Install Git pre-commit and pre-push hooks:
+   ```
+   hatch --env develop run pre-commit install --config .auxiliary/configuration/pre-commit.yaml
+   ```
+   and validate the installation with:
+   ```
+   hatch --env develop run pre-commit run --config .auxiliary/configuration/pre-commit.yaml --all-files
+   ```
+
+## Editor Environment
+
+You may want to run your editor from inside a Hatch-prepared shell environment
+to ensure that any online linters or language servers have access to the
+correct set of Python packages:
+```
+hatch --env develop shell
+```

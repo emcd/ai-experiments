@@ -123,6 +123,7 @@ dependencies = [
   'mypy',
   'pre-commit',
   'pylint',
+  'pyright',
   'pytest',
   'ruff',
   'semgrep',
