@@ -382,13 +382,13 @@ def truncate_conversation( gui, index ):
     history.objects = history[ 0 : index + 1 ]
 
 
-def update_active_functions( gui ):
-    # TODO: Rename: update_active_invocables
-    invokers = gui.auxdata__.invocables.invokers
+def update_invocables_selection( components ):
+    ''' Reflect selected invocables in schemata display. '''
+    invokers = components.auxdata__.invocables.invokers
     # TODO: Construct components from layout.
     from panel.pane import JSON
     from .layouts import _message_column_width_attributes, sizes
-    gui.column_functions_json.objects = [
+    components.column_functions_json.objects = [
         JSON(
             invoker.argschema,
             depth = -1, theme = 'light',
@@ -398,8 +398,8 @@ def update_active_functions( gui ):
             **_message_column_width_attributes,
         )
         for name, invoker in invokers.items( )
-        if name in gui.multichoice_functions.value ]
-    update_token_count( gui )
+        if name in components.multichoice_functions.value ]
+    update_token_count( components )
 
 
 async def update_and_save_conversation( components ):
@@ -493,7 +493,7 @@ def update_invocations_prompt( components ):
     components.multichoice_functions.value = [
         name for name in invokers.keys( )
         if associated_functions.get( name, False ) ]
-    update_active_functions( components )
+    update_invocables_selection( components )
 
 
 def update_supervisor_prompt( components ):

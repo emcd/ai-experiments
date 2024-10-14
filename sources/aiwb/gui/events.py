@@ -22,7 +22,7 @@
 
 
 # Note: Cyclic imports are at runtime after module initialization.
-# pylint: disable=cyclic-import
+# pylint: disable=cyclic-import,missing-function-docstring
 
 
 _document_autoscroller_code = '''
@@ -137,9 +137,9 @@ async def on_select_conversation( components, event ):
     await select_conversation( components, event.obj.identity__ )
 
 
-async def on_select_functions( components, event ):
-    from .updaters import update_active_functions
-    update_active_functions( components )
+async def on_select_invocables( components, event ):
+    from .updaters import update_invocables_selection
+    update_invocables_selection( components )
 
 
 async def on_select_model( components, event ):

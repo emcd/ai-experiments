@@ -57,13 +57,13 @@ def package_invocables( components ):
         components.selector_model.auxdata__[ components.selector_model.value ]
         .attributes.supports_invocations )
     if supports_invocations:
-        invocables = provide_active_invocables( components )
-        if invocables: special_data[ 'invocables' ] = invocables
+        invokers = provide_invokers_selection( components )
+        if invokers: special_data[ 'invokers' ] = invokers
     return special_data
 
 
-def provide_active_invocables( components ):
-    ''' Returns currently selected invocables. '''
+def provide_invokers_selection( components ):
+    ''' Returns invokers for currently selected invocables. '''
     # TODO: Remove visibility restriction once fill of system prompt
     #       is implemented for non-functions-supporting models.
     if not components.row_functions_prompt.visible: return [ ]

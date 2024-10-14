@@ -234,7 +234,7 @@ class Tokenizer( __.ConversationTokenizer ):
                 tokens_count += self.count_text_tokens( value_ )
                 if 'name' == index: tokens_count += tokens_for_actor_name
         iprocessor = self.model.produce_invocations_processor( )
-        for invoker in special_data.get( 'invocables', ( ) ):
+        for invoker in special_data.get( 'invokers', ( ) ):
             tokens_count += (
                 self.count_text_tokens( dumps(
                     iprocessor.nativize_invocable( invoker ) ) ) )
@@ -253,8 +253,8 @@ def _nativize_controls_v0(
 
 def _nativize_supplements_v0( model: Model, supplements ):
     nomargs = { }
-    if 'invocables' in supplements:
+    if 'invokers' in supplements:
         iprocessor = model.produce_invocations_processor( )
         nomargs.update(
-            iprocessor.nativize_invocables( supplements[ 'invocables' ] ) )
+            iprocessor.nativize_invocables( supplements[ 'invokers' ] ) )
     return nomargs

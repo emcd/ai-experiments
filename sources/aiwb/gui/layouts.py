@@ -345,11 +345,11 @@ system_prompts_layout = {
     'multichoice_functions': dict(
         component_class = MultiChoice,
         component_arguments = dict(
-            placeholder = 'Please click to select functions.',
+            placeholder = 'Please click to select invocables.',
             delete_button = True,
             width_policy = 'max',
         ),
-        event_functions = dict( value = 'on_select_functions' ),
+        event_functions = dict( value = 'on_select_invocables' ),
     ),
     'row_function_options': dict(
         component_class = Row,
