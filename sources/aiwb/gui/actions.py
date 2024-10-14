@@ -81,16 +81,17 @@ async def use_invocables(
     silent_extraction_failure = False,
 ):
     ''' Runs invocables via current AI provider for context. '''
-    from ..providers import InvocationFormatError
     from .invocables import extract_invocation_requests
     from .updaters import truncate_conversation
     truncate_conversation( components, index )
     model = _providers.access_model_selection( components )
-    try: requests = extract_invocation_requests( components )
-    except InvocationFormatError:
-        if silent_extraction_failure: return
-        raise
-    invokers = tuple( model.use_invocable( request ) for request in requests )
+    processor = model.produce_invocations_processor( )
+    requests = (
+        extract_invocation_requests(
+            components,
+            silent_extraction_failure = silent_extraction_failure ) )
+    if not requests: return
+    invokers = tuple( processor( request ) for request in requests )
     with _update_conversation_progress( components, 'Invoking tools...' ):
         canisters = await __.gather_async( *invokers )
     for canister in canisters: _add_message( components, canister )

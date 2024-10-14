@@ -25,21 +25,28 @@ from . import __
 from . import providers as _providers
 
 
-def extract_invocation_requests( components, component = None ):
+def extract_invocation_requests(
+    components,
+    component = None,
+    silent_extraction_failure: bool = False,
+):
     ''' Extracts invocation requests from message canister GUI component. '''
     if None is component:
         component = components.column_conversation_history[ -1 ]
     canister = component.gui__.canister__
     # TODO: Use selected multichoice values instead of all possible.
     invocables = components.auxdata__.invocables
+    # TODO: Provide supplements based on specification from invocable.
     supplements = __.AccretiveDictionary(
         controls = _providers.package_controls( components ) )
     model = _providers.access_model_selection( components )
-    requests = model.extract_invocation_requests(
+    processor = model.produce_invocations_processor( )
+    requests = processor.requests_from_canister(
         auxdata = components.auxdata__,
         supplements = supplements,
         canister = canister,
-        invocables = invocables )
+        invocables = invocables,
+        ignore_invalid_canister = silent_extraction_failure )
     return requests
 
 

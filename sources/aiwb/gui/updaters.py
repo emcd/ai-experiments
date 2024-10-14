@@ -102,9 +102,12 @@ def configure_message_interface( canister_gui, dto ):
     canister_gui.toggle_active.name = _roles_emoji[ role ]
     if 'AI' == role:
         canister_gui.button_fork.visible = True
-        try: extract_invocation_requests( gui, component = canister )
+        try:
+            irequests = extract_invocation_requests(
+                gui, component = canister, silent_extraction_failure = True )
+        # TODO: No debug prints if model mismatch.
         except Exception as exc: ic( __.exception_to_str( exc ) )
-        else: canister_gui.button_invoke.visible = True
+        else: canister_gui.button_invoke.visible = bool( irequests )
     elif 'Document' == role:
         canister_gui.button_delete.visible = True
     elif 'Human' == role:

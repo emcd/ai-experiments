@@ -23,6 +23,8 @@
 
 from . import __
 from . import core as _core
+from . import exceptions as _exceptions
+from . import interfaces as _interfaces
 
 
 async def acquire_provider_configuration(
@@ -81,6 +83,47 @@ async def acquire_models_integrators(
         in integrators.items( ) } )
 
 
+def invocation_requests_from_canister(
+    processor: _interfaces.InvocationsProcessor,
+    auxdata: __.CoreGlobals,
+    supplements: __.AccretiveDictionary,
+    canister: __.MessageCanister,
+    invocables: __.AccretiveNamespace,
+    ignore_invalid_canister: bool = False,
+) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+    # TODO: Provide supplements based on specification from invocable.
+    Error = _exceptions.InvocationFormatError
+    try: requests = _validate_invocation_requests_canister( canister )
+    except Error:
+        if ignore_invalid_canister: return [ ]
+        else: raise
+    supplements[ 'model' ] = processor.model
+    invokers = invocables.invokers
+    model_context = getattr( canister.attributes, 'model_context', { } )
+    tool_calls = model_context.get( 'tool_calls' )
+    requests_ = [ ]
+    for i, request in enumerate( requests ):
+        if not isinstance( request, __.AbstractDictionary ):
+            raise Error( 'Tool use request is not dictionary.' )
+        if 'name' not in request:
+            raise Error( 'Name is missing from tool use request.' )
+        name = request[ 'name' ]
+        if name not in invokers:
+            raise Error( f"Tool {name!r} is not available." )
+        arguments = request.get( 'arguments', { } )
+        request_ = dict( request )
+        request_[ 'invocable__' ] = __.partial_function(
+            invokers[ name ],
+            auxdata = auxdata,
+            arguments = arguments,
+            supplements = supplements )
+        if tool_calls:
+            request_[ 'context__' ] = (
+                processor.validate_request( tool_calls[ i ] ) )
+        requests_.append( request_ )
+    return requests_
+
+
 async def _acquire_configuration(
     auxdata: __.CoreGlobals, directory: __.Path
 ) -> __.AbstractDictionary[ str, __.a.Any ]:
@@ -124,3 +167,15 @@ def _copy_custom_provider_configurations(
             if provider_name == descriptor[ 'name' ] )
     except StopIteration: configurations = { }
     return tuple( configurations.get( index_name, ( ) ) )
+
+
+def _validate_invocation_requests_canister(
+    canister: __.MessageCanister
+) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+    Error = _exceptions.InvocationFormatError
+    from ..codecs.json import loads
+    try: requests = loads( canister[ 0 ].data )
+    except Exception as exc: raise Error( str( exc ) ) from exc
+    if not isinstance( requests, __.AbstractSequence ):
+        raise Error( 'Tool use requests is not sequence.' )
+    return requests

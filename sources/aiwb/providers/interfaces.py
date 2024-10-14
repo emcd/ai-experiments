@@ -154,6 +154,58 @@ class Factory( __.a.Protocol ):
 
 @__.a.runtime_checkable
 @__.standard_dataclass
+class InvocationsProcessor( __.a.Protocol ):
+    ''' Handles everything related to invocations. '''
+    # TODO: Immutable class attributes.
+
+    model: ConverserModel
+
+    @__.abstract_member_function
+    async def __call__(
+        self,
+        # TODO: Use InvocationRequest instance as argument.
+        request: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.MessageCanister:
+        ''' Uses invocable to produce result for conversation. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
+        ''' Converts normalized invocable into native tool call. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def nativize_invocables(
+        self,
+        invokers: __.AbstractIterable[ __.Invoker ],
+    ) -> __.a.Any:
+        ''' Converts normalized invocables into native tool calls. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def requests_from_canister(
+        self,
+        auxdata: __.CoreGlobals,
+        supplements: __.AccretiveDictionary,
+        canister: __.MessageCanister,
+        invocables: __.AbstractIterable[ __.Invocable ],
+        ignore_invalid_canister: bool = False,
+    ):
+        ''' Converts invocation requests into invoker coroutines. '''
+        # TODO: Return InvocationRequest instance.
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def validate_request(
+        self,
+        request: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Validates provider-specific portion of invocation request. '''
+        raise NotImplementedError
+
+
+@__.a.runtime_checkable
+@__.standard_dataclass
 class Model( __.a.Protocol ):
     ''' Represents an AI model. '''
     # TODO: Immutable class attributes.
@@ -180,37 +232,13 @@ class ConverserModel( Model, __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
-    def extract_invocation_requests(
-        self,
-        auxdata: __.CoreGlobals,
-        supplements: __.AccretiveDictionary,
-        canister: __.MessageCanister,
-        invocables: __.AbstractIterable[ __.Invocable ],
-    ):
-        ''' Converts invocation requests into invoker coroutines. '''
-        # TODO: Move to InvocationProcessor class.
-        # TODO: Return InvocationRequest instance.
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
-        ''' Converts normalized invocable into native tool call. '''
-        # TODO: Move to InvocationProcessor class.
+    def produce_invocations_processor( self ) -> InvocationsProcessor:
+        ''' Provides invocations processor for model. '''
         raise NotImplementedError
 
     @__.abstract_member_function
     def produce_tokenizer( self ) -> ConversationTokenizer:
         ''' Provides appropriate tokenizer for conversations. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    async def use_invocable(
-        self,
-        # TODO: Use InvocationRequest instance as argument.
-        request: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.MessageCanister:
-        ''' Uses invocable to produce result for conversation. '''
-        # TODO: Move to InvocationProcessor class.
         raise NotImplementedError
 
     ## v0 Compatibility Functions ##

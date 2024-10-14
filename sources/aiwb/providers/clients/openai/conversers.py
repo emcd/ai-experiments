@@ -100,76 +100,11 @@ class Model( __.ConverserModel ):
         raise __.SupportError(
             f"Cannot serialize data to {data_format.value} format." )
 
-    def extract_invocation_requests(
-        self,
-        auxdata: __.CoreGlobals,
-        supplements: __.AccretiveDictionary,
-        canister: __.MessageCanister,
-        invocables: __.AbstractIterable[ __.Invocable ],
-    ) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
-        # TODO? Generalize - most does not need to be provider-specific.
-        supplements[ 'model' ] = self
-        from ....codecs.json import loads
-        Error = __.InvocationFormatError
-        try: requests = loads( canister[ 0 ].data )
-        except Exception as exc: raise Error( str( exc ) ) from exc
-        if not isinstance( requests, __.AbstractSequence ):
-            raise Error( 'Tool use requests is not sequence.' )
-        invokers = invocables.invokers
-        model_context = getattr( canister.attributes, 'model_context', { } )
-        tool_calls = model_context.get( 'tool_calls' )
-        requests_ = [ ]
-        for i, request in enumerate( requests ):
-            if not isinstance( request, __.AbstractDictionary ):
-                raise Error( 'Tool use request is not dictionary.' )
-            if 'name' not in request:
-                raise Error( 'Name is missing from tool use request.' )
-            request_ = dict( request )
-            name = request[ 'name' ]
-            if name not in invokers:
-                raise Error( f"Tool {name!r} is not available." )
-            arguments = request.get( 'arguments', { } )
-            request_[ 'invocable__' ] = __.partial_function(
-                invokers[ name ],
-                auxdata = auxdata,
-                arguments = arguments,
-                supplements = supplements )
-            # TODO: Validate tool calls with model.
-            if tool_calls: request_[ 'context__' ] = tool_calls[ i ]
-            requests_.append( request_ )
-        return requests_
-
-    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
-        return dict(
-            name = invoker.name,
-            description = invoker.invocable.__doc__,
-            parameters = invoker.argschema )
+    def produce_invocations_processor( self ) -> InvocationsProcessor:
+        return InvocationsProcessor( model = self )
 
     def produce_tokenizer( self ) -> Tokenizer:
         return Tokenizer( model = self )
-
-    async def use_invocable(
-        self,
-        # TODO: Use InvocationRequest instance as argument.
-        request: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.MessageCanister:
-        request_context = request[ 'context__' ]
-        result = await request[ 'invocable__' ]( )
-        # TODO? Include provider and model in result context.
-        if 'id' in request_context: # late 2023+ format: parallel tool calls
-            result_context = dict(
-                name = request_context[ 'function' ][ 'name' ],
-                role = 'tool',
-                tool_call_id = request_context[ 'id' ] )
-        else: # mid-2023 format: single function call
-            result_context = dict(
-                name = request[ 'name' ], role = 'function' )
-        from json import dumps
-        message = dumps( result )
-        canister = __.MessageCanister( 'Function' )
-        canister.add_content( message, mimetype = 'application/json' )
-        canister.attributes.model_context = result_context # TODO? Immutable
-        return canister
 
     async def converse_v0(
         self,
@@ -202,6 +137,80 @@ class Model( __.ConverserModel ):
 
 
 @__.standard_dataclass
+class InvocationsProcessor( __.InvocationsProcessor ):
+
+    async def __call__(
+        self,
+        # TODO: Use InvocationRequest instance as argument.
+        request: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.MessageCanister:
+        request_context = request[ 'context__' ]
+        result = await request[ 'invocable__' ]( )
+        # TODO? Include provider and model in result context.
+        if 'id' in request_context: # late 2023+ format: parallel tool calls
+            result_context = dict(
+                name = request_context[ 'function' ][ 'name' ],
+                role = 'tool',
+                tool_call_id = request_context[ 'id' ] )
+        else: # mid-2023 format: single function call
+            result_context = dict(
+                name = request[ 'name' ], role = 'function' )
+        from json import dumps
+        message = dumps( result )
+        canister = __.MessageCanister( 'Function' )
+        canister.add_content( message, mimetype = 'application/json' )
+        canister.attributes.model_context = result_context # TODO? Immutable
+        return canister
+
+    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
+        return dict(
+            name = invoker.name,
+            description = invoker.invocable.__doc__,
+            parameters = invoker.argschema )
+
+    def nativize_invocables(
+        self,
+        invokers: __.AbstractIterable[ __.Invoker ],
+    ) -> __.a.Any:
+        if not self.model.attributes.supports_invocations: return { }
+        args = { }
+        match self.model.attributes.invocations_support_level:
+            case InvocationsSupportLevel.Concurrent:
+                args[ 'tools' ] = [
+                    {   'type': 'function',
+                        'function': self.nativize_invocable( invoker ) }
+                    for invoker in invokers ]
+            case InvocationsSupportLevel.Single:
+                args[ 'functions' ] = [
+                    self.nativize_invocable( invoker )
+                    for invoker in invokers ]
+        return args
+
+    def requests_from_canister(
+        self,
+        auxdata: __.CoreGlobals,
+        supplements: __.AccretiveDictionary,
+        canister: __.MessageCanister,
+        invocables: __.AbstractIterable[ __.Invocable ],
+        ignore_invalid_canister: bool = False,
+    ) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+        return __.invocation_requests_from_canister(
+            processor = self,
+            auxdata = auxdata,
+            supplements = supplements,
+            canister = canister,
+            invocables = invocables,
+            ignore_invalid_canister = ignore_invalid_canister )
+
+    def validate_request(
+        self,
+        request: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        # TODO: Implement.
+        return request
+
+
+@__.standard_dataclass
 class Tokenizer( __.ConversationTokenizer ):
 
     def count_text_tokens( self, text: str ) -> int:
@@ -224,10 +233,11 @@ class Tokenizer( __.ConversationTokenizer ):
                 value_ = value if isinstance( value, str ) else dumps( value )
                 tokens_count += self.count_text_tokens( value_ )
                 if 'name' == index: tokens_count += tokens_for_actor_name
+        iprocessor = self.model.produce_invocations_processor( )
         for invoker in special_data.get( 'invocables', ( ) ):
             tokens_count += (
                 self.count_text_tokens( dumps(
-                    model.nativize_invocable( invoker ) ) ) )
+                    iprocessor.nativize_invocable( invoker ) ) ) )
             # TODO: Determine if metadata from multifunctions adds more tokens.
         return tokens_count
 
@@ -241,28 +251,10 @@ def _nativize_controls_v0(
     return v0._nativize_controls( controls )
 
 
-def _nativize_invocables(
-    model: Model,
-    invokers: __.AbstractIterable[ __.Invoker ],
-) -> __.a.Any:
-    if not model.attributes.supports_invocations: return { }
-    nomargs = { }
-    match model.attributes.invocations_support_level:
-        case InvocationsSupportLevel.Concurrent:
-            nomargs[ 'tools' ] = [
-                {   'type': 'function',
-                    'function': model.nativize_invocable( invoker ) }
-                for invoker in invokers ]
-        case InvocationsSupportLevel.Single:
-            nomargs[ 'functions' ] = [
-                model.nativize_invocable( invoker )
-                for invoker in invokers ]
-    return nomargs
-
-
 def _nativize_supplements_v0( model: Model, supplements ):
     nomargs = { }
     if 'invocables' in supplements:
+        iprocessor = model.produce_invocations_processor( )
         nomargs.update(
-            _nativize_invocables( model, supplements[ 'invocables' ] ) )
+            iprocessor.nativize_invocables( supplements[ 'invocables' ] ) )
     return nomargs
