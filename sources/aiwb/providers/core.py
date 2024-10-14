@@ -97,6 +97,13 @@ class ClientAttributes:
         return args
 
 
+class ClientImplement( metaclass = __.ABCFactory ):
+    ''' Abstract base class for client implements. '''
+    # Note: Not a Protocol class because there is no common protocol.
+    #       We just want issubclass support.
+    #       Functions which return implements should cast.
+
+
 class DataFormatPreferences( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Preferred data formats for AI model input or output. '''
 

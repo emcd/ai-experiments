@@ -116,11 +116,17 @@ class Model( __.ConverserModel ):
         messages_native = self.nativize_messages_v0( messages )
         controls_native = _nativize_controls_v0( self, controls )
         supplements_native = _nativize_supplements_v0( self, supplements )
+        client = self.client.produce_implement( )
+        from openai import OpenAIError
+        try:
+            response = await client.chat.completions.create(
+                messages = messages_native,
+                **supplements_native, **controls_native )
+        except OpenAIError as exc:
+            raise __.ChatCompletionError( f"Error: {exc}" ) from exc
+        should_stream = controls_native.get( 'stream', True )
         # TODO: Port from v0.
         from . import v0
-        response = await v0._chat(
-            messages_native, supplements_native, controls_native, reactors )
-        should_stream = controls_native.get( 'stream', True )
         if self.attributes.supports_continuous_response and should_stream:
             return (
                 await v0._process_iterative_chat_response(

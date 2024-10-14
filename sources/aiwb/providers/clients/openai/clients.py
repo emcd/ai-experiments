@@ -143,6 +143,10 @@ class OpenAIClient( Client ):
                 factory = factory,
                 descriptor = descriptor ) ) )
 
+    def produce_implement( self ) -> __.ClientImplement:
+        from openai import AsyncOpenAI
+        return __.a.cast( __.ClientImplement, AsyncOpenAI( ) )
+
 
 @__.standard_dataclass
 class Factory( __.Factory ):

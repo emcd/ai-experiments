@@ -95,6 +95,11 @@ class Client( __.a.Protocol ):
         raise NotImplementedError
 
     @__.abstract_member_function
+    def produce_implement( self ) -> _core.ClientImplement:
+        ''' Produces client implement to interact with provider. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
     async def survey_models(
         self,
         auxdata: __.CoreGlobals,

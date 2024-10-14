@@ -32,16 +32,6 @@ def access_model_data( model_name, data_name ):
     return models_[ model_name ][ data_name ]
 
 
-async def _chat( messages, special_data, controls, callbacks ):
-    from openai import AsyncOpenAI, OpenAIError
-    client = AsyncOpenAI( )
-    try:
-        return await client.chat.completions.create(
-            messages = messages, **special_data, **controls )
-    except OpenAIError as exc:
-        raise __.ChatCompletionError( f"Error: {exc}" ) from exc
-
-
 def _create_canister_from_response( response ):
     attributes = __.SimpleNamespace( behaviors = [ ] )
     if response.content: mimetype = 'text/markdown'
