@@ -140,18 +140,6 @@ def _merge_messages_contingent( canister, message, model_name ):
     return False
 
 
-def _nativize_controls( controls ):
-    nomargs = {
-        name: value for name, value in controls.items( )
-        if name in ( 'model', 'temperature', )
-    }
-    model = nomargs[ 'model' ]
-    # TODO: Check for 'supports_streaming' attribute.
-    if not model.startswith( 'o1-' ): nomargs[ 'stream' ] = True
-    else: nomargs.pop( 'temperature', None )
-    return nomargs
-
-
 def _nativize_messages( canisters, model_name ):
     messages = [ ]
     for canister in canisters:

@@ -217,6 +217,31 @@ class Model( __.a.Protocol ):
 
     name: str
     client: Client
+    controls: __.AbstractSequence[ __.Control ] = ( )
+
+    @classmethod
+    @__.abstract_member_function
+    def from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        ''' Produces model from descriptor dictionary. '''
+        raise NotImplementedError
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
+        args = __.AccretiveDictionary( name = name, client = client )
+        # TODO: Control descriptors to definitions.
+        args[ 'controls' ] = descriptor.get( 'controls', ( ) )
+        return args
 
 
 @__.a.runtime_checkable

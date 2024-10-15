@@ -77,10 +77,12 @@ class Model( __.ConverserModel ):
         name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
-        descriptor_ = dict( descriptor )
-        attributes = Attributes.from_descriptor( descriptor_ )
-        return selfclass(
-            name = name, client = client, attributes = attributes )
+        args = (
+            super( Model, Model )
+            .init_args_from_descriptor(
+                client = client, name = name, descriptor = descriptor ) )
+        args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
+        return selfclass( **args )
 
     def deserialize_data( self, data: str ) -> __.a.Any:
         data_format = self.attributes.format_preferences.response_data
@@ -252,9 +254,19 @@ def _nativize_controls_v0(
     model: Model,
     controls: __.AbstractDictionary[ str, __.Control ],
 ):
-    # TODO: Port from v0.
-    from . import v0
-    return v0._nativize_controls( controls )
+    args: dict[ str, __.a.Any ] = dict( model = controls[ 'model' ] )
+    # TODO: Recursively gather control names. (Requires instantiation.)
+    # TODO: Use 'control.name'. (Requires instantiation.)
+    available_control_names = frozenset( {
+        control[ 'name' ] for control in model.controls } )
+    if available_control_names:
+        args.update( {
+            name.replace( '-', '_' ): value
+            for name, value in controls.items( )
+            if name in available_control_names } )
+    if model.attributes.supports_continuous_response:
+        args[ 'stream' ] = True
+    return args
 
 
 def _nativize_supplements_v0( model: Model, supplements ):
