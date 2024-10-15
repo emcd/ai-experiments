@@ -306,6 +306,7 @@ redefining-builtins-modules = [ 'builtins', 'io' ]
 
 [tool.pyright]
 reportSelfClsParameterName = false
+stubPath = 'sources/aiwb/_typedecls'
 
 [tool.pytest.ini_options]
 # Note: Cannot run doctests from Pytest, because Pytest tries to update '_'
