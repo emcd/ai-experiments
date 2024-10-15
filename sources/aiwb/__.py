@@ -119,6 +119,7 @@ class Absent( Falsifier ):
 
 
 # TODO: Python 3.12: Use type statement for aliases.
+# TODO: Optarg: a.TypeAlias = g.T | Literal[ absent ]
 Optional: a.TypeAlias = g.T | Absent
 PossiblePath: a.TypeAlias = bytes | str | PathLike
 

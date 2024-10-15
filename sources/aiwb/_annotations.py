@@ -40,6 +40,7 @@ from typing_extensions import (
     TypeVar,
     Union, # Prefer to <T> | <U> for multiline forms.
     cast,
+    get_type_hints,
     override,
     runtime_checkable,
 )

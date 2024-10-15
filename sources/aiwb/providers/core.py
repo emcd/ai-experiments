@@ -26,7 +26,7 @@ from __future__ import annotations
 from . import __
 
 
-class ChatCompletionError( Exception ): pass
+class ChatCompletionError( __.Omnierror ): pass
 
 
 @__.dataclass( frozen = True, kw_only = True, slots = True )
@@ -187,48 +187,9 @@ class ConverserTokensLimits:
         return selfclass( **args )
 
 
-@__.standard_dataclass
-class ConverserAttributes:
-    ''' Common attributes for AI chat models. '''
-
-    accepts_supervisor_instructions: bool = False
-    format_preferences: ConverserFormatPreferences = (
-        ConverserFormatPreferences( ) )
-    modalities: __.AbstractSequence[ ConverserModalities ] = (
-        ConverserModalities.Text, )
-    supports_continuous_response: bool = False
-    supports_invocations: bool = False
-    tokens_limits: ConverserTokensLimits = ConverserTokensLimits( )
-
-    @classmethod
-    def init_args_from_descriptor(
-        selfclass,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = __.AccretiveDictionary( )
-        for arg_name in (
-            'accepts-supervisor-instructions',
-            'supports-continuous-response',
-            'supports-invocations',
-        ):
-            arg = descriptor.get( arg_name )
-            if None is arg: continue
-            arg_name_ = arg_name.replace( '-', '_' )
-            args[ arg_name_ ] = arg
-        args[ 'format_preferences' ] = (
-            ConverserFormatPreferences.from_descriptor(
-                descriptor.get( 'format-preferences', { } ) ) )
-        args[ 'modalities' ] = tuple(
-            ConverserModalities( modality )
-            for modality in descriptor.get( 'modalities', ( ) ) )
-        args[ 'tokens_limits' ] = (
-            ConverserTokensLimits.from_descriptor(
-                descriptor.get( 'tokens-limits', { } ) ) )
-        return args
-
-
 class ModelIntegrationBehaviors( __.enum.IntFlag ):
+    ''' How to fold attributes from model integrators together. '''
+    # TODO: Immutable class attributes.
 
     Default             = 0
     ReplaceControls     = __.produce_enumeration_value( )

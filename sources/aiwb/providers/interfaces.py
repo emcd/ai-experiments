@@ -115,6 +115,65 @@ class Client( __.a.Protocol ):
 
 @__.a.runtime_checkable
 @__.standard_dataclass
+class ControlsProcessor( __.a.Protocol ):
+    ''' Handles model controls. '''
+    # TODO: Immutable class attributes.
+
+    client: Client
+    name: str
+    attributes: ModelAttributes
+    controls: __.AbstractSequence[ __.Control ] = ( )
+
+    @classmethod
+    def from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        attributes: ModelAttributes,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        ''' Produces model controls manager from descriptor dictionary. '''
+        args = selfclass.init_args_from_descriptor(
+            client = client,
+            name = name,
+            attributes = attributes,
+            descriptor = descriptor )
+        return selfclass( **args )
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        attributes: ModelAttributes,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
+        args = __.AccretiveDictionary(
+            client = client, name = name, attributes = attributes )
+        # TODO: Control descriptors to definitions.
+        args[ 'controls' ] = descriptor.get( 'controls', ( ) )
+        return args
+
+    @property
+    def control_names( self ) -> frozenset[ str ]:
+        ''' Names of available controls. '''
+        # TODO: Cache.
+        # TODO: Recursively gather control names. (Requires instantiation.)
+        # TODO: Use 'control.name'. (Requires instantiation.)
+        return frozenset( { control[ 'name' ] for control in self.controls } )
+
+    @__.abstract_member_function
+    def nativize_controls(
+        self,
+        controls: __.AbstractDictionary[ str, __.Control.Instance ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Converts normalized controls into native arguments. '''
+        raise NotImplementedError
+
+
+@__.a.runtime_checkable
+@__.standard_dataclass
 class ConversationTokenizer( __.a.Protocol ):
     ''' Tokenizes conversation or piece of text for counting. '''
     # TODO: Immutable class attributes.
@@ -190,7 +249,7 @@ class InvocationsProcessor( __.a.Protocol ):
     @__.abstract_member_function
     def requests_from_canister(
         self,
-        auxdata: __.CoreGlobals,
+        auxdata: __.CoreGlobals, *,
         supplements: __.AccretiveDictionary,
         canister: __.MessageCanister,
         invocables: __.AbstractIterable[ __.Invocable ],
@@ -215,9 +274,10 @@ class Model( __.a.Protocol ):
     ''' Represents an AI model. '''
     # TODO: Immutable class attributes.
 
-    name: str
     client: Client
-    controls: __.AbstractSequence[ __.Control ] = ( )
+    name: str
+    attributes: ModelAttributes
+    controls_processor: ControlsProcessor
 
     @classmethod
     @__.abstract_member_function
@@ -236,20 +296,62 @@ class Model( __.a.Protocol ):
         client: Client,
         name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
+        attrclasses: ModelAttrclasses,
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = __.AccretiveDictionary( name = name, client = client )
-        # TODO: Control descriptors to definitions.
-        args[ 'controls' ] = descriptor.get( 'controls', ( ) )
-        return args
+        args = __.AccretiveDictionary( client = client, name = name )
+        args[ 'attributes' ] = (
+            attrclasses.attributes
+            .from_descriptor( descriptor = descriptor, **args ) )
+        args[ 'controls_processor' ] = (
+            attrclasses.controls_processor
+            .from_descriptor( descriptor = descriptor, **args ) )
+        return __.AccretiveDictionary( **args )
+
+
+@__.standard_dataclass
+class ModelAttrclasses:
+    ''' Classes for model initializer arguments extractor to use. '''
+
+    attributes: type[ ModelAttributes ]
+    controls_processor: type[ ControlsProcessor ]
+
+
+@__.a.runtime_checkable
+@__.standard_dataclass
+class ModelAttributes( __.a.Protocol ):
+    ''' Attributes for all genera of AI models. '''
+    # TODO: Immutable class attributes.
+
+    client: Client
+    name: str
+
+    @classmethod
+    @__.abstract_member_function
+    def from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        ''' Produces model attributes from descriptor dictionary. '''
+        raise NotImplementedError
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
+        return __.AccretiveDictionary( client = client, name = name )
 
 
 @__.a.runtime_checkable
 @__.standard_dataclass
 class ConverserModel( Model, __.a.Protocol ):
     ''' Represents an AI chat model. '''
-
-    attributes: _core.ConverserAttributes
 
     @__.abstract_member_function
     def deserialize_data( self, data: str ) -> __.a.Any:
@@ -279,7 +381,7 @@ class ConverserModel( Model, __.a.Protocol ):
         self,
         messages: __.AbstractSequence[ __.MessageCanister ],
         supplements, # TODO: Annotate.
-        controls: __.AbstractDictionary[ str, __.Control ],
+        controls: __.AbstractDictionary[ str, __.Control.Instance ],
         reactors, # TODO: Annotate.
     ):
         ''' Interacts with model to complete a round of conversation. '''
@@ -292,3 +394,51 @@ class ConverserModel( Model, __.a.Protocol ):
     ):
         ''' Converts normalized message canisters into native messages. '''
         raise NotImplementedError
+
+
+@__.standard_dataclass
+class ConverserAttributes( ModelAttributes ):
+    ''' Common attributes for AI chat models. '''
+    # TODO: Immutable class attributes.
+
+    accepts_supervisor_instructions: bool = False
+    format_preferences: _core.ConverserFormatPreferences = (
+        _core.ConverserFormatPreferences( ) )
+    modalities: __.AbstractSequence[ _core.ConverserModalities ] = (
+        _core.ConverserModalities.Text, )
+    supports_continuous_response: bool = False
+    supports_invocations: bool = False
+    tokens_limits: _core.ConverserTokensLimits = (
+        _core.ConverserTokensLimits( ) )
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
+        args = (
+            super( ConverserAttributes, ConverserAttributes )
+            .init_args_from_descriptor(
+                client = client, name = name, descriptor = descriptor ) )
+        for arg_name in (
+            'accepts-supervisor-instructions',
+            'supports-continuous-response',
+            'supports-invocations',
+        ):
+            arg = descriptor.get( arg_name )
+            if None is arg: continue
+            arg_name_ = arg_name.replace( '-', '_' )
+            args[ arg_name_ ] = arg
+        args[ 'format_preferences' ] = (
+            _core.ConverserFormatPreferences.from_descriptor(
+                descriptor.get( 'format-preferences', { } ) ) )
+        args[ 'modalities' ] = tuple(
+            _core.ConverserModalities( modality )
+            for modality in descriptor.get( 'modalities', ( ) ) )
+        args[ 'tokens_limits' ] = (
+            _core.ConverserTokensLimits.from_descriptor(
+                descriptor.get( 'tokens-limits', { } ) ) )
+        return args

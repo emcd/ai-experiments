@@ -45,11 +45,16 @@ class Attributes( __.ConverserAttributes ):
     @classmethod
     def from_descriptor(
         selfclass,
+        client: __.Client,
+        name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
         args = (
             super( Attributes, Attributes )
-            .init_args_from_descriptor( descriptor ) )
+            .init_args_from_descriptor(
+                client = client,
+                name = name,
+                descriptor = descriptor ) )
         sdescriptor = descriptor.get( 'special', { } )
         for arg_name in (
             'extra-tokens-for-actor-name',
@@ -66,6 +71,29 @@ class Attributes( __.ConverserAttributes ):
                     sdescriptor[ 'invocations-support-level' ] ) )
         return selfclass( **args )
 
+@__.standard_dataclass
+class ControlsProcessor( __.ControlsProcessor ):
+
+    def nativize_controls(
+        self,
+        controls: __.AbstractDictionary[ str, __.Control.Instance ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        # TODO: Assert model name matches.
+        args: dict[ str, __.a.Any ] = dict( model = controls[ 'model' ] )
+        args.update( {
+            name.replace( '-', '_' ): value
+            for name, value in controls.items( )
+            if name in self.control_names } )
+        if self.attributes.supports_continuous_response:
+            args[ 'stream' ] = True
+        return args
+
+
+@__.standard_dataclass
+class Attrclasses( __.ModelAttrclasses ):
+    # TODO: Implement.
+    pass
+
 
 @__.standard_dataclass
 class Model( __.ConverserModel ):
@@ -77,11 +105,16 @@ class Model( __.ConverserModel ):
         name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
+        attrclasses = Attrclasses(
+            attributes = Attributes,
+            controls_processor = ControlsProcessor )
         args = (
             super( Model, Model )
             .init_args_from_descriptor(
-                client = client, name = name, descriptor = descriptor ) )
-        args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
+                client = client,
+                name = name,
+                descriptor = descriptor,
+                attrclasses = attrclasses ) )
         return selfclass( **args )
 
     def deserialize_data( self, data: str ) -> __.a.Any:
@@ -112,11 +145,12 @@ class Model( __.ConverserModel ):
         self,
         messages: __.AbstractSequence[ __.MessageCanister ],
         supplements,
-        controls: __.AbstractDictionary[ str, __.Control ],
+        controls: __.AbstractDictionary[ str, __.Control.Instance ],
         reactors,
     ):
         messages_native = self.nativize_messages_v0( messages )
-        controls_native = _nativize_controls_v0( self, controls )
+        controls_native = (
+            self.controls_processor.nativize_controls( controls ) )
         supplements_native = _nativize_supplements_v0( self, supplements )
         client = self.client.produce_implement( )
         from openai import OpenAIError
@@ -248,25 +282,6 @@ class Tokenizer( __.ConversationTokenizer ):
                     iprocessor.nativize_invocable( invoker ) ) ) )
             # TODO: Determine if metadata from multifunctions adds more tokens.
         return tokens_count
-
-
-def _nativize_controls_v0(
-    model: Model,
-    controls: __.AbstractDictionary[ str, __.Control ],
-):
-    args: dict[ str, __.a.Any ] = dict( model = controls[ 'model' ] )
-    # TODO: Recursively gather control names. (Requires instantiation.)
-    # TODO: Use 'control.name'. (Requires instantiation.)
-    available_control_names = frozenset( {
-        control[ 'name' ] for control in model.controls } )
-    if available_control_names:
-        args.update( {
-            name.replace( '-', '_' ): value
-            for name, value in controls.items( )
-            if name in available_control_names } )
-    if model.attributes.supports_continuous_response:
-        args[ 'stream' ] = True
-    return args
 
 
 def _nativize_supplements_v0( model: Model, supplements ):
