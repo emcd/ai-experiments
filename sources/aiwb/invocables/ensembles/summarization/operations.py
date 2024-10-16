@@ -58,7 +58,7 @@ async def _analyze_file( context, path, control = None ):
     controls = context.supplements[ 'controls' ]
     model = context.supplements[ 'model' ]
     ai_messages = [ ]
-    format_name = model.attributes.format_preferences.request_data.value
+    format_name = model.attendants.serde.preferences.request_data.value
     summarization_prompt = (
         auxdata.prompts.definitions[ 'Concatenate: AI Responses' ]
         .produce_prompt( ) )
@@ -119,7 +119,7 @@ async def _discriminate_dirents( context, dirents, control = None ):
     auxdata = context.auxdata
     controls = context.supplements[ 'controls' ]
     model = context.supplements[ 'model' ]
-    format_name = model.attributes.format_preferences.request_data.value
+    format_name = model.attendants.serde.preferences.request_data.value
     prompt = (
         auxdata.prompts.definitions[ 'Discriminate Directory Entries' ]
         .produce_prompt( values = { 'format': format_name } ) )
@@ -140,7 +140,8 @@ async def _discriminate_dirents( context, dirents, control = None ):
         ai_canister = await model.converse_v0(
             messages, { }, controls, chat_callbacks_minimal )
         #ic( ai_canister[ 0 ].data )
-        result = model.deserialize_data( ai_canister[ 0 ].data )
+        result = (
+            model.attendants.serde.deserialize_data( ai_canister[ 0 ].data ) )
         ic( result[ 'blacklist' ] )
         complete_result.extend( result[ 'whitelist' ] )
     return complete_result
@@ -270,5 +271,5 @@ def _render_analysis_prompt( context, control, content, mime_type ):
                 values = dict(
                     mime_type = mime_type, instructions = instructions ) )
             .render( auxdata ) )
-    return model.serialize_data(
+    return model.attendants.serde.serialize_data(
         dict( content = content, instructions = instructions ) )

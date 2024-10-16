@@ -24,12 +24,7 @@
 
 * Architecture and Design
 
-    - Return compound object from models preparation which has both providers
-      and models, similar to how promptstores preparation returns both
-      promptstores and prompts.
-    - Build out utility functions to extract different kinds of models.
-    - Convert existing calls to module-level functions to provider and model
-      methods.
+    - Break AI providers `interfaces` module into subpackage.
 
     - Rework GUI to pass immutable conversation object through functions
       instead of components namespace. Cannot pass GUI globals object, since

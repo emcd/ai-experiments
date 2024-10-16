@@ -192,7 +192,7 @@ async def _generate_conversation_title( components ):
     scribe = __.acquire_scribe( __package__ )
     model = _providers.access_model_selection( components )
     controls = _providers.package_controls( components )
-    format_name = model.attributes.format_preferences.response_data.value
+    format_name = model.attendants.serde.preferences.response_data.value
     prompt = (
         components.auxdata__.prompts.definitions[ 'Title + Labels' ]
         .produce_prompt( values = { 'format': format_name } ) )
@@ -207,7 +207,7 @@ async def _generate_conversation_title( components ):
             messages, { }, controls, chat_callbacks_minimal )
     response = ai_canister[ 0 ].data
     scribe.info( f"New conversation title: {response}" )
-    response = model.deserialize_data( response )
+    response = model.attendants.serde.deserialize_data( response )
     return response[ 'title' ], response[ 'labels' ]
 
 

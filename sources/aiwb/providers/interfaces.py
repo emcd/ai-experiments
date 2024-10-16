@@ -132,7 +132,7 @@ class ControlsProcessor( __.a.Protocol ):
         attributes: ModelAttributes,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
-        ''' Produces model controls manager from descriptor dictionary. '''
+        ''' Produces model controls processor from descriptor dictionary. '''
         args = selfclass.init_args_from_descriptor(
             client = client,
             name = name,
@@ -269,7 +269,8 @@ class InvocationsProcessor( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-@__.standard_dataclass
+#@__.standard_dataclass
+@__.dataclass( frozen = True, kw_only = True )
 class Model( __.a.Protocol ):
     ''' Represents an AI model. '''
     # TODO: Immutable class attributes.
@@ -277,7 +278,7 @@ class Model( __.a.Protocol ):
     client: Client
     name: str
     attributes: ModelAttributes
-    controls_processor: ControlsProcessor
+    attendants: ModelAttendants
 
     @classmethod
     @__.abstract_member_function
@@ -296,25 +297,90 @@ class Model( __.a.Protocol ):
         client: Client,
         name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
-        attrclasses: ModelAttrclasses,
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         args = __.AccretiveDictionary( client = client, name = name )
+        classes = selfclass.provide_classes( )
         args[ 'attributes' ] = (
-            attrclasses.attributes
+            classes.attributes
             .from_descriptor( descriptor = descriptor, **args ) )
-        args[ 'controls_processor' ] = (
-            attrclasses.controls_processor
+        args[ 'attendants' ] = (
+            classes.attendants
             .from_descriptor( descriptor = descriptor, **args ) )
         return __.AccretiveDictionary( **args )
 
+    @classmethod
+    @__.abstract_member_function
+    def provide_classes( selfclass ) -> ModelAttributesClasses:
+        ''' Returns classes for model attributes and attendants collection. '''
+        raise NotImplementedError
+
+
+@__.a.runtime_checkable
+#@__.standard_dataclass
+@__.dataclass( frozen = True, kw_only = True )
+class ModelAttendants( __.a.Protocol ):
+    ''' Attendants to assist all genera of models. '''
+    # TODO: Immutable class attributes.
+
+    controls: ControlsProcessor
+
+    @classmethod
+    def from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        attributes: ModelAttributes,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        ''' Produces model attendants from descriptor dictionary. '''
+        args = (
+            selfclass.init_args_from_descriptor(
+                client = client,
+                name = name,
+                attributes = attributes,
+                descriptor = descriptor ) )
+        return selfclass( **args )
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        attributes: ModelAttributes,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
+        args = __.AccretiveDictionary( )
+        args_ = __.AccretiveDictionary(
+            client = client, name = name, attributes = attributes )
+        classes = selfclass.provide_classes( )
+        args[ 'controls' ] = (
+            classes.controls
+            .from_descriptor( descriptor = descriptor, **args_ ) )
+        return args
+
+    @classmethod
+    @__.abstract_member_function
+    def provide_classes( selfclass ) -> ModelAttendantsClasses:
+        ''' Returns classes for model attendants. '''
+        raise NotImplementedError
+
 
 @__.standard_dataclass
-class ModelAttrclasses:
-    ''' Classes for model initializer arguments extractor to use. '''
+class ModelAttendantsClasses:
+    ''' Classes for model attendants. '''
+
+    controls: type[ ControlsProcessor ]
+
+
+@__.standard_dataclass
+class ModelAttributesClasses:
+    ''' Classes for model attributes and attendants collection. '''
+    # TODO: Immutable class attributes.
 
     attributes: type[ ModelAttributes ]
-    controls_processor: type[ ControlsProcessor ]
+    attendants: type[ ModelAttendants ]
 
 
 @__.a.runtime_checkable
@@ -349,19 +415,9 @@ class ModelAttributes( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-@__.standard_dataclass
+@__.dataclass( frozen = True, kw_only = True )
 class ConverserModel( Model, __.a.Protocol ):
     ''' Represents an AI chat model. '''
-
-    @__.abstract_member_function
-    def deserialize_data( self, data: str ) -> __.a.Any:
-        ''' Deserializes text in preferred format of model to data. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    def serialize_data( self, data: __.a.Any ) -> str:
-        ''' Serializes data to text in preferred format of model. '''
-        raise NotImplementedError
 
     @__.abstract_member_function
     def produce_invocations_processor( self ) -> InvocationsProcessor:
@@ -396,14 +452,53 @@ class ConverserModel( Model, __.a.Protocol ):
         raise NotImplementedError
 
 
+@__.a.runtime_checkable
+@__.dataclass( frozen = True, kw_only = True )
+class ConverserAttendants( ModelAttendants, __.a.Protocol ):
+    ''' Attendants to assist converser models. '''
+    # TODO: Immutable class attributes.
+
+    serde: ConverserSerdeProcessor
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        attributes: ModelAttributes,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
+        args = (
+            super( ).init_args_from_descriptor(
+                client = client,
+                name = name,
+                attributes = attributes,
+                descriptor = descriptor ) )
+        args_ = __.AccretiveDictionary(
+            client = client, name = name, attributes = attributes )
+        classes = selfclass.provide_classes( )
+        args[ 'serde' ] = (
+            classes.serde
+            .from_descriptor( descriptor = descriptor, **args_ ) )
+        return args
+
+
+@__.standard_dataclass
+class ConverserAttendantsClasses( ModelAttendantsClasses ):
+    ''' Classes for converser attributes and attendants. '''
+
+    # TODO: invocations
+    # TODO: messages
+    serde: type[ ConverserSerdeProcessor ]
+
+
 @__.standard_dataclass
 class ConverserAttributes( ModelAttributes ):
     ''' Common attributes for AI chat models. '''
     # TODO: Immutable class attributes.
 
     accepts_supervisor_instructions: bool = False
-    format_preferences: _core.ConverserFormatPreferences = (
-        _core.ConverserFormatPreferences( ) )
     modalities: __.AbstractSequence[ _core.ConverserModalities ] = (
         _core.ConverserModalities.Text, )
     supports_continuous_response: bool = False
@@ -432,9 +527,6 @@ class ConverserAttributes( ModelAttributes ):
             if None is arg: continue
             arg_name_ = arg_name.replace( '-', '_' )
             args[ arg_name_ ] = arg
-        args[ 'format_preferences' ] = (
-            _core.ConverserFormatPreferences.from_descriptor(
-                descriptor.get( 'format-preferences', { } ) ) )
         args[ 'modalities' ] = tuple(
             _core.ConverserModalities( modality )
             for modality in descriptor.get( 'modalities', ( ) ) )
@@ -442,3 +534,62 @@ class ConverserAttributes( ModelAttributes ):
             _core.ConverserTokensLimits.from_descriptor(
                 descriptor.get( 'tokens-limits', { } ) ) )
         return args
+
+
+@__.a.runtime_checkable
+@__.standard_dataclass
+class ConverserSerdeProcessor( __.a.Protocol ):
+    ''' Serialization/deserialization in preferred formats for model. '''
+    # TODO: Immutable class attributes.
+
+    client: Client
+    name: str
+    attributes: ConverserAttributes
+    preferences: _core.ConverserFormatPreferences
+
+    @classmethod
+    def from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        attributes: ConverserAttributes,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.a.Self:
+        ''' Produces model controls processor from descriptor dictionary. '''
+        args = (
+            selfclass.init_args_from_descriptor(
+                client = client,
+                name = name,
+                attributes = attributes,
+                descriptor = descriptor ) )
+        return selfclass( **args )
+
+    @classmethod
+    def init_args_from_descriptor(
+        selfclass,
+        client: Client,
+        name: str,
+        attributes: ConverserAttributes,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        ''' Extracts dictionary of initializer arguments from descriptor. '''
+        args = __.AccretiveDictionary(
+            client = client, name = name, attributes = attributes )
+        args[ 'preferences' ] = (
+            _core.ConverserFormatPreferences.from_descriptor(
+                descriptor.get( 'format-preferences', { } ) ) )
+        return args
+
+    @__.abstract_member_function
+    def deserialize_data( self, data: str ) -> __.a.Any:
+        ''' Deserializes text in preferred format of model to data. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def serialize_data( self, data: __.a.Any ) -> str:
+        ''' Serializes data to text in preferred format of model. '''
+        raise NotImplementedError
+
+    # TODO: deserialize_math / serialize_math
+
+    # TODO: deserialize_text / serialize_text

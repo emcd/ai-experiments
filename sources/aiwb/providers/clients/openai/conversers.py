@@ -32,6 +32,16 @@ class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
     Concurrent  = 'concurrent'  # Late 2023 and beyond.
 
 
+@__.dataclass( frozen = True, kw_only = True )
+class Attendants( __.ConverserAttendants ):
+
+    @classmethod
+    def provide_classes( selfclass ) -> __.ModelAttendantsClasses:
+        return __.ConverserAttendantsClasses(
+            controls = ControlsProcessor,
+            serde = SerdeProcessor )
+
+
 @__.standard_dataclass
 class Attributes( __.ConverserAttributes ):
     ''' Common attributes for OpenAI chat models. '''
@@ -90,12 +100,28 @@ class ControlsProcessor( __.ControlsProcessor ):
 
 
 @__.standard_dataclass
-class Attrclasses( __.ModelAttrclasses ):
-    # TODO: Implement.
-    pass
+class SerdeProcessor( __.ConverserSerdeProcessor ):
+
+    def deserialize_data( self, data: str ) -> __.a.Any:
+        data_format = self.preferences.response_data
+        match data_format:
+            case __.DataFormatPreferences.JSON:
+                from ....codecs.json import loads
+                return loads( data )
+        raise __.SupportError(
+            f"Cannot deserialize data from {data_format.value} format." )
+
+    def serialize_data( self, data: __.a.Any ) -> str:
+        data_format = self.preferences.request_data
+        match data_format:
+            case __.DataFormatPreferences.JSON:
+                from json import dumps
+                return dumps( data )
+        raise __.SupportError(
+            f"Cannot serialize data to {data_format.value} format." )
 
 
-@__.standard_dataclass
+@__.dataclass( frozen = True, kw_only = True )
 class Model( __.ConverserModel ):
 
     @classmethod
@@ -105,35 +131,17 @@ class Model( __.ConverserModel ):
         name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
-        attrclasses = Attrclasses(
-            attributes = Attributes,
-            controls_processor = ControlsProcessor )
         args = (
-            super( Model, Model )
-            .init_args_from_descriptor(
+            super( ).init_args_from_descriptor(
                 client = client,
                 name = name,
-                descriptor = descriptor,
-                attrclasses = attrclasses ) )
+                descriptor = descriptor ) )
         return selfclass( **args )
 
-    def deserialize_data( self, data: str ) -> __.a.Any:
-        data_format = self.attributes.format_preferences.response_data
-        match data_format:
-            case __.DataFormatPreferences.JSON:
-                from ....codecs.json import loads
-                return loads( data )
-        raise __.SupportError(
-            f"Cannot deserialize data from {data_format.value} format." )
-
-    def serialize_data( self, data: __.a.Any ) -> str:
-        data_format = self.attributes.format_preferences.request_data
-        match data_format:
-            case __.DataFormatPreferences.JSON:
-                from json import dumps
-                return dumps( data )
-        raise __.SupportError(
-            f"Cannot serialize data to {data_format.value} format." )
+    @classmethod
+    def provide_classes( selfclass ) -> __.ModelAttributesClasses:
+        return __.ModelAttributesClasses(
+            attributes = Attributes, attendants = Attendants )
 
     def produce_invocations_processor( self ) -> InvocationsProcessor:
         return InvocationsProcessor( model = self )
@@ -150,7 +158,7 @@ class Model( __.ConverserModel ):
     ):
         messages_native = self.nativize_messages_v0( messages )
         controls_native = (
-            self.controls_processor.nativize_controls( controls ) )
+            self.attendants.controls.nativize_controls( controls ) )
         supplements_native = _nativize_supplements_v0( self, supplements )
         client = self.client.produce_implement( )
         from openai import OpenAIError
