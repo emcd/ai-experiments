@@ -111,6 +111,17 @@ class ImmutableClass( type ):
                 class_fqname = calculate_class_fqname( selfclass ) ) )
 
 
+class ImmutableDataclass( ImmutableClass ):
+    ''' Prevents mutation of dataclass attributes. '''
+
+    def __setattr__( selfclass, name, value ):
+        if (    not hasattr( selfclass, '__dataclass_fields__' )
+            and not hasattr( selfclass, '__dataclass_params__' )
+        ): object.__setattr__( selfclass, name, value )
+        super( ).__setattr__( name, value )
+
+
+
 class ImmutableObject( metaclass = ImmutableClass ):
     ''' Prevents mutation of object attributes. '''
 
@@ -180,6 +191,9 @@ standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
 #       used by super( ), etc... and messes with inheritance if you make super
 #       calls that have explicit arguments. So, we have to settle for something
 #       substandard when inheriting data classes with super call methods.
+# TODO: Python 3.14: Replace substandard dataclass with standard dataclass.
+#       https://github.com/python/cpython/issues/90562
+#       https://github.com/python/cpython/pull/124455/files
 substandard_dataclass = dataclass( frozen = True, kw_only = True )
 
 
