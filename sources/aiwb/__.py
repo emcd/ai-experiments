@@ -97,13 +97,43 @@ from . import _annotations as a
 from . import _generics as g
 
 
-class Falsifier( AccretiveObject, metaclass = AccretiveClass ):
+class ImmutableClass( type ):
+    ''' Prevents mutation of class attributes. '''
+
+    def __delattr__( selfclass, name ):
+        raise AttributeError(
+            "Cannot delete attributes on class {class_fqname}.".format(
+                class_fqname = calculate_class_fqname( selfclass ) ) )
+
+    def __setattr__( selfclass, name, value ):
+        raise AttributeError(
+            "Cannot assign attributes on class {class_fqname}.".format(
+                class_fqname = calculate_class_fqname( selfclass ) ) )
+
+
+class ImmutableObject( metaclass = ImmutableClass ):
+    ''' Prevents mutation of object attributes. '''
+
+    def __delattr__( self, name ):
+        raise AttributeError(
+            "Cannot delete attributes on instance "
+            "of class {class_fqname}.".format(
+                class_fqname = calculate_class_fqname( type( self ) ) ) )
+
+    def __setattr__( self, name, value ):
+        raise AttributeError(
+            "Cannot assign attributes on instance "
+            "of class {class_fqname}.".format(
+                class_fqname = calculate_class_fqname( type( self ) ) ) )
+
+
+class Falsifier( metaclass = ImmutableClass ): # pylint: disable=eq-without-hash
     ''' Produces falsey objects.
 
         :py:class:`object` produces truthy objects.
-        :py:class:`NoneType` "produces" the ``None`` singleton.
+        :py:class:`types.NoneType` "produces" falsey ``None`` singleton.
+        :py:class:`typing.NoDefault` is truthy singleton.
     '''
-    # TODO: Immutable class attributes.
 
     def __bool__( self ): return False
 
@@ -112,21 +142,45 @@ class Falsifier( AccretiveObject, metaclass = AccretiveClass ):
     def __ne__( self, other ): return self is not other
 
 
-class Absent( Falsifier ):
-    ''' Type of the sentinel constant for option without default value. '''
-    # TODO: Immutable class and object attributes.
-    # TODO: Singleton. (Similar to NoneType.)
+class Absent( Falsifier, ImmutableObject ):
+    ''' Type of the sentinel for option without default value. '''
+
+    def __new__( selfclass ):
+        ''' Singleton. '''
+        absent_ = globals( ).get( 'absent' )
+        if isinstance( absent_, selfclass ): return absent_
+        return super( ).__new__( selfclass )
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-# TODO: Optarg: a.TypeAlias = g.T | Literal[ absent ]
+# NOTE: Nullability and optionality are NOT the same thing.
+#       We have aliased 'typing.Optional' to 'Nullable'.
+#       The 'Optional' defined below is NOT the same as 'typing.Optional'!
+#       Our 'Optional' indicates that a value binding may be ABSENT.
+#       Similar in spirit to the 'typing.NoDefault' sentinel, we have an
+#       'absent' sentinel which is a singleton instance of 'Absent'. This is
+#       useful when 'None' may be a legitimate value for an argument and we
+#       need another way to indicate that no value is being passed instead.
+#       Undoubtedly, this name is confusing, but it seems to best describe the
+#       semantics that we are trying to convey. Assuming that the "<type> |
+#       None" idiom becomes more popular with adoption of Python 3.10+, the
+#       nomenclatural confusion will hopefully lessen over time as
+#       'typing.Optional' disappears from common Python use.
 Optional: a.TypeAlias = g.T | Absent
 PossiblePath: a.TypeAlias = bytes | str | PathLike
 
 
-absent = Absent( ) #: Option with no default value.
+absent: a.Annotation[
+    Absent, a.Doc( ''' Sentinel for option with no default value. ''' )
+] = Absent( )
 package_name = __package__.split( '.', maxsplit = 1 )[ 0 ]
 standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
+# Note: @dataclass decorator replaces classes when slots = True
+#       In CPython, this breaks association with the class cell variable
+#       used by super( ), etc... and messes with inheritance if you make super
+#       calls that have explicit arguments. So, we have to settle for something
+#       substandard when inheriting data classes with super call methods.
+substandard_dataclass = dataclass( frozen = True, kw_only = True )
 
 
 def calculate_class_fqname( class_: type ) -> str:
