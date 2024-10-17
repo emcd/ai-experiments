@@ -29,9 +29,8 @@ from . import core as _core
 
 @__.a.runtime_checkable
 @__.substandard_dataclass
-class Client( __.a.Protocol ):
+class Client( __.a.Protocol, metaclass = __.ImmutableProtocolDataclass ):
     ''' Interacts with AI provider. '''
-    # TODO: Immutable class attributes.
 
     ModelGenera: __.a.ClassVar[ type[ _core.ModelGenera ] ] = (
         _core.ModelGenera )
@@ -115,9 +114,10 @@ class Client( __.a.Protocol ):
 
 @__.a.runtime_checkable
 @__.standard_dataclass
-class ControlsProcessor( __.a.Protocol ):
+class ControlsProcessor(
+    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+):
     ''' Handles model controls. '''
-    # TODO: Immutable class attributes.
 
     client: Client
     name: str
@@ -174,9 +174,10 @@ class ControlsProcessor( __.a.Protocol ):
 
 @__.a.runtime_checkable
 @__.standard_dataclass
-class ConversationTokenizer( __.a.Protocol ):
+class ConversationTokenizer(
+    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+):
     ''' Tokenizes conversation or piece of text for counting. '''
-    # TODO: Immutable class attributes.
 
     model: ConverserModel
 
@@ -198,12 +199,13 @@ class ConversationTokenizer( __.a.Protocol ):
 
 @__.a.runtime_checkable
 @__.standard_dataclass
-class Factory( __.a.Protocol ):
+class Factory(
+    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+):
     ''' Produces clients. '''
-    # TODO: Immutable class attributes.
 
     name: str
-    # TODO: Regenerative dictionary for configuration.
+    # TODO: Reingester dictionary for configuration.
     configuration: __.AbstractDictionary[ str, __.a.Any ]
 
     @__.abstract_member_function
@@ -218,9 +220,10 @@ class Factory( __.a.Protocol ):
 
 @__.a.runtime_checkable
 @__.standard_dataclass
-class InvocationsProcessor( __.a.Protocol ):
+class InvocationsProcessor(
+    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+):
     ''' Handles everything related to invocations. '''
-    # TODO: Immutable class attributes.
 
     model: ConverserModel
 
@@ -270,9 +273,10 @@ class InvocationsProcessor( __.a.Protocol ):
 
 @__.a.runtime_checkable
 @__.substandard_dataclass
-class Model( __.a.Protocol ):
+class Model(
+    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+):
     ''' Represents an AI model. '''
-    # TODO: Immutable class attributes.
 
     client: Client
     name: str
@@ -317,9 +321,10 @@ class Model( __.a.Protocol ):
 
 @__.a.runtime_checkable
 @__.substandard_dataclass
-class ModelAttendants( __.a.Protocol ):
+class ModelAttendants(
+    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+):
     ''' Attendants to assist all genera of models. '''
-    # TODO: Immutable class attributes.
 
     controls: ControlsProcessor
 
@@ -366,16 +371,15 @@ class ModelAttendants( __.a.Protocol ):
 
 
 @__.standard_dataclass
-class ModelAttendantsClasses:
+class ModelAttendantsClasses( metaclass = __.ImmutableDataclass ):
     ''' Classes for model attendants. '''
 
     controls: type[ ControlsProcessor ]
 
 
 @__.standard_dataclass
-class ModelAttributesClasses:
+class ModelAttributesClasses( metaclass = __.ImmutableDataclass ):
     ''' Classes for model attributes and attendants collection. '''
-    # TODO: Immutable class attributes.
 
     attributes: type[ ModelAttributes ]
     attendants: type[ ModelAttendants ]
@@ -383,9 +387,10 @@ class ModelAttributesClasses:
 
 @__.a.runtime_checkable
 @__.substandard_dataclass
-class ModelAttributes( __.a.Protocol ):
+class ModelAttributes(
+    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+):
     ''' Attributes for all genera of AI models. '''
-    # TODO: Immutable class attributes.
 
     client: Client
     name: str
@@ -454,7 +459,6 @@ class ConverserModel( Model, __.a.Protocol ):
 @__.substandard_dataclass
 class ConverserAttendants( ModelAttendants, __.a.Protocol ):
     ''' Attendants to assist converser models. '''
-    # TODO: Immutable class attributes.
 
     serde: ConverserSerdeProcessor
 
@@ -494,7 +498,6 @@ class ConverserAttendantsClasses( ModelAttendantsClasses ):
 @__.substandard_dataclass
 class ConverserAttributes( ModelAttributes ):
     ''' Common attributes for AI chat models. '''
-    # TODO: Immutable class attributes.
 
     accepts_supervisor_instructions: bool = False
     modalities: __.AbstractSequence[ _core.ConverserModalities ] = (
@@ -535,9 +538,10 @@ class ConverserAttributes( ModelAttributes ):
 
 @__.a.runtime_checkable
 @__.standard_dataclass
-class ConverserSerdeProcessor( __.a.Protocol ):
+class ConverserSerdeProcessor(
+    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+):
     ''' Serialization/deserialization in preferred formats for model. '''
-    # TODO: Immutable class attributes.
 
     client: Client
     name: str

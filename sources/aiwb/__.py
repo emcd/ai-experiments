@@ -97,29 +97,124 @@ from . import _annotations as a
 from . import _generics as g
 
 
+def calculate_class_fqname( class_: type ) -> str:
+    ''' Calculates fully-qualified name for class. '''
+    return f"{class_.__module__}.{class_.__qualname__}"
+
+
+_dataclass_mutable_attributes = frozenset( (
+    '__dataclass_fields__', '__dataclass_params__',
+    '__delattr__', '__setattr__',
+    '__doc__',
+    '__eq__',
+    '__getstate__', '__setstate__',
+    '__hash__',
+    '__init__',
+    '__match_args__',
+    '__qualname__',
+    '__repr__',
+    '__slots__',
+) )
+_protocol_class_mutable_attributes = frozenset( (
+    '__abstractmethods__',
+    '__init__',
+    '__non_callable_proto_members__',
+    '__parameters__',
+    '__protocol_attrs__',
+    '__subclasshook__',
+    '_abc_impl',
+    '_is_protocol',
+    '_is_runtime_protocol',
+) )
+_protocol_dataclass_mutable_attributes = (
+    _dataclass_mutable_attributes | _protocol_class_mutable_attributes )
+
+
 class ImmutableClass( type ):
     ''' Prevents mutation of class attributes. '''
 
-    def __delattr__( selfclass, name ):
+    def __delattr__( selfclass, name: str ):
         raise AttributeError(
-            "Cannot delete attributes on class {class_fqname}.".format(
+            "Cannot delete attribute {name!r} "
+            "on class {class_fqname!r}.".format(
+                name = name,
                 class_fqname = calculate_class_fqname( selfclass ) ) )
 
-    def __setattr__( selfclass, name, value ):
+    def __setattr__( selfclass, name: str, value: a.Any ):
         raise AttributeError(
-            "Cannot assign attributes on class {class_fqname}.".format(
+            "Cannot assign attribute {name!r} "
+            "on class {class_fqname!r}.".format(
+                name = name,
                 class_fqname = calculate_class_fqname( selfclass ) ) )
 
 
-class ImmutableDataclass( ImmutableClass ):
+class ImmutableDataclass( type ):
     ''' Prevents mutation of dataclass attributes. '''
 
-    def __setattr__( selfclass, name, value ):
-        if (    not hasattr( selfclass, '__dataclass_fields__' )
-            and not hasattr( selfclass, '__dataclass_params__' )
-        ): object.__setattr__( selfclass, name, value )
+    def __delattr__( selfclass, name: str ):
+        raise AttributeError(
+            "Cannot delete attribute {name!r} "
+            "on class {class_fqname!r}.".format(
+                name = name,
+                class_fqname = calculate_class_fqname( selfclass ) ) )
+
+    def __setattr__( selfclass, name: str, value: a.Any ):
+        # Note: Unfortunately, there are no good indicators for when dataclass
+        #       preparation is complete. Therefore, we must allow certain
+        #       mutations throughout class lifetime.
+        if name not in _dataclass_mutable_attributes:
+            raise AttributeError(
+                "Cannot assign attribute {name!r} "
+                "on class {class_fqname!r}.".format(
+                    name = name,
+                    class_fqname = calculate_class_fqname( selfclass ) ) )
         super( ).__setattr__( name, value )
 
+
+class ImmutableProtocolClass( a.Protocol.__class__ ):
+    ''' Prevents mutation of protocol class factory attributes. '''
+
+    def __delattr__( selfclass, name: str ):
+        raise AttributeError(
+            "Cannot delete attribute {name!r} "
+            "on class {class_fqname!r}.".format(
+                name = name,
+                class_fqname = calculate_class_fqname( selfclass ) ) )
+
+    def __setattr__( selfclass, name: str, value: a.Any ):
+        # Note: Unfortunately, there are no good indicators for when protocol
+        #       class preparation is complete. Therefore, we must allow certain
+        #       mutations throughout class lifetime.
+        if name not in _protocol_class_mutable_attributes:
+            raise AttributeError(
+                "Cannot assign attribute {name!r} "
+                "on class {class_fqname!r}.".format(
+                    name = name,
+                    class_fqname = calculate_class_fqname( selfclass ) ) )
+        super( ).__setattr__( name, value )
+
+
+class ImmutableProtocolDataclass( a.Protocol.__class__ ):
+    ''' Prevents mutation of protocol dataclass attributes. '''
+
+    def __delattr__( selfclass, name: str ):
+        raise AttributeError(
+            "Cannot delete attribute {name!r} "
+            "on class {class_fqname!r}.".format(
+                name = name,
+                class_fqname = calculate_class_fqname( selfclass ) ) )
+
+    def __setattr__( selfclass, name: str, value: a.Any ):
+        # Note: Unfortunately, there are no good indicators for when dataclass
+        #       or protocol class preparation is complete. Therefore, we must
+        #       allow certain mutations throughout class lifetime.
+        if name not in _protocol_dataclass_mutable_attributes:
+            raise AttributeError(
+                "Cannot assign attribute {name!r} "
+                "on class {class_fqname!r}.".format(
+                    name = name,
+                    class_fqname = calculate_class_fqname( selfclass ) ) )
+        super( ).__setattr__( name, value )
 
 
 class ImmutableObject( metaclass = ImmutableClass ):
@@ -127,14 +222,34 @@ class ImmutableObject( metaclass = ImmutableClass ):
 
     def __delattr__( self, name ):
         raise AttributeError(
-            "Cannot delete attributes on instance "
-            "of class {class_fqname}.".format(
+            "Cannot delete attribute {name!r} on instance "
+            "of class {class_fqname!r}.".format(
+                name = name,
                 class_fqname = calculate_class_fqname( type( self ) ) ) )
 
     def __setattr__( self, name, value ):
         raise AttributeError(
-            "Cannot assign attributes on instance "
-            "of class {class_fqname}.".format(
+            "Cannot assign attribute {name!r} on instance "
+            "of class {class_fqname!r}.".format(
+                name = name,
+                class_fqname = calculate_class_fqname( type( self ) ) ) )
+
+
+class ImmutableProtocol( a.Protocol, metaclass = ImmutableProtocolClass ):
+    ''' Prevents mutation of protocol object attributes. '''
+
+    def __delattr__( self, name ):
+        raise AttributeError(
+            "Cannot delete attribute {name!r} on instance "
+            "of class {class_fqname!r}.".format(
+                name = name,
+                class_fqname = calculate_class_fqname( type( self ) ) ) )
+
+    def __setattr__( self, name, value ):
+        raise AttributeError(
+            "Cannot assign attribute {name!r} on instance "
+            "of class {class_fqname!r}.".format(
+                name = name,
                 class_fqname = calculate_class_fqname( type( self ) ) ) )
 
 
@@ -195,11 +310,6 @@ standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
 #       https://github.com/python/cpython/issues/90562
 #       https://github.com/python/cpython/pull/124455/files
 substandard_dataclass = dataclass( frozen = True, kw_only = True )
-
-
-def calculate_class_fqname( class_: type ) -> str:
-    ''' Calculates fully-qualified name for class. '''
-    return f"{class_.__module__}.{class_.__qualname__}"
 
 
 async def chain_async( *iterables: AbstractIterable | AbstractIterableAsync ):
