@@ -30,7 +30,7 @@ _supported_model_genera = frozenset( (
 ) )
 
 
-@__.standard_dataclass
+@__.substandard_dataclass
 class Client( __.Client ):
 
     async def access_model(
@@ -112,7 +112,7 @@ class Client( __.Client ):
 # TODO: AzureClient
 
 
-@__.standard_dataclass
+@__.substandard_dataclass
 class OpenAIClient( Client ):
 
     @classmethod
@@ -137,8 +137,7 @@ class OpenAIClient( Client ):
         #       Remove dependency on legacy module-level cache.
         _v0.models_.update( await _cache_acquire_models( auxdata ) )
         return selfclass( **(
-            super( OpenAIClient, OpenAIClient )
-            .init_args_from_descriptor(
+            super( ).init_args_from_descriptor(
                 auxdata = auxdata,
                 factory = factory,
                 descriptor = descriptor ) ) )

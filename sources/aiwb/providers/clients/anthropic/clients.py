@@ -24,7 +24,7 @@
 from . import __
 
 
-@__.standard_dataclass
+@__.substandard_dataclass
 class Client( __.Client ):
 
     async def access_model(
@@ -53,7 +53,7 @@ class Client( __.Client ):
         pass
 
 
-@__.standard_dataclass
+@__.substandard_dataclass
 class AnthropicClient( Client ):
 
     @classmethod
@@ -73,8 +73,7 @@ class AnthropicClient( Client ):
     ) -> __.a.Self:
         await selfclass.assert_environment( auxdata )
         return selfclass( **(
-            super( AnthropicClient, AnthropicClient )
-            .init_args_from_descriptor(
+            super( ).init_args_from_descriptor(
                 auxdata = auxdata,
                 factory = factory,
                 descriptor = descriptor ) ) )

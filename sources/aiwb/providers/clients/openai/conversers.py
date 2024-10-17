@@ -32,7 +32,7 @@ class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
     Concurrent  = 'concurrent'  # Late 2023 and beyond.
 
 
-@__.dataclass( frozen = True, kw_only = True )
+@__.substandard_dataclass
 class Attendants( __.ConverserAttendants ):
 
     @classmethod
@@ -42,7 +42,7 @@ class Attendants( __.ConverserAttendants ):
             serde = SerdeProcessor )
 
 
-@__.standard_dataclass
+@__.substandard_dataclass
 class Attributes( __.ConverserAttributes ):
     ''' Common attributes for OpenAI chat models. '''
 
@@ -60,8 +60,7 @@ class Attributes( __.ConverserAttributes ):
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
         args = (
-            super( Attributes, Attributes )
-            .init_args_from_descriptor(
+            super( ).init_args_from_descriptor(
                 client = client,
                 name = name,
                 descriptor = descriptor ) )
@@ -121,7 +120,7 @@ class SerdeProcessor( __.ConverserSerdeProcessor ):
             f"Cannot serialize data to {data_format.value} format." )
 
 
-@__.dataclass( frozen = True, kw_only = True )
+@__.substandard_dataclass
 class Model( __.ConverserModel ):
 
     @classmethod

@@ -28,7 +28,7 @@ from . import core as _core
 
 
 @__.a.runtime_checkable
-@__.standard_dataclass
+@__.substandard_dataclass
 class Client( __.a.Protocol ):
     ''' Interacts with AI provider. '''
     # TODO: Immutable class attributes.
@@ -269,8 +269,7 @@ class InvocationsProcessor( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-#@__.standard_dataclass
-@__.dataclass( frozen = True, kw_only = True )
+@__.substandard_dataclass
 class Model( __.a.Protocol ):
     ''' Represents an AI model. '''
     # TODO: Immutable class attributes.
@@ -317,8 +316,7 @@ class Model( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-#@__.standard_dataclass
-@__.dataclass( frozen = True, kw_only = True )
+@__.substandard_dataclass
 class ModelAttendants( __.a.Protocol ):
     ''' Attendants to assist all genera of models. '''
     # TODO: Immutable class attributes.
@@ -384,7 +382,7 @@ class ModelAttributesClasses:
 
 
 @__.a.runtime_checkable
-@__.standard_dataclass
+@__.substandard_dataclass
 class ModelAttributes( __.a.Protocol ):
     ''' Attributes for all genera of AI models. '''
     # TODO: Immutable class attributes.
@@ -415,7 +413,7 @@ class ModelAttributes( __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-@__.dataclass( frozen = True, kw_only = True )
+@__.substandard_dataclass
 class ConverserModel( Model, __.a.Protocol ):
     ''' Represents an AI chat model. '''
 
@@ -453,7 +451,7 @@ class ConverserModel( Model, __.a.Protocol ):
 
 
 @__.a.runtime_checkable
-@__.dataclass( frozen = True, kw_only = True )
+@__.substandard_dataclass
 class ConverserAttendants( ModelAttendants, __.a.Protocol ):
     ''' Attendants to assist converser models. '''
     # TODO: Immutable class attributes.
@@ -493,7 +491,7 @@ class ConverserAttendantsClasses( ModelAttendantsClasses ):
     serde: type[ ConverserSerdeProcessor ]
 
 
-@__.standard_dataclass
+@__.substandard_dataclass
 class ConverserAttributes( ModelAttributes ):
     ''' Common attributes for AI chat models. '''
     # TODO: Immutable class attributes.
@@ -515,8 +513,7 @@ class ConverserAttributes( ModelAttributes ):
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         args = (
-            super( ConverserAttributes, ConverserAttributes )
-            .init_args_from_descriptor(
+            super( ).init_args_from_descriptor(
                 client = client, name = name, descriptor = descriptor ) )
         for arg_name in (
             'accepts-supervisor-instructions',
