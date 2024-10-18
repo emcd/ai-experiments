@@ -27,9 +27,12 @@ from . import __
 from . import core as _core
 
 
-@__.a.runtime_checkable
-@__.substandard_dataclass
-class Client( __.a.Protocol, metaclass = __.ImmutableProtocolDataclass ):
+class Client(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
+):
     ''' Interacts with AI provider. '''
 
     ModelGenera: __.a.ClassVar[ type[ _core.ModelGenera ] ] = (
@@ -112,10 +115,11 @@ class Client( __.a.Protocol, metaclass = __.ImmutableProtocolDataclass ):
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-@__.standard_dataclass
 class ControlsProcessor(
-    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
 ):
     ''' Handles model controls. '''
 
@@ -172,10 +176,11 @@ class ControlsProcessor(
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-@__.standard_dataclass
 class ConversationTokenizer(
-    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
 ):
     ''' Tokenizes conversation or piece of text for counting. '''
 
@@ -197,10 +202,11 @@ class ConversationTokenizer(
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-@__.standard_dataclass
 class Factory(
-    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
 ):
     ''' Produces clients. '''
 
@@ -218,10 +224,11 @@ class Factory(
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-@__.standard_dataclass
 class InvocationsProcessor(
-    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
 ):
     ''' Handles everything related to invocations. '''
 
@@ -271,10 +278,11 @@ class InvocationsProcessor(
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-@__.substandard_dataclass
 class Model(
-    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
 ):
     ''' Represents an AI model. '''
 
@@ -319,10 +327,11 @@ class Model(
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-@__.substandard_dataclass
 class ModelAttendants(
-    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
 ):
     ''' Attendants to assist all genera of models. '''
 
@@ -370,25 +379,30 @@ class ModelAttendants(
         raise NotImplementedError
 
 
-@__.standard_dataclass
-class ModelAttendantsClasses( metaclass = __.ImmutableDataclass ):
+class ModelAttendantsClasses(
+    metaclass = __.ImmutableDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Classes for model attendants. '''
 
     controls: type[ ControlsProcessor ]
 
 
-@__.standard_dataclass
-class ModelAttributesClasses( metaclass = __.ImmutableDataclass ):
+class ModelAttributesClasses(
+    metaclass = __.ImmutableDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Classes for model attributes and attendants collection. '''
 
     attributes: type[ ModelAttributes ]
     attendants: type[ ModelAttendants ]
 
 
-@__.a.runtime_checkable
-@__.substandard_dataclass
 class ModelAttributes(
-    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
 ):
     ''' Attributes for all genera of AI models. '''
 
@@ -417,9 +431,11 @@ class ModelAttributes(
         return __.AccretiveDictionary( client = client, name = name )
 
 
-@__.a.runtime_checkable
-@__.substandard_dataclass
-class ConverserModel( Model, __.a.Protocol ):
+class ConverserModel(
+    Model, __.a.Protocol,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
+):
     ''' Represents an AI chat model. '''
 
     @__.abstract_member_function
@@ -455,9 +471,11 @@ class ConverserModel( Model, __.a.Protocol ):
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-@__.substandard_dataclass
-class ConverserAttendants( ModelAttendants, __.a.Protocol ):
+class ConverserAttendants(
+    ModelAttendants, __.a.Protocol,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
+):
     ''' Attendants to assist converser models. '''
 
     serde: ConverserSerdeProcessor
@@ -486,8 +504,10 @@ class ConverserAttendants( ModelAttendants, __.a.Protocol ):
         return args
 
 
-@__.standard_dataclass
-class ConverserAttendantsClasses( ModelAttendantsClasses ):
+class ConverserAttendantsClasses(
+    ModelAttendantsClasses,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Classes for converser attributes and attendants. '''
 
     # TODO: invocations
@@ -495,8 +515,10 @@ class ConverserAttendantsClasses( ModelAttendantsClasses ):
     serde: type[ ConverserSerdeProcessor ]
 
 
-@__.substandard_dataclass
-class ConverserAttributes( ModelAttributes ):
+class ConverserAttributes(
+    ModelAttributes,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Common attributes for AI chat models. '''
 
     accepts_supervisor_instructions: bool = False
@@ -536,10 +558,11 @@ class ConverserAttributes( ModelAttributes ):
         return args
 
 
-@__.a.runtime_checkable
-@__.standard_dataclass
 class ConverserSerdeProcessor(
-    __.a.Protocol, metaclass = __.ImmutableProtocolDataclass
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
 ):
     ''' Serialization/deserialization in preferred formats for model. '''
 

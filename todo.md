@@ -36,6 +36,7 @@
     - Finish decoupling widgets from data in conversation save/restore.
     - Use `absent` object instead of `None` for optional arguments
       with no default.
+    - Use immutable dataclasses and protocol classes wherever possible.
 
 * General
 

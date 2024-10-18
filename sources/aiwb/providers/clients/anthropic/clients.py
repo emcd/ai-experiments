@@ -24,8 +24,9 @@
 from . import __
 
 
-@__.substandard_dataclass
-class Client( __.Client ):
+class Client(
+    __.Client, dataclass_arguments = __.standard_dataclass_arguments
+):
 
     async def access_model(
         self,
@@ -53,8 +54,9 @@ class Client( __.Client ):
         pass
 
 
-@__.substandard_dataclass
-class AnthropicClient( Client ):
+class AnthropicClient(
+    Client, dataclass_arguments = __.standard_dataclass_arguments
+):
 
     @classmethod
     async def assert_environment( selfclass, auxdata: __.CoreGlobals ):
@@ -85,7 +87,9 @@ class AnthropicClient( Client ):
 # TODO: GoogleVertexClient
 
 
-class Factory( __.Factory ):
+class Factory(
+    __.Factory, dataclass_arguments = __.standard_dataclass_arguments
+):
 
     async def produce_client(
         self,

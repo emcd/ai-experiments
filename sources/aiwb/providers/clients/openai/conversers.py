@@ -32,8 +32,10 @@ class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
     Concurrent  = 'concurrent'  # Late 2023 and beyond.
 
 
-@__.substandard_dataclass
-class Attendants( __.ConverserAttendants ):
+class Attendants(
+    __.ConverserAttendants,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
 
     @classmethod
     def provide_classes( selfclass ) -> __.ModelAttendantsClasses:
@@ -42,8 +44,10 @@ class Attendants( __.ConverserAttendants ):
             serde = SerdeProcessor )
 
 
-@__.substandard_dataclass
-class Attributes( __.ConverserAttributes ):
+class Attributes(
+    __.ConverserAttributes,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Common attributes for OpenAI chat models. '''
 
     extra_tokens_for_actor_name: int = 0
@@ -80,8 +84,10 @@ class Attributes( __.ConverserAttributes ):
                     sdescriptor[ 'invocations-support-level' ] ) )
         return selfclass( **args )
 
-@__.standard_dataclass
-class ControlsProcessor( __.ControlsProcessor ):
+class ControlsProcessor(
+    __.ControlsProcessor,
+    dataclass_arguments = __.standard_dataclass_arguments,
+ ):
 
     def nativize_controls(
         self,
@@ -98,8 +104,10 @@ class ControlsProcessor( __.ControlsProcessor ):
         return args
 
 
-@__.standard_dataclass
-class SerdeProcessor( __.ConverserSerdeProcessor ):
+class SerdeProcessor(
+    __.ConverserSerdeProcessor,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
 
     def deserialize_data( self, data: str ) -> __.a.Any:
         data_format = self.preferences.response_data
@@ -120,8 +128,10 @@ class SerdeProcessor( __.ConverserSerdeProcessor ):
             f"Cannot serialize data to {data_format.value} format." )
 
 
-@__.substandard_dataclass
-class Model( __.ConverserModel ):
+class Model(
+    __.ConverserModel,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
 
     @classmethod
     def from_descriptor(
@@ -185,8 +195,10 @@ class Model( __.ConverserModel ):
         return v0._nativize_messages( messages, model_name = self.name )
 
 
-@__.standard_dataclass
-class InvocationsProcessor( __.InvocationsProcessor ):
+class InvocationsProcessor(
+    __.InvocationsProcessor,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
 
     async def __call__(
         self,
@@ -259,8 +271,10 @@ class InvocationsProcessor( __.InvocationsProcessor ):
         return request
 
 
-@__.standard_dataclass
-class Tokenizer( __.ConversationTokenizer ):
+class Tokenizer(
+    __.ConversationTokenizer,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
 
     def count_text_tokens( self, text: str ) -> int:
         from tiktoken import encoding_for_model, get_encoding
