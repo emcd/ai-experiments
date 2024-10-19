@@ -25,6 +25,15 @@ from . import __
 from . import v0 as _v0
 
 
+# We do not want to import 'openai' package on module initialization,
+# as it is not guaranteed to be available then. However, we can appease
+# typecheckers by pretending as though it is available.
+if __.a.TYPE_CHECKING:
+    from openai import AsyncOpenAI as _AsyncOpenAI # type: ignore
+else:
+    _AsyncOpenAI: __.a.TypeAlias = __.a.Any
+
+
 _supported_model_genera = frozenset( (
     __.ModelGenera.Converser,
 ) )
@@ -114,7 +123,8 @@ class Client(
 
 
 class OpenAIClient(
-    Client, dataclass_arguments = __.standard_dataclass_arguments
+    Client,
+    dataclass_arguments = __.standard_dataclass_arguments,
 ):
 
     @classmethod
@@ -144,9 +154,9 @@ class OpenAIClient(
                 factory = factory,
                 descriptor = descriptor ) ) )
 
-    def produce_implement( self ) -> __.ClientImplement:
+    def produce_implement( self ) -> _AsyncOpenAI:
         from openai import AsyncOpenAI
-        return __.a.cast( __.ClientImplement, AsyncOpenAI( ) )
+        return AsyncOpenAI( )
 
 
 class Factory(

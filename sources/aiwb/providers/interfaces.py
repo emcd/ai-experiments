@@ -28,7 +28,7 @@ from . import core as _core
 
 
 class Client(
-    __.a.Protocol,
+    __.a.Protocol[ _core.ClientImplement ],
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
     runtime_checkable = True,

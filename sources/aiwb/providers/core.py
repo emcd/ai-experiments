@@ -26,6 +26,9 @@ from __future__ import annotations
 from . import __
 
 
+ClientImplement = __.a.TypeVar( 'ClientImplement', covariant = True )
+
+
 class ChatCompletionError( __.Omnierror ): pass
 
 
@@ -95,13 +98,6 @@ class ClientAttributes:
             ClientDefaults.from_descriptor(
                 descriptor.get( 'defaults', { } ) ) )
         return args
-
-
-class ClientImplement( metaclass = __.ABCFactory ):
-    ''' Abstract base class for client implements. '''
-    # Note: Not a Protocol class because there is no common protocol.
-    #       We just want issubclass support.
-    #       Functions which return implements should cast.
 
 
 class DataFormatPreferences( __.Enum ): # TODO: Python 3.11: StrEnum

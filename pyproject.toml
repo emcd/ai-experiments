@@ -258,6 +258,7 @@ disable = [
   'f-string-without-interpolation',
   'import-outside-toplevel',
   'multiple-statements',
+  'typevar-name-incorrect-variance',
   'reimported',
   'too-few-public-methods',
   'ungrouped-imports',

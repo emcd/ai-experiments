@@ -25,6 +25,7 @@
 
 
 from typing_extensions import (
+    TYPE_CHECKING,
     Annotated as Annotation,
     Any,
     Callable,

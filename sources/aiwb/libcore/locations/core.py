@@ -28,6 +28,7 @@ from urllib.parse import ParseResult as _UrlParts
 from . import __
 
 
+# TODO: Replace with type variable for generics.
 class AccessImplement( metaclass = __.ABCFactory ):
     ''' Abstract base class for location access implements. '''
     # Note: Not a Protocol class because there is no common protocol.
