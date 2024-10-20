@@ -33,15 +33,13 @@ class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class Attendants(
-    __.ConverserAttendants,
+    __.ModelAttendants,
     dataclass_arguments = __.standard_dataclass_arguments,
 ):
 
     @classmethod
     def provide_classes( selfclass ) -> __.ModelAttendantsClasses:
-        return __.ConverserAttendantsClasses(
-            controls = ControlsProcessor,
-            serde = SerdeProcessor )
+        return __.ModelAttendantsClasses( controls = ControlsProcessor )
 
 
 class Attributes(
@@ -110,7 +108,7 @@ class SerdeProcessor(
 ):
 
     def deserialize_data( self, data: str ) -> __.a.Any:
-        data_format = self.preferences.response_data
+        data_format = self.model.attributes.format_preferences.response_data
         match data_format:
             case __.DataFormatPreferences.JSON:
                 from ....codecs.json import loads
@@ -119,7 +117,7 @@ class SerdeProcessor(
             f"Cannot deserialize data from {data_format.value} format." )
 
     def serialize_data( self, data: __.a.Any ) -> str:
-        data_format = self.preferences.request_data
+        data_format = self.model.attributes.format_preferences.request_data
         match data_format:
             case __.DataFormatPreferences.JSON:
                 from json import dumps
@@ -152,8 +150,13 @@ class Model(
         return __.ModelAttributesClasses(
             attributes = Attributes, attendants = Attendants )
 
+    # TODO: produce_controls_processor
+
     def produce_invocations_processor( self ) -> InvocationsProcessor:
         return InvocationsProcessor( model = self )
+
+    def produce_serde_processor( self ) -> SerdeProcessor:
+        return SerdeProcessor( model = self )
 
     def produce_tokenizer( self ) -> Tokenizer:
         return Tokenizer( model = self )
@@ -199,6 +202,7 @@ class InvocationsProcessor(
     __.InvocationsProcessor,
     dataclass_arguments = __.standard_dataclass_arguments,
 ):
+    ''' Handles functions and tool calls. '''
 
     async def __call__(
         self,
@@ -249,10 +253,10 @@ class InvocationsProcessor(
 
     def requests_from_canister(
         self,
-        auxdata: __.CoreGlobals,
+        auxdata: __.CoreGlobals, *,
         supplements: __.AccretiveDictionary,
         canister: __.MessageCanister,
-        invocables: __.AbstractIterable[ __.Invocable ],
+        invocables: __.AccretiveNamespace,
         ignore_invalid_canister: bool = False,
     ) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
         return __.invocation_requests_from_canister(

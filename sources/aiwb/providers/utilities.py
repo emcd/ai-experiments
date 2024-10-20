@@ -96,7 +96,7 @@ def invocation_requests_from_canister(
     try: requests = _validate_invocation_requests_canister( canister )
     except Error:
         if ignore_invalid_canister: return [ ]
-        else: raise
+        raise
     supplements[ 'model' ] = processor.model
     invokers = invocables.invokers
     model_context = getattr( canister.attributes, 'model_context', { } )
@@ -107,8 +107,7 @@ def invocation_requests_from_canister(
             raise Error( 'Tool use request is not dictionary.' )
         if 'name' not in request:
             raise Error( 'Name is missing from tool use request.' )
-        name = request[ 'name' ]
-        if name not in invokers:
+        if ( name := request[ 'name' ] ) not in invokers:
             raise Error( f"Tool {name!r} is not available." )
         arguments = request.get( 'arguments', { } )
         request_ = dict( request )

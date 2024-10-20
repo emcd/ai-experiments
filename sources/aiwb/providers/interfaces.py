@@ -232,14 +232,14 @@ class InvocationsProcessor(
 ):
     ''' Handles everything related to invocations. '''
 
-    model: ConverserModel
+    model: Model
 
     @__.abstract_member_function
     async def __call__(
         self,
         # TODO: Use InvocationRequest instance as argument.
         request: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.MessageCanister:
+    ) -> __.MessageCanister: # TODO? Return InvocationResult.
         ''' Uses invocable to produce result for conversation. '''
         raise NotImplementedError
 
@@ -262,7 +262,7 @@ class InvocationsProcessor(
         auxdata: __.CoreGlobals, *,
         supplements: __.AccretiveDictionary,
         canister: __.MessageCanister,
-        invocables: __.AbstractIterable[ __.Invocable ],
+        invocables: __.AccretiveNamespace,
         ignore_invalid_canister: bool = False,
     ):
         ''' Converts invocation requests into invoker coroutines. '''
@@ -436,7 +436,12 @@ class ConverserModel(
     dataclass_arguments = __.standard_dataclass_arguments,
     runtime_checkable = True,
 ):
-    ''' Represents an AI chat model. '''
+    ''' Represents AI chat model. '''
+
+    @__.abstract_member_function
+    def produce_serde_processor( self ) -> ConverserSerdeProcessor:
+        ''' Provides (de)serialization processor for model. '''
+        raise NotImplementedError
 
     @__.abstract_member_function
     def produce_invocations_processor( self ) -> InvocationsProcessor:
@@ -471,50 +476,6 @@ class ConverserModel(
         raise NotImplementedError
 
 
-class ConverserAttendants(
-    ModelAttendants, __.a.Protocol,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
-):
-    ''' Attendants to assist converser models. '''
-
-    serde: ConverserSerdeProcessor
-
-    @classmethod
-    def init_args_from_descriptor(
-        selfclass,
-        client: Client,
-        name: str,
-        attributes: ModelAttributes,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = (
-            super( ).init_args_from_descriptor(
-                client = client,
-                name = name,
-                attributes = attributes,
-                descriptor = descriptor ) )
-        args_ = __.AccretiveDictionary(
-            client = client, name = name, attributes = attributes )
-        classes = selfclass.provide_classes( )
-        args[ 'serde' ] = (
-            classes.serde
-            .from_descriptor( descriptor = descriptor, **args_ ) )
-        return args
-
-
-class ConverserAttendantsClasses(
-    ModelAttendantsClasses,
-    dataclass_arguments = __.standard_dataclass_arguments,
-):
-    ''' Classes for converser attributes and attendants. '''
-
-    # TODO: invocations
-    # TODO: messages
-    serde: type[ ConverserSerdeProcessor ]
-
-
 class ConverserAttributes(
     ModelAttributes,
     dataclass_arguments = __.standard_dataclass_arguments,
@@ -522,6 +483,8 @@ class ConverserAttributes(
     ''' Common attributes for AI chat models. '''
 
     accepts_supervisor_instructions: bool = False
+    format_preferences: _core.ConverserFormatPreferences = (
+        _core.ConverserFormatPreferences( ) )
     modalities: __.AbstractSequence[ _core.ConverserModalities ] = (
         _core.ConverserModalities.Text, )
     supports_continuous_response: bool = False
@@ -549,6 +512,9 @@ class ConverserAttributes(
             if None is arg: continue
             arg_name_ = arg_name.replace( '-', '_' )
             args[ arg_name_ ] = arg
+        args[ 'format_preferences' ] = (
+            _core.ConverserFormatPreferences.from_descriptor(
+                descriptor.get( 'format-preferences', { } ) ) )
         args[ 'modalities' ] = tuple(
             _core.ConverserModalities( modality )
             for modality in descriptor.get( 'modalities', ( ) ) )
@@ -564,45 +530,9 @@ class ConverserSerdeProcessor(
     dataclass_arguments = __.standard_dataclass_arguments,
     runtime_checkable = True,
 ):
-    ''' Serialization/deserialization in preferred formats for model. '''
+    ''' (De)serialization in preferred formats for converser model. '''
 
-    client: Client
-    name: str
-    attributes: ConverserAttributes
-    preferences: _core.ConverserFormatPreferences
-
-    @classmethod
-    def from_descriptor(
-        selfclass,
-        client: Client,
-        name: str,
-        attributes: ConverserAttributes,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
-        ''' Produces model controls processor from descriptor dictionary. '''
-        args = (
-            selfclass.init_args_from_descriptor(
-                client = client,
-                name = name,
-                attributes = attributes,
-                descriptor = descriptor ) )
-        return selfclass( **args )
-
-    @classmethod
-    def init_args_from_descriptor(
-        selfclass,
-        client: Client,
-        name: str,
-        attributes: ConverserAttributes,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = __.AccretiveDictionary(
-            client = client, name = name, attributes = attributes )
-        args[ 'preferences' ] = (
-            _core.ConverserFormatPreferences.from_descriptor(
-                descriptor.get( 'format-preferences', { } ) ) )
-        return args
+    model: ConverserModel
 
     @__.abstract_member_function
     def deserialize_data( self, data: str ) -> __.a.Any:

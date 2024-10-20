@@ -225,6 +225,7 @@ valid-metaclass-classmethod-first-arg = [ 'maker', 'factory' ]
 ignored-parents = [
   'panel.reactive.ReactiveHTML',
   'panel.template.base.Template',
+  'typing.Protocol',
 ]
 max-args = 5
 max-attributes = 7
