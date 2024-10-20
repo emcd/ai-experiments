@@ -40,8 +40,7 @@ def extract_invocation_requests(
     supplements = __.AccretiveDictionary(
         controls = _providers.package_controls( components ) )
     model = _providers.access_model_selection( components )
-    processor = model.produce_invocations_processor( )
-    requests = processor.requests_from_canister(
+    requests = model.invocations_processor.requests_from_canister(
         auxdata = components.auxdata__,
         supplements = supplements,
         canister = canister,

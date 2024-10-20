@@ -116,62 +116,33 @@ class Client(
 
 
 class ControlsProcessor(
-    __.a.Protocol,
+    __.a.Protocol[ _core.NativeControls ],
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
     runtime_checkable = True,
 ):
     ''' Handles model controls. '''
 
-    client: Client
-    name: str
-    attributes: ModelAttributes
-    controls: __.AbstractSequence[ __.Control ] = ( )
+    model: Model
 
-    @classmethod
-    def from_descriptor(
-        selfclass,
-        client: Client,
-        name: str,
-        attributes: ModelAttributes,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
-        ''' Produces model controls processor from descriptor dictionary. '''
-        args = selfclass.init_args_from_descriptor(
-            client = client,
-            name = name,
-            attributes = attributes,
-            descriptor = descriptor )
-        return selfclass( **args )
-
-    @classmethod
-    def init_args_from_descriptor(
-        selfclass,
-        client: Client,
-        name: str,
-        attributes: ModelAttributes,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = __.AccretiveDictionary(
-            client = client, name = name, attributes = attributes )
-        # TODO: Control descriptors to definitions.
-        args[ 'controls' ] = descriptor.get( 'controls', ( ) )
-        return args
+    @property
+    def controls( self ) -> __.AbstractSequence[ __.Control ]:
+        ''' Array of controls available to model. '''
+        return self.model.attributes.controls
 
     @property
     def control_names( self ) -> frozenset[ str ]:
-        ''' Names of available controls. '''
-        # TODO: Cache.
-        # TODO: Recursively gather control names. (Requires instantiation.)
-        # TODO: Use 'control.name'. (Requires instantiation.)
+        ''' Names of controls available to model. '''
+        # TODO? Cache.
+        # TODO: Recursively gather control names. (Requires definitions.)
+        # TODO: Use 'control.name'. (Requires definitions.)
         return frozenset( { control[ 'name' ] for control in self.controls } )
 
     @__.abstract_member_function
     def nativize_controls(
         self,
         controls: __.AbstractDictionary[ str, __.Control.Instance ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+    ) -> _core.NativeControls:
         ''' Converts normalized controls into native arguments. '''
         raise NotImplementedError
 
@@ -286,10 +257,11 @@ class Model(
 ):
     ''' Represents an AI model. '''
 
+    # TODO: Move client and name to ModelAddress class.
+    #       Subclass from ModelAddress class.
     client: Client
     name: str
     attributes: ModelAttributes
-    attendants: ModelAttendants
 
     @classmethod
     @__.abstract_member_function
@@ -315,87 +287,29 @@ class Model(
         args[ 'attributes' ] = (
             classes.attributes
             .from_descriptor( descriptor = descriptor, **args ) )
-        args[ 'attendants' ] = (
-            classes.attendants
-            .from_descriptor( descriptor = descriptor, **args ) )
         return __.AccretiveDictionary( **args )
+
+    @property
+    @__.abstract_member_function
+    def controls_processor( self ) -> ControlsProcessor:
+        ''' Controls processor for model. '''
+        raise NotImplementedError
 
     @classmethod
     @__.abstract_member_function
     def provide_classes( selfclass ) -> ModelAttributesClasses:
-        ''' Returns classes for model attributes and attendants collection. '''
+        ''' Returns classes for model attributes. '''
+        # TODO: Remove.
         raise NotImplementedError
-
-
-class ModelAttendants(
-    __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
-):
-    ''' Attendants to assist all genera of models. '''
-
-    controls: ControlsProcessor
-
-    @classmethod
-    def from_descriptor(
-        selfclass,
-        client: Client,
-        name: str,
-        attributes: ModelAttributes,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
-        ''' Produces model attendants from descriptor dictionary. '''
-        args = (
-            selfclass.init_args_from_descriptor(
-                client = client,
-                name = name,
-                attributes = attributes,
-                descriptor = descriptor ) )
-        return selfclass( **args )
-
-    @classmethod
-    def init_args_from_descriptor(
-        selfclass,
-        client: Client,
-        name: str,
-        attributes: ModelAttributes,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = __.AccretiveDictionary( )
-        args_ = __.AccretiveDictionary(
-            client = client, name = name, attributes = attributes )
-        classes = selfclass.provide_classes( )
-        args[ 'controls' ] = (
-            classes.controls
-            .from_descriptor( descriptor = descriptor, **args_ ) )
-        return args
-
-    @classmethod
-    @__.abstract_member_function
-    def provide_classes( selfclass ) -> ModelAttendantsClasses:
-        ''' Returns classes for model attendants. '''
-        raise NotImplementedError
-
-
-class ModelAttendantsClasses(
-    metaclass = __.ImmutableDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-):
-    ''' Classes for model attendants. '''
-
-    controls: type[ ControlsProcessor ]
 
 
 class ModelAttributesClasses(
     metaclass = __.ImmutableDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
 ):
-    ''' Classes for model attributes and attendants collection. '''
+    ''' Classes for model attributes. '''
 
     attributes: type[ ModelAttributes ]
-    attendants: type[ ModelAttendants ]
 
 
 class ModelAttributes(
@@ -408,6 +322,7 @@ class ModelAttributes(
 
     client: Client
     name: str
+    controls: __.AbstractSequence[ __.Control ] = ( )
 
     @classmethod
     @__.abstract_member_function
@@ -428,7 +343,10 @@ class ModelAttributes(
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
-        return __.AccretiveDictionary( client = client, name = name )
+        args = __.AccretiveDictionary( client = client, name = name )
+        # TODO: Control descriptors to definitions.
+        args[ 'controls' ] = descriptor.get( 'controls', ( ) )
+        return args
 
 
 class ConverserModel(
@@ -438,19 +356,22 @@ class ConverserModel(
 ):
     ''' Represents AI chat model. '''
 
+    @property
     @__.abstract_member_function
-    def produce_serde_processor( self ) -> ConverserSerdeProcessor:
-        ''' Provides (de)serialization processor for model. '''
+    def invocations_processor( self ) -> InvocationsProcessor:
+        ''' Invocations processor for model. '''
         raise NotImplementedError
 
+    @property
     @__.abstract_member_function
-    def produce_invocations_processor( self ) -> InvocationsProcessor:
-        ''' Provides invocations processor for model. '''
+    def serde_processor( self ) -> ConverserSerdeProcessor:
+        ''' (De)serialization processor for model. '''
         raise NotImplementedError
 
+    @property
     @__.abstract_member_function
-    def produce_tokenizer( self ) -> ConversationTokenizer:
-        ''' Provides appropriate tokenizer for conversations. '''
+    def tokenizer( self ) -> ConversationTokenizer:
+        ''' Appropriate tokenizer for conversations. '''
         raise NotImplementedError
 
     ## v0 Compatibility Functions ##

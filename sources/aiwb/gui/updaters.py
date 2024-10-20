@@ -539,9 +539,9 @@ def update_token_count( components ):
     messages.append( Canister( role = 'Human' ).add_content( content ) )
     special_data = _invocables.package_invocables( components )
     model = _providers.access_model_selection( components )
-    tokenizer = model.produce_tokenizer( )
     tokens_count = (
-        tokenizer.count_conversation_tokens_v0( messages, special_data ) )
+        model.tokenizer
+        .count_conversation_tokens_v0( messages, special_data ) )
     tokens_limit = model.attributes.tokens_limits.total
     tokens_report = f"{tokens_count} / {tokens_limit}"
     tokens_usage = tokens_count / tokens_limit

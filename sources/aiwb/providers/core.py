@@ -27,6 +27,7 @@ from . import __
 
 
 ClientImplement = __.a.TypeVar( 'ClientImplement', covariant = True )
+NativeControls = __.a.TypeVar( 'NativeControls', covariant = True )
 
 
 class ChatCompletionError( __.Omnierror ): pass

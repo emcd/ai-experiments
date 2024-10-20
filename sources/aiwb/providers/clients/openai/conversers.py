@@ -32,16 +32,6 @@ class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
     Concurrent  = 'concurrent'  # Late 2023 and beyond.
 
 
-class Attendants(
-    __.ModelAttendants,
-    dataclass_arguments = __.standard_dataclass_arguments,
-):
-
-    @classmethod
-    def provide_classes( selfclass ) -> __.ModelAttendantsClasses:
-        return __.ModelAttendantsClasses( controls = ControlsProcessor )
-
-
 class Attributes(
     __.ConverserAttributes,
     dataclass_arguments = __.standard_dataclass_arguments,
@@ -82,6 +72,7 @@ class Attributes(
                     sdescriptor[ 'invocations-support-level' ] ) )
         return selfclass( **args )
 
+
 class ControlsProcessor(
     __.ControlsProcessor,
     dataclass_arguments = __.standard_dataclass_arguments,
@@ -90,14 +81,14 @@ class ControlsProcessor(
     def nativize_controls(
         self,
         controls: __.AbstractDictionary[ str, __.Control.Instance ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+    ) -> dict[ str, __.a.Any ]:
         # TODO: Assert model name matches.
         args: dict[ str, __.a.Any ] = dict( model = controls[ 'model' ] )
         args.update( {
             name.replace( '-', '_' ): value
             for name, value in controls.items( )
             if name in self.control_names } )
-        if self.attributes.supports_continuous_response:
+        if self.model.attributes.supports_continuous_response:
             args[ 'stream' ] = True
         return args
 
@@ -147,18 +138,23 @@ class Model(
 
     @classmethod
     def provide_classes( selfclass ) -> __.ModelAttributesClasses:
-        return __.ModelAttributesClasses(
-            attributes = Attributes, attendants = Attendants )
+        # TODO: Remove.
+        return __.ModelAttributesClasses( attributes = Attributes )
 
-    # TODO: produce_controls_processor
+    @property
+    def controls_processor( self ) -> ControlsProcessor:
+        return ControlsProcessor( model = self )
 
-    def produce_invocations_processor( self ) -> InvocationsProcessor:
+    @property
+    def invocations_processor( self ) -> InvocationsProcessor:
         return InvocationsProcessor( model = self )
 
-    def produce_serde_processor( self ) -> SerdeProcessor:
+    @property
+    def serde_processor( self ) -> SerdeProcessor:
         return SerdeProcessor( model = self )
 
-    def produce_tokenizer( self ) -> Tokenizer:
+    @property
+    def tokenizer( self ) -> Tokenizer:
         return Tokenizer( model = self )
 
     async def converse_v0(
@@ -170,7 +166,7 @@ class Model(
     ):
         messages_native = self.nativize_messages_v0( messages )
         controls_native = (
-            self.attendants.controls.nativize_controls( controls ) )
+            self.controls_processor.nativize_controls( controls ) )
         supplements_native = _nativize_supplements_v0( self, supplements )
         client = self.client.produce_implement( )
         from openai import OpenAIError
@@ -300,7 +296,7 @@ class Tokenizer(
                 value_ = value if isinstance( value, str ) else dumps( value )
                 tokens_count += self.count_text_tokens( value_ )
                 if 'name' == index: tokens_count += tokens_for_actor_name
-        iprocessor = self.model.produce_invocations_processor( )
+        iprocessor = self.model.invocations_processor
         for invoker in special_data.get( 'invokers', ( ) ):
             tokens_count += (
                 self.count_text_tokens( dumps(
@@ -312,7 +308,7 @@ class Tokenizer(
 def _nativize_supplements_v0( model: Model, supplements ):
     nomargs = { }
     if 'invokers' in supplements:
-        iprocessor = model.produce_invocations_processor( )
         nomargs.update(
-            iprocessor.nativize_invocables( supplements[ 'invokers' ] ) )
+            model.invocations_processor
+            .nativize_invocables( supplements[ 'invokers' ] ) )
     return nomargs

@@ -94,8 +94,7 @@ async def _analyze_http( context, url, control = None ):
 
 def _count_tokens( context, content ):
     model = context.supplements[ 'model' ]
-    tokenizer = model.produce_tokenizer( )
-    return tokenizer.count_text_tokens( str( content ) )
+    return model.tokenizer.count_text_tokens( str( content ) )
 
 
 # TODO: Process bytes buffer.
@@ -119,7 +118,6 @@ async def _discriminate_dirents( context, dirents, control = None ):
     auxdata = context.auxdata
     controls = context.supplements[ 'controls' ]
     model = context.supplements[ 'model' ]
-    sprocessor = model.produce_serde_processor( )
     format_name = model.attributes.format_preferences.request_data.value
     prompt = (
         auxdata.prompts.definitions[ 'Discriminate Directory Entries' ]
@@ -141,7 +139,8 @@ async def _discriminate_dirents( context, dirents, control = None ):
         ai_canister = await model.converse_v0(
             messages, { }, controls, chat_callbacks_minimal )
         #ic( ai_canister[ 0 ].data )
-        result = sprocessor.deserialize_data( ai_canister[ 0 ].data )
+        result = (
+            model.serde_processor.deserialize_data( ai_canister[ 0 ].data ) )
         ic( result[ 'blacklist' ] )
         complete_result.extend( result[ 'whitelist' ] )
     return complete_result
@@ -271,6 +270,5 @@ def _render_analysis_prompt( context, control, content, mime_type ):
                 values = dict(
                     mime_type = mime_type, instructions = instructions ) )
             .render( auxdata ) )
-    sprocessor = model.produce_serde_processor( )
-    return sprocessor.serialize_data(
+    return model.serde_processor.serialize_data(
         dict( content = content, instructions = instructions ) )

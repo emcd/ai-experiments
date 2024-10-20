@@ -85,13 +85,13 @@ async def use_invocables(
     from .updaters import truncate_conversation
     truncate_conversation( components, index )
     model = _providers.access_model_selection( components )
-    processor = model.produce_invocations_processor( )
     requests = (
         extract_invocation_requests(
             components,
             silent_extraction_failure = silent_extraction_failure ) )
     if not requests: return
-    invokers = tuple( processor( request ) for request in requests )
+    invokers = tuple(
+        model.invocations_processor( request ) for request in requests )
     with _update_conversation_progress( components, 'Invoking tools...' ):
         canisters = await __.gather_async( *invokers )
     for canister in canisters: _add_message( components, canister )
@@ -207,8 +207,7 @@ async def _generate_conversation_title( components ):
             messages, { }, controls, chat_callbacks_minimal )
     response = ai_canister[ 0 ].data
     scribe.info( f"New conversation title: {response}" )
-    sprocessor = model.produce_serde_processor( )
-    response = sprocessor.deserialize_data( response )
+    response = model.serde_processor.deserialize_data( response )
     return response[ 'title' ], response[ 'labels' ]
 
 
