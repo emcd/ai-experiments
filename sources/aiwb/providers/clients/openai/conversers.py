@@ -25,6 +25,11 @@ from __future__ import annotations
 from . import __
 
 
+# TODO: Python 3.12: Use type statement for aliases.
+# TODO? Use typed dictionary for OpenAiMessage.
+OpenAiMessage: __.a.TypeAlias = dict[ str, __.a.Any ]
+
+
 class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Degree to which invocations are supported. '''
 
@@ -150,6 +155,10 @@ class Model(
         return InvocationsProcessor( model = self )
 
     @property
+    def messages_processor( self ) -> MessagesProcessor:
+        return MessagesProcessor( model = self )
+
+    @property
     def serde_processor( self ) -> SerdeProcessor:
         return SerdeProcessor( model = self )
 
@@ -164,7 +173,8 @@ class Model(
         controls: __.AbstractDictionary[ str, __.Control.Instance ],
         reactors,
     ):
-        messages_native = self.nativize_messages_v0( messages )
+        messages_native = (
+            self.messages_processor.nativize_messages_v0( messages ) )
         controls_native = (
             self.controls_processor.nativize_controls( controls ) )
         supplements_native = _nativize_supplements_v0( self, supplements )
@@ -184,14 +194,6 @@ class Model(
                 await v0._process_iterative_chat_response(
                     response, reactors ) )
         return v0._process_complete_chat_response( response, reactors )
-
-    def nativize_messages_v0(
-        self,
-        messages: __.AbstractIterable[ __.MessageCanister ],
-    ):
-        # TODO: Port from v0.
-        from . import v0
-        return v0._nativize_messages( messages, model_name = self.name )
 
 
 class InvocationsProcessor(
@@ -271,6 +273,24 @@ class InvocationsProcessor(
         return request
 
 
+class MessagesProcessor(
+    __.MessagesProcessor,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
+    ''' Handles conversation messages in OpenAI format. '''
+
+    def nativize_messages_v0(
+        self,
+        messages: __.AbstractIterable[ __.MessageCanister ],
+    ) -> list[ OpenAiMessage ]:
+        # TODO: Port from v0.
+        # TODO: Convert to two-pass approach.
+        #       Pass 1: structures to dictionaries
+        #       Pass 2: merge dictionaries as appropriate
+        from . import v0
+        return v0._nativize_messages( messages, model_name = self.model.name )
+
+
 class Tokenizer(
     __.ConversationTokenizer,
     dataclass_arguments = __.standard_dataclass_arguments,
@@ -290,7 +310,9 @@ class Tokenizer(
         tokens_per_message = model.attributes.extra_tokens_per_message
         tokens_for_actor_name = model.attributes.extra_tokens_for_actor_name
         tokens_count = 0
-        for message in model.nativize_messages_v0( messages ):
+        for message in (
+            model.messages_processor.nativize_messages_v0( messages )
+        ):
             tokens_count += tokens_per_message
             for index, value in message.items( ):
                 value_ = value if isinstance( value, str ) else dumps( value )

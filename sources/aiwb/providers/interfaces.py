@@ -249,6 +249,30 @@ class InvocationsProcessor(
         raise NotImplementedError
 
 
+class MessagesProcessor(
+    __.a.Protocol[ _core.NativeMessages ],
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
+):
+    ''' Handles everything related to messages. '''
+
+    model: Model
+
+    # TODO: nativize_messages
+
+    ## v0 Compatibility Functions ##
+    # TODO: Remove once cutover to conversation objects is complete.
+
+    @__.abstract_member_function
+    def nativize_messages_v0(
+        self,
+        messages: __.AbstractIterable[ __.MessageCanister ],
+    ) -> _core.NativeMessages:
+        ''' Converts normalized message canisters into native messages. '''
+        raise NotImplementedError
+
+
 class Model(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
@@ -364,6 +388,12 @@ class ConverserModel(
 
     @property
     @__.abstract_member_function
+    def messages_processor( self ) -> MessagesProcessor:
+        ''' Conversation messages processor for model. '''
+        raise NotImplementedError
+
+    @property
+    @__.abstract_member_function
     def serde_processor( self ) -> ConverserSerdeProcessor:
         ''' (De)serialization processor for model. '''
         raise NotImplementedError
@@ -386,14 +416,6 @@ class ConverserModel(
         reactors, # TODO: Annotate.
     ):
         ''' Interacts with model to complete a round of conversation. '''
-        raise NotImplementedError
-
-    @__.abstract_member_function
-    def nativize_messages_v0(
-        self,
-        messages: __.AbstractIterable[ __.MessageCanister ],
-    ):
-        ''' Converts normalized message canisters into native messages. '''
         raise NotImplementedError
 
 
