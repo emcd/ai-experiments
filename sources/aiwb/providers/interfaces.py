@@ -267,7 +267,7 @@ class MessagesProcessor(
     @__.abstract_member_function
     def nativize_messages_v0(
         self,
-        messages: __.AbstractIterable[ __.MessageCanister ],
+        canisters: __.AbstractIterable[ __.MessageCanister ],
     ) -> _core.NativeMessages:
         ''' Converts normalized message canisters into native messages. '''
         raise NotImplementedError

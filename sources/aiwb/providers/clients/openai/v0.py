@@ -25,13 +25,6 @@
 from . import __
 
 
-models_ = { }
-
-
-def access_model_data( model_name, data_name ):
-    return models_[ model_name ][ data_name ]
-
-
 def _create_canister_from_response( response ):
     attributes = __.SimpleNamespace( behaviors = [ ] )
     if response.content: mimetype = 'text/markdown'
@@ -41,13 +34,6 @@ def _create_canister_from_response( response ):
     return __.MessageCanister(
         role = 'AI', attributes = attributes ).add_content(
             '', mimetype = mimetype )
-
-
-def _filter_messages_contingent( canister, model_name ):
-    # TODO: Consider 'ignores-system-prompt' attribute.
-    if model_name.startswith( 'o1-' ):
-        if 'Supervisor' == canister.role: return True
-    return False
 
 
 async def _gather_tool_call_chunks_legacy(
@@ -98,96 +84,6 @@ async def _gather_tool_calls_chunks(
     canister.attributes.model_context = dict( tool_calls = tool_calls )
     canister[ 0 ].data = _reconstitute_invocations( tool_calls )
     callbacks.updater( handle )
-
-
-def _merge_messages_contingent( canister, message, model_name ):
-    # TODO: Take advantage of array syntax for content in OpenAI API,
-    #       rather than merging strings. Will need to do this for image data
-    #       anyway; might be able to do this for text data for consistency.
-    # TODO: Handle content arrays.
-    content = canister[ 0 ].data
-    attributes = canister.attributes
-    context = getattr( attributes, 'model_context', { } ).copy( )
-    if 'user' != message[ 'role' ]: return False
-    # TODO: Consider 'ignores-invocations' attribute.
-    if model_name.startswith( 'o1-' ):
-        if context:
-            # Merge invocation into previous user message.
-            message[ 'content' ] = '\n\n'.join( (
-                message[ 'content' ],
-                '## Tool Call ##',
-                content ) )
-            return True
-        if 'Function' == canister.role:
-            # Merge invocation result into previous user message.
-            message[ 'content' ] = '\n\n'.join( (
-                message[ 'content' ],
-                '## Tool Call Output ##',
-                content ) )
-            return True
-    if 'Document' == canister.role:
-        # Merge document into previous user message.
-        message[ 'content' ] = '\n\n'.join( (
-            message[ 'content' ],
-            '## Supplemental Information ##',
-            content ) )
-        return True
-    if 'Human' == canister.role:
-        # Merge adjacent user messages.
-        message[ 'content' ] = '\n\n'.join( (
-            message[ 'content' ], content ) )
-        return True
-    return False
-
-
-def _nativize_messages( canisters, model_name ):
-    messages = [ ]
-    for canister in canisters:
-        if not messages and _filter_messages_contingent(
-            canister, model_name
-        ): continue
-        if messages and _merge_messages_contingent(
-            canister, messages[ -1 ], model_name
-        ): continue
-        # TODO: Handle content arrays.
-        content = canister[ 0 ].data
-        attributes = canister.attributes
-        context = getattr( attributes, 'model_context', { } ).copy( )
-        role = context.get( 'role' )
-        if not role:
-            role = _nativize_message_role( canister, model_name )
-            context[ 'role' ] = role
-        if 'assistant' == role:
-            content, extra_context = (
-                _nativize_multifunction_invocation_contingent( canister ) )
-            context.update( extra_context )
-        messages.append( dict( content = content, **context ) )
-    return messages
-
-
-def _nativize_message_role( canister, model_name ):
-    if 'Supervisor' == canister.role:
-        if access_model_data( model_name, 'honors-system-prompt' ):
-            return 'system'
-        return 'user'
-    if 'Function' == canister.role: # Context probably overrides.
-        if access_model_data( model_name, 'supports-multifunctions' ):
-            return 'tool'
-        if access_model_data( model_name, 'supports-functions' ):
-            return 'function'
-    if canister.role in ( 'Human', 'Document', 'Function' ): return 'user'
-    if 'AI' == canister.role: return 'assistant'
-    raise ValueError( f"Invalid role '{canister.role}'." )
-
-
-def _nativize_multifunction_invocation_contingent( canister ):
-    attributes = canister.attributes
-    content = canister[ 0 ].data
-    if 'invocation' == getattr( attributes, 'response_class', '' ):
-        if hasattr( attributes, 'model_context' ):
-            if 'tool_calls' in attributes.model_context:
-                return None, attributes.model_context
-    return content, { }
 
 
 def _process_complete_chat_response( response, callbacks ):

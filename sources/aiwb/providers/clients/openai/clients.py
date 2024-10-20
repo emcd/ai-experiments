@@ -22,7 +22,6 @@
 
 
 from . import __
-from . import v0 as _v0
 
 
 # We do not want to import 'openai' package on module initialization,
@@ -85,13 +84,16 @@ class Client(
         auxdata: __.CoreGlobals,
         genus: __.Optional[ __.ModelGenera ] = __.absent,
     ) -> __.AbstractSequence[ __.Model ]:
-        integrators = await _cache_acquire_models_integrators( auxdata )
-        # TODO: Use list of names rather than dictionary.
-        names = await _cache_acquire_models( auxdata )
-        models = [ ]
         supported_genera = (
             _supported_model_genera if __.absent is genus
-            else _supported_model_genera & { genus } )
+            else frozenset(
+                genus for genus_ in _supported_model_genera
+                if genus is genus_ ) )
+        in_cache, models = _consult_models_cache( self, supported_genera )
+        if in_cache: return models
+        models = [ ]
+        integrators = await _cache_acquire_models_integrators( auxdata )
+        names = await _cache_acquire_models( auxdata, self )
         for name in names:
             for genus_ in supported_genera:
                 descriptor: __.AbstractDictionary[ str, __.a.Any ] = { }
@@ -103,6 +105,7 @@ class Client(
                     name = name,
                     genus = genus_,
                     descriptor = descriptor ) )
+                _models_cache[ self.name ][ genus_ ].append( models[ -1 ] )
         return tuple( models )
 
     def _model_from_descriptor(
@@ -145,9 +148,6 @@ class OpenAIClient(
     ) -> __.a.Self:
         await selfclass.assert_environment( auxdata )
         # TODO: Return future which acquires models in background.
-        # TODO: Cache models on 'survey_models' operation.
-        #       Remove dependency on legacy module-level cache.
-        _v0.models_.update( await _cache_acquire_models( auxdata ) )
         return selfclass( **(
             super( ).init_args_from_descriptor(
                 auxdata = auxdata,
@@ -176,10 +176,12 @@ class Factory(
             auxdata = auxdata, factory = self, descriptor = descriptor )
 
 
-async def _cache_acquire_models( auxdata ):
-    # TODO: Add provider client as argument.
+async def _cache_acquire_models(
+    auxdata: __.CoreGlobals, client: Client
+):
     # TODO? Use cache accessor from libcore.locations.
     from json import dumps, loads
+    from operator import attrgetter
     from aiofiles import open as open_
     from openai import APIError
     scribe = __.acquire_scribe( __package__ )
@@ -192,7 +194,10 @@ async def _cache_acquire_models( auxdata ):
         if file.stat( ).st_mtime > then:
             async with open_( file ) as stream:
                 return loads( await stream.read( ) )
-    try: models = await _discover_models_from_api( )
+    try:
+        models = sorted( map(
+            attrgetter( 'id' ),
+            ( await client.produce_implement( ).models.list( ) ).data ) )
     except APIError as exc:
         if file.is_file( ):
             auxdata.notifications.enqueue_apprisal(
@@ -225,94 +230,24 @@ async def _cache_acquire_models_integrators(
     return __.DictionaryProxy( _models_integrators_cache )
 
 
-# https://platform.openai.com/docs/guides/function-calling/supported-models
-_function_support_models = frozenset( (
-    # TODO: Confirm legacy function call support in gpt-4o.
-    'gpt-3.5-turbo', 'gpt-3.5-turbo-16k',
-    'gpt-4', 'gpt-4-32k', 'gpt-4-turbo',
-    'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest',
-    #'o1-mini', 'o1-preview',
-    'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
-    'gpt-3.5-turbo-16k-0613',
-    'gpt-4-0613', 'gpt-4-1106-preview', 'gpt-4-0125-preview',
-    'gpt-4-32k-0613',
-    'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
-    'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
-    'gpt-4o-mini-2024-07-18',
-    'gpt-4o-2024-05-13', 'gpt-4o-2024-08-06',
-) )
-_multifunction_support_models = frozenset( (
-    'gpt-3.5-turbo', 'gpt-4-turbo',
-    'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest',
-    #'o1-mini', 'o1-preview',
-    'gpt-3.5-turbo-1106', 'gpt-3.5-turbo-0125',
-    'gpt-4-1106-preview', 'gpt-4-0125-preview',
-    'gpt-4-vision-preview', 'gpt-4-1106-vision-preview',
-    'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-preview',
-    'gpt-4o-mini-2024-07-18',
-    'gpt-4o-2024-05-13', 'gpt-4o-2024-08-06',
-) )
-# TODO: Multifunction support by model family.
-# https://platform.openai.com/docs/models
-_model_family_context_window_sizes = __.DictionaryProxy( {
-    'gpt-3.5-turbo': 16_385,
-    'gpt-4-32k': 32_768,
-    'gpt-4-0125': 128_000,
-    'gpt-4-1106': 128_000,
-    'gpt-4-turbo': 128_000,
-    'gpt-4-vision': 128_000,
-    'gpt-4o-mini': 128_000,
-    'gpt-4o': 128_000,
-    'o1-mini': 128_000,
-    'o1-preview': 128_000,
-} )
-_model_context_window_sizes = {
-    'gpt-3.5-turbo-0301': 4_096,
-    'gpt-3.5-turbo-0613': 4_096,
-    'chatgpt-4o-latest': 128_000,
-}
-# TODO: Track support for JSON output and StructuredOutput.
-async def _discover_models_from_api( ):
-    # TODO: Replace with model attribute integrators and model objects.
-    from operator import attrgetter
+_models_cache = __.AccretiveDictionary( )
+
+
+def _consult_models_cache(
+    client: Client, genera: frozenset[ __.ModelGenera ]
+) -> tuple[ bool, tuple[ __.Model, ... ] ]:
     from accretive import ProducerDictionary
-    from openai import AsyncOpenAI
-    model_names = sorted( map(
-        attrgetter( 'id' ), ( await AsyncOpenAI( ).models.list( ) ).data ) )
-    sysprompt_honor = ProducerDictionary( lambda: False )
-    sysprompt_honor.update( {
-        #'gpt-3.5-turbo-0613': True,
-        #'gpt-3.5-turbo-16k-0613': True,
-        model_name: True for model_name in model_names
-        if model_name.startswith( (
-            'chatgpt-4o-', 'gpt-4', # 'o1-',
-        ) ) } )
-    function_support = ProducerDictionary( lambda: False )
-    function_support.update( {
-        model_name: True for model_name in model_names
-        if model_name in _function_support_models } )
-    multifunction_support = ProducerDictionary( lambda: False )
-    multifunction_support.update( {
-        model_name: True for model_name in model_names
-        if model_name in _multifunction_support_models } )
-    # Legacy 'gpt-3.5-turbo' has a 4096 tokens limit.
-    tokens_limits = ProducerDictionary( lambda: 4096 )
-    for model_name in model_names:
-        if model_name in _model_context_window_sizes:
-            tokens_limits[ model_name ] = (
-                _model_context_window_sizes[ model_name ] )
-            continue
-        for model_family_name, tokens_limit \
-        in _model_family_context_window_sizes.items( ):
-            if model_name.startswith( model_family_name ):
-                tokens_limits[ model_name ] = tokens_limit
-                break
-    return {
-        model_name: {
-            'honors-system-prompt': sysprompt_honor[ model_name ],
-            'supports-functions': function_support[ model_name ],
-            'supports-multifunctions': multifunction_support[ model_name ],
-            'tokens-limit': tokens_limits[ model_name ],
-        }
-        for model_name in model_names
-    }
+    # TODO: Consider cache expiration.
+    if client.name in _models_cache:
+        caches_by_genus = _models_cache[ client.name ]
+        if all(
+            genus in caches_by_genus for genus in __.ModelGenera
+            if genus in genera
+        ):
+            return (
+                True,
+                tuple( __.chain.from_iterable(
+                    caches_by_genus[ genus ]
+                    for genus in __.ModelGenera if genus in genera ) ) )
+    _models_cache[ client.name ] = ProducerDictionary( list )
+    return False, ( )
