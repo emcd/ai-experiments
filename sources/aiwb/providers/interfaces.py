@@ -68,7 +68,7 @@ class Client(
         auxdata: __.CoreGlobals,
         factory: Factory,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+    ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         descriptor_ = dict( descriptor )
         # TODO: Raise error on missing name.
@@ -298,42 +298,11 @@ class Model(
         ''' Produces model from descriptor dictionary. '''
         raise NotImplementedError
 
-    @classmethod
-    def init_args_from_descriptor(
-        selfclass,
-        client: Client,
-        name: str,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = __.AccretiveDictionary( client = client, name = name )
-        classes = selfclass.provide_classes( )
-        args[ 'attributes' ] = (
-            classes.attributes
-            .from_descriptor( descriptor = descriptor, **args ) )
-        return __.AccretiveDictionary( **args )
-
     @property
     @__.abstract_member_function
     def controls_processor( self ) -> ControlsProcessor:
         ''' Controls processor for model. '''
         raise NotImplementedError
-
-    @classmethod
-    @__.abstract_member_function
-    def provide_classes( selfclass ) -> ModelAttributesClasses:
-        ''' Returns classes for model attributes. '''
-        # TODO: Remove.
-        raise NotImplementedError
-
-
-class ModelAttributesClasses(
-    metaclass = __.ImmutableDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-):
-    ''' Classes for model attributes. '''
-
-    attributes: type[ ModelAttributes ]
 
 
 class ModelAttributes(
@@ -344,16 +313,12 @@ class ModelAttributes(
 ):
     ''' Attributes for all genera of AI models. '''
 
-    client: Client
-    name: str
     controls: __.AbstractSequence[ __.Control ] = ( )
 
     @classmethod
     @__.abstract_member_function
     def from_descriptor(
         selfclass,
-        client: Client,
-        name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
         ''' Produces model attributes from descriptor dictionary. '''
@@ -362,12 +327,10 @@ class ModelAttributes(
     @classmethod
     def init_args_from_descriptor(
         selfclass,
-        client: Client,
-        name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+    ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = __.AccretiveDictionary( client = client, name = name )
+        args = __.AccretiveDictionary( )
         # TODO: Control descriptors to definitions.
         args[ 'controls' ] = descriptor.get( 'controls', ( ) )
         return args
@@ -438,14 +401,10 @@ class ConverserAttributes(
     @classmethod
     def init_args_from_descriptor(
         selfclass,
-        client: Client,
-        name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+    ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = (
-            super( ).init_args_from_descriptor(
-                client = client, name = name, descriptor = descriptor ) )
+        args = super( ).init_args_from_descriptor( descriptor )
         for arg_name in (
             'accepts-supervisor-instructions',
             'supports-continuous-response',

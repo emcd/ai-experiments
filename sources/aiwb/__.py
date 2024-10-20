@@ -314,10 +314,11 @@ class Absent( Falsifier, ImmutableObject ):
 
 
 # TODO: Python 3.12: Use type statement for aliases.
+NominativeArgumentsDictionary: a.TypeAlias = AbstractDictionary[ str, a.Any ]
 # NOTE: Nullability and optionality are NOT the same thing.
 #       We have aliased 'typing.Optional' to 'Nullable'.
 #       The 'Optional' defined below is NOT the same as 'typing.Optional'!
-#       Our 'Optional' indicates that a value binding may be ABSENT.
+#       Our 'Optional' indicates that a value binding may be *absent*.
 #       Similar in spirit to the 'typing.NoDefault' sentinel, we have an
 #       'absent' sentinel which is a singleton instance of 'Absent'. This is
 #       useful when 'None' may be a legitimate value for an argument and we

@@ -52,15 +52,9 @@ class Attributes(
     @classmethod
     def from_descriptor(
         selfclass,
-        client: __.Client,
-        name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
-        args = (
-            super( ).init_args_from_descriptor(
-                client = client,
-                name = name,
-                descriptor = descriptor ) )
+        args = super( ).init_args_from_descriptor( descriptor )
         sdescriptor = descriptor.get( 'special', { } )
         for arg_name in (
             'extra-tokens-for-actor-name',
@@ -134,17 +128,10 @@ class Model(
         name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
-        args = (
-            super( ).init_args_from_descriptor(
-                client = client,
-                name = name,
-                descriptor = descriptor ) )
+        args = __.AccretiveDictionary( client = client, name = name )
+        args[ 'attributes' ] = (
+            Attributes.from_descriptor( descriptor ) )
         return selfclass( **args )
-
-    @classmethod
-    def provide_classes( selfclass ) -> __.ModelAttributesClasses:
-        # TODO: Remove.
-        return __.ModelAttributesClasses( attributes = Attributes )
 
     @property
     def controls_processor( self ) -> ControlsProcessor:
