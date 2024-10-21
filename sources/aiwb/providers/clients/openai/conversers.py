@@ -270,104 +270,173 @@ class MessagesProcessor(
         self,
         canisters: __.AbstractIterable[ __.MessageCanister ],
     ) -> list[ OpenAiMessage ]:
-        # TODO: Convert to two-pass approach.
-        #       Pass 1: structures to dictionaries
-        #       Pass 2: merge dictionaries as appropriate
-        messages: list[ OpenAiMessage ] = [ ]
+        messages_pre: list[ OpenAiMessage ] = [ ]
         for canister in canisters:
-            if (    not messages
-                and _filter_messages_v0( canister, self.model )
-            ): continue
-            if (    messages
-                and _merge_messages_v0( canister, messages[ -1 ], self.model )
-            ): continue
-            # TODO: Handle content arrays.
-            content = canister[ 0 ].data
-            attributes = canister.attributes
-            context = getattr( attributes, 'model_context', { } ).copy( )
-            role = context.get( 'role' )
-            if not role:
-                role = _nativize_message_role_v0( canister, self.model )
-                context[ 'role' ] = role
-            if 'assistant' == role:
-                content, extra_context = (
-                    _nativize_concurrent_invocation_v0( canister ) )
-                context.update( extra_context )
-            messages.append( dict( content = content, **context ) )
-        return messages
+            if _decide_exclude_message( self.model, canister ): continue
+            message = _nativize_message( self.model, canister )
+            messages_pre.append( message )
+        return _refine_native_messages( self.model, messages_pre )
 
 
-def _filter_messages_v0( canister, model ):
+def _decide_exclude_message(
+    model: Model, canister: __.MessageCanister
+) -> bool:
     if not model.attributes.accepts_supervisor_instructions:
         if 'Supervisor' == canister.role: return True
     return False
 
 
-def _merge_messages_v0( canister, message, model ):
-    # TODO: Take advantage of array syntax for content in OpenAI API,
-    #       rather than merging strings. Will need to do this for image data
-    #       anyway; might be able to do this for text data for consistency.
-    # TODO: Handle content arrays.
-    content = canister[ 0 ].data
+def _merge_native_message(
+    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
+):
+    anchor_content = anchor[ 'content' ]
+    if isinstance( anchor_content, str ):
+        anchor_content = [ { 'type': 'text', 'text': anchor_content } ]
+        anchor[ 'content' ] = anchor_content
+    cursor_content = cursor[ 'content' ]
+    if isinstance( cursor_content, str ):
+        cursor_content = [ { 'type': 'text', 'text': cursor_content } ]
+        cursor[ 'content' ] = cursor_content
+    anchor_role = anchor[ 'role' ]
+    match anchor_role:
+        case 'assistant': elision_role = 'user'
+        case _: elision_role = 'assistant'
+    join_content = [ {
+        'type': 'text', 'text': f"... <elided {elision_role} response> ..."
+    } ]
+    anchor_content.extend( join_content )
+    anchor_content.extend( cursor_content )
+    # TODO? Merge multiple texts into single one.
+    # TODO? Error if refusal message part encountered.
+
+
+def _nativize_message(
+    model: Model, canister: __.MessageCanister
+) -> OpenAiMessage:
     attributes = canister.attributes
+    # TODO: Account for provider which supplied context.
+    # TODO: Appropriate error classes.
     context = getattr( attributes, 'model_context', { } ).copy( )
-    if 'user' != message[ 'role' ]: return False
-    if not model.attributes.supports_invocations:
-        # TODO: Fix. Tool call should be assistant message.
-        if context:
-            # Merge invocation into previous user message.
-            message[ 'content' ] = '\n\n'.join( (
-                message[ 'content' ],
-                '## Tool Call ##',
-                content ) )
-            return True
-        if 'Function' == canister.role:
-            # Merge invocation result into previous user message.
-            message[ 'content' ] = '\n\n'.join( (
-                message[ 'content' ],
-                '## Tool Call Output ##',
-                content ) )
-            return True
+    if not ( role := context.get( 'role' ) ):
+        role = _nativize_message_role( model, canister )
+        context[ 'role' ] = role
+    response_class = getattr( attributes, 'response_class', '' )
     if 'Document' == canister.role:
-        # Merge document into previous user message.
-        message[ 'content' ] = '\n\n'.join( (
-            message[ 'content' ],
-            '## Supplemental Information ##',
-            content ) )
-        return True
-    if 'Human' == canister.role:
-        # Merge adjacent user messages.
-        message[ 'content' ] = '\n\n'.join( (
-            message[ 'content' ], content ) )
-        return True
-    return False
-
-
-def _nativize_concurrent_invocation_v0( canister ):
-    attributes = canister.attributes
-    content = canister[ 0 ].data
-    if 'invocation' == getattr( attributes, 'response_class', '' ):
-        if hasattr( attributes, 'model_context' ):
-            if 'tool_calls' in attributes.model_context:
-                return None, attributes.model_context
-    return content, { }
-
-
-def _nativize_message_role_v0( canister, model ):
-    if 'Supervisor' == canister.role:
-        if model.attributes.honors_supervisor_instructions:
-            return 'system'
-        return 'user'
+        content = '\n\n'.join( (
+            '## Supplemental Information ##', canister[ 0 ].data ) )
+        return dict( content = content, **context )
     if (    'Function' == canister.role
-        and model.attributes.supports_invocations
-    ): # Context probably overrides.
-        match model.attributes.invocations_support_level:
-            case InvocationsSupportLevel.Concurrent: return 'tool'
-            case InvocationsSupportLevel.Single: return 'function'
-    if canister.role in ( 'Human', 'Document', 'Function' ): return 'user'
-    if 'AI' == canister.role: return 'assistant'
+        and not model.attributes.supports_invocations
+    ):
+        content = '\n\n'.join( (
+            '## Tool Call Result ##', canister[ 0 ].data ) )
+        return dict( content = content, **context )
+    if 'assistant' == role and 'invocation' == response_class:
+        if 'tool_calls' in context:
+            if not model.attributes.supports_invocations:
+                context.pop( 'tool_calls' )
+                content = '\n\n'.join( (
+                    '## Tool Calls Request ##', canister[ 0 ].data ) )
+                return dict( content = content, **context )
+            return context
+        if 'function_call' in context:
+            if not model.attributes.supports_invocations:
+                context.pop( 'function_call' )
+                content = '\n\n'.join( (
+                    '## Tool Call Request ##', canister[ 0 ].data ) )
+                return dict( content = content, **context )
+            return context
+        raise AssertionError( "Invocation request with no context detected." )
+    # TODO: Handle audio and image contents.
+    if 1 == len( canister ): content = canister[ 0 ].data
+    else:
+        content = [
+            { 'type': 'text', 'text': content_.data }
+            for content_ in canister ]
+    return dict( content = content, **context )
+
+
+def _nativize_message_role(
+    model: Model, canister: __.MessageCanister
+) -> str:
+    match canister.role:
+        case 'Supervisor':
+            if model.attributes.honors_supervisor_instructions:
+                return 'system'
+            return 'user'
+        case 'Function':
+            if model.attributes.supports_invocations:
+                match model.attributes.invocations_support_level:
+                    case InvocationsSupportLevel.Concurrent: return 'tool'
+                    case InvocationsSupportLevel.Single: return 'function'
+        case 'AI': return 'assistant'
+        case _: return 'user'
     # TODO: Raise proper error.
     raise ValueError( f"Invalid role '{canister.role}'." )
+
+
+def _refine_native_message(
+    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
+) -> str:
+    # TODO: Appropriate error classes.
+    # TODO: Consider models which allow some adjaceny. (gpt-3.5-turbo)
+    anchor_role = anchor[ 'role' ]
+    cursor_role = cursor[ 'role' ]
+    anchor_name = anchor.get( 'name' )
+    cursor_name = cursor.get( 'name' )
+    match anchor_role:
+        case 'assistant':
+            anchor_invocation = 'content' not in anchor
+            cursor_invocation = 'content' not in cursor
+            if anchor_role == cursor_role:
+                if anchor_invocation or cursor_invocation:
+                    raise AssertionError(
+                        "Mixed assistant completion and invocation detected." )
+                if anchor_name == cursor_name:
+                    _merge_native_message( model, anchor, cursor )
+                    return 'merge'
+            return 'retain'
+        case 'function':
+            if 'function' == cursor_role:
+                raise AssertionError( "Adjacent function results detected." )
+            if 'tool' == cursor_role:
+                raise AssertionError(
+                    "Mixed function and tool call results detected." )
+            return 'retain'
+        case 'system': return 'retain'
+        case 'tool':
+            if 'function' == cursor_role:
+                raise AssertionError(
+                    "Mixed function and tool call results detected." )
+            return 'retain'
+        case 'user':
+            if anchor_role == cursor_role and anchor_name == cursor_name:
+                _merge_native_message( model, anchor, cursor )
+                return 'merge'
+            if '#document#' == cursor_role:
+                cursor[ 'role' ] = 'user'
+                _merge_native_message( model, anchor, cursor )
+                return 'merge'
+            return 'retain'
+    raise AssertionError( f"Unknown anchor role: {anchor_role!r}" )
+
+
+def _refine_native_messages(
+    model: Model, messages_pre: list[ OpenAiMessage ]
+) -> list[ OpenAiMessage ]:
+    anchor = None
+    messages: list[ OpenAiMessage ] = [ ]
+    for message_pre in messages_pre:
+        cursor = dict( message_pre )
+        if not anchor:
+            anchor = cursor
+            continue
+        action = _refine_native_message( model, anchor, cursor )
+        if 'merge' == action: continue
+        messages.append( anchor )
+        anchor = cursor
+    if anchor: messages.append( anchor )
+    return messages
 
 
 class Tokenizer(
