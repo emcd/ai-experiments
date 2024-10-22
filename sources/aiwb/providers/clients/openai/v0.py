@@ -30,6 +30,7 @@ def _create_canister_from_response( response ):
     if response.content: mimetype = 'text/markdown'
     else:
         mimetype = 'application/json'
+        # TODO: Set response role to 'Result'.
         attributes.response_class = 'invocation'
     return __.MessageCanister(
         role = 'AI', attributes = attributes ).add_content(

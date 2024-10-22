@@ -28,16 +28,17 @@ from . import __
 # TODO: Python 3.12: Use type statement for aliases.
 # TODO? Use typed dictionary for OpenAiMessage.
 OpenAiMessage: __.a.TypeAlias = dict[ str, __.a.Any ]
+OpenAiMessageContent: __.a.TypeAlias = str | list[ dict[ str, __.a.Any ] ]
 
 
-class InvocationsSupportLevel( __.Enum ): # TODO: Python 3.11: StrEnum
+class InvocationsSupportLevels( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Degree to which invocations are supported. '''
 
     Single      = 'single'      # Mid-2023.
     Concurrent  = 'concurrent'  # Late 2023 and beyond.
 
 
-class NativeMessageRefinementAction( __.Enum ): # TODO: Python 3.11: StrEnum
+class NativeMessageRefinementActions( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Which action to perform on native message under refinement cursor. '''
 
     Retain      = 'retain'
@@ -53,8 +54,8 @@ class Attributes(
     extra_tokens_for_actor_name: int = 0
     extra_tokens_per_message: int = 0
     honors_supervisor_instructions: bool = False
-    invocations_support_level: InvocationsSupportLevel = (
-        InvocationsSupportLevel.Single )
+    invocations_support_level: InvocationsSupportLevels = (
+        InvocationsSupportLevels.Single )
 
     @classmethod
     def from_descriptor(
@@ -74,7 +75,7 @@ class Attributes(
             args[ arg_name_ ] = arg
         if 'invocations-support-level' in sdescriptor:
             args[ 'invocations_support_level' ] = (
-                InvocationsSupportLevel(
+                InvocationsSupportLevels(
                     sdescriptor[ 'invocations-support-level' ] ) )
         return selfclass( **args )
 
@@ -233,12 +234,12 @@ class InvocationsProcessor(
         if not self.model.attributes.supports_invocations: return { }
         args = { }
         match self.model.attributes.invocations_support_level:
-            case InvocationsSupportLevel.Concurrent:
+            case InvocationsSupportLevels.Concurrent:
                 args[ 'tools' ] = [
                     {   'type': 'function',
                         'function': self.nativize_invocable( invoker ) }
                     for invoker in invokers ]
-            case InvocationsSupportLevel.Single:
+            case InvocationsSupportLevels.Single:
                 args[ 'functions' ] = [
                     self.nativize_invocable( invoker )
                     for invoker in invokers ]
@@ -360,75 +361,125 @@ def _merge_native_message(
     # TODO? Error if refusal message part encountered.
 
 
-def _nativize_message(
+def _nativize_assistant_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     attributes = canister.attributes
-    # TODO: Account for provider which supplied context.
-    # TODO: Appropriate error classes.
+    content: OpenAiMessageContent
     context = getattr( attributes, 'model_context', { } ).copy( )
-    if not ( role := context.get( 'role' ) ):
-        role = _nativize_message_role( model, canister )
-        context[ 'role' ] = role
-    response_class = getattr( attributes, 'response_class', '' )
-    if 'Document' == canister.role:
-        content = '\n\n'.join( (
-            '## Supplemental Information ##', canister[ 0 ].data ) )
-        return dict( content = content, **context )
-    if (    'Function' == canister.role
-        and not model.attributes.supports_invocations
-    ):
+    context[ 'role' ] = 'assistant'
+    content = _nativize_message_content( model, canister )
+    return dict( content = content, **context )
+
+
+def _nativize_document_message(
+    model: Model, canister: __.MessageCanister
+) -> OpenAiMessage:
+    attributes = canister.attributes
+    context = getattr( attributes, 'model_context', { } ).copy( )
+    # Role not valid to OpenAI. We later convert marker to 'user'.
+    context[ 'role' ] = '#document#'
+    content = '\n\n'.join( (
+        '## Supplemental Information ##', canister[ 0 ].data ) )
+    return dict( content = content, **context )
+
+
+def _nativize_invocation_message(
+    model: Model, canister: __.MessageCanister
+) -> OpenAiMessage:
+    # TODO: Appropriate error classes.
+    # TODO: Account for provider which supplied context.
+    attributes = canister.attributes
+    content: OpenAiMessageContent
+    context = getattr( attributes, 'model_context', { } ).copy( )
+    context[ 'role' ] = 'assistant'
+    if 'tool_calls' in context:
+        if not model.attributes.supports_invocations:
+            context.pop( 'tool_calls' )
+            content = '\n\n'.join( (
+                '## Tool Calls Request ##', canister[ 0 ].data ) )
+            return dict( content = content, **context )
+        return context
+    if 'function_call' in context:
+        if not model.attributes.supports_invocations:
+            context.pop( 'function_call' )
+            content = '\n\n'.join( (
+                '## Tool Call Request ##', canister[ 0 ].data ) )
+            return dict( content = content, **context )
+        return context
+    raise AssertionError( "Invocation request with no context detected." )
+
+
+def _nativize_invocation_result_message(
+    model: Model, canister: __.MessageCanister
+) -> OpenAiMessage:
+    # TODO: Account for provider which supplied context.
+    attributes = canister.attributes
+    content: OpenAiMessageContent
+    context = getattr( attributes, 'model_context', { } ).copy( )
+    if not model.attributes.supports_invocations:
         context[ 'role' ] = 'user'
         # TODO? pop 'name'
         context.pop( 'tool_call_id', None )
         content = '\n\n'.join( (
             '## Tool Call Result ##', canister[ 0 ].data ) )
         return dict( content = content, **context )
-    if 'assistant' == role and 'invocation' == response_class:
-        if 'tool_calls' in context:
-            if not model.attributes.supports_invocations:
-                context.pop( 'tool_calls' )
-                content = '\n\n'.join( (
-                    '## Tool Calls Request ##', canister[ 0 ].data ) )
-                return dict( content = content, **context )
-            return context
-        if 'function_call' in context:
-            if not model.attributes.supports_invocations:
-                context.pop( 'function_call' )
-                content = '\n\n'.join( (
-                    '## Tool Call Request ##', canister[ 0 ].data ) )
-                return dict( content = content, **context )
-            return context
-        raise AssertionError( "Invocation request with no context detected." )
+    if not ( role := context.get( 'role' ) ):
+        match model.attributes.invocations_support_level:
+            case InvocationsSupportLevels.Concurrent: role = 'tool'
+            case InvocationsSupportLevels.Single: role = 'function'
+        context[ 'role' ] = role
+    content = _nativize_message_content( model, canister )
+    return dict( content = content, **context )
+
+
+def _nativize_message(
+    model: Model, canister: __.MessageCanister
+) -> OpenAiMessage:
+    # TODO: Appropriate error classes.
+    attributes = canister.attributes
+    response_class = getattr( attributes, 'response_class', '' )
+    match canister.role:
+        case 'AI': # TODO: split canister roles: 'Assistant'/'Invocation'
+            match response_class:
+                case 'invocation':
+                    return _nativize_invocation_message( model, canister )
+                case _:
+                    return _nativize_assistant_message( model, canister )
+        case 'Document':
+            return _nativize_document_message( model, canister )
+        case 'Function': # TODO: 'Result' role
+            return _nativize_invocation_result_message( model, canister )
+        case 'Human': # TODO: 'User' role
+            return _nativize_user_message( model, canister )
+        case 'Supervisor':
+            return _nativize_supervisor_message( model, canister )
+    raise AssertionError( f"Unprocessed message role {canister.role!r}." )
+
+
+def _nativize_message_content(
+    model: Model, canister: __.MessageCanister
+) -> OpenAiMessageContent:
     # TODO: Handle audio and image contents.
     if 1 == len( canister ): content = canister[ 0 ].data
     else:
         content = [
             { 'type': 'text', 'text': content_.data }
             for content_ in canister ]
-    return dict( content = content, **context )
+    return content
 
 
-def _nativize_message_role(
+def _nativize_supervisor_message(
     model: Model, canister: __.MessageCanister
-) -> str:
-    match canister.role:
-        case 'AI': return 'assistant'
-        case 'Document':
-            # Not valid to OpenAI. We later convert marker to 'user'.
-            return '#document#'
-        case 'Function':
-            if model.attributes.supports_invocations:
-                match model.attributes.invocations_support_level:
-                    case InvocationsSupportLevel.Concurrent: return 'tool'
-                    case InvocationsSupportLevel.Single: return 'function'
-        case 'Supervisor':
-            if model.attributes.honors_supervisor_instructions:
-                return 'system'
-            return 'user'
-        case _: return 'user'
-    # TODO: Raise proper error.
-    raise ValueError( f"Invalid role '{canister.role}'." )
+) -> OpenAiMessage:
+    attributes = canister.attributes
+    content: OpenAiMessageContent
+    context = getattr( attributes, 'model_context', { } ).copy( )
+    if model.attributes.honors_supervisor_instructions: role = 'system'
+    else: role = 'user' # TODO? Add 'name' field to indicate supervisor.
+    context[ 'role' ] = role
+    content = _nativize_message_content( model, canister )
+    return dict( content = content, **context )
 
 
 def _nativize_supplements_v0( model: Model, supplements ):
@@ -440,9 +491,20 @@ def _nativize_supplements_v0( model: Model, supplements ):
     return nomargs
 
 
+def _nativize_user_message(
+    model: Model, canister: __.MessageCanister
+) -> OpenAiMessage:
+    attributes = canister.attributes
+    content: OpenAiMessageContent
+    context = getattr( attributes, 'model_context', { } ).copy( )
+    context[ 'role' ] = 'user'
+    content = _nativize_message_content( model, canister )
+    return dict( content = content, **context )
+
+
 def _refine_native_assistant_message(
     model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
-) -> NativeMessageRefinementAction:
+) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     anchor_role = anchor[ 'role' ]
     cursor_role = cursor[ 'role' ]
@@ -457,13 +519,13 @@ def _refine_native_assistant_message(
         if anchor_name == cursor_name:
             _merge_native_message(
                 model, anchor, cursor, indicate_elision = True )
-            return NativeMessageRefinementAction.Merge
-    return NativeMessageRefinementAction.Retain
+            return NativeMessageRefinementActions.Merge
+    return NativeMessageRefinementActions.Retain
 
 
 def _refine_native_function_message(
     model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
-) -> NativeMessageRefinementAction:
+) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     cursor_role = cursor[ 'role' ]
     match cursor_role:
@@ -473,12 +535,12 @@ def _refine_native_function_message(
         case 'tool':
             raise AssertionError(
                 "Mixed function and tool call results detected." )
-    return NativeMessageRefinementAction.Retain
+    return NativeMessageRefinementActions.Retain
 
 
 def _refine_native_message(
     model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
-) -> NativeMessageRefinementAction:
+) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     # TODO? Consider models which allow some adjaceny. (gpt-3.5-turbo)
     anchor_role = anchor[ 'role' ]
@@ -487,7 +549,7 @@ def _refine_native_message(
             return _refine_native_assistant_message( model, anchor, cursor )
         case 'function':
             return _refine_native_function_message( model, anchor, cursor )
-        case 'system': return NativeMessageRefinementAction.Retain
+        case 'system': return NativeMessageRefinementActions.Retain
         case 'tool':
             return _refine_native_tool_message( model, anchor, cursor )
         case 'user':
@@ -507,7 +569,7 @@ def _refine_native_messages(
             continue
         action = _refine_native_message( model, anchor, cursor )
         match action:
-            case NativeMessageRefinementAction.Merge: continue
+            case NativeMessageRefinementActions.Merge: continue
         messages.append( anchor )
         anchor = cursor
     if anchor: messages.append( anchor )
@@ -516,18 +578,18 @@ def _refine_native_messages(
 
 def _refine_native_tool_message(
     model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
-) -> NativeMessageRefinementAction:
+) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     cursor_role = cursor[ 'role' ]
     if 'function' == cursor_role:
         raise AssertionError(
             "Mixed function and tool call results detected." )
-    return NativeMessageRefinementAction.Retain
+    return NativeMessageRefinementActions.Retain
 
 
 def _refine_native_user_message(
     model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
-) -> NativeMessageRefinementAction:
+) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     anchor_role = anchor[ 'role' ]
     cursor_role = cursor[ 'role' ]
@@ -536,9 +598,9 @@ def _refine_native_user_message(
     if anchor_role == cursor_role and anchor_name == cursor_name:
         _merge_native_message(
             model, anchor, cursor, indicate_elision = True )
-        return NativeMessageRefinementAction.Merge
+        return NativeMessageRefinementActions.Merge
     if '#document#' == cursor_role:
         cursor[ 'role' ] = 'user'
         _merge_native_message( model, anchor, cursor )
-        return NativeMessageRefinementAction.Merge
-    return NativeMessageRefinementAction.Retain
+        return NativeMessageRefinementActions.Merge
+    return NativeMessageRefinementActions.Retain

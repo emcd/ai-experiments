@@ -157,6 +157,7 @@ def create_content( data, /, **descriptor ):
 
 
 async def restore_canister( manager, canister_state ):
+    # TODO: Intercept 'response_class' attribute and patch role accordingly.
     role = canister_state[ 'role' ]
     nomargs = { }
     attributes = canister_state.get( 'attributes' )
