@@ -212,6 +212,8 @@ load-plugins = [
 recursive = false
 suggestion-mode = true
 [tool.pylint.basic]
+class-const-naming-style = 'any'
+class-const-rgx = '([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$'
 const-rgx = '([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$'
 good-names = [ '_', '__' ]
 include-naming-hint = true
