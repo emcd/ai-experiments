@@ -87,23 +87,6 @@ async def _gather_tool_calls_chunks(
     callbacks.updater( handle )
 
 
-def _process_complete_chat_response( response, callbacks ):
-    # TODO: Handle response arrays.
-    message = response.choices[ 0 ].message
-    canister = _create_canister_from_response( message )
-    handle = callbacks.allocator( canister )
-    if message.content: canister[ 0 ].data = message.content
-    # TODO: Remap batch response invocations to intermediate dictionaries.
-    # TODO: Separate 'model_context' attribute and content.
-    elif message.function_call:
-        canister[ 0 ].data = _reconstitute_invocation_legacy(
-            message.function_call )
-    elif message.tool_calls:
-        canister[ 0 ].data = _reconstitute_invocations( message.tool_calls )
-    callbacks.updater( handle )
-    return handle
-
-
 async def _process_iterative_chat_response( response, callbacks ):
     # TODO: Handle response arrays.
     from openai import OpenAIError

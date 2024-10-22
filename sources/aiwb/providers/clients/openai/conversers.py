@@ -166,7 +166,7 @@ class Model(
         messages: __.AbstractSequence[ __.MessageCanister ],
         supplements,
         controls: __.AbstractDictionary[ str, __.Control.Instance ],
-        reactors,
+        reactors, # TODO? Accept context manager with reactor functions.
     ):
         messages_native = (
             self.messages_processor.nativize_messages_v0( messages ) )
@@ -175,12 +175,14 @@ class Model(
             self.controls_processor.nativize_controls( controls ) )
         supplements_native = _nativize_supplements_v0( self, supplements )
         client = self.client.produce_implement( )
+        # TODO? Call reactor allocation function here.
         from openai import OpenAIError
         try:
             response = await client.chat.completions.create(
                 messages = messages_native,
                 **supplements_native, **controls_native )
         except OpenAIError as exc:
+            # TODO? Call reactor deallocation function here.
             raise __.ChatCompletionError( f"Error: {exc}" ) from exc
         should_stream = controls_native.get( 'stream', True )
         # TODO: Port from v0.
@@ -189,7 +191,64 @@ class Model(
             return (
                 await v0._process_iterative_chat_response(
                     response, reactors ) )
-        return v0._process_complete_chat_response( response, reactors )
+        return _process_complete_response_v0( self, response, reactors )
+
+
+def _canister_from_response_element( model, element ):
+    # TODO: Appropriate error classes.
+    message = element.message
+    attributes = __.SimpleNamespace( behaviors = [ ] )
+    if message.content:
+        content = message.content
+        # TODO: Lookup MIME type from model format preferences.
+        mimetype = 'text/markdown'
+        role = 'AI'
+    else:
+        # TODO: Remap batch response invocations to intermediate dictionaries.
+        #       Separate 'model_context' attribute and content.
+        if message.function_call:
+            content = _reconstitute_invocation_legacy( message.function_call )
+        elif message.tool_calls:
+            content = _reconstitute_invocations( message.tool_calls )
+        else:
+            raise AssertionError(
+                f"Unknown response type for element {element.index}." )
+        mimetype = 'application/json'
+        # TODO: Set role to 'Result' and drop response class.
+        role = 'AI'
+        attributes.response_class = 'invocation'
+    return __.MessageCanister(
+        role = role, attributes = attributes
+    ).add_content( content, mimetype = mimetype )
+
+
+def _process_complete_response_v0( model, response, reactors ):
+    canisters = [
+        _canister_from_response_element( model, element )
+        for element in response.choices ]
+    # TODO: Callbacks support for response arrays.
+    canister = canisters[ 0 ]
+    return reactors.allocator( canister )
+
+
+def _reconstitute_invocation_legacy( invocation ):
+    from json import dumps, loads
+    return dumps( [ dict(
+        name = invocation[ 'name' ],
+        arguments = loads( invocation[ 'arguments' ] ),
+    ) ] )
+
+
+def _reconstitute_invocations( invocations ):
+    from json import dumps, loads
+    invocations_ = [ ]
+    for invocation in invocations:
+        function = invocation[ 'function' ]
+        invocations_.append( dict(
+            name = function[ 'name' ],
+            arguments = loads( function[ 'arguments' ] ),
+        ) )
+    return dumps( invocations_ )
 
 
 class InvocationsProcessor(
