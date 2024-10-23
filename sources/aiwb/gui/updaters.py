@@ -536,7 +536,8 @@ def update_token_count( components ):
     if 'freeform' == components.selector_user_prompt_class.value:
         content = components.text_freeform_prompt.value
     else: content = components.text_canned_prompt.object
-    messages.append( Canister( role = 'Human' ).add_content( content ) )
+    if content:
+        messages.append( Canister( role = 'Human' ).add_content( content ) )
     special_data = _invocables.package_invocables( components )
     model = _providers.access_model_selection( components )
     tokens_count = (

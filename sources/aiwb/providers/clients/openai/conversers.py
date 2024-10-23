@@ -185,70 +185,11 @@ class Model(
             # TODO? Call reactor deallocation function here.
             raise __.ChatCompletionError( f"Error: {exc}" ) from exc
         should_stream = controls_native.get( 'stream', True )
-        # TODO: Port from v0.
-        from . import v0
         if self.attributes.supports_continuous_response and should_stream:
             return (
-                await v0._process_iterative_chat_response(
-                    response, reactors ) )
+                await _process_iterative_response_v0(
+                    self, response, reactors ) )
         return _process_complete_response_v0( self, response, reactors )
-
-
-def _canister_from_response_element( model, element ):
-    # TODO: Appropriate error classes.
-    message = element.message
-    attributes = __.SimpleNamespace( behaviors = [ ] )
-    if message.content:
-        content = message.content
-        # TODO: Lookup MIME type from model format preferences.
-        mimetype = 'text/markdown'
-        role = 'AI'
-    else:
-        # TODO: Remap batch response invocations to intermediate dictionaries.
-        #       Separate 'model_context' attribute and content.
-        if message.function_call:
-            content = _reconstitute_invocation_legacy( message.function_call )
-        elif message.tool_calls:
-            content = _reconstitute_invocations( message.tool_calls )
-        else:
-            raise AssertionError(
-                f"Unknown response type for element {element.index}." )
-        mimetype = 'application/json'
-        # TODO: Set role to 'Result' and drop response class.
-        role = 'AI'
-        attributes.response_class = 'invocation'
-    return __.MessageCanister(
-        role = role, attributes = attributes
-    ).add_content( content, mimetype = mimetype )
-
-
-def _process_complete_response_v0( model, response, reactors ):
-    canisters = [
-        _canister_from_response_element( model, element )
-        for element in response.choices ]
-    # TODO: Callbacks support for response arrays.
-    canister = canisters[ 0 ]
-    return reactors.allocator( canister )
-
-
-def _reconstitute_invocation_legacy( invocation ):
-    from json import dumps, loads
-    return dumps( [ dict(
-        name = invocation[ 'name' ],
-        arguments = loads( invocation[ 'arguments' ] ),
-    ) ] )
-
-
-def _reconstitute_invocations( invocations ):
-    from json import dumps, loads
-    invocations_ = [ ]
-    for invocation in invocations:
-        function = invocation[ 'function' ]
-        invocations_.append( dict(
-            name = function[ 'name' ],
-            arguments = loads( function[ 'arguments' ] ),
-        ) )
-    return dumps( invocations_ )
 
 
 class InvocationsProcessor(
@@ -381,6 +322,75 @@ class Tokenizer(
                     iprocessor.nativize_invocable( invoker ) ) ) )
             # TODO: Determine if metadata from multifunctions adds more tokens.
         return tokens_count
+
+
+def _canister_from_response_element( model, element ):
+    # TODO: Appropriate error classes.
+    if ( delta := hasattr( element, 'delta' ) ): message = element.delta
+    else: message = element.message
+    attributes = __.SimpleNamespace( behaviors = [ ] )
+    if message.content:
+        content = '' if delta else message.content
+        # TODO: Lookup MIME type from model response format preferences.
+        mimetype = 'text/markdown'
+        role = 'AI'
+    elif message.function_call or message.tool_calls:
+        content = ''
+        mimetype = 'application/json'
+        # TODO: Set role to 'Result' and drop response class.
+        role = 'AI'
+        attributes.response_class = 'invocation'
+    else:
+        raise AssertionError(
+            "Cannot create message canister from unknown message species." )
+    return __.MessageCanister(
+        role = role, attributes = attributes
+    ).add_content( content, mimetype = mimetype )
+
+
+def _collect_response_as_content_v0(
+    model, indices, index, delta, reactors
+):
+    if not delta.content: return
+    canister = indices.canisters[ index ]
+    canister[ 0 ].data += delta.content
+    reactors.updater( indices.references[ index ] )
+
+
+def _collect_response_as_invocations_v0(
+    model, indices, index, delta, reactors
+):
+    if not delta.tool_calls: return
+    from collections import defaultdict
+    if index not in indices.records:
+        indices.records[ index ] = dict( tool_calls = [ ] )
+    calls = indices.records[ index ][ 'tool_calls' ]
+    for tool_call in delta.tool_calls:
+        if tool_call.index == len( calls ):
+            calls.append( {
+                'type': 'function', 'function': defaultdict( str ) } )
+        call = calls[ tool_call.index ]
+        if tool_call.id: call[ 'id' ] = tool_call.id
+        if tool_call.function:
+            function = call[ 'function' ]
+            if tool_call.function.name:
+                function[ 'name' ] = tool_call.function.name
+            if tool_call.function.arguments:
+                function[ 'arguments' ] += tool_call.function.arguments
+
+
+def _collect_response_as_legacy_invocation_v0(
+    model, indices, index, delta, reactors
+):
+    if not delta.function_call: return
+    from collections import defaultdict
+    if index not in indices.records:
+        indices.records[ index ] = dict( function_call = defaultdict( str ) )
+    call = indices.records[ index ][ 'function_call' ]
+    if delta.function_call.name:
+        call[ 'name' ] = delta.function_call.name
+    if delta.function_call.arguments:
+        call[ 'arguments' ] += delta.function_call.arguments
 
 
 def _decide_exclude_message(
@@ -559,6 +569,110 @@ def _nativize_user_message(
     context[ 'role' ] = 'user'
     content = _nativize_message_content( model, canister )
     return dict( content = content, **context )
+
+
+def _postprocess_response_canisters( model, indices, reactors ):
+    # TODO: Callbacks support for response arrays.
+    for index, canister in indices.canisters.items( ):
+        if index: continue
+        if not ( record := indices.records.get( index ) ): continue
+        # TODO: Include provider and model info in model context.
+        if 'tool_calls' in record:
+            canister[0].data = _reconstitute_invocations( record )
+            canister.attributes.model_context = record
+        elif 'function_call' in record:
+            canister[0].data = _reconstitute_legacy_invocation( record )
+            canister.attributes.model_context = record
+        reactors.updater( indices.references[ index ] )
+
+
+def _process_complete_response_v0( model, response, reactors ):
+    # TODO? Collect usage stats.
+    indices = __.AccretiveNamespace(
+        canisters = __.AccretiveDictionary( ),
+        records = __.AccretiveDictionary( ),
+        references = __.AccretiveDictionary( ) )
+    indices.canisters.update( {
+        element.index: _canister_from_response_element( model, element )
+        for element in response.choices } )
+    indices.records.update( {
+        element.index: dict( function_call = element.message.function_call )
+        for element in response.choices if element.message.function_call } )
+    indices.records.update( {
+        element.index: dict( tool_calls = element.message.tool_calls )
+        for element in response.choices if element.message.tool_calls } )
+    # TODO: Callbacks support for response arrays.
+    indices.references.update( {
+        index: reactors.allocator( canister ) for index, canister
+        in indices.canisters.items( ) if not index } )
+    _postprocess_response_canisters( model, indices, reactors )
+    return indices.references[ 0 ]
+
+
+async def _process_iterative_response_v0( model, response, reactors ):
+    # TODO? Collect usage stats.
+    indices = __.AccretiveNamespace(
+        canisters = __.AccretiveDictionary( ),
+        records = __.AccretiveDictionary( ),
+        references = __.AccretiveDictionary( ) )
+    async for segment in response:
+        for element in segment.choices:
+            try:
+                _process_iterative_response_element_v0(
+                    model, indices, element, reactors )
+            except Exception:
+                for reference in indices.references:
+                    reactors.deallocator( reference )
+                raise
+    _postprocess_response_canisters( model, indices, reactors )
+    # TODO: Callbacks support for response arrays.
+    return indices.references[ 0 ]
+
+
+def _process_iterative_response_element_v0(
+    model, indices, element, reactors
+):
+    delta = element.delta
+    if not (
+        delta.content or delta.function_call or delta.tool_calls
+    ): return # Fast forward until we know response species.
+    if ( index := element.index ) not in indices.canisters:
+        indices.canisters[ index ] = canister = (
+            _canister_from_response_element( model, element ) )
+        indices.references[ index ] = reactors.allocator( canister )
+    canister = indices.canisters[ index ]
+    if index: return # TODO: Callbacks support for response arrays.
+    if delta.tool_calls:
+        _collect_response_as_invocations_v0(
+            model, indices, index, delta, reactors )
+    elif delta.function_call:
+        _collect_response_as_legacy_invocation_v0(
+            model, indices, index, delta, reactors )
+    elif delta.content:
+        _collect_response_as_content_v0(
+            model, indices, index, delta, reactors )
+
+
+def _reconstitute_legacy_invocation( record ):
+    from json import dumps, loads
+    invocation = record[ 'function_call' ]
+    return dumps( [ dict(
+        name = invocation[ 'name' ],
+        arguments = loads( invocation[ 'arguments' ] ),
+    ) ] )
+
+
+def _reconstitute_invocations( record ):
+    from json import dumps, loads
+    invocations = record[ 'tool_calls' ]
+    invocations_ = [ ]
+    for invocation in invocations:
+        function = invocation[ 'function' ]
+        invocations_.append( dict(
+            name = function[ 'name' ],
+            arguments = loads( function[ 'arguments' ] ),
+        ) )
+    return dumps( invocations_ )
 
 
 def _refine_native_assistant_message(
