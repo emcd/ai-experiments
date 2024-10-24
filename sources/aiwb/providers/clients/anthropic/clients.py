@@ -70,14 +70,14 @@ class AnthropicClient(
     async def from_descriptor(
         selfclass,
         auxdata: __.CoreGlobals,
-        factory: __.Factory,
+        provider: __.Provider,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
         await selfclass.assert_environment( auxdata )
         return selfclass( **(
             super( ).init_args_from_descriptor(
                 auxdata = auxdata,
-                factory = factory,
+                provider = provider,
                 descriptor = descriptor ) ) )
 
 
@@ -87,8 +87,8 @@ class AnthropicClient(
 # TODO: GoogleVertexClient
 
 
-class Factory(
-    __.Factory, dataclass_arguments = __.standard_dataclass_arguments
+class Provider(
+    __.Provider, dataclass_arguments = __.standard_dataclass_arguments
 ):
 
     async def produce_client(
@@ -101,4 +101,4 @@ class Factory(
         client_class = AnthropicClient
         # TODO: Return future.
         return await client_class.from_descriptor(
-            auxdata = auxdata, factory = self, descriptor = descriptor )
+            auxdata = auxdata, provider = self, descriptor = descriptor )

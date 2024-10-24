@@ -76,7 +76,7 @@ class LocationCacheIngestFailure( __.Omnierror ):
             f"Reason: {reason}" )
 
 
-class LocationOperateFailure( __.Omnierror, Exception ):
+class LocationOperateFailure( __.Omnierror ):
     ''' Failure of attempt to operate on location. '''
 
 

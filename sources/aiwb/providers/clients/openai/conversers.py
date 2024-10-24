@@ -175,15 +175,15 @@ class Model(
             self.controls_processor.nativize_controls( controls ) )
         supplements_native = _nativize_supplements_v0( self, supplements )
         client = self.client.produce_implement( )
-        # TODO? Call reactor allocation function here.
         from openai import OpenAIError
         try:
             response = await client.chat.completions.create(
                 messages = messages_native,
                 **supplements_native, **controls_native )
         except OpenAIError as exc:
-            # TODO? Call reactor deallocation function here.
-            raise __.ChatCompletionError( f"Error: {exc}" ) from exc
+            raise __.ModelOperateFailure(
+                model = self, operation = 'chat completion', cause = exc
+            ) from exc
         should_stream = controls_native.get( 'stream', True )
         if self.attributes.supports_continuous_response and should_stream:
             return (

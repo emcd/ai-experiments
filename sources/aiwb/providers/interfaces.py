@@ -40,7 +40,7 @@ class Client(
 
     name: str
     attributes: _core.ClientAttributes
-    factory: Factory
+    provider: Provider
 
     @classmethod
     @__.abstract_member_function
@@ -56,7 +56,7 @@ class Client(
     async def from_descriptor(
         selfclass,
         auxdata: __.CoreGlobals,
-        factory: Factory,
+        provider: Provider,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
         ''' Produces client from descriptor dictionary. '''
@@ -66,7 +66,7 @@ class Client(
     def init_args_from_descriptor(
         selfclass,
         auxdata: __.CoreGlobals,
-        factory: Factory,
+        provider: Provider,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
@@ -75,7 +75,10 @@ class Client(
         name = descriptor_.pop( 'name' )
         attributes = _core.ClientAttributes.from_descriptor( descriptor_ )
         return __.AccretiveDictionary(
-            name = name, attributes = attributes, factory = factory )
+            name = name, attributes = attributes, provider = provider )
+
+    def __str__( self ) -> str:
+        return f"{self.provider} client {self.name!r}"
 
     @__.abstract_member_function
     async def access_model(
@@ -173,7 +176,7 @@ class ConversationTokenizer(
         raise NotImplementedError
 
 
-class Factory(
+class Provider(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
@@ -184,6 +187,8 @@ class Factory(
     name: str
     # TODO: Reingester dictionary for configuration.
     configuration: __.AbstractDictionary[ str, __.a.Any ]
+
+    def __str__( self ) -> str: return f"AI provider {self.name!r}"
 
     @__.abstract_member_function
     async def produce_client(
@@ -281,11 +286,14 @@ class Model(
 ):
     ''' Represents an AI model. '''
 
-    # TODO: Move client and name to ModelAddress class.
+    # TODO? Move client and name to ModelAddress class.
     #       Subclass from ModelAddress class.
     client: Client
     name: str
     attributes: ModelAttributes
+
+    def __str__( self ) -> str:
+        return f"{self.client} model {self.name!r}"
 
     @classmethod
     @__.abstract_member_function
@@ -303,6 +311,11 @@ class Model(
     def controls_processor( self ) -> ControlsProcessor:
         ''' Controls processor for model. '''
         raise NotImplementedError
+
+    @property
+    def provider( self ) -> Provider:
+        ''' Provider for model. '''
+        return self.client.provider
 
 
 class ModelAttributes(

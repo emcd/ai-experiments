@@ -26,13 +26,13 @@ from . import clients as _clients
 
 
 async def prepare( auxdata: __.CoreGlobals ):
-    ''' Installs dependencies and returns factory. '''
+    ''' Installs dependencies and returns provider. '''
     # TODO: Install dependencies in isolated environment, if necessary.
     #       Packages: anthropic
     configuration = (
         await __.acquire_provider_configuration(
             auxdata = auxdata, name = __.provider_name ) )
-    return _clients.Factory(
+    return _clients.Provider(
         name = __.provider_name, configuration = configuration )
 
 __.preparers_registry[ __.provider_name ] = prepare

@@ -31,9 +31,6 @@ NativeControls = __.a.TypeVar( 'NativeControls', covariant = True )
 NativeMessages = __.a.TypeVar( 'NativeMessages', covariant = True )
 
 
-class ChatCompletionError( __.Omnierror ): pass
-
-
 class ChatCallbacks(
     metaclass = __.ImmutableDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,

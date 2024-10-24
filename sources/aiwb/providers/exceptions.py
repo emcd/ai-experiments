@@ -26,5 +26,26 @@ from __future__ import annotations
 from . import __
 
 
-class InvocationFormatError( __.Omniexception, ValueError ):
+class InvocationFormatError( __.Omnierror, ValueError ):
     ''' Invalid format for invocation request. '''
+
+
+class ModelOperateFailure( __.Omnierror ):
+    ''' Failure of attempt to operate AI model. '''
+
+    def __init__(
+        self,
+        model,
+        operation: str,
+        cause: __.Optional[ str | Exception ] = __.absent,
+    ):
+        if isinstance( cause, Exception ):
+            cause_message = "Cause: {}".format( __.exception_to_str( cause ) )
+        elif isinstance( cause, str ): cause_message = f"Cause: {cause}"
+        else: cause_message = ''
+        message = ' '.join( filter(
+            None,
+            ( (
+                f"Could not perform {operation} with {model}.",
+                cause_message ) ) ) )
+        super( ).__init__( message )

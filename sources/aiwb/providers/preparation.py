@@ -48,8 +48,8 @@ def descriptors_from_configuration(
 async def prepare( auxdata: __.CoreGlobals ) -> __.AccretiveDictionary:
     ''' Prepares clients from configuration and returns futures to them. '''
     # TODO: Return clients and models.
-    factories = await prepare_factories( auxdata )
-    clients = await prepare_clients( auxdata, factories )
+    providers = await prepare_providers( auxdata )
+    clients = await prepare_clients( auxdata, providers )
     #for client_name, client in clients.items( ):
     #    ic( client_name, await client.survey_models( auxdata ) )
     return clients
@@ -57,7 +57,7 @@ async def prepare( auxdata: __.CoreGlobals ) -> __.AccretiveDictionary:
 
 async def prepare_clients(
     auxdata: __.CoreGlobals,
-    factories: __.AbstractDictionary[ str, _interfaces.Factory ],
+    providers: __.AbstractDictionary[ str, _interfaces.Provider ],
 ) -> __.AbstractDictionary[ str, _interfaces.Client ]:
     ''' Prepares clients from configuration. '''
     # TODO: Return futures for background loading.
@@ -66,13 +66,13 @@ async def prepare_clients(
     clients = __.AccretiveDictionary( )
     descriptors = descriptors_from_configuration( auxdata )
     names = tuple( descriptor[ 'name' ] for descriptor in descriptors )
-    factories_per_client = tuple(
-        factories[ descriptor.get( 'factory', name ) ]
+    providers_per_client = tuple(
+        providers[ descriptor.get( 'factory', name ) ]
         for name, descriptor in zip( names, descriptors ) )
     results = await __.gather_async(
-        *(  factory.produce_client( auxdata, descriptor )
-            for factory, descriptor
-            in zip( factories_per_client, descriptors ) ),
+        *(  provider.produce_client( auxdata, descriptor )
+            for provider, descriptor
+            in zip( providers_per_client, descriptors ) ),
         return_exceptions = True )
     for name, descriptor, result in zip( names, descriptors, results ):
         match result:
@@ -85,10 +85,10 @@ async def prepare_clients(
     return clients
 
 
-async def prepare_factories(
+async def prepare_providers(
     auxdata: __.CoreGlobals
-) -> __.AbstractDictionary[ str, _interfaces.Factory ]:
-    ''' Prepares factories from configuration. '''
+) -> __.AbstractDictionary[ str, _interfaces.Provider ]:
+    ''' Prepares providers from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = descriptors_from_configuration( auxdata )
     names = frozenset(
@@ -99,13 +99,13 @@ async def prepare_factories(
             for name in names } )
     results = await __.gather_async(
         *preparers.values( ), return_exceptions = True )
-    factories = { }
+    providers = { }
     for name, result in zip( preparers.keys( ), results ):
         match result:
             case __.g.Error( error ):
-                summary = f"Could not prepare AI provider factory {name!r}."
+                summary = f"Could not prepare AI provider {name!r}."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
-            case __.g.Value( factory ):
-                factories[ name ] = factory
-    return factories
+            case __.g.Value( provider ):
+                providers[ name ] = provider
+    return providers

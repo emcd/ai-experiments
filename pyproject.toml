@@ -228,6 +228,8 @@ valid-metaclass-classmethod-first-arg = [ 'maker', 'factory' ]
 [tool.pylint.design]
 # TODO: exclude-too-few-public-methods: Consider exception hierarchies.
 ignored-parents = [
+  'aiwb.libcore.base.Omnierror',
+  'aiwb.libcore.base.Omniexception',
   'panel.reactive.ReactiveHTML',
   'panel.template.base.Template',
   'typing.Protocol',
@@ -243,7 +245,12 @@ max-returns = 6
 max-statements = 30
 min-public-methods = 1
 [tool.pylint.exceptions]
-overgeneral-exceptions = [ 'builtins.BaseException', 'builtins.Exception' ]
+overgeneral-exceptions = [
+  'aiwb.libcore.base.Omnierror',
+  'aiwb.libcore.base.Omniexception',
+  'builtins.BaseException',
+  'builtins.Exception',
+]
 [tool.pylint.format]
 ignore-long-lines = '''^(\s*<?https?://\S+>?|([^'"]*\s+)?#.*)$'''
 max-line-length = 79
