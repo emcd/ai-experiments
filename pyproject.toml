@@ -90,6 +90,9 @@ year-of-origin = 2023
 
 [tool.bandit]
 exclude_dirs = [ 'tests' ]
+skips = [
+  'B113', # request_without_timeout (Httpx has default of 5 seconds.)
+]
 
 # https://coverage.readthedocs.io/en/latest/config.html
 [tool.coverage.run]

@@ -46,4 +46,6 @@ def _roll_dice( dice ):
     offset = int( offset ) if offset else 0
     if number < 1 or sides < 4 or sides % 2 == 1 or number + offset < 1:
         raise ValueError( f"Invalid dice spec, '{dice}'." )
-    return sum( randint( 1, sides ) for _ in range( number ) ) + offset
+    return sum(
+        randint( 1, sides ) # nosec
+        for _ in range( number ) ) + offset

@@ -29,7 +29,7 @@ class Modes( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Possible modes for logging output. '''
 
     Null = 'null' # suppress library logs
-    Pass = 'pass' # pass library logs to root logger
+    Pass = 'pass' # pass library logs to root logger # nosec
     Rich = 'rich' # print rich library logs to stderr
 
 

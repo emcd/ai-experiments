@@ -88,7 +88,7 @@ async def _analyze_file( context, path, control = None ):
 
 
 async def _analyze_http( context, url, control = None ):
-    file_name = _read_http_core( context, url )
+    file_name = await _read_http_core( context, url )
     return await _analyze_file( context, file_name, control = control )
 
 
@@ -243,18 +243,13 @@ async def _read_chunks_naively( context, path ):
     yield dict( content = ''.join( lines ), hint = 'last chunk' )
 
 
-def _read_http_core( context, url ):
-    # TODO: async - aiohttp
-    from shutil import copyfileobj
+async def _read_http_core( context, url ):
     from tempfile import NamedTemporaryFile
-    from urllib.request import Request, urlopen
-    request = Request( url )
     # TODO: Write to conversation cache with file name.
     # TODO? Pass stream to reader function rather than re-open tempfile.
+    accessor = __.file_adapter_from_url( url )
     with NamedTemporaryFile( delete = False ) as file:
-        # TODO: Retry on rate limits and timeouts.
-        with urlopen( request ) as response:
-            copyfileobj( response, file )
+        file.write( await accessor.acquire_content( ) )
     return file.name
 
 
