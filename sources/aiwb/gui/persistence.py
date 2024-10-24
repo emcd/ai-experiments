@@ -159,7 +159,7 @@ async def restore_conversation_messages( components, column_name, state ):
     ''' Restores conversation messages from persistent storage. '''
     from ..messages.core import DirectoryManager, restore_canister
     from .updaters import add_message
-    manager = DirectoryManager( components.auxdata__ )
+    manager = DirectoryManager( auxdata = components.auxdata__ )
     column = getattr( components, column_name )
     canister_states = state.get( column_name, ( ) )
     restorers = tuple(
@@ -236,7 +236,7 @@ async def save_conversation( components ):
 async def save_conversation_messages( components, column_name ):
     ''' Saves conversation messages to persistent storage. '''
     from ..messages.core import DirectoryManager
-    manager = DirectoryManager( components.auxdata__ )
+    manager = DirectoryManager( auxdata = components.auxdata__ )
     canisters_components = tuple(
         canister.gui__
         for canister in getattr( components, column_name, ( ) ) )
@@ -289,7 +289,7 @@ async def upgrade_conversation( components, identity ):
     from json import JSONDecodeError, dumps, loads
     from aiofiles import open as open_
     from ..messages.core import DirectoryManager, restore_canister
-    directory_manager = DirectoryManager( components.auxdata__ )
+    directory_manager = DirectoryManager( auxdata = components.auxdata__ )
     # TODO: Use directory manager for conversation location.
     conversations_location = _conversations.provide_location( components )
     file = conversations_location / f"{identity}.json"

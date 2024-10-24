@@ -24,8 +24,11 @@
 from . import __
 
 
-@__.dataclass( frozen = True, slots = True )
-class DirectoryManager:
+class DirectoryManager(
+    metaclass = __.ImmutableDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
+    ''' Manages conversation and message content directories. '''
 
     auxdata: __.AccretiveNamespace
 
@@ -33,6 +36,7 @@ class DirectoryManager:
         exist_ok = True, parents = True ) )
 
     def assert_content_directory( self, identity ):
+        ''' Errors if particular content directory does not exist. '''
         distributary = identity[ : 4 ]
         location = self.auxdata.provide_state_location(
             'contents', distributary, identity )
@@ -40,12 +44,14 @@ class DirectoryManager:
         return location
 
     def assert_conversation_directory( self, identity ):
+        ''' Errors if particular conversation directory does not exist. '''
         location = self.auxdata.provide_state_location(
             'conversations', identity )
         if not location.exists( ): raise FileNotFoundError( location )
         return location
 
     def create_content_directory( self, identity, mkdir_nomargs = None ):
+        ''' Creates content directory if it does not exist. '''
         distributary = identity[ : 4 ]
         location = self.auxdata.provide_state_location(
             'contents', distributary, identity )
@@ -54,6 +60,7 @@ class DirectoryManager:
         return location
 
     def create_conversation_directory( self, identity, mkdir_nomargs = None ):
+        ''' Creates conversation directory if it does not exist. '''
         location = self.auxdata.provide_state_location(
             'conversations', identity )
         mkdir_nomargs = mkdir_nomargs or self._mkdir_nomargs_default
@@ -61,11 +68,19 @@ class DirectoryManager:
         return location
 
 
-class Content: pass
+@__.a.runtime_checkable
+class Content( __.a.Protocol ):
+    ''' Base for various content types. '''
+
+    @__.abstract_member_function
+    async def save( self, manager: DirectoryManager ):
+        ''' Persists content to durable storage. '''
+        raise NotImplementedError
 
 
 @__.dataclass
 class TextualContent( Content ):
+    ''' Descriptor and data for textual content. '''
 
     data: str
     identity: str = (
@@ -74,7 +89,8 @@ class TextualContent( Content ):
         __.dataclass_declare( default_factory = __.time_ns ) )
     mimetype: str = 'text/markdown'
 
-    async def save( self, manager ):
+    async def save( self, manager: DirectoryManager ):
+        # TODO: Use locations subpackage for I/O.
         from aiofiles import open as open_
         from tomli_w import dumps
         location = manager.create_content_directory( self.identity )
@@ -98,18 +114,21 @@ class TextualContent( Content ):
 
 @__.dataclass
 class Canister:
+    ''' Message canister which can have multiple contents. '''
 
     role: str
     attributes: __.SimpleNamespace = (
         __.dataclass_declare( default_factory = __.SimpleNamespace ) )
-    contents: __.AbstractSequence[ Content ] = (
+    contents: __.AbstractMutableSequence[ Content ] = (
         __.dataclass_declare( default_factory = list ) )
 
     def add_content( self, data, /, **descriptor ):
+        ''' Adds content of appropriate type to canister. '''
         self.contents.append( create_content( data, **descriptor ) )
         return self
 
-    async def save( self, manager ):
+    async def save( self, manager: DirectoryManager ):
+        ''' Persists canister to durable storage. '''
         state = dict( role = self.role )
         savers = tuple( content.save( manager ) for content in self )
         contents_identifiers = await __.gather_async( *savers )
@@ -133,6 +152,7 @@ class Canister:
 
 
 def classify_mimetype( mimetype ):
+    ''' Determines content type from MIME type. '''
     if mimetype in ( 'application/json', 'text/markdown', 'text/plain', ):
         return 'textual'
     # TODO: aural, motion-av, pictorial
@@ -140,6 +160,7 @@ def classify_mimetype( mimetype ):
 
 
 def create_content( data, /, **descriptor ):
+    ''' Creates content object based on data and descriptor. '''
     mimetype = descriptor.get( 'mimetype' )
     if not mimetype:
         # TODO: Detect specific text format, such as Markdown or JSON.
@@ -157,6 +178,7 @@ def create_content( data, /, **descriptor ):
 
 
 async def restore_canister( manager, canister_state ):
+    ''' Restores canister into memory from persistent storage. '''
     # TODO: Intercept 'response_class' attribute and patch role accordingly.
     role = canister_state[ 'role' ]
     nomargs = { }
@@ -174,6 +196,8 @@ async def restore_canister( manager, canister_state ):
 
 
 async def restore_content( manager, identity ):
+    ''' Restores content into memory from persistent storage. '''
+    # TODO: Use locations subpackage for I/O.
     from aiofiles import open as open_
     from tomli import loads
     # TODO: Maintain and check cache, since content may be shared
@@ -194,9 +218,11 @@ async def restore_content( manager, identity ):
 
 
 def translate_mimetype_to_filename( basename, mimetype ):
-    # TODO? Python 3.10: match case
-    if 'application/json' == mimetype: extension = 'json'
-    elif 'text/markdown' == mimetype: extension = 'md'
-    elif 'text/plain' == mimetype: extension = 'txt'
-    else: raise ValueError( f"Unrecognized MIME type: {mimetype}" )
+    ''' Translates MIME type to filename with appropriate extension. '''
+    # TODO: Appropriate error class.
+    match mimetype:
+        case 'application/json': extension = 'json'
+        case 'text/markdown': extension = 'md'
+        case 'text/plain': extension = 'text'
+        case _: raise ValueError( f"Unrecognized MIME type: {mimetype}" )
     return f"{basename}.{extension}"

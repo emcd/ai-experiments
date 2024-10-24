@@ -34,8 +34,10 @@ NativeMessages = __.a.TypeVar( 'NativeMessages', covariant = True )
 class ChatCompletionError( __.Omnierror ): pass
 
 
-@__.dataclass( frozen = True, kw_only = True, slots = True )
-class ChatCallbacks:
+class ChatCallbacks(
+    metaclass = __.ImmutableDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Callbacks for AI provider to correspond with caller. '''
 
     allocator: __.a.Callable[ [ __.MessageCanister ], __.a.Any ] = (
@@ -52,8 +54,10 @@ class ChatCallbacks:
         lambda handle: None )
 
 
-@__.standard_dataclass
-class ClientDefaults:
+class ClientDefaults(
+    metaclass = __.ImmutableDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Collection of default values for AI provider. '''
 
     converser_model: __.AbstractSequence[ str ] = ( )
@@ -74,8 +78,10 @@ class ClientDefaults:
         return selfclass( **args )
 
 
-@__.standard_dataclass
-class ClientAttributes:
+class ClientAttributes(
+    metaclass = __.ImmutableDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Common attributes for AI provider clients. '''
 
     defaults: ClientDefaults = ClientDefaults( )
@@ -122,6 +128,21 @@ class TextFormatPreferences( __.Enum ): # TODO: Python 3.11: StrEnum
 
     Indefinite =    '#indefinite#'
     Markdown =      'Markdown'
+
+
+class MessageRole( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Platform-neutral role of conversation message.
+
+        Implementations must map these roles to their native roles or
+        constructs as appropriate.
+    '''
+
+    Assistant =     'assistant'
+    Document =      'document'
+    Invocation =    'invocation'
+    Result =        'result'
+    Supervisor =    'supervisor'
+    User =          'user'
 
 
 class ConverserModalities( __.Enum ): # TODO: Python 3.11: StrEnum
