@@ -44,7 +44,7 @@ def _update_conversation_status_on_error( invocable ):
 
 @_update_conversation_status_on_error
 async def chat( components ):
-    from ..messages.core import Canister
+    ''' Converses with AI model. '''
     from .updaters import (
         update_and_save_conversation,
         update_and_save_conversations_index,
@@ -58,7 +58,7 @@ async def chat( components ):
         prompt = components.text_freeform_prompt.value
         components.text_freeform_prompt.value = ''
     if prompt:
-        canister = Canister( role = 'Human' ).add_content( prompt )
+        canister = __.UserMessageCanister( ).add_content( prompt )
         _add_message( components, canister )
     with _update_conversation_progress(
         components, 'Generating AI response...'
@@ -108,11 +108,11 @@ async def use_invocables(
 
 @_update_conversation_status_on_error
 async def search( components ):
-    from ..messages.core import Canister
+    ''' Performs search against vector databases. '''
     from .updaters import update_and_save_conversation
     prompt = components.text_freeform_prompt.value
     components.text_freeform_prompt.value = ''
-    canister = Canister( role = 'Human' ).add_content( prompt )
+    canister = __.UserMessageCanister( ).add_content( prompt )
     _add_message( components, canister )
     documents_count = components.slider_documents_count.value
     vectorstore = components.auxdata__.vectorstores[
@@ -126,9 +126,10 @@ async def search( components ):
             prompt, k = documents_count )
     for document in documents:
         mimetype = document.metadata.get( 'mime_type', 'text/plain' )
-        canister = Canister( role = 'Document' ).add_content(
-            document.page_content, mimetype = mimetype )
-        _add_message( components, canister )
+        canister_d = (
+            __.DocumentMessageCanister( )
+            .add_content( document.page_content, mimetype = mimetype ) )
+        _add_message( components, canister_d )
     await update_and_save_conversation( components )
 
 
@@ -180,14 +181,13 @@ async def _chat( components ):
 def _detect_ai_completion( gui, component = None ):
     if None is component: component = gui.column_conversation_history[ -1 ]
     canister = component.gui__.canister__
-    if 'AI' != canister.role: return False
-    attributes = canister.attributes
-    return 'completion' == getattr(
-        attributes, 'response_class', 'completion' )
+    role = __.MessageRole.from_canister( canister )
+    match role:
+        case __.MessageRole.Assistant: return True
+        case _: return False
 
 
 async def _generate_conversation_title( components ):
-    from ..messages.core import Canister
     from ..providers import chat_callbacks_minimal
     scribe = __.acquire_scribe( __package__ )
     model = _providers.access_model_selection( components )
@@ -196,8 +196,9 @@ async def _generate_conversation_title( components ):
     prompt = (
         components.auxdata__.prompts.definitions[ 'Title + Labels' ]
         .produce_prompt( values = { 'format': format_name } ) )
-    canister = Canister( role = 'Human' ).add_content(
-        prompt.render( components.auxdata__ ) )
+    canister = (
+        __.UserMessageCanister( )
+        .add_content( prompt.render( components.auxdata__ ) ) )
     messages = [
         *_conversations.package_messages( components )[ 1 : ], canister ]
     with _update_conversation_progress(
@@ -212,7 +213,8 @@ async def _generate_conversation_title( components ):
 
 
 async def _use_invocables_if_desirable( components, message_components ):
-    if 'AI' != message_components.canister__.role: return
+    role = __.MessageRole.from_canister( message_components.canister__ )
+    if __.MessageRole.Invocation is not role: return
     if not message_components.toggle_active.value: return
     if not components.checkbox_auto_functions.value: return
     await use_invocables(

@@ -28,7 +28,14 @@
 
 
 from .core import (
-    Canister as MessageCanister,
-    DirectoryManager as MessagesDirectoryManager,
-    Content as TextualMessageContent,
+    AssistantCanister as    AssistantMessageCanister,
+    DocumentCanister as     DocumentMessageCanister,
+    InvocationCanister as   InvocationMessageCanister,
+    Canister as             MessageCanister,
+    DirectoryManager as     MessagesDirectoryManager,
+    Role as                 MessageRole,
+    ResultCanister as       ResultMessageCanister,
+    SupervisorCanister as   SupervisorMessageCanister,
+    Content as              TextualMessageContent,
+    UserCanister as         UserMessageCanister,
 )

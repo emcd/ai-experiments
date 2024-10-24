@@ -100,6 +100,7 @@ def invocation_requests_from_canister(
     supplements[ 'model' ] = processor.model
     invokers = invocables.invokers
     model_context = getattr( canister.attributes, 'model_context', { } )
+    # TODO: Model-specific... move to correct provider.
     tool_calls = model_context.get( 'tool_calls' )
     requests_ = [ ]
     for i, request in enumerate( requests ):

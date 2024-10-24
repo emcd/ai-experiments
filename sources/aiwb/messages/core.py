@@ -21,6 +21,8 @@
 ''' Core classes for messages. '''
 
 
+from __future__ import annotations
+
 from . import __
 
 
@@ -114,10 +116,52 @@ class TextualContent( Content ):
 # TODO: PictureContent
 
 
+class Role( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Platform-neutral role of conversation message.
+
+        Implementations must map these roles to their native roles or
+        constructs as appropriate.
+    '''
+
+    Assistant =     'assistant'
+    Document =      'document'
+    Invocation =    'invocation'
+    Result =        'result'
+    Supervisor =    'supervisor'
+    User =          'user'
+
+    @classmethod
+    def from_canister( selfclass, canister: Canister ) -> __.a.Self:
+        ''' Provides role associated with canister. '''
+        if isinstance( canister, AssistantCanister ):
+            return selfclass.Assistant
+        if isinstance( canister, DocumentCanister ):
+            return selfclass.Document
+        if isinstance( canister, InvocationCanister ):
+            return selfclass.Invocation
+        if isinstance( canister, ResultCanister ):
+            return selfclass.Result
+        if isinstance( canister, SupervisorCanister ):
+            return selfclass.Supervisor
+        if isinstance( canister, UserCanister ):
+            return selfclass.User
+        # TODO: Appropriate error class.
+        raise AssertionError( "Unknown canister type." )
+
+    def produce_canister( self, **nomargs ) -> Canister:
+        ''' Produces canister from role. '''
+        match self:
+            case self.Assistant: return AssistantCanister( **nomargs )
+            case self.Document: return DocumentCanister( **nomargs )
+            case self.Invocation: return InvocationCanister( **nomargs )
+            case self.Result: return ResultCanister( **nomargs )
+            case self.Supervisor: return SupervisorCanister( **nomargs )
+            case self.User: return UserCanister( **nomargs )
+
+
 class Canister( metaclass = __.ImmutableDataclass ):
     ''' Message canister which can have multiple contents. '''
 
-    role: str
     attributes: __.SimpleNamespace = (
         __.dataclass_declare( default_factory = __.SimpleNamespace ) )
     contents: __.AbstractMutableSequence[ Content ] = (
@@ -130,12 +174,13 @@ class Canister( metaclass = __.ImmutableDataclass ):
 
     async def save( self, manager: DirectoryManager ):
         ''' Persists canister to durable storage. '''
-        state = dict( role = self.role )
+        state: dict[ str, __.a.Any ] = (
+            dict( role = Role.from_canister( self ).value ) )
         savers = tuple( content.save( manager ) for content in self )
         contents_identifiers = await __.gather_async( *savers )
         state[ 'contents' ] = contents_identifiers
-        attributes = self.attributes.__dict__
-        if attributes: state[ 'attributes' ] = attributes
+        if ( attributes := self.attributes.__dict__ ):
+            state[ 'attributes' ] = attributes
         return state
 
     def __getitem__( self, index ): return self.contents[ index ]
@@ -145,11 +190,33 @@ class Canister( metaclass = __.ImmutableDataclass ):
     def __len__( self ): return len( self.contents )
 
 
-# TODO: Cohort: Bundle of related canisters.
+class AssistantCanister( Canister ):
+    ''' Message canister for assistant role. '''
+
+class DocumentCanister( Canister ):
+    ''' Message canister for document role. '''
+
+class InvocationCanister( Canister ):
+    ''' Message canister for invocation role. '''
+
+class ResultCanister( Canister ):
+    ''' Message canister for result role. '''
+
+class SupervisorCanister( Canister ):
+    ''' Message canister for supervisor role. '''
+
+class UserCanister( Canister ):
+    ''' Message canister for user role. '''
+
+
+# TODO: Cluster: Bundle of related canisters.
 #       * Image prompt and generations.
 #       * Chat user prompt, AI function invocation request, AI function
 #         invocations, and final AI response.
 #       * Chat user prompt, semantic search documents, and AI response.
+# TODO: Cohort: Parallel responses from models and across models.
+# TODO: Tangent: Conversation thread off of main conversation.
+#       Useful for interactive image generation refinement, agents, etc...
 
 
 def classify_mimetype( mimetype ):
@@ -180,13 +247,21 @@ def create_content( data, /, **descriptor ):
 
 async def restore_canister( manager, canister_state ):
     ''' Restores canister into memory from persistent storage. '''
-    # TODO: Intercept 'response_class' attribute and patch role accordingly.
-    role = canister_state[ 'role' ]
     nomargs = { }
-    attributes = canister_state.get( 'attributes' )
-    if attributes:
+    role = canister_state[ 'role' ]
+    match role: # TEMP: Until upgrade complete.
+        case 'AI': role = 'assistant'
+        case 'Document': role = 'document'
+        case 'Function': role = 'result'
+        case 'Human': role = 'user'
+        case 'Supervisor': role = 'supervisor'
+    if ( attributes := canister_state.get( 'attributes' ) ):
+        if 'response_class' in attributes: # TEMP: Until upgrade complete.
+            response_class = attributes.pop( 'response_class' )
+            match response_class:
+                case 'invocation': role = 'invocation'
         nomargs[ 'attributes' ] = __.SimpleNamespace( **attributes )
-    canister = Canister( role, **nomargs )
+    canister = Role( role ).produce_canister( **nomargs )
     restorers = tuple(
         restore_content( manager, content_identity )
         for content_identity in canister_state.get( 'contents', ( ) ) )

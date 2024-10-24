@@ -67,51 +67,63 @@ def autoscroll_document( gui ):
 
 
 _roles_emoji = {
-    'AI': '🤖',
-    'Document': '📄',
-    'Function': '\N{Hammer and Wrench}\uFE0F',
-    'Human': '🧑',
+    __.MessageRole.Assistant: '🤖',
+    __.MessageRole.Document: '📄',
+    __.MessageRole.Invocation: '\N{Hammer and Wrench}\uFE0F',
+    __.MessageRole.Result: '📦',
+    __.MessageRole.User: '🧑',
 }
 _roles_styles = {
     # TODO: Use style variables.
-    'AI': {
+    __.MessageRole.Assistant: {
         'background-color': 'WhiteSmoke',
     },
-    'Document': {
+    __.MessageRole.Document: {
         'background-color': 'White',
         'border-top': '2px dashed LightGray',
         'padding': '3px',
     },
-    'Function': {
+    __.MessageRole.Invocation: {
+        'background-color': 'WhiteSmoke',
+    },
+    __.MessageRole.Result: {
         'background-color': 'White',
         #'border-top': '2px dashed LightGray',
         #'padding': '3px',
     },
-    'Human': {
+    __.MessageRole.User: {
         'background-color': 'White',
     },
 }
 def configure_message_interface( canister_gui, dto ):
-    from .invocables import extract_invocation_requests
-    gui = canister_gui.parent__
+    ''' Styles message cell appropriately. '''
+#    from .invocables import extract_invocation_requests
+#    gui = canister_gui.parent__
     canister = canister_gui.row_canister
     behaviors = dto.attributes.behaviors
-    role = dto.role
+    role = __.MessageRole.from_canister( dto )
     canister.styles.update( _roles_styles[ role ] )
     # TODO: Use user-supplied logos, when available.
     canister_gui.toggle_active.name = _roles_emoji[ role ]
-    if 'AI' == role:
-        canister_gui.button_fork.visible = True
-        try:
-            irequests = extract_invocation_requests(
-                gui, component = canister, silent_extraction_failure = True )
-        # TODO: No debug prints if model mismatch.
-        except Exception as exc: ic( __.exception_to_str( exc ) )
-        else: canister_gui.button_invoke.visible = bool( irequests )
-    elif 'Document' == role:
-        canister_gui.button_delete.visible = True
-    elif 'Human' == role:
-        canister_gui.button_edit.visible = True
+    match role:
+        case __.MessageRole.Assistant:
+            canister_gui.button_fork.visible = True
+#            try:
+#                irequests = extract_invocation_requests(
+#                    gui,
+#                    component = canister,
+#                    silent_extraction_failure = True )
+#            # TODO: No debug prints if model mismatch.
+#            except Exception as exc: ic( __.exception_to_str( exc ) )
+#            else: canister_gui.button_invoke.visible = bool( irequests )
+        case __.MessageRole.Document:
+            canister_gui.button_delete.visible = True
+        case __.MessageRole.Invocation:
+            # TODO: Only enable 'Invoke' button if model supports invocations.
+            canister_gui.button_invoke.visible = True
+        case __.MessageRole.Result: pass
+        case __.MessageRole.User:
+            canister_gui.button_edit.visible = True
     for behavior in behaviors:
         getattr( canister_gui, f"toggle_{behavior}" ).value = True
 
@@ -531,13 +543,12 @@ def update_summarization_toggle( gui ):
 def update_token_count( components ):
     if not components.selector_provider.options: return
     if not components.selector_model.options: return
-    from ..messages.core import Canister
     messages = _conversations.package_messages( components )
     if 'freeform' == components.selector_user_prompt_class.value:
         content = components.text_freeform_prompt.value
     else: content = components.text_canned_prompt.object
     if content:
-        messages.append( Canister( role = 'Human' ).add_content( content ) )
+        messages.append( __.UserMessageCanister( ).add_content( content ) )
     special_data = _invocables.package_invocables( components )
     model = _providers.access_model_selection( components )
     tokens_count = (

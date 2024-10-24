@@ -127,21 +127,6 @@ class TextFormatPreferences( __.Enum ): # TODO: Python 3.11: StrEnum
     Markdown =      'Markdown'
 
 
-class MessageRole( __.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Platform-neutral role of conversation message.
-
-        Implementations must map these roles to their native roles or
-        constructs as appropriate.
-    '''
-
-    Assistant =     'assistant'
-    Document =      'document'
-    Invocation =    'invocation'
-    Result =        'result'
-    Supervisor =    'supervisor'
-    User =          'user'
-
-
 class ConverserModalities( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Supportable input modalities for AI chat models. '''
 

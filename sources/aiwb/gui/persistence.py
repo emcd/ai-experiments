@@ -327,7 +327,9 @@ async def upgrade_conversations( components ):
     upgraders = tuple(
         upgrade_conversation( components, descriptor[ 'identity' ] )
         for descriptor in index[ 'descriptors' ] )
-    await __.gather_async( *upgraders )
+    # TODO: Submit upgrades to queue to prevent fd exhaustion.
+    #await __.gather_async( *upgraders )
+    for upgrader in upgraders: await upgrader
 
 
 async def _collect_content_ids_from_conversation(

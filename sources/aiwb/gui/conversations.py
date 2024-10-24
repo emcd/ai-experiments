@@ -62,12 +62,12 @@ def package_messages( components ):
     ''' Packages GUI display of conversation into normalized objects. '''
     # TODO: Use an underlying conversation model.
     #       Do not pull values from GUI.
-    from ..messages.core import Canister
+    from ..messages.core import SupervisorCanister
     canisters = [ ]
     if components.toggle_system_prompt_active.value:
         canisters.append(
-            Canister( role = 'Supervisor' ).add_content(
-                components.text_system_prompt.object ) )
+            SupervisorCanister( )
+            .add_content( components.text_system_prompt.object ) )
     for canister in components.column_conversation_history:
         canister_gui = canister.gui__
         if not canister_gui.toggle_active.value: continue

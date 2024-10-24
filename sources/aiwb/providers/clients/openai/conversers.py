@@ -216,8 +216,9 @@ class InvocationsProcessor(
                 name = request[ 'name' ], role = 'function' )
         from json import dumps
         message = dumps( result )
-        canister = __.MessageCanister( 'Function' )
-        canister.add_content( message, mimetype = 'application/json' )
+        canister = (
+            __.ResultMessageCanister( )
+            .add_content( message, mimetype = 'application/json' ) )
         canister.attributes.model_context = result_context # TODO? Immutable
         return canister
 
@@ -333,19 +334,17 @@ def _canister_from_response_element( model, element ):
         content = '' if delta else message.content
         # TODO: Lookup MIME type from model response format preferences.
         mimetype = 'text/markdown'
-        role = 'AI'
+        role = __.MessageRole.Assistant
     elif message.function_call or message.tool_calls:
         content = ''
         mimetype = 'application/json'
-        # TODO: Set role to 'Result' and drop response class.
-        role = 'AI'
-        attributes.response_class = 'invocation'
+        role = __.MessageRole.Invocation
     else:
         raise AssertionError(
             "Cannot create message canister from unknown message species." )
-    return __.MessageCanister(
-        role = role, attributes = attributes
-    ).add_content( content, mimetype = mimetype )
+    return (
+        role.produce_canister( attributes = attributes )
+        .add_content( content, mimetype = mimetype ) )
 
 
 def _collect_response_as_content_v0(
@@ -396,8 +395,9 @@ def _collect_response_as_legacy_invocation_v0(
 def _decide_exclude_message(
     model: Model, canister: __.MessageCanister
 ) -> bool:
+    role = __.MessageRole.from_canister( canister )
     if not model.attributes.accepts_supervisor_instructions:
-        if 'Supervisor' == canister.role: return True
+        if __.MessageRole.Supervisor is role: return True
     return False
 
 
@@ -506,24 +506,21 @@ def _nativize_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     # TODO: Appropriate error classes.
-    attributes = canister.attributes
-    response_class = getattr( attributes, 'response_class', '' )
-    match canister.role:
-        case 'AI': # TODO: split canister roles: 'Assistant'/'Invocation'
-            match response_class:
-                case 'invocation':
-                    return _nativize_invocation_message( model, canister )
-                case _:
-                    return _nativize_assistant_message( model, canister )
-        case 'Document':
+    role = __.MessageRole.from_canister( canister )
+    match role:
+        case __.MessageRole.Assistant:
+            return _nativize_assistant_message( model, canister )
+        case __.MessageRole.Document:
             return _nativize_document_message( model, canister )
-        case 'Function': # TODO: 'Result' role
+        case __.MessageRole.Invocation:
+            return _nativize_invocation_message( model, canister )
+        case __.MessageRole.Result:
             return _nativize_invocation_result_message( model, canister )
-        case 'Human': # TODO: 'User' role
-            return _nativize_user_message( model, canister )
-        case 'Supervisor':
+        case __.MessageRole.Supervisor:
             return _nativize_supervisor_message( model, canister )
-    raise AssertionError( f"Unprocessed message role {canister.role!r}." )
+        case __.MessageRole.User:
+            return _nativize_user_message( model, canister )
+    raise AssertionError( f"Unprocessed message role {role.value!r}." )
 
 
 def _nativize_message_content(

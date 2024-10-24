@@ -52,7 +52,8 @@ def _access_tokens_limit( context ):
 
 
 async def _analyze_file( context, path, control = None ):
-    from ....messages import Canister
+    from ....messages import (
+        AssistantCanister, Canister, SupervisorCanister, UserCanister )
     from ....providers import chat_callbacks_minimal
     auxdata = context.auxdata
     controls = context.supplements[ 'controls' ]
@@ -67,19 +68,21 @@ async def _analyze_file( context, path, control = None ):
         .produce_prompt( values = { 'format': format_name } ) )
     chunk_reader, mime_type = _determine_chunk_reader( path )
     for chunk in await chunk_reader( auxdata, path ):
-        messages = [
-            Canister( role = 'Supervisor' ).add_content(
+        messages: list[ Canister ] = [
+            SupervisorCanister( ).add_content(
                 supervisor_prompt.render( auxdata ) ) ]
         # TODO: Check if above high water mark for tokens count.
         #       Drop earliest messages from history, if so.
         if ai_messages:
-            messages.append( Canister( role = 'Human' ).add_content(
-                summarization_prompt.render( auxdata ) ) )
-            messages.append( Canister( role = 'AI' ).add_content(
-                '\n\n'.join( ai_messages ) ) )
+            messages.append(
+                UserCanister( )
+                .add_content( summarization_prompt.render( auxdata ) ) )
+            messages.append(
+                AssistantCanister( )
+                .add_content( '\n\n'.join( ai_messages ) ) )
         _, content = _render_analysis_prompt(
             context, control, chunk, mime_type )
-        messages.append( Canister( role = 'Human' ).add_content( content ) )
+        messages.append( UserCanister( ).add_content( content ) )
         ai_canister = await model.converse_v0(
             messages, { }, controls, chat_callbacks_minimal )
         # TODO: Handle combination of analysis and metadata.
@@ -113,7 +116,7 @@ def _determine_chunk_reader( path, mime_type = None ):
 
 
 async def _discriminate_dirents( context, dirents, control = None ):
-    from ....messages import Canister
+    from ....messages import Canister, SupervisorCanister, UserCanister
     from ....providers import chat_callbacks_minimal
     auxdata = context.auxdata
     controls = context.supplements[ 'controls' ]
@@ -130,12 +133,11 @@ async def _discriminate_dirents( context, dirents, control = None ):
     for batch_n in range( batches_count ):
         dirents_batch = dirents[
             ( batch_n * batch_size ) : ( ( batch_n + 1 ) * batch_size ) ]
-        messages = [
-            Canister( role = 'Supervisor' ).add_content( supervisor_message )
-        ]
+        messages: list[ Canister ] = [
+            SupervisorCanister( ).add_content( supervisor_message ) ]
         _, content = _render_analysis_prompt(
             context, control, dirents_batch, 'directory-entries' )
-        messages.append( Canister( role = 'Human' ).add_content( content ) )
+        messages.append( UserCanister( ).add_content( content ) )
         ai_canister = await model.converse_v0(
             messages, { }, controls, chat_callbacks_minimal )
         #ic( ai_canister[ 0 ].data )
