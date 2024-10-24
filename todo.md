@@ -24,8 +24,7 @@
 
 * Architecture and Design
 
-    - Break AI providers `interfaces` module into subpackage.
-
+    - Refactor AI providers `interfaces` module into subpackage.
     - `ConversationsIndex` and `Conversation` classes.
     - Rework GUI to pass immutable conversation object through functions
       instead of components namespace. Cannot pass GUI globals object, since

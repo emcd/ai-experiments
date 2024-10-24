@@ -26,9 +26,12 @@ from __future__ import annotations
 from . import __
 
 
-@__.a.runtime_checkable
-@__.dataclass( frozen = True, kw_only = True, slots = True )
-class Factory( __.a.Protocol ):
+class Factory(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
+):
     ''' Produces clients. '''
 
     @__.abstract_member_function

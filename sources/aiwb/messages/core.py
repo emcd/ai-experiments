@@ -68,8 +68,11 @@ class DirectoryManager(
         return location
 
 
-@__.a.runtime_checkable
-class Content( __.a.Protocol ):
+class Content(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    runtime_checkable = True,
+):
     ''' Base for various content types. '''
 
     @__.abstract_member_function
@@ -78,7 +81,6 @@ class Content( __.a.Protocol ):
         raise NotImplementedError
 
 
-@__.dataclass
 class TextualContent( Content ):
     ''' Descriptor and data for textual content. '''
 
@@ -112,8 +114,7 @@ class TextualContent( Content ):
 # TODO: PictureContent
 
 
-@__.dataclass
-class Canister:
+class Canister( metaclass = __.ImmutableDataclass ):
     ''' Message canister which can have multiple contents. '''
 
     role: str

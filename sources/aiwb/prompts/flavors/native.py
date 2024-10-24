@@ -89,8 +89,10 @@ class Definition( _core.Definition ):
             for variable in variables } )
 
 
-@__.dataclass( frozen = True, kw_only = True, slots = True )
-class Store( _core.Store ):
+class Store(
+    _core.Store,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
 
     async def acquire_definitions(
         self,

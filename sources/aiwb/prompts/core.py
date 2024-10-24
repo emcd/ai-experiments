@@ -77,9 +77,12 @@ class Definition( __.a.Protocol ):
         return self.Instance( definition = self, values = data )
 
 
-@__.a.runtime_checkable
-@__.dataclass( frozen = True, kw_only = True, slots = True )
-class Store( __.a.Protocol ):
+class Store(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    runtime_checkable = True,
+):
     ''' Record for prompt store. '''
 
     name: str

@@ -33,8 +33,10 @@ async def prepare( auxdata: __.Globals ):
 _core.preparers[ 'faiss' ] = prepare
 
 
-@__.dataclass( frozen = True, kw_only = True, slots = True )
-class Factory( _core.Factory ):
+class Factory(
+    _core.Factory,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     # https://python.langchain.com/v0.2/docs/integrations/text_embedding/openai/
     # https://python.langchain.com/v0.2/docs/integrations/vectorstores/faiss/
     # https://api.python.langchain.com/en/latest/vectorstores/langchain_community.vectorstores.faiss.FAISS.html
