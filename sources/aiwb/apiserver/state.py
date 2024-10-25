@@ -25,8 +25,10 @@ from . import __
 from . import server as _server
 
 
-@__.standard_dataclass
-class Globals( __.ApplicationGlobals ):
+class Globals(
+    __.ApplicationGlobals,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Immutable global data for API server. '''
 
     apiserver: _server.Accessor

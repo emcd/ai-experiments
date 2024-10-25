@@ -141,6 +141,8 @@ class ImmutableDataclass( type ):
         if getattr( original_class, '_defer_immutability_', False ):
             return original_class
         original_class._defer_immutability_ = True
+        # TODO: Ensure correct argument ordering for stacked dataclasses.
+        #       (Seeing error about non-default arguments following defaults.)
         if ( dcargs := args.get( 'dataclass_arguments' ) ):
             class_ = dataclass( **dcargs )( original_class )
         else: class_ = dataclass( original_class )

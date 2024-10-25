@@ -24,8 +24,10 @@
 from . import __
 
 
-@__.standard_dataclass
-class Globals( __.CoreGlobals ):
+class Globals(
+    __.CoreGlobals,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Immutable global data. Required by many application functions. '''
 
     # TODO: Use proper types.
