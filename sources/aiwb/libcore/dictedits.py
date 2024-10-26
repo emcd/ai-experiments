@@ -26,11 +26,13 @@
 from . import __
 
 
-@__.a.runtime_checkable
-@__.standard_dataclass
-class Edit( __.a.Protocol ):
+class Edit(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
+):
     ''' Base representation of an edit to configuration. '''
-    # TODO: Immutable class and instance attributes.
 
     address: __.AbstractSequence[ str ]
 
@@ -63,10 +65,11 @@ class Edit( __.a.Protocol ):
         configuration_[ self.address[ -1 ] ] = value
 
 
-@__.standard_dataclass
-class ElementsEntryEdit( Edit ):
+class ElementsEntryEdit(
+    Edit,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Applies entry edit to every matching dictionary in array. '''
-    # TODO: Immutable class and instance attributes.
 
     editee: tuple[ str, __.a.Any ]
     identifier: __.a.Nullable[ tuple[ str, __.a.Any ] ] = None
@@ -83,10 +86,11 @@ class ElementsEntryEdit( Edit ):
             element[ ename ] = evalue
 
 
-@__.standard_dataclass
-class SimpleEdit( Edit ):
+class SimpleEdit(
+    Edit,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Applies edit to single entity. '''
-    # TODO: Immutable class and instance attributes.
 
     value: __.a.Any
 
