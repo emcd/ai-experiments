@@ -111,13 +111,6 @@ class ProtocolClassEnhancements( enum.IntFlag ):
     RuntimeCheckable =  produce_enumeration_value( )
 
 
-class ProtocolDataclassEnhancements( enum.IntFlag ):
-    ''' Enhancements which can be applied to protocol dataclasses. '''
-
-    Nothing =           0
-    RuntimeCheckable =  produce_enumeration_value( )
-
-
 class ImmutableClass( type ):
     ''' Prevents mutation of class attributes. '''
 
@@ -148,8 +141,13 @@ class ImmutableClass( type ):
 class ImmutableDataclass( type ):
     ''' Prevents mutation of dataclass attributes. '''
 
-    def __new__( factory, name, bases, namespace, **args ):
-        original_class = super( ).__new__( factory, name, bases, namespace )
+    def __new__(
+        factory, name, bases, namespace, *,
+        dataclass_arguments = DictionaryProxy( { } ),
+        **args
+    ):
+        original_class = super( ).__new__(
+            factory, name, bases, namespace, **args )
         # Note: CPython "slots = True" recreates class with slots.
         # Short-circuit to prevent recursive decoration and tangles.
         if getattr( original_class, '_defer_immutability_', False ):
@@ -157,9 +155,7 @@ class ImmutableDataclass( type ):
         original_class._defer_immutability_ = True
         # TODO: Ensure correct argument ordering for stacked dataclasses.
         #       (Seeing error about non-default arguments following defaults.)
-        if ( dcargs := args.get( 'dataclass_arguments' ) ):
-            class_ = dataclass( **dcargs )( original_class )
-        else: class_ = dataclass( original_class )
+        class_ = dataclass( **dataclass_arguments )( original_class )
         if class_ is not original_class:
             from platform import python_implementation
             if 'CPython' == python_implementation( ):
@@ -190,13 +186,15 @@ class ImmutableDataclass( type ):
 class ImmutableProtocolClass( a.Protocol.__class__ ):
     ''' Prevents mutation of protocol class factory attributes. '''
 
-    def __new__( factory, name, bases, namespace, **args ):
-        class_ = super( ).__new__( factory, name, bases, namespace )
-        enhancements = args.get(
-            'class_enhancements', ProtocolClassEnhancements.Nothing
-        )
-        if ProtocolClassEnhancements.RuntimeCheckable & enhancements:
-            class_ = a.runtime_checkable( class_ )
+    def __new__(
+        factory, name, bases, namespace, *,
+        protocol_class_enhancements = ProtocolClassEnhancements.Nothing,
+        **args
+    ):
+        class_ = super( ).__new__( factory, name, bases, namespace, **args )
+        if (    ProtocolClassEnhancements.RuntimeCheckable
+            &   protocol_class_enhancements
+        ): class_ = a.runtime_checkable( class_ )
         return class_
 
     def __init__( selfclass, *posargs, **nomargs ):
@@ -226,31 +224,33 @@ class ImmutableProtocolClass( a.Protocol.__class__ ):
 class ImmutableProtocolDataclass( a.Protocol.__class__ ):
     ''' Prevents mutation of protocol dataclass attributes. '''
 
-    def __new__( factory, name, bases, namespace, **args ):
-        original_class = super( ).__new__( factory, name, bases, namespace )
+    def __new__(
+        factory, name, bases, namespace, *,
+        dataclass_arguments = DictionaryProxy( { } ),
+        protocol_class_enhancements = ProtocolClassEnhancements.Nothing,
+        **args
+    ):
+        original_class = super( ).__new__(
+            factory, name, bases, namespace, **args )
         # Note: CPython "slots = True" recreates class with slots.
         # Short-circuit to prevent recursive decoration and tangles.
         if getattr( original_class, '_defer_immutability_', False ):
             return original_class
         original_class._defer_immutability_ = True
-        if ( dcargs := args.get( 'dataclass_arguments' ) ):
-            class_ = dataclass( **dcargs )( original_class )
-        else: class_ = dataclass( original_class )
+        class_ = dataclass( **dataclass_arguments )( original_class )
         if class_ is not original_class:
             from platform import python_implementation
             if 'CPython' == python_implementation( ):
                 _repair_cpython_dataclass_closures( original_class, class_ )
-        enhancements = args.get(
-            'class_enhancements', ProtocolDataclassEnhancements.Nothing
-        )
-        if ProtocolDataclassEnhancements.RuntimeCheckable & enhancements:
-            class_ = a.runtime_checkable( class_ )
+        if (    ProtocolClassEnhancements.RuntimeCheckable
+            &   protocol_class_enhancements
+        ): class_ = a.runtime_checkable( class_ )
         class_._defer_immutability_ = False
         return class_
 
     def __init__( selfclass, *posargs, **nomargs ):
         super( ).__init__( *posargs, **nomargs )
-        # Protocol sets class attributes on __init__.
+        # Protocol metaclass sets class attributes on __init__.
         if selfclass._defer_immutability_: return
         del selfclass._defer_immutability_
         selfclass._immutable_ = True

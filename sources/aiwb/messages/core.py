@@ -73,7 +73,8 @@ class DirectoryManager(
 class Content(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
-    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
+    protocol_class_enhancements = (
+        __.ProtocolClassEnhancements.RuntimeCheckable ),
 ):
     ''' Base for various content types. '''
 

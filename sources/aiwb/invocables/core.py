@@ -47,7 +47,8 @@ class Ensemble(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
+    protocol_class_enhancements = (
+        __.ProtocolClassEnhancements.RuntimeCheckable ),
 ):
     ''' Ensemble of invokers for related tools. '''
 

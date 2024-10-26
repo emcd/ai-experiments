@@ -29,7 +29,8 @@ from . import __
 class Definition(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolClass,
-    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+    protocol_class_enhancements = (
+        __.ProtocolClassEnhancements.RuntimeCheckable ),
 ):
     ''' Definition of prompt. Produces prompt instances. '''
     # TODO: Immutability of instances.
@@ -42,7 +43,8 @@ class Definition(
     class Instance(
         __.a.Protocol,
         metaclass = __.ImmutableProtocolClass,
-        class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+        protocol_class_enhancements = (
+            __.ProtocolClassEnhancements.RuntimeCheckable ),
     ):
         ''' Renderable instance of prompt. '''
         # TODO: Immutability of instances.
@@ -87,7 +89,8 @@ class Store(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
+    protocol_class_enhancements = (
+        __.ProtocolClassEnhancements.RuntimeCheckable ),
 ):
     ''' Record for prompt store. '''
 
