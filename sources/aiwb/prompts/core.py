@@ -26,20 +26,26 @@ from __future__ import annotations
 from . import __
 
 
-@__.a.runtime_checkable
-class Definition( __.a.Protocol ):
+class Definition(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolClass,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' Definition of prompt. Produces prompt instances. '''
-    # TODO: Immutability of class and instances.
+    # TODO: Immutability of instances.
 
     name: str
     store: Store
 
     __slots__ = ( 'name', 'store', )
 
-    @__.a.runtime_checkable
-    class Instance( __.a.Protocol ):
+    class Instance(
+        __.a.Protocol,
+        metaclass = __.ImmutableProtocolClass,
+        class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+    ):
         ''' Renderable instance of prompt. '''
-        # TODO: Immutability of class and instances.
+        # TODO: Immutability of instances.
 
         __slots__ = ( 'definition', )
 
@@ -81,7 +87,7 @@ class Store(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Record for prompt store. '''
 

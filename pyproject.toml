@@ -230,6 +230,7 @@ valid-metaclass-classmethod-first-arg = [ 'maker', 'factory' ]
 ignored-parents = [
   'aiwb.libcore.base.Omnierror',
   'aiwb.libcore.base.Omniexception',
+  'enum.Enum',
   'panel.reactive.ReactiveHTML',
   'panel.template.base.Template',
   'typing.Protocol',

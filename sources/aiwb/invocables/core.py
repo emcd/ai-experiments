@@ -32,8 +32,10 @@ ArgumentsModel: __.a.TypeAlias = __.DictionaryProxy[ str, __.a.Any ]
 #ArgumentsModel: __.a.TypeAlias = type[ __.pydantic.BaseModel ]
 
 
-@__.standard_dataclass
-class Context:
+class Context(
+    metaclass = __.ImmutableDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Context data transfer object. '''
 
     auxdata: __.Globals
@@ -41,9 +43,12 @@ class Context:
     supplements: __.AccretiveNamespace
 
 
-@__.a.runtime_checkable
-@__.standard_dataclass
-class Ensemble( __.a.Protocol ):
+class Ensemble(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
+):
     ''' Ensemble of invokers for related tools. '''
 
     name: str
@@ -67,8 +72,10 @@ class Ensemble( __.a.Protocol ):
             invoker.name: invoker for invoker in invokers } )
 
 
-@__.standard_dataclass
-class Invoker:
+class Invoker(
+    metaclass = __.ImmutableDataclass,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
     ''' Calls tool registered to it. '''
 
     name: str

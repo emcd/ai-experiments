@@ -50,8 +50,10 @@ async def prepare(
 __.preparers[ _name ] = prepare
 
 
-@__.standard_dataclass
-class Ensemble( __.Ensemble ):
+class Ensemble(
+    __.Ensemble,
+    dataclass_arguments = __.standard_dataclass_arguments,
+):
 
     async def prepare_invokers(
         self, auxdata: __.Globals

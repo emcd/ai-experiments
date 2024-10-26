@@ -104,6 +104,20 @@ def calculate_class_fqname( class_: type ) -> str:
     return f"{class_.__module__}.{class_.__qualname__}"
 
 
+class ProtocolClassEnhancements( enum.IntFlag ):
+    ''' Enhancements which can be applied to protocol classes. '''
+
+    Nothing =           0
+    RuntimeCheckable =  produce_enumeration_value( )
+
+
+class ProtocolDataclassEnhancements( enum.IntFlag ):
+    ''' Enhancements which can be applied to protocol dataclasses. '''
+
+    Nothing =           0
+    RuntimeCheckable =  produce_enumeration_value( )
+
+
 class ImmutableClass( type ):
     ''' Prevents mutation of class attributes. '''
 
@@ -178,7 +192,10 @@ class ImmutableProtocolClass( a.Protocol.__class__ ):
 
     def __new__( factory, name, bases, namespace, **args ):
         class_ = super( ).__new__( factory, name, bases, namespace )
-        if args.get( 'runtime_checkable', False ):
+        enhancements = args.get(
+            'class_enhancements', ProtocolClassEnhancements.Nothing
+        )
+        if ProtocolClassEnhancements.RuntimeCheckable & enhancements:
             class_ = a.runtime_checkable( class_ )
         return class_
 
@@ -223,7 +240,10 @@ class ImmutableProtocolDataclass( a.Protocol.__class__ ):
             from platform import python_implementation
             if 'CPython' == python_implementation( ):
                 _repair_cpython_dataclass_closures( original_class, class_ )
-        if args.get( 'runtime_checkable', False ):
+        enhancements = args.get(
+            'class_enhancements', ProtocolDataclassEnhancements.Nothing
+        )
+        if ProtocolDataclassEnhancements.RuntimeCheckable & enhancements:
             class_ = a.runtime_checkable( class_ )
         class_._defer_immutability_ = False
         return class_

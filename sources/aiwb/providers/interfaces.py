@@ -31,7 +31,7 @@ class Client(
     __.a.Protocol[ _core.ClientImplement ],
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Interacts with AI provider. '''
 
@@ -122,7 +122,7 @@ class ControlsProcessor(
     __.a.Protocol[ _core.NativeControls ],
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Handles model controls. '''
 
@@ -154,7 +154,7 @@ class ConversationTokenizer(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Tokenizes conversation or piece of text for counting. '''
 
@@ -180,7 +180,7 @@ class Provider(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Produces clients. '''
 
@@ -204,7 +204,7 @@ class InvocationsProcessor(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Handles everything related to invocations. '''
 
@@ -258,7 +258,7 @@ class MessagesProcessor(
     __.a.Protocol[ _core.NativeMessages ],
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Handles everything related to messages. '''
 
@@ -282,7 +282,7 @@ class Model(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Represents an AI model. '''
 
@@ -322,7 +322,7 @@ class ModelAttributes(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Attributes for all genera of AI models. '''
 
@@ -352,7 +352,7 @@ class ModelAttributes(
 class ConverserModel(
     Model, __.a.Protocol,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Represents AI chat model. '''
 
@@ -443,7 +443,7 @@ class ConverserSerdeProcessor(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' (De)serialization in preferred formats for converser model. '''
 

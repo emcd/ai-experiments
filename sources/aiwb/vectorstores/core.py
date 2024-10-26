@@ -30,7 +30,7 @@ class Factory(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolDataclass,
     dataclass_arguments = __.standard_dataclass_arguments,
-    runtime_checkable = True,
+    class_enhancements = __.ProtocolDataclassEnhancements.RuntimeCheckable,
 ):
     ''' Produces clients. '''
 
