@@ -446,7 +446,9 @@ class CompactSelector( ReactiveHTML ):
         self.value = event.data[ 'target' ][ 'value' ]
 
 
-class ConversationDescriptor( metaclass = __.ImmutableDataclass ):
+class ConversationDescriptor(
+    metaclass = __.ImmutableClass, class_decorators = ( __.dataclass, )
+):
 
     identity: str = (
         __.dataclass_declare( default_factory = lambda: __.uuid4( ).hex ) )

@@ -33,8 +33,8 @@ ArgumentsModel: __.a.TypeAlias = __.DictionaryProxy[ str, __.a.Any ]
 
 
 class Context(
-    metaclass = __.ImmutableDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
 ):
     ''' Context data transfer object. '''
 
@@ -45,10 +45,8 @@ class Context(
 
 class Ensemble(
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Ensemble of invokers for related tools. '''
 
@@ -74,8 +72,8 @@ class Ensemble(
 
 
 class Invoker(
-    metaclass = __.ImmutableDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
 ):
     ''' Calls tool registered to it. '''
 

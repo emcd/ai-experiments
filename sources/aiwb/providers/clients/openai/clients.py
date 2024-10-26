@@ -38,9 +38,7 @@ _supported_model_genera = frozenset( (
 ) )
 
 
-class Client(
-    __.Client, dataclass_arguments = __.standard_dataclass_arguments
-):
+class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
 
     async def access_model(
         self,
@@ -125,10 +123,7 @@ class Client(
 # TODO: AzureClient
 
 
-class OpenAIClient(
-    Client,
-    dataclass_arguments = __.standard_dataclass_arguments,
-):
+class OpenAIClient( Client, class_decorators = ( __.standard_dataclass, ) ):
 
     @classmethod
     async def assert_environment( selfclass, auxdata: __.CoreGlobals ):
@@ -159,9 +154,7 @@ class OpenAIClient(
         return AsyncOpenAI( )
 
 
-class Provider(
-    __.Provider, dataclass_arguments = __.standard_dataclass_arguments
-):
+class Provider( __.Provider, class_decorators = ( __.standard_dataclass, ) ):
 
     async def produce_client(
         self,

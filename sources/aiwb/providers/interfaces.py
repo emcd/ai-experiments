@@ -29,10 +29,8 @@ from . import core as _core
 
 class Client(
     __.a.Protocol[ _core.ClientImplement ],
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Interacts with AI provider. '''
 
@@ -121,10 +119,8 @@ class Client(
 
 class ControlsProcessor(
     __.a.Protocol[ _core.NativeControls ],
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Handles model controls. '''
 
@@ -154,10 +150,8 @@ class ControlsProcessor(
 
 class ConversationTokenizer(
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Tokenizes conversation or piece of text for counting. '''
 
@@ -181,10 +175,8 @@ class ConversationTokenizer(
 
 class Provider(
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Produces clients. '''
 
@@ -206,10 +198,8 @@ class Provider(
 
 class InvocationsProcessor(
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Handles everything related to invocations. '''
 
@@ -261,10 +251,8 @@ class InvocationsProcessor(
 
 class MessagesProcessor(
     __.a.Protocol[ _core.NativeMessages ],
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Handles everything related to messages. '''
 
@@ -286,10 +274,8 @@ class MessagesProcessor(
 
 class Model(
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Represents an AI model. '''
 
@@ -327,10 +313,8 @@ class Model(
 
 class ModelAttributes(
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Attributes for all genera of AI models. '''
 
@@ -359,9 +343,7 @@ class ModelAttributes(
 
 class ConverserModel(
     Model, __.a.Protocol,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Represents AI chat model. '''
 
@@ -405,8 +387,7 @@ class ConverserModel(
 
 
 class ConverserAttributes(
-    ModelAttributes,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    ModelAttributes, class_decorators = ( __.standard_dataclass, )
 ):
     ''' Common attributes for AI chat models. '''
 
@@ -450,10 +431,8 @@ class ConverserAttributes(
 
 class ConverserSerdeProcessor(
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' (De)serialization in preferred formats for converser model. '''
 

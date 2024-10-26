@@ -98,180 +98,114 @@ from accretive.qaliases import (
 from . import _annotations as a
 from . import _generics as g
 
+# TODO: Python 3.12: Use type statement for aliases.
+ClassDecorators: a.TypeAlias = AbstractIterable[ a.Callable[ [ type ], type ] ]
+NominativeArgumentsDictionary: a.TypeAlias = AbstractDictionary[ str, a.Any ]
+
 
 def calculate_class_fqname( class_: type ) -> str:
     ''' Calculates fully-qualified name for class. '''
     return f"{class_.__module__}.{class_.__qualname__}"
 
 
-class ProtocolClassEnhancements( enum.IntFlag ):
-    ''' Enhancements which can be applied to protocol classes. '''
-
-    Nothing =           0
-    RuntimeCheckable =  produce_enumeration_value( )
-
-
 class ImmutableClass( type ):
     ''' Prevents mutation of class attributes. '''
 
-    def __new__( factory, name, bases, namespace, **args ):
-        class_ = super( ).__new__( factory, name, bases, namespace )
-        class_._immutable_ = True
-        return class_
-
-    def __delattr__( selfclass, name: str ):
-        if selfclass.__dict__.get( '_immutable_', False ):
-            raise AttributeError(
-                "Cannot delete attribute {name!r} "
-                "on class {class_fqname!r}.".format(
-                    name = name,
-                    class_fqname = calculate_class_fqname( selfclass ) ) )
-        super( ).__delattr__( name )
-
-    def __setattr__( selfclass, name: str, value: a.Any ):
-        if selfclass.__dict__.get( '_immutable_', False ):
-            raise AttributeError(
-                "Cannot assign attribute {name!r} "
-                "on class {class_fqname!r}.".format(
-                    name = name,
-                    class_fqname = calculate_class_fqname( selfclass ) ) )
-        super( ).__setattr__( name, value )
-
-
-class ImmutableDataclass( type ):
-    ''' Prevents mutation of dataclass attributes. '''
-
     def __new__(
         factory, name, bases, namespace, *,
-        dataclass_arguments = DictionaryProxy( { } ),
-        **args
-    ):
-        original_class = super( ).__new__(
-            factory, name, bases, namespace, **args )
-        # Note: CPython "slots = True" recreates class with slots.
-        # Short-circuit to prevent recursive decoration and tangles.
-        if getattr( original_class, '_defer_immutability_', False ):
-            return original_class
-        original_class._defer_immutability_ = True
-        # TODO: Ensure correct argument ordering for stacked dataclasses.
-        #       (Seeing error about non-default arguments following defaults.)
-        class_ = dataclass( **dataclass_arguments )( original_class )
-        if class_ is not original_class:
-            from platform import python_implementation
-            if 'CPython' == python_implementation( ):
-                _repair_cpython_dataclass_closures( original_class, class_ )
-        del class_._defer_immutability_
-        class_._immutable_ = True
-        return class_
-
-    def __delattr__( selfclass, name: str ):
-        if selfclass.__dict__.get( '_immutable_', False ):
-            raise AttributeError(
-                "Cannot delete attribute {name!r} "
-                "on class {class_fqname!r}.".format(
-                    name = name,
-                    class_fqname = calculate_class_fqname( selfclass ) ) )
-        super( ).__delattr__( name )
-
-    def __setattr__( selfclass, name: str, value: a.Any ):
-        if selfclass.__dict__.get( '_immutable_', False ):
-            raise AttributeError(
-                "Cannot assign attribute {name!r} "
-                "on class {class_fqname!r}.".format(
-                    name = name,
-                    class_fqname = calculate_class_fqname( selfclass ) ) )
-        super( ).__setattr__( name, value )
-
-
-class ImmutableProtocolClass( a.Protocol.__class__ ):
-    ''' Prevents mutation of protocol class factory attributes. '''
-
-    def __new__(
-        factory, name, bases, namespace, *,
-        protocol_class_enhancements = ProtocolClassEnhancements.Nothing,
+        class_decorators: ClassDecorators = ( ),
         **args
     ):
         class_ = super( ).__new__( factory, name, bases, namespace, **args )
-        if (    ProtocolClassEnhancements.RuntimeCheckable
-            &   protocol_class_enhancements
-        ): class_ = a.runtime_checkable( class_ )
-        return class_
+        return _immutable_class__new__(
+            class_, class_decorators = class_decorators )
 
     def __init__( selfclass, *posargs, **nomargs ):
         super( ).__init__( *posargs, **nomargs )
-        # Protocol sets class attributes on __init__.
-        selfclass._immutable_ = True
+        _immutable_class__init__( selfclass )
 
     def __delattr__( selfclass, name: str ):
-        if selfclass.__dict__.get( '_immutable_', False ):
-            raise AttributeError(
-                "Cannot delete attribute {name!r} "
-                "on class {class_fqname!r}.".format(
-                    name = name,
-                    class_fqname = calculate_class_fqname( selfclass ) ) )
-        super( ).__delattr__( name )
+        if not _immutable_class__delattr__( selfclass, name ):
+            super( ).__delattr__( name )
 
     def __setattr__( selfclass, name: str, value: a.Any ):
-        if selfclass.__dict__.get( '_immutable_', False ):
-            raise AttributeError(
-                "Cannot assign attribute {name!r} "
-                "on class {class_fqname!r}.".format(
-                    name = name,
-                    class_fqname = calculate_class_fqname( selfclass ) ) )
-        super( ).__setattr__( name, value )
+        if not _immutable_class__setattr__( selfclass, name, value ):
+            super( ).__setattr__( name, value )
 
 
-class ImmutableProtocolDataclass( a.Protocol.__class__ ):
-    ''' Prevents mutation of protocol dataclass attributes. '''
+class ImmutableProtocolClass( a.Protocol.__class__ ):
+    ''' Prevents mutation of protocol class attributes. '''
 
     def __new__(
         factory, name, bases, namespace, *,
-        dataclass_arguments = DictionaryProxy( { } ),
-        protocol_class_enhancements = ProtocolClassEnhancements.Nothing,
+        class_decorators: ClassDecorators = ( ),
         **args
     ):
-        original_class = super( ).__new__(
-            factory, name, bases, namespace, **args )
-        # Note: CPython "slots = True" recreates class with slots.
-        # Short-circuit to prevent recursive decoration and tangles.
-        if getattr( original_class, '_defer_immutability_', False ):
-            return original_class
-        original_class._defer_immutability_ = True
-        class_ = dataclass( **dataclass_arguments )( original_class )
-        if class_ is not original_class:
-            from platform import python_implementation
-            if 'CPython' == python_implementation( ):
-                _repair_cpython_dataclass_closures( original_class, class_ )
-        if (    ProtocolClassEnhancements.RuntimeCheckable
-            &   protocol_class_enhancements
-        ): class_ = a.runtime_checkable( class_ )
-        class_._defer_immutability_ = False
-        return class_
+        class_ = super( ).__new__( factory, name, bases, namespace, **args )
+        return _immutable_class__new__(
+            class_, class_decorators = class_decorators )
 
     def __init__( selfclass, *posargs, **nomargs ):
         super( ).__init__( *posargs, **nomargs )
-        # Protocol metaclass sets class attributes on __init__.
-        if selfclass._defer_immutability_: return
-        del selfclass._defer_immutability_
-        selfclass._immutable_ = True
+        _immutable_class__init__( selfclass )
 
     def __delattr__( selfclass, name: str ):
-        if selfclass.__dict__.get( '_immutable_', False ):
-            raise AttributeError(
-                "Cannot delete attribute {name!r} "
-                "on class {class_fqname!r}.".format(
-                    name = name,
-                    class_fqname = calculate_class_fqname( selfclass ) ) )
-        super( ).__delattr__( name )
+        if not _immutable_class__delattr__( selfclass, name ):
+            super( ).__delattr__( name )
 
     def __setattr__( selfclass, name: str, value: a.Any ):
-        if selfclass.__dict__.get( '_immutable_', False ):
-            raise AttributeError(
-                "Cannot assign attribute {name!r} "
-                "on class {class_fqname!r}.".format(
-                    name = name,
-                    class_fqname = calculate_class_fqname( selfclass ) ) )
-        super( ).__setattr__( name, value )
+        if not _immutable_class__setattr__( selfclass, name, value ):
+            super( ).__setattr__( name, value )
+
+
+def _immutable_class__new__(
+    original: type,
+    class_decorators: ClassDecorators = ( ),
+    # TODO: mutable_class_attributes
+) -> type:
+    # Some decorators create new classes, which invokes this method again.
+    # Short-circuit to prevent recursive decoration and other tangles.
+    class_decorators_ = original.__dict__.get( '_class_decorators_', [ ] )
+    if class_decorators_: return original
+    setattr( original, '_class_decorators_', class_decorators_ )
+    reproduction = original
+    for decorator in class_decorators:
+        class_decorators_.append( decorator )
+        reproduction = decorator( original )
+        if original is not reproduction:
+            _repair_class_reproduction( original, reproduction )
+        original = reproduction
+    class_decorators_.clear( ) # Flag '__init__' to enable immutability.
+    return reproduction
+
+
+def _immutable_class__init__( class_: type ):
+    if class_.__dict__.get( '_class_decorators_' ): return
+    # Some metaclasses add class attributes in '__init__' method.
+    # So, we wait until last possible moment to set immutability.
+    del class_._class_decorators_
+    # TODO: Add 'immutable' to '_class_behaviors_' accretive set.
+    setattr( class_, '_immutable_', True )
+
+
+def _immutable_class__delattr__( class_: type, name: str ) -> bool:
+    if not class_.__dict__.get( '_immutable_' ): return False
+    raise AttributeError(
+        "Cannot delete attribute {name!r} "
+        "on class {class_fqname!r}.".format(
+            name = name,
+            class_fqname = calculate_class_fqname( class_ ) ) )
+
+
+def _immutable_class__setattr__(
+    class_: type, name: str, value: a.Any
+) -> bool:
+    if not class_.__dict__.get( '_immutable_' ): return False
+    raise AttributeError(
+        "Cannot assign attribute {name!r} "
+        "on class {class_fqname!r}.".format(
+            name = name,
+            class_fqname = calculate_class_fqname( class_ ) ) )
 
 
 class ImmutableObject( metaclass = ImmutableClass ):
@@ -336,7 +270,6 @@ class Absent( Falsifier, ImmutableObject ):
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-NominativeArgumentsDictionary: a.TypeAlias = AbstractDictionary[ str, a.Any ]
 # NOTE: Nullability and optionality are NOT the same thing.
 #       We have aliased 'typing.Optional' to 'Nullable'.
 #       The 'Optional' defined below is NOT the same as 'typing.Optional'!
@@ -358,10 +291,7 @@ absent: a.Annotation[
     Absent, a.Doc( ''' Sentinel for option with no default value. ''' )
 ] = Absent( )
 package_name = __package__.split( '.', maxsplit = 1 )[ 0 ]
-# TODO: Remove 'standard_dataclass'. Use arguments with metaclass instead.
 standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
-standard_dataclass_arguments = DictionaryProxy( dict(
-    frozen = True, kw_only = True, slots = True ) )
 
 
 async def chain_async( *iterables: AbstractIterable | AbstractIterableAsync ):
@@ -481,7 +411,14 @@ async def _gather_async_strict(
     return await gather( *awaitables )
 
 
-def _repair_cpython_dataclass_closures( oldcls, newcls ):
+def _repair_class_reproduction( original, reproduction ):
+    from platform import python_implementation
+    match python_implementation( ):
+        case 'CPython':
+            _repair_cpython_class_closures( original, reproduction )
+
+
+def _repair_cpython_class_closures( oldcls, newcls ):
     # https://github.com/python/cpython/issues/90562
     # https://github.com/python/cpython/pull/124455/files
     def try_repair_closure( function ):

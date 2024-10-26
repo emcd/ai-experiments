@@ -36,8 +36,8 @@ class DirectorySpecies( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class Globals(
-    metaclass = __.ImmutableDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
 ):
     ''' Immutable global data. Required by many library functions. '''
 

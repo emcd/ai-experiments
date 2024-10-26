@@ -30,6 +30,8 @@ from . import state as _state
 @__.standard_dataclass
 class Cli( __.CoreCli ):
     ''' Utility for configuration, inspection, and tests of application. '''
+    # TODO: metaclass = AccretiveDataclass
+    #       Accretive, because Tyro adds class attributes.
 
     # TODO: Add commands for prompts, providers, and vectorstores.
     configuration: ConfigurationModifiers

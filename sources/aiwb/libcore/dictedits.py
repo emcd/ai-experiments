@@ -28,10 +28,8 @@ from . import __
 
 class Edit(
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Base representation of an edit to configuration. '''
 
@@ -66,10 +64,7 @@ class Edit(
         configuration_[ self.address[ -1 ] ] = value
 
 
-class ElementsEntryEdit(
-    Edit,
-    dataclass_arguments = __.standard_dataclass_arguments,
-):
+class ElementsEntryEdit( Edit, class_decorators = ( __.standard_dataclass, ) ):
     ''' Applies entry edit to every matching dictionary in array. '''
 
     editee: tuple[ str, __.a.Any ]
@@ -87,10 +82,7 @@ class ElementsEntryEdit(
             element[ ename ] = evalue
 
 
-class SimpleEdit(
-    Edit,
-    dataclass_arguments = __.standard_dataclass_arguments,
-):
+class SimpleEdit( Edit, class_decorators = ( __.standard_dataclass, ) ):
     ''' Applies edit to single entity. '''
 
     value: __.a.Any

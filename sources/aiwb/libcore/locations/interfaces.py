@@ -39,8 +39,7 @@ from . import exceptions as _exceptions
 class _Common(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolClass,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Common functionality across all accessors. '''
 
@@ -86,8 +85,7 @@ class _Common(
 
 class AdapterBase(
     _Common, __.a.Protocol,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Common functionality for all access adapters. '''
 
@@ -102,8 +100,7 @@ class AdapterBase(
 
 class CacheBase(
     _Common, __.a.Protocol,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Common functionality for all caches. '''
 
@@ -120,8 +117,7 @@ class Filter( __.a.Protocol ):
 class DirectoryOperations(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolClass,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Standard operations on directories. '''
 
@@ -194,8 +190,7 @@ class DirectoryOperations(
 class FileOperations(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolClass,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Standard operations on files. '''
 
@@ -231,8 +226,7 @@ class FileOperations(
 class GeneralOperations(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolClass,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Standard operations on locations of indeterminate species. '''
 
@@ -303,8 +297,7 @@ class GeneralOperations(
 class ReconciliationOperations(
     __.a.Protocol,
     metaclass = __.ImmutableProtocolClass,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Standard operations for cache reconciliation. '''
 
@@ -355,24 +348,21 @@ class ReconciliationOperations(
 
 class DirectoryAdapter(
     AdapterBase, DirectoryOperations, __.a.Protocol,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Directory access adapter. '''
 
 
 class FileAdapter(
     AdapterBase, FileOperations, __.a.Protocol,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' File access adapter. '''
 
 
 class GeneralAdapter(
     AdapterBase, GeneralOperations, __.a.Protocol,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' General location access adapter. '''
 
@@ -385,8 +375,7 @@ class GeneralAdapter(
 
 class CacheManager(
     ReconciliationOperations, __.a.Protocol,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Manager for collection of caches.
 
@@ -413,24 +402,21 @@ class CacheManager(
 
 class DirectoryCache(
     CacheBase, DirectoryOperations, __.a.Protocol,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Directory cache. '''
 
 
 class FileCache(
     CacheBase, FileOperations, __.a.Protocol,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' File cache. '''
 
 
 class GeneralCache(
     CacheBase, GeneralOperations, __.a.Protocol,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' General location cache. '''
 

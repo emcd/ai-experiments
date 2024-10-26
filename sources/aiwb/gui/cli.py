@@ -31,6 +31,8 @@ from . import state as _state
 @__.standard_dataclass
 class Cli( __.ApiServerCli ):
     ''' Configuration and execution of GUI application. '''
+    # TODO: metaclass = AccretiveDataclass
+    #       Accretive, because Tyro adds class attributes.
 
     guiserver: _server.Control = _server.Control( )
     command: __.a.Union[

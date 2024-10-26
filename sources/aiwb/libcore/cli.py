@@ -39,6 +39,8 @@ __.tyro.conf.configure( __.tyro.conf.OmitArgPrefixes )(
 @__.standard_dataclass
 class Cli:
     ''' Utility for inspection and tests of library core. '''
+    # TODO: metaclass = AccretiveDataclass
+    #       Accretive, because Tyro adds class attributes.
 
     application: _application.Information
     configfile: __.a.Nullable[ str ] = None

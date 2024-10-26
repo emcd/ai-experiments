@@ -28,10 +28,8 @@ from . import __
 
 class Factory(
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Produces clients. '''
 

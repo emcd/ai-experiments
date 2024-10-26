@@ -27,8 +27,8 @@ from . import __
 
 
 class DirectoryManager(
-    metaclass = __.ImmutableDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
 ):
     ''' Manages conversation and message content directories. '''
 
@@ -72,9 +72,8 @@ class DirectoryManager(
 
 class Content(
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolDataclass,
-    protocol_class_enhancements = (
-        __.ProtocolClassEnhancements.RuntimeCheckable ),
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.dataclass, __.a.runtime_checkable ),
 ):
     ''' Base for various content types. '''
 
@@ -84,7 +83,7 @@ class Content(
         raise NotImplementedError
 
 
-class TextualContent( Content ):
+class TextualContent( Content, class_decorators = ( __.dataclass, ) ):
     ''' Descriptor and data for textual content. '''
 
     data: str
@@ -160,7 +159,10 @@ class Role( __.Enum ): # TODO: Python 3.11: StrEnum
             case self.User: return UserCanister( **nomargs )
 
 
-class Canister( metaclass = __.ImmutableDataclass ):
+class Canister(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
+):
     ''' Message canister which can have multiple contents. '''
 
     attributes: __.SimpleNamespace = (

@@ -52,7 +52,7 @@ __.preparers[ _name ] = prepare
 
 class Ensemble(
     __.Ensemble,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    class_decorators = ( __.standard_dataclass, ),
 ):
 
     async def prepare_invokers(

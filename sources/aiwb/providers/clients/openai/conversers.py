@@ -46,8 +46,7 @@ class NativeMessageRefinementActions( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class Attributes(
-    __.ConverserAttributes,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    __.ConverserAttributes, class_decorators = ( __.standard_dataclass, )
 ):
     ''' Common attributes for OpenAI chat models. '''
 
@@ -81,8 +80,7 @@ class Attributes(
 
 
 class ControlsProcessor(
-    __.ControlsProcessor,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    __.ControlsProcessor, class_decorators = ( __.standard_dataclass, )
  ):
 
     def nativize_controls(
@@ -101,8 +99,7 @@ class ControlsProcessor(
 
 
 class SerdeProcessor(
-    __.ConverserSerdeProcessor,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    __.ConverserSerdeProcessor, class_decorators = ( __.standard_dataclass, )
 ):
 
     def deserialize_data( self, data: str ) -> __.a.Any:
@@ -125,8 +122,7 @@ class SerdeProcessor(
 
 
 class Model(
-    __.ConverserModel,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    __.ConverserModel, class_decorators = ( __.standard_dataclass, )
 ):
 
     @classmethod
@@ -193,8 +189,7 @@ class Model(
 
 
 class InvocationsProcessor(
-    __.InvocationsProcessor,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    __.InvocationsProcessor, class_decorators = ( __.standard_dataclass, )
 ):
     ''' Handles functions and tool calls. '''
 
@@ -271,8 +266,7 @@ class InvocationsProcessor(
 
 
 class MessagesProcessor(
-    __.MessagesProcessor,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    __.MessagesProcessor, class_decorators = ( __.standard_dataclass, )
 ):
     ''' Handles conversation messages in OpenAI format. '''
 
@@ -289,8 +283,7 @@ class MessagesProcessor(
 
 
 class Tokenizer(
-    __.ConversationTokenizer,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    __.ConversationTokenizer, class_decorators = ( __.standard_dataclass, )
 ):
     ''' Tokenizes conversations and text with OpenAI tokenizers. '''
 

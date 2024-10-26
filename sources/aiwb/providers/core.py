@@ -32,8 +32,8 @@ NativeMessages = __.a.TypeVar( 'NativeMessages', covariant = True )
 
 
 class ChatCallbacks(
-    metaclass = __.ImmutableDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
 ):
     ''' Callbacks for AI provider to correspond with caller. '''
 
@@ -52,8 +52,8 @@ class ChatCallbacks(
 
 
 class ClientDefaults(
-    metaclass = __.ImmutableDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
 ):
     ''' Collection of default values for AI provider. '''
 
@@ -76,8 +76,8 @@ class ClientDefaults(
 
 
 class ClientAttributes(
-    metaclass = __.ImmutableDataclass,
-    dataclass_arguments = __.standard_dataclass_arguments,
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
 ):
     ''' Common attributes for AI provider clients. '''
 
