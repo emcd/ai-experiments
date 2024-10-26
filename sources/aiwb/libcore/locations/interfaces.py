@@ -36,9 +36,12 @@ from . import core as _core
 from . import exceptions as _exceptions
 
 
-class _Common( __.a.Protocol ):
-    # TODO: Make public so that implemenation commons can inherit.
-    #       (Typechecker appeasement.)
+class _Common(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolClass,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
+    ''' Common functionality across all accessors. '''
 
     def __str__( self ) -> str: return str( self.as_url( ) )
 
@@ -80,8 +83,10 @@ class _Common( __.a.Protocol ):
     # TODO: register_notifier
 
 
-@__.a.runtime_checkable
-class AdapterBase( _Common, __.a.Protocol ):
+class AdapterBase(
+    _Common, __.a.Protocol,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' Common functionality for all access adapters. '''
 
     @classmethod
@@ -93,8 +98,10 @@ class AdapterBase( _Common, __.a.Protocol ):
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-class CacheBase( _Common, __.a.Protocol ):
+class CacheBase(
+    _Common, __.a.Protocol,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' Common functionality for all caches. '''
 
 
@@ -107,8 +114,11 @@ class Filter( __.a.Protocol ):
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-class DirectoryOperations( __.a.Protocol ):
+class DirectoryOperations(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolClass,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' Standard operations on directories. '''
 
     @__.abstract_member_function
@@ -177,8 +187,11 @@ class DirectoryOperations( __.a.Protocol ):
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-class FileOperations( __.a.Protocol ):
+class FileOperations(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolClass,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' Standard operations on files. '''
 
     @__.abstract_member_function
@@ -210,8 +223,11 @@ class FileOperations( __.a.Protocol ):
     # TODO: update_content_continuous
 
 
-@__.a.runtime_checkable
-class GeneralOperations( __.a.Protocol ):
+class GeneralOperations(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolClass,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' Standard operations on locations of indeterminate species. '''
 
     @__.abstract_member_function
@@ -278,8 +294,11 @@ class GeneralOperations( __.a.Protocol ):
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-class ReconciliationOperations( __.a.Protocol ):
+class ReconciliationOperations(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolClass,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' Standard operations for cache reconciliation. '''
 
     # TODO? Allow aliens, conflicts, and impurities arguments to be single enum
@@ -327,22 +346,25 @@ class ReconciliationOperations( __.a.Protocol ):
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-class DirectoryAdapter( AdapterBase, DirectoryOperations, __.a.Protocol ):
+class DirectoryAdapter(
+    AdapterBase, DirectoryOperations, __.a.Protocol,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' Directory access adapter. '''
-    # TODO: Immutable class and object attributes.
 
 
-@__.a.runtime_checkable
-class FileAdapter( AdapterBase, FileOperations, __.a.Protocol ):
+class FileAdapter(
+    AdapterBase, FileOperations, __.a.Protocol,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' File access adapter. '''
-    # TODO: Immutable class and object attributes.
 
 
-@__.a.runtime_checkable
-class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
+class GeneralAdapter(
+    AdapterBase, GeneralOperations, __.a.Protocol,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' General location access adapter. '''
-    # TODO: Immutable class and object attributes.
 
     @classmethod
     @__.abstract_member_function
@@ -351,13 +373,15 @@ class GeneralAdapter( AdapterBase, GeneralOperations, __.a.Protocol ):
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-class CacheManager( ReconciliationOperations, __.a.Protocol ):
+class CacheManager(
+    ReconciliationOperations, __.a.Protocol,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' Manager for collection of caches.
 
         Typically maintains an anchor path, associated with the root of a
         directory tree, such as the clone of a VCS repository. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
 
     @classmethod
     @__.abstract_member_function
@@ -376,22 +400,25 @@ class CacheManager( ReconciliationOperations, __.a.Protocol ):
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-class DirectoryCache( CacheBase, DirectoryOperations, __.a.Protocol ):
+class DirectoryCache(
+    CacheBase, DirectoryOperations, __.a.Protocol,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' Directory cache. '''
-    # TODO: Immutable class and object attributes.
 
 
-@__.a.runtime_checkable
-class FileCache( CacheBase, FileOperations, __.a.Protocol ):
+class FileCache(
+    CacheBase, FileOperations, __.a.Protocol,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' File cache. '''
-    # TODO: Immutable class and object attributes.
 
 
-@__.a.runtime_checkable
-class GeneralCache( CacheBase, GeneralOperations, __.a.Protocol ):
+class GeneralCache(
+    CacheBase, GeneralOperations, __.a.Protocol,
+    class_enhancements = __.ProtocolClassEnhancements.RuntimeCheckable,
+):
     ''' General location cache. '''
-    # TODO: Immutable class and object attributes.
 
     @classmethod
     @__.abstract_member_function

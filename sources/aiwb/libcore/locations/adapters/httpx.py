@@ -34,8 +34,8 @@ _entity_name = f"location access adapter '{_module_name}'"
 __.AccessImplement.register( _httpx.URL )
 
 
-class _Common:
-    # TODO: Immutable class and object attributes.
+class _Common( __.AdapterBase ):
+    # TODO: Immutable instance attributes.
 
     implement: _httpx.URL
     url: __.Url

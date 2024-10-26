@@ -50,8 +50,7 @@ def _ensures_cache( function: __.a.Callable ):
     return invoker
 
 
-class _Common( __.a.Protocol ):
-    # TODO: Immutable class and object attributes.
+class _Common( __.CacheBase, __.a.Protocol ):
 
     adapter: __.AdapterBase
     cache_url: __.Url
@@ -115,10 +114,9 @@ class _Common( __.a.Protocol ):
         if not exists: await self._ingest( )
 
 
-@__.standard_dataclass
 class CacheManager( __.CacheManager ):
     ''' Simple cache manager which uses separate storage adapter. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
 
     adapter: __.DirectoryAdapter # for storage not source
 
@@ -128,6 +126,10 @@ class CacheManager( __.CacheManager ):
             await __.adapter_from_url( url )
             .as_specific( species = __.LocationSpecies.Directory ) )
         return selfclass( adapter = adapter )
+
+    def __init__( self, adapter: __.DirectoryAdapter ):
+        super( ).__init__( )
+        self.adapter = adapter
 
     def as_url( self ) -> __.Url: return self.adapter.as_url( )
 

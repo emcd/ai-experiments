@@ -35,8 +35,8 @@ _entity_name = f"location access adapter '{_module_name}'"
 __.AccessImplement.register( __.Path )
 
 
-class _Common:
-    # TODO: Immutable class and object attributes.
+class _Common( __.AdapterBase ):
+    # TODO: Immutable instance attributes.
 
     implement: __.Path
     url: __.Url
