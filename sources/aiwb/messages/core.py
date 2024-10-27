@@ -252,17 +252,15 @@ async def restore_canister( manager, canister_state ):
     ''' Restores canister into memory from persistent storage. '''
     nomargs = { }
     role = canister_state[ 'role' ]
-    match role: # TEMP: Until upgrade complete.
-        case 'AI': role = 'assistant'
-        case 'Document': role = 'document'
-        case 'Function': role = 'result'
-        case 'Human': role = 'user'
-        case 'Supervisor': role = 'supervisor'
-    if ( attributes := canister_state.get( 'attributes' ) ):
-        if 'response_class' in attributes: # TEMP: Until upgrade complete.
-            response_class = attributes.pop( 'response_class' )
-            match response_class:
-                case 'invocation': role = 'invocation'
+    if ( attributes := canister_state.get( 'attributes', { } ) ):
+        if 'model_context' in attributes: # TEMP: Until upgrade complete.
+            model_context = attributes[ 'model_context' ]
+            if 'provider' not in model_context:
+                attributes[ 'model_context' ] = {
+                    'provider': 'openai', 'supplement': model_context }
+        elif 'assistant' == role: # TEMP: Until upgrade complete.
+            attributes[ 'model_context' ] = { 'provider': 'openai' }
+        # TODO? Convert hyphenated keys to underscored.
         nomargs[ 'attributes' ] = __.SimpleNamespace( **attributes )
     canister = Role( role ).produce_canister( **nomargs )
     restorers = tuple(

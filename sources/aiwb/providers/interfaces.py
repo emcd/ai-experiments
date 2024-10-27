@@ -240,14 +240,6 @@ class InvocationsProcessor(
         # TODO: Return InvocationRequest instance.
         raise NotImplementedError
 
-    @__.abstract_member_function
-    def validate_request(
-        self,
-        request: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        ''' Validates provider-specific portion of invocation request. '''
-        raise NotImplementedError
-
 
 class MessagesProcessor(
     __.a.Protocol[ _core.NativeMessages ],

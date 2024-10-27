@@ -200,7 +200,6 @@ class InvocationsProcessor(
     ) -> __.MessageCanister:
         request_context = request[ 'context__' ]
         result = await request[ 'invocable__' ]( )
-        # TODO? Include provider and model in result context.
         if 'id' in request_context: # late 2023+ format: parallel tool calls
             result_context = dict(
                 name = request_context[ 'function' ][ 'name' ],
@@ -214,7 +213,11 @@ class InvocationsProcessor(
         canister = (
             __.ResultMessageCanister( )
             .add_content( message, mimetype = 'application/json' ) )
-        canister.attributes.model_context = result_context # TODO? Immutable
+        canister.attributes.model_context = {
+            'provider': self.model.provider.name,
+            'model': self.model.name,
+            'supplement': result_context,
+        } # TODO? Immutable
         return canister
 
     def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
@@ -248,21 +251,31 @@ class InvocationsProcessor(
         canister: __.MessageCanister,
         invocables: __.AccretiveNamespace,
         ignore_invalid_canister: bool = False,
-    ) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
-        return __.invocation_requests_from_canister(
+    ) -> __.AbstractSequence[ __.AbstractMutableDictionary[ str, __.a.Any ] ]:
+        # TODO: Appropriate error classes.
+        requests = __.invocation_requests_from_canister(
             processor = self,
             auxdata = auxdata,
             supplements = supplements,
             canister = canister,
             invocables = invocables,
             ignore_invalid_canister = ignore_invalid_canister )
-
-    def validate_request(
-        self,
-        request: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
-        # TODO: Implement.
-        return request
+        model_context = getattr( canister.attributes, 'model_context', { } )
+        supplement = model_context.get( 'supplement', { } )
+        if ( payload := supplement.get( 'function_call' ) ):
+            if 1 != len( requests ):
+                raise AssertionError(
+                    "Can only have one invocation request "
+                    "with legacy function." )
+            requests[ 0 ][ 'context__' ] = payload
+        elif ( payload := supplement.get( 'tool_calls' ) ):
+            if len( requests ) != len( payload ):
+                raise AssertionError(
+                    "Number of invocation requests must match "
+                    "number of tool calls." )
+            for i, request in enumerate( requests ):
+                request[ 'context__' ] = payload[ i ]
+        return requests
 
 
 class MessagesProcessor(
@@ -322,7 +335,14 @@ def _canister_from_response_element( model, element ):
     # TODO: Appropriate error classes.
     if ( delta := hasattr( element, 'delta' ) ): message = element.delta
     else: message = element.message
-    attributes = __.SimpleNamespace( behaviors = [ ] )
+    attributes = __.SimpleNamespace(
+        behaviors = [ ],
+        model_context = {
+            'provider': model.provider.name,
+            'client': model.client.name,
+            'model': model.name,
+        },
+    )
     if message.content:
         content = '' if delta else message.content
         # TODO: Lookup MIME type from model response format preferences.
@@ -426,10 +446,8 @@ def _merge_native_message(
 def _nativize_assistant_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
-    attributes = canister.attributes
     content: OpenAiMessageContent
-    context = getattr( attributes, 'model_context', { } ).copy( )
-    context[ 'role' ] = 'assistant'
+    context = { 'role': 'assistant' }
     content = _nativize_message_content( model, canister )
     return dict( content = content, **context )
 
@@ -437,10 +455,8 @@ def _nativize_assistant_message(
 def _nativize_document_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
-    attributes = canister.attributes
-    context = getattr( attributes, 'model_context', { } ).copy( )
     # Role not valid to OpenAI. We later convert marker to 'user'.
-    context[ 'role' ] = '#document#'
+    context = { 'role': '#document#' }
     content = '\n\n'.join( (
         '## Supplemental Information ##', canister[ 0 ].data ) )
     return dict( content = content, **context )
@@ -449,50 +465,29 @@ def _nativize_document_message(
 def _nativize_invocation_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
-    # TODO: Appropriate error classes.
-    # TODO: Account for provider which supplied context.
     attributes = canister.attributes
     content: OpenAiMessageContent
-    context = getattr( attributes, 'model_context', { } ).copy( )
-    context[ 'role' ] = 'assistant'
-    if 'tool_calls' in context:
-        if not model.attributes.supports_invocations:
-            context.pop( 'tool_calls' )
-            content = '\n\n'.join( (
-                '## Tool Calls Request ##', canister[ 0 ].data ) )
-            return dict( content = content, **context )
-        return context
-    if 'function_call' in context:
-        if not model.attributes.supports_invocations:
-            context.pop( 'function_call' )
-            content = '\n\n'.join( (
-                '## Tool Call Request ##', canister[ 0 ].data ) )
-            return dict( content = content, **context )
-        return context
-    raise AssertionError( "Invocation request with no context detected." )
-
-
-def _nativize_invocation_result_message(
-    model: Model, canister: __.MessageCanister
-) -> OpenAiMessage:
-    # TODO: Account for provider which supplied context.
-    attributes = canister.attributes
-    content: OpenAiMessageContent
-    context = getattr( attributes, 'model_context', { } ).copy( )
-    if not model.attributes.supports_invocations:
-        context[ 'role' ] = 'user'
-        # TODO? pop 'name'
-        context.pop( 'tool_call_id', None )
-        content = '\n\n'.join( (
-            '## Tool Call Result ##', canister[ 0 ].data ) )
-        return dict( content = content, **context )
-    if not ( role := context.get( 'role' ) ):
+    context = { 'role': 'assistant' }
+    model_context = getattr( attributes, 'model_context', { } ).copy( )
+    supplement = model_context.get( 'supplement', { } )
+    supports_invocations = (
+            model.attributes.supports_invocations
+        and model.provider.name == model_context.get( 'provider' )
+        and { 'function_call', 'tool_calls' } & supplement.keys( ) )
+    if (    supports_invocations
+        and ( calls := supplement.get( 'tool_calls', ( ) ) )
+    ): supports_invocations = all( 'id' in call for call in calls )
+    if supports_invocations:
         match model.attributes.invocations_support_level:
-            case InvocationsSupportLevels.Concurrent: role = 'tool'
-            case InvocationsSupportLevels.Single: role = 'function'
-        context[ 'role' ] = role
-    content = _nativize_message_content( model, canister )
-    return dict( content = content, **context )
+            case InvocationsSupportLevels.Single:
+                supports_invocations = 'function_call' in supplement
+            case InvocationsSupportLevels.Concurrent: pass
+    if not supports_invocations:
+        content = '\n\n'.join( (
+            '## Functions Invocation Request ##', canister[ 0 ].data ) )
+        return dict( content = content, **context )
+    context.update( supplement )
+    return context
 
 
 def _nativize_message(
@@ -508,7 +503,7 @@ def _nativize_message(
         case __.MessageRole.Invocation:
             return _nativize_invocation_message( model, canister )
         case __.MessageRole.Result:
-            return _nativize_invocation_result_message( model, canister )
+            return _nativize_result_message( model, canister )
         case __.MessageRole.Supervisor:
             return _nativize_supervisor_message( model, canister )
         case __.MessageRole.User:
@@ -528,15 +523,45 @@ def _nativize_message_content(
     return content
 
 
-def _nativize_supervisor_message(
+def _nativize_result_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     attributes = canister.attributes
     content: OpenAiMessageContent
-    context = getattr( attributes, 'model_context', { } ).copy( )
+    context = { 'role': 'user' }
+    model_context = getattr( attributes, 'model_context', { } ).copy( )
+    supports_invocations = (
+            model.attributes.supports_invocations
+        and model.provider.name == model_context[ 'provider' ] )
+    supplement = model_context[ 'supplement' ]
+    if supports_invocations:
+        role = supplement.get(
+            'role', 'tool' if 'tool_call_id' in supplement else 'function' )
+        supplement[ 'role' ] = role
+        supports_invocations = (
+                ( 'function' == role and 'tool_call_id' not in supplement )
+            or  ( 'tool' == role and 'tool_call_id' in supplement ) )
+    if supports_invocations:
+        match model.attributes.invocations_support_level:
+            case InvocationsSupportLevels.Single:
+                supports_invocations = 'function' == role
+            case InvocationsSupportLevels.Concurrent: pass
+    if not supports_invocations:
+        content = '\n\n'.join( (
+            '## Functions Invocation Result ##', canister[ 0 ].data ) )
+        return dict( content = content, **context )
+    context.update( supplement )
+    content = _nativize_message_content( model, canister )
+    return dict( content = content, **context )
+
+
+def _nativize_supervisor_message(
+    model: Model, canister: __.MessageCanister
+) -> OpenAiMessage:
+    content: OpenAiMessageContent
     if model.attributes.honors_supervisor_instructions: role = 'system'
     else: role = 'user' # TODO? Add 'name' field to indicate supervisor.
-    context[ 'role' ] = role
+    context = { 'role': role }
     content = _nativize_message_content( model, canister )
     return dict( content = content, **context )
 
@@ -553,10 +578,8 @@ def _nativize_supplements_v0( model: Model, supplements ):
 def _nativize_user_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
-    attributes = canister.attributes
     content: OpenAiMessageContent
-    context = getattr( attributes, 'model_context', { } ).copy( )
-    context[ 'role' ] = 'user'
+    context = { 'role': 'user' }
     content = _nativize_message_content( model, canister )
     return dict( content = content, **context )
 
@@ -566,13 +589,11 @@ def _postprocess_response_canisters( model, indices, reactors ):
     for index, canister in indices.canisters.items( ):
         if index: continue
         if not ( record := indices.records.get( index ) ): continue
-        # TODO: Include provider and model info in model context.
+        canister.attributes.model_context[ 'supplement' ] = record
         if 'tool_calls' in record:
             canister[0].data = _reconstitute_invocations( record )
-            canister.attributes.model_context = record
         elif 'function_call' in record:
             canister[0].data = _reconstitute_legacy_invocation( record )
-            canister.attributes.model_context = record
         reactors.updater( indices.references[ index ] )
 
 

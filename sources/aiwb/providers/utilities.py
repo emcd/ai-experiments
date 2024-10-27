@@ -90,20 +90,17 @@ def invocation_requests_from_canister(
     canister: __.MessageCanister,
     invocables: __.AccretiveNamespace,
     ignore_invalid_canister: bool = False,
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
-    # TODO: Provide supplements based on specification from invocable.
+) -> __.AbstractSequence[ __.AbstractMutableDictionary[ str, __.a.Any ] ]:
     Error = _exceptions.InvocationFormatError
     try: requests = _validate_invocation_requests_canister( canister )
     except Error:
         if ignore_invalid_canister: return [ ]
         raise
+    # TODO: Provide supplements based on specification from invocable.
     supplements[ 'model' ] = processor.model
     invokers = invocables.invokers
-    model_context = getattr( canister.attributes, 'model_context', { } )
-    # TODO: Model-specific... move to correct provider.
-    tool_calls = model_context.get( 'tool_calls' )
     requests_ = [ ]
-    for i, request in enumerate( requests ):
+    for request in requests:
         if not isinstance( request, __.AbstractDictionary ):
             raise Error( 'Tool use request is not dictionary.' )
         if 'name' not in request:
@@ -117,9 +114,6 @@ def invocation_requests_from_canister(
             auxdata = auxdata,
             arguments = arguments,
             supplements = supplements )
-        if tool_calls:
-            request_[ 'context__' ] = (
-                processor.validate_request( tool_calls[ i ] ) )
         requests_.append( request_ )
     return requests_
 
