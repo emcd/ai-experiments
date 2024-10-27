@@ -140,7 +140,7 @@ class _Common( __.AdapterBase ):
 
 class GeneralAdapter( _Common, __.GeneralAdapter ):
     ''' General location access adapter with httpx. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
 
     @classmethod
     def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
@@ -195,7 +195,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
 
 class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with httpx. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
 
     async def acquire_content( self ) -> bytes:
         return ( await self.acquire_content_result( ) ).content

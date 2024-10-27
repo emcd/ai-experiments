@@ -24,30 +24,36 @@
 from . import __
 
 
-@__.standard_dataclass
-class _NotificationBase:
+class _NotificationBase(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
+):
     ''' Common base for notifications. '''
 
     summary: str
     details: __.a.Any
 
 
-@__.standard_dataclass
-class ApprisalNotification( _NotificationBase ):
+class ApprisalNotification(
+    _NotificationBase, class_decorators = ( __.standard_dataclass, )
+):
     ''' Notification for recoverable error or similar condition. '''
 
     exception: BaseException = None
 
 
-@__.standard_dataclass
-class ErrorNotification( _NotificationBase ):
+class ErrorNotification(
+    _NotificationBase, class_decorators = ( __.standard_dataclass, )
+):
     ''' Notification for non-recoverable error. '''
 
     error: Exception
 
 
-@__.standard_dataclass
-class Queue:
+class Queue(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
+):
     ''' Queue for notifications to be consumed by application. '''
 
     # TODO: Hide queue attribute.

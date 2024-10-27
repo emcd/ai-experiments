@@ -122,7 +122,7 @@ class _Common( __.AdapterBase ):
 
 class GeneralAdapter( _Common, __.GeneralAdapter ):
     ''' General location access adapter with aiofiles and pathlib. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
 
     @classmethod
     def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
@@ -188,7 +188,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
 
 class DirectoryAdapter( _Common, __.DirectoryAdapter ):
     ''' Directory access adapter with aiofiles and pathlib. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
     # TODO: Deletion safety.
     #       Refuse to delete /<dir>/<entity> if safe.
     #       Refuse to delete <dir>/<entity> if safe and at root.
@@ -332,7 +332,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
 
 class FileAdapter( _Common, __.FileAdapter ):
     ''' File access adapter with aiofiles and pathlib. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
 
     async def acquire_content( self ) -> bytes:
         return ( await self.acquire_content_result( ) ).content

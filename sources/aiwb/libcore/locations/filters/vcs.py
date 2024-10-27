@@ -111,6 +111,8 @@ class Filter( __.Filter ):
                     if isdir and '.svn' == name: return True
         return False
 
+# TODO: Convert into docstring template and pass 'available' and 'default' via
+#       'docstring_arguments' metaclass argument for 'ImmutableClass'.
 Filter.__doc__ += (
     "\n\nAvailable Matchers: {available}\nDefault Matchers: {default}".format(
         available = ', '.join( _aliases ), default = ', '.join( _defaults ) ) )

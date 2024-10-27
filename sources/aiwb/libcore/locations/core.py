@@ -45,23 +45,27 @@ class AdapterInode( metaclass = __.ABCFactory ):
     # git/hg: relevant branches and tags?
 
 
-@__.standard_dataclass
-class AcquireContentResult:
+class AcquireContentResult(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
+):
     ''' Inode and arbitrary content from acquisition operation. '''
 
     content: __.a.Any
     inode: Inode
 
 
-@__.standard_dataclass
-class AcquireContentBytesResult( AcquireContentResult ):
+class AcquireContentBytesResult(
+    AcquireContentResult, class_decorators = ( __.standard_dataclass, )
+):
     ''' Inode and content, as raw bytes, from acquisition operation. '''
 
     content: bytes
 
 
-@__.standard_dataclass
-class AcquireContentTextResult( AcquireContentResult ):
+class AcquireContentTextResult(
+    AcquireContentResult, class_decorators = ( __.standard_dataclass, )
+):
     ''' Inode and content, as Unicode string, from acquisition operation. '''
 
     content: str
@@ -120,8 +124,10 @@ class ConflictResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum
     #       <remote>/<branch>
 
 
-@__.standard_dataclass
-class DirectoryEntry:
+class DirectoryEntry(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
+):
     ''' Location plus information about it. '''
 
     inode: Inode
@@ -173,8 +179,10 @@ class ImpurityResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum
     #   git stash push --keep-index -- <paths>
 
 
-@__.standard_dataclass
-class Inode:
+class Inode(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, )
+):
     ''' Information about location. '''
 
     species: LocationSpecies
@@ -278,9 +286,9 @@ class Possessor( __.Enum ):
     Omnipopulation = 'everyone'
 
 
-class Url( _UrlParts, metaclass = __.AccretiveClass ):
+class Url( _UrlParts, metaclass = __.ImmutableClass ):
     ''' Tracks URL components separately. Displays as original string. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
 
     @classmethod
     def from_url( selfclass, url: PossibleUrl ) -> __.a.Self:

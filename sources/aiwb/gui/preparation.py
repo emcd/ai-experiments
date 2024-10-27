@@ -26,8 +26,10 @@ from . import server as _server
 from . import state as _state
 
 
-@__.standard_dataclass
-class Manager:
+class Manager(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, )
+):
     ''' Manager for GUI components and server. '''
 
     components: __.SimpleNamespace

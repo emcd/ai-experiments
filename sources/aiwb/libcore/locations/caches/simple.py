@@ -201,7 +201,7 @@ class CacheManager( __.CacheManager ):
 
 class GeneralCache( _Common, __.GeneralCache ):
     ''' Simple cache for general location. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
 
     adapter: __.GeneralAdapter
 
@@ -281,7 +281,7 @@ class GeneralCache( _Common, __.GeneralCache ):
 
 class DirectoryCache( _Common, __.DirectoryCache ):
     ''' Simple cache for directory. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
 
     adapter: __.DirectoryAdapter
 
@@ -402,7 +402,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
 
 class FileCache( _Common, __.FileCache ):
     ''' Simple cache for file. '''
-    # TODO: Immutable class and object attributes.
+    # TODO: Immutable instance attributes.
 
     adapter: __.DirectoryAdapter
 

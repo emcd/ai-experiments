@@ -427,11 +427,12 @@ class GeneralCache(
         raise NotImplementedError
 
 
-@__.a.runtime_checkable
-@__.standard_dataclass
-class FilePresenter( __.a.Protocol ):
+class FilePresenter(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+):
     ''' Presenter with standard operations on files. '''
-    # TODO: Immutable class attributes.
 
     accessor: FileAccessor
 

@@ -25,8 +25,10 @@ from . import __
 from . import locations as _locations
 
 
-@__.standard_dataclass
-class Information:
+class Information(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, )
+):
     ''' Information about a package distribution. '''
 
     name: str

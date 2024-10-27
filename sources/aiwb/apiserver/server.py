@@ -26,8 +26,10 @@ from __future__ import annotations
 from . import __
 
 
-@__.standard_dataclass
-class Accessor:
+class Accessor(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, )
+):
     ''' Accessor for server properties and thread. '''
 
     application: __.FastAPI
@@ -36,8 +38,10 @@ class Accessor:
     thread: __.Thread
 
 
-@__.standard_dataclass
-class Control:
+class Control(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, )
+):
     ''' Binding address and port, etc... for server. '''
 
     address: str = '127.0.0.1'

@@ -135,8 +135,10 @@ class ConverserModalities( __.Enum ): # TODO: Python 3.11: StrEnum
     Text        = 'text'
 
 
-@__.standard_dataclass
-class ConverserFormatPreferences:
+class ConverserFormatPreferences(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, )
+):
     ''' Preferred formats for converser model requests and responses. '''
 
     request_data: DataFormatPreferences = DataFormatPreferences.Indefinite
@@ -166,8 +168,10 @@ class ConverserFormatPreferences:
         return selfclass( **args )
 
 
-@__.standard_dataclass
-class ConverserTokensLimits:
+class ConverserTokensLimits(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, )
+):
     ''' Various limits on number of tokens in chat completion. '''
 
     # TODO? per_prompt
@@ -196,8 +200,10 @@ class ModelIntegrationBehaviors( __.enum.IntFlag ):
     ReplaceControls     = __.produce_enumeration_value( )
 
 
-@__.standard_dataclass
-class ModelsIntegrator:
+class ModelsIntegrator(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, )
+):
     ''' Integrates attributes from configuration for matching models. '''
     # TODO: Immutable class attributes.
 
