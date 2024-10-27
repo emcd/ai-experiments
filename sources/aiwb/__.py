@@ -101,11 +101,8 @@ from . import _generics as g
 # TODO: Python 3.12: Use type statement for aliases.
 ClassDecorators: a.TypeAlias = AbstractIterable[ a.Callable[ [ type ], type ] ]
 NominativeArgumentsDictionary: a.TypeAlias = AbstractDictionary[ str, a.Any ]
-
-
-def calculate_class_fqname( class_: type ) -> str:
-    ''' Calculates fully-qualified name for class. '''
-    return f"{class_.__module__}.{class_.__qualname__}"
+TextComparand: a.TypeAlias = str | re.Pattern
+TextComparands: a.TypeAlias = AbstractIterable[ TextComparand ]
 
 
 class ImmutableClass( type ):
@@ -184,12 +181,16 @@ def _immutable_class__init__( class_: type ):
     # Some metaclasses add class attributes in '__init__' method.
     # So, we wait until last possible moment to set immutability.
     del class_._class_decorators_
-    # TODO: Add 'immutable' to '_class_behaviors_' accretive set.
-    setattr( class_, '_immutable_', True )
+    if ( class_behaviors := class_.__dict__.get( '_class_behaviors_' ) ):
+        class_behaviors.add( 'immutability' )
+    # TODO: accretive set
+    else: setattr( class_, '_class_behaviors_', { 'immutability' } )
 
 
 def _immutable_class__delattr__( class_: type, name: str ) -> bool:
-    if not class_.__dict__.get( '_immutable_' ): return False
+    # Consult class attributes dictionary to ignore immutable base classes.
+    if 'immutable' not in class_.__dict__.get( '_class_behaviors_', ( ) ):
+        return False
     raise AttributeError(
         "Cannot delete attribute {name!r} "
         "on class {class_fqname!r}.".format(
@@ -200,7 +201,9 @@ def _immutable_class__delattr__( class_: type, name: str ) -> bool:
 def _immutable_class__setattr__(
     class_: type, name: str, value: a.Any
 ) -> bool:
-    if not class_.__dict__.get( '_immutable_' ): return False
+    # Consult class attributes dictionary to ignore immutable base classes.
+    if 'immutable' not in class_.__dict__.get( '_class_behaviors_', ( ) ):
+        return False
     raise AttributeError(
         "Cannot assign attribute {name!r} "
         "on class {class_fqname!r}.".format(
@@ -292,6 +295,11 @@ absent: a.Annotation[
 ] = Absent( )
 package_name = __package__.split( '.', maxsplit = 1 )[ 0 ]
 standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
+
+
+def calculate_class_fqname( class_: type ) -> str:
+    ''' Calculates fully-qualified name for class. '''
+    return f"{class_.__module__}.{class_.__qualname__}"
 
 
 async def chain_async( *iterables: AbstractIterable | AbstractIterableAsync ):
