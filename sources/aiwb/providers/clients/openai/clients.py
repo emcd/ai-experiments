@@ -33,6 +33,13 @@ else:
     _AsyncOpenAI: __.a.TypeAlias = __.a.Any
 
 
+class ClientVariants( __.Enum ):
+    ''' OpenAI client variants. '''
+
+    OpenAi =            'openai'
+    MicrosoftAzure =    'microsoft-azure'
+
+
 _supported_model_genera = frozenset( (
     __.ModelGenera.Converser,
 ) )
@@ -82,15 +89,14 @@ class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
         auxdata: __.CoreGlobals,
         genus: __.Optional[ __.ModelGenera ] = __.absent,
     ) -> __.AbstractSequence[ __.Model ]:
-        supported_genera = (
-            _supported_model_genera if __.absent is genus
-            else frozenset(
-                genus for genus_ in _supported_model_genera
-                if genus is genus_ ) )
+        supported_genera = __.select_model_genera(
+            _supported_model_genera, genus )
         in_cache, models = _consult_models_cache( self, supported_genera )
         if in_cache: return models
         models = [ ]
-        integrators = await _cache_acquire_models_integrators( auxdata )
+        integrators = (
+            await __.memcache_acquire_models_integrators(
+                auxdata, provider = self.provider ) )
         names = await _cache_acquire_models( auxdata, self )
         for name in names:
             for genus_ in supported_genera:
@@ -120,10 +126,10 @@ class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
         # TODO: Raise error on unmatched case.
 
 
-# TODO: AzureClient
+# TODO: MicrosoftAzureClient
 
 
-class OpenAIClient( Client, class_decorators = ( __.standard_dataclass, ) ):
+class OpenAiClient( Client, class_decorators = ( __.standard_dataclass, ) ):
 
     @classmethod
     async def assert_environment( selfclass, auxdata: __.CoreGlobals ):
@@ -154,6 +160,10 @@ class OpenAIClient( Client, class_decorators = ( __.standard_dataclass, ) ):
         return AsyncOpenAI( )
 
 
+_client_classes = __.DictionaryProxy( {
+    ClientVariants.OpenAi: OpenAiClient,
+    # TODO: Other variants.
+} )
 class Provider( __.Provider, class_decorators = ( __.standard_dataclass, ) ):
 
     async def produce_client(
@@ -161,9 +171,8 @@ class Provider( __.Provider, class_decorators = ( __.standard_dataclass, ) ):
         auxdata: __.CoreGlobals,
         descriptor: __.AbstractDictionary[ str, __.a.Any ]
     ):
-        #variant = descriptor.get( 'variant' )
-        # TODO: Produce Azure variant, if requested.
-        client_class = OpenAIClient
+        variant = descriptor.get( 'variant', ClientVariants.OpenAi.value )
+        client_class = _client_classes[ ClientVariants( variant ) ]
         # TODO: Return future.
         return await client_class.from_descriptor(
             auxdata = auxdata, provider = self, descriptor = descriptor )
@@ -178,8 +187,9 @@ async def _cache_acquire_models(
     from aiofiles import open as open_
     from openai import APIError
     scribe = __.acquire_scribe( __package__ )
+    # TODO: Per-client cache.
     file = auxdata.provide_cache_location(
-        'providers', 'openai', 'models.json' )
+        'providers', __.provider_name, 'models.json' )
     if file.is_file( ):
         # TODO: Get cache expiration interval from configuration.
         interval = __.TimeDelta( seconds = 4 * 60 * 60 ) # 4 hours
@@ -204,23 +214,6 @@ async def _cache_acquire_models(
     async with open_( file, 'w' ) as stream:
         await stream.write( dumps( models, indent = 4 ) )
     return models
-
-
-# TODO? models integrators cache as cell variable of wrapper function
-_models_integrators_cache = { }
-
-
-async def _cache_acquire_models_integrators(
-    auxdata: __.CoreGlobals, force: bool = False
-):
-    # TODO: Register watcher on package data directory to flag updates.
-    #       Maybe 'watchfiles.awatch' as asyncio callback with this function.
-    # TODO? async mutex in case of clear-update during access
-    if force or not _models_integrators_cache:
-        _models_integrators_cache.clear( )
-        _models_integrators_cache.update(
-            await __.acquire_models_integrators( auxdata, __.provider_name ) )
-    return __.DictionaryProxy( _models_integrators_cache )
 
 
 _models_cache = __.AccretiveDictionary( )

@@ -52,9 +52,7 @@ async def acquire_provider_configuration(
 
 async def acquire_models_integrators(
     auxdata: __.CoreGlobals, name: str
-) -> __.AbstractDictionary[
-    _core.ModelGenera, __.AbstractSequence[ _core.ModelsIntegrator ]
-]:
+) -> _core.ModelsIntegratorsByGenus:
     ''' Returns models integrators, general to specific, by genus. '''
     # TODO: Use provider configuration directly rather than loading.
     p_configuration = await acquire_provider_configuration( auxdata, name )
@@ -81,6 +79,28 @@ async def acquire_models_integrators(
     return __.DictionaryProxy( {
         genus: tuple( sequence ) for genus, sequence
         in integrators.items( ) } )
+
+
+_models_integrators_caches: __.AbstractDictionary[
+    str, _core.ModelsIntegratorsByGenusMutable
+] = __.AccretiveDictionary( )
+async def memcache_acquire_models_integrators(
+    auxdata: __.CoreGlobals,
+    provider: _interfaces.Provider,
+    force: bool = False,
+) -> _core.ModelsIntegratorsByGenus:
+    ''' Caches models integrators in memory, as necessary. '''
+    # TODO: Register watcher on package data directory to flag updates.
+    #       Maybe 'watchfiles.awatch' as asyncio callback with this function.
+    name = provider.name
+    if name not in _models_integrators_caches:
+        _models_integrators_caches[ name ] = { }
+    cache = _models_integrators_caches[ name ]
+    if force or not cache:
+        # TODO? async mutex in case of clear-update during access
+        cache.clear( )
+        cache.update( await acquire_models_integrators( auxdata, name ) )
+    return __.DictionaryProxy( cache )
 
 
 def invocation_requests_from_canister(
@@ -116,6 +136,21 @@ def invocation_requests_from_canister(
             supplements = supplements )
         requests_.append( request_ )
     return requests_
+
+
+def select_model_genera(
+    genera: __.AbstractIterable[ _core.ModelGenera ],
+    genus: __.Optional[ _core.ModelGenera ] = __.absent,
+) -> frozenset[ _core.ModelGenera ]:
+    ''' Returns set of model genera.
+
+        If genus is in iterable, the set only contains it.
+        If genus is not in iterable, the set is empty.
+        If genus is absent, the set is all elements of iterable.
+    '''
+    if __.absent is genus: return frozenset( genera )
+    if genus in genera: return frozenset( ( genus, ) )
+    return frozenset( )
 
 
 async def _acquire_configuration(

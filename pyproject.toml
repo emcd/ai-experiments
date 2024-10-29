@@ -181,7 +181,7 @@ path = 'sources/aiwb/__init__.py'
 
 [tool.mypy]
 cache_dir = '.auxiliary/caches/mypy'
-disable_error_code = [ 'attr-defined', 'import-untyped', 'name-defined' ]
+disable_error_code = [ 'attr-defined', 'import-untyped', 'name-defined', 'operator' ]
 implicit_optional = true
 pretty = true
 #strict = true

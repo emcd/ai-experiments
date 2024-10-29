@@ -255,6 +255,16 @@ class ModelGenera( __.Enum ): # TODO: Python 3.11: StrEnum
     VideoGenerator =    'videogenerator'
 
 
+# TODO: Python 3.12: Use type statement for aliases.
+ModelsIntegrators: __.a.TypeAlias = __.AbstractSequence[ ModelsIntegrator ]
+ModelsIntegratorsMutable: __.a.TypeAlias = (
+    __.AbstractMutableSequence[ ModelsIntegrator ] )
+ModelsIntegratorsByGenus: __.a.TypeAlias = (
+    __.AbstractDictionary[ ModelGenera, ModelsIntegrators ] )
+ModelsIntegratorsByGenusMutable: __.a.TypeAlias = (
+    __.AbstractMutableDictionary[ ModelGenera, ModelsIntegratorsMutable ] )
+
+
 chat_callbacks_minimal = ChatCallbacks( )
 # TODO: Use accretive validator dictionary for preparers registry.
 
