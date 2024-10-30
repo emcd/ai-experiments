@@ -27,8 +27,11 @@ from . import __
 from . import core as _core
 
 
+ModelDescriptor = __.a.TypeVar( 'ModelDescriptor' ) # TODO? Typed dictionary.
+
+
 class Client(
-    __.a.Protocol[ _core.ClientImplement ],
+    __.a.Protocol[ _core.ClientImplement, _core.ProviderVariants ],
     metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
@@ -104,6 +107,16 @@ class Client(
         raise NotImplementedError
 
     @__.abstract_member_function
+    def produce_model(
+        self,
+        genus: _core.ModelGenera,
+        name: str,
+        descriptor: ModelDescriptor,
+    ) -> Model:
+        ''' Produces model from descriptor. '''
+        raise NotImplementedError
+
+    @__.abstract_member_function
     async def survey_models(
         self,
         auxdata: __.CoreGlobals,
@@ -112,8 +125,14 @@ class Client(
         ''' Returns models available from provider.
 
             Accepts optional model genus as filter. If not supplied, then
-            models from all genera are returned.
+            models from all supported genera are returned.
         '''
+        raise NotImplementedError
+
+    @property
+    @__.abstract_member_function
+    def variant( self ) -> _core.ProviderVariants:
+        ''' Provider variant. '''
         raise NotImplementedError
 
 

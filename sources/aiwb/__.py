@@ -93,6 +93,7 @@ from accretive.qaliases import (
     AccretiveModule,
     AccretiveNamespace,
     AccretiveObject,
+    AccretiveProducerDictionary,
 )
 
 from . import _annotations as a

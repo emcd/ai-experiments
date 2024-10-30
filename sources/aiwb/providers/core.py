@@ -29,6 +29,7 @@ from . import __
 ClientImplement = __.a.TypeVar( 'ClientImplement', covariant = True )
 NativeControls = __.a.TypeVar( 'NativeControls', covariant = True )
 NativeMessages = __.a.TypeVar( 'NativeMessages', covariant = True )
+ProviderVariants = __.a.TypeVar( 'ProviderVariants', covariant = True )
 
 
 class ChatCallbacks(

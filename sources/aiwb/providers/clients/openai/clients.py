@@ -21,6 +21,8 @@
 ''' Clients for OpenAI AI provider. '''
 
 
+from __future__ import annotations
+
 from . import __
 
 
@@ -33,16 +35,33 @@ else:
     _AsyncOpenAI: __.a.TypeAlias = __.a.Any
 
 
-class ClientVariants( __.Enum ):
+ClientDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
+
+
+_model_genera = frozenset( (
+    __.ModelGenera.Converser,
+) )
+
+
+class ProviderVariants( __.Enum ):
     ''' OpenAI client variants. '''
 
     OpenAi =            'openai'
     MicrosoftAzure =    'microsoft-azure'
 
-
-_supported_model_genera = frozenset( (
-    __.ModelGenera.Converser,
-) )
+    async def produce_client(
+        self,
+        auxdata: __.CoreGlobals,
+        provider: Provider,
+        descriptor: ClientDescriptor,
+    ) -> Client:
+        match self:
+            case ProviderVariants.OpenAi:
+                client_class = OpenAiClient
+            # TODO: Other variants.
+        # TODO: Return future.
+        return await client_class.from_descriptor(
+            auxdata = auxdata, provider = provider, descriptor = descriptor )
 
 
 class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
@@ -84,46 +103,33 @@ class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
                 f"Could not access default {genus.value} model "
                 f"on provider {self.name!r}." ) from None
 
-    async def survey_models(
+    def produce_model(
         self,
-        auxdata: __.CoreGlobals,
-        genus: __.Optional[ __.ModelGenera ] = __.absent,
-    ) -> __.AbstractSequence[ __.Model ]:
-        supported_genera = __.select_model_genera(
-            _supported_model_genera, genus )
-        in_cache, models = _consult_models_cache( self, supported_genera )
-        if in_cache: return models
-        models = [ ]
-        integrators = (
-            await __.memcache_acquire_models_integrators(
-                auxdata, provider = self.provider ) )
-        names = await _cache_acquire_models( auxdata, self )
-        for name in names:
-            for genus_ in supported_genera:
-                descriptor: __.AbstractDictionary[ str, __.a.Any ] = { }
-                for integrator in integrators[ genus_ ]:
-                    descriptor = integrator( name, descriptor )
-                if not descriptor: continue
-                #ic( name, descriptor )
-                models.append( self._model_from_descriptor(
-                    name = name,
-                    genus = genus_,
-                    descriptor = descriptor ) )
-                _models_cache[ self.name ][ genus_ ].append( models[ -1 ] )
-        return tuple( models )
-
-    def _model_from_descriptor(
-        self,
-        name: str,
         genus: __.ModelGenera,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+        name: str,
+        descriptor: __.ModelDescriptor,
     ) -> __.Model:
         match genus:
             case __.ModelGenera.Converser:
                 from . import conversers
                 return conversers.Model.from_descriptor(
                     client = self, name = name, descriptor = descriptor )
-        # TODO: Raise error on unmatched case.
+        raise NotImplementedError( f"Unsupported genus {genus.value!r}." )
+
+    async def survey_models(
+        self,
+        auxdata: __.CoreGlobals,
+        genus: __.Optional[ __.ModelGenera ] = __.absent,
+    ) -> __.AbstractSequence[ __.Model ]:
+        if __.absent is genus: genera = _model_genera
+        else:
+            genus = __.a.cast( __.ModelGenera, genus )
+            genera = frozenset( { genus } ) & _model_genera
+        return await __.memcache_acquire_models(
+            auxdata,
+            client = self,
+            genera = genera,
+            acquirer = _cache_acquire_model_names )
 
 
 # TODO: MicrosoftAzureClient
@@ -159,28 +165,24 @@ class OpenAiClient( Client, class_decorators = ( __.standard_dataclass, ) ):
         from openai import AsyncOpenAI
         return AsyncOpenAI( )
 
+    @property
+    def variant( self ) -> ProviderVariants:
+        return ProviderVariants.OpenAi
 
-_client_classes = __.DictionaryProxy( {
-    ClientVariants.OpenAi: OpenAiClient,
-    # TODO: Other variants.
-} )
+
 class Provider( __.Provider, class_decorators = ( __.standard_dataclass, ) ):
 
     async def produce_client(
-        self,
-        auxdata: __.CoreGlobals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ]
-    ):
-        variant = descriptor.get( 'variant', ClientVariants.OpenAi.value )
-        client_class = _client_classes[ ClientVariants( variant ) ]
-        # TODO: Return future.
-        return await client_class.from_descriptor(
-            auxdata = auxdata, provider = self, descriptor = descriptor )
+        self, auxdata: __.CoreGlobals, descriptor: ClientDescriptor
+    ) -> Client:
+        variant = ProviderVariants( descriptor.get( 'variant', 'openai' ) )
+        return await variant.produce_client(
+            auxdata, provider = self, descriptor = descriptor )
 
 
-async def _cache_acquire_models(
+async def _cache_acquire_model_names(
     auxdata: __.CoreGlobals, client: Client
-):
+) -> __.AbstractSequence[ str ]:
     # TODO? Use cache accessor from libcore.locations.
     from json import dumps, loads
     from operator import attrgetter
@@ -214,26 +216,3 @@ async def _cache_acquire_models(
     async with open_( file, 'w' ) as stream:
         await stream.write( dumps( models, indent = 4 ) )
     return models
-
-
-_models_cache = __.AccretiveDictionary( )
-
-
-def _consult_models_cache(
-    client: Client, genera: frozenset[ __.ModelGenera ]
-) -> tuple[ bool, tuple[ __.Model, ... ] ]:
-    from accretive import ProducerDictionary
-    # TODO: Consider cache expiration.
-    if client.name in _models_cache:
-        caches_by_genus = _models_cache[ client.name ]
-        if all(
-            genus in caches_by_genus for genus in __.ModelGenera
-            if genus in genera
-        ):
-            return (
-                True,
-                tuple( __.chain.from_iterable(
-                    caches_by_genus[ genus ]
-                    for genus in __.ModelGenera if genus in genera ) ) )
-    _models_cache[ client.name ] = ProducerDictionary( list )
-    return False, ( )

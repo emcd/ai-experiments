@@ -81,28 +81,6 @@ async def acquire_models_integrators(
         in integrators.items( ) } )
 
 
-_models_integrators_caches: __.AbstractDictionary[
-    str, _core.ModelsIntegratorsByGenusMutable
-] = __.AccretiveDictionary( )
-async def memcache_acquire_models_integrators(
-    auxdata: __.CoreGlobals,
-    provider: _interfaces.Provider,
-    force: bool = False,
-) -> _core.ModelsIntegratorsByGenus:
-    ''' Caches models integrators in memory, as necessary. '''
-    # TODO: Register watcher on package data directory to flag updates.
-    #       Maybe 'watchfiles.awatch' as asyncio callback with this function.
-    name = provider.name
-    if name not in _models_integrators_caches:
-        _models_integrators_caches[ name ] = { }
-    cache = _models_integrators_caches[ name ]
-    if force or not cache:
-        # TODO? async mutex in case of clear-update during access
-        cache.clear( )
-        cache.update( await acquire_models_integrators( auxdata, name ) )
-    return __.DictionaryProxy( cache )
-
-
 def invocation_requests_from_canister(
     processor: _interfaces.InvocationsProcessor,
     auxdata: __.CoreGlobals,
@@ -138,19 +116,54 @@ def invocation_requests_from_canister(
     return requests_
 
 
-def select_model_genera(
-    genera: __.AbstractIterable[ _core.ModelGenera ],
-    genus: __.Optional[ _core.ModelGenera ] = __.absent,
-) -> frozenset[ _core.ModelGenera ]:
-    ''' Returns set of model genera.
+_models_caches = __.AccretiveDictionary( )
+async def memcache_acquire_models(
+    auxdata: __.CoreGlobals,
+    client: _interfaces.Client,
+    genera: __.AbstractCollection[ _core.ModelGenera ],
+    acquirer: __.a.Callable, # TODO: Full signature.
+) -> __.AbstractSequence[ _interfaces.Model ]:
+    ''' Caches models in memory, as necessary. '''
+    provider_name = client.provider.name
+    if provider_name not in _models_caches:
+        _models_caches[ provider_name ] = __.AccretiveDictionary( )
+    models_by_client = _models_caches[ provider_name ]
+    client_name = client.name
+    # TODO: Consider cache expiration.
+    if client_name in models_by_client:
+        models_by_genus = models_by_client[ client_name ]
+        if all( genus in models_by_genus for genus in genera ):
+            return tuple( __.chain.from_iterable(
+                models_by_genus[ genus ] for genus in genera ) )
+    else:
+        models_by_client[ client_name ] = (
+            __.AccretiveProducerDictionary( list ) )
+    models_by_genus = models_by_client[ client.name ]
+    # TODO? async mutex in case of clear-update during access
+    return await _memcache_acquire_models(
+        auxdata, client = client, genera = genera, acquirer = acquirer )
 
-        If genus is in iterable, the set only contains it.
-        If genus is not in iterable, the set is empty.
-        If genus is absent, the set is all elements of iterable.
-    '''
-    if __.absent is genus: return frozenset( genera )
-    if genus in genera: return frozenset( ( genus, ) )
-    return frozenset( )
+
+_models_integrators_caches: __.AbstractDictionary[
+    str, _core.ModelsIntegratorsByGenusMutable
+] = __.AccretiveDictionary( )
+async def memcache_acquire_models_integrators(
+    auxdata: __.CoreGlobals,
+    provider: _interfaces.Provider,
+    force: bool = False,
+) -> _core.ModelsIntegratorsByGenus:
+    ''' Caches models integrators in memory, as necessary. '''
+    # TODO: Register watcher on package data directory to flag updates.
+    #       Maybe 'watchfiles.awatch' as asyncio callback with this function.
+    name = provider.name
+    if name not in _models_integrators_caches:
+        _models_integrators_caches[ name ] = { }
+    cache = _models_integrators_caches[ name ]
+    if force or not cache:
+        # TODO? async mutex in case of clear-update during access
+        cache.clear( )
+        cache.update( await acquire_models_integrators( auxdata, name ) )
+    return __.DictionaryProxy( cache )
 
 
 async def _acquire_configuration(
@@ -196,6 +209,32 @@ def _copy_custom_provider_configurations(
             if provider_name == descriptor[ 'name' ] )
     except StopIteration: configurations = { }
     return tuple( configurations.get( index_name, ( ) ) )
+
+
+async def _memcache_acquire_models(
+    auxdata: __.CoreGlobals,
+    client: _interfaces.Client,
+    genera: __.AbstractCollection[ _core.ModelGenera ],
+    acquirer: __.a.Callable, # TODO: Full signature.
+) -> __.AbstractSequence[ _interfaces.Model ]:
+    models_by_genus = _models_caches[ client.provider.name ][ client.name ]
+    integrators = (
+        await memcache_acquire_models_integrators(
+            auxdata, provider = client.provider ) )
+    names = await acquirer( auxdata, client )
+    for genus in genera:
+        models_by_genus[ genus ].clear( )
+        for name in names:
+            descriptor: __.AbstractDictionary[ str, __.a.Any ] = { }
+            for integrator in integrators[ genus ]:
+                # TODO: Pass client to get variant.
+                descriptor = integrator( name, descriptor )
+            if not descriptor: continue
+            model = client.produce_model(
+                name = name, genus = genus, descriptor = descriptor )
+            models_by_genus[ genus ].append( model )
+    return tuple( __.chain.from_iterable(
+        models_by_genus[ genus ] for genus in genera ) )
 
 
 def _validate_invocation_requests_canister(
