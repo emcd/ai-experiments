@@ -82,7 +82,6 @@ class Client(
     def __str__( self ) -> str:
         return f"{self.provider} client {self.name!r}"
 
-    @__.abstract_member_function
     async def access_model(
         self,
         auxdata: __.CoreGlobals,
@@ -90,16 +89,38 @@ class Client(
         name: str,
     ) -> Model:
         ''' Returns named model available from provider, if it exists. '''
-        raise NotImplementedError
+        try:
+            return next(
+                model for model
+                in await self.survey_models( auxdata, genus = genus )
+                if name == model.name )
+        except StopIteration:
+            # TODO: Raise appropriate type of error.
+            raise LookupError(
+                f"Could not access {genus.value} model {name!r} "
+                f"on provider {self.name!r}." ) from None
 
-    @__.abstract_member_function
     async def access_model_default(
         self,
         auxdata: __.CoreGlobals,
         genus: _core.ModelGenera,
     ) -> Model:
         ''' Returns default model available from provider, if it exists. '''
-        raise NotImplementedError
+        defaults = getattr( self.attributes.defaults, f"{genus.value}_model" )
+        models = await self.survey_models( auxdata = auxdata, genus = genus )
+        models_by_name = __.DictionaryProxy( {
+            model.name: model for model in models } )
+        # TODO: Default defaults from provider configuration.
+        defaults = defaults or models_by_name
+        try:
+            return next(
+                models_by_name[ default ] for default in defaults
+                if default in models_by_name )
+        except StopIteration:
+            # TODO: Raise appropriate type of error.
+            raise LookupError(
+                f"Could not access default {genus.value} model "
+                f"on provider {self.name!r}." ) from None
 
     @__.abstract_member_function
     def produce_implement( self ) -> _core.ClientImplement:
@@ -187,7 +208,9 @@ class ConversationTokenizer(
     # TODO: Remove once cutover to conversation objects is complete.
 
     @__.abstract_member_function
-    def count_conversation_tokens_v0( self, messages, special_data ) -> int:
+    def count_conversation_tokens_v0(
+        self, messages: __.MessagesCanisters, special_data
+    ) -> int:
         ''' Counts tokens across entire conversation. '''
         raise NotImplementedError
 

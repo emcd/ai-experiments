@@ -21,12 +21,17 @@
 ''' Core classes for controls. '''
 
 
+from __future__ import annotations
+
+
 from . import __
 
 
 class DefinitionBase( metaclass = __.ABCFactory ):
+    # TODO: Protocol class.
 
     class Instance:
+        # TODO: Protocol class.
 
         def __init__( self, definition, value ):
             self.definition = definition
@@ -237,6 +242,11 @@ class Text( DefinitionBase ):
         if not isinstance( value, str ):
             raise ValueError # TODO: Fill out error.
         return value
+
+
+# TODO: Python 3.12: Use type statement for aliases.
+ControlsInstancesByName: __.a.TypeAlias = (
+    __.AbstractDictionary[ str, DefinitionBase.Instance ] )
 
 
 def descriptor_to_definition( descriptor ):

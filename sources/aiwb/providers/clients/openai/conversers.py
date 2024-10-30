@@ -26,7 +26,10 @@ from . import __
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-# TODO? Use typed dictionary for OpenAiMessage.
+# TODO? Use typing.TypedDictionary.
+AttributesDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
+ModelDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
+OpenAiControls: __.a.TypeAlias = dict[ str, __.a.Any ]
 OpenAiMessage: __.a.TypeAlias = dict[ str, __.a.Any ]
 OpenAiMessageContent: __.a.TypeAlias = str | list[ dict[ str, __.a.Any ] ]
 
@@ -58,8 +61,7 @@ class Attributes(
 
     @classmethod
     def from_descriptor(
-        selfclass,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+        selfclass, descriptor: AttributesDescriptor
     ) -> __.a.Self:
         args = super( ).init_args_from_descriptor( descriptor )
         sdescriptor = descriptor.get( 'special', { } )
@@ -82,13 +84,13 @@ class Attributes(
 class ControlsProcessor(
     __.ControlsProcessor, class_decorators = ( __.standard_dataclass, )
  ):
+    ''' Controls nativization for OpenAI chat models. '''
 
     def nativize_controls(
-        self,
-        controls: __.AbstractDictionary[ str, __.Control.Instance ],
-    ) -> dict[ str, __.a.Any ]:
+        self, controls: __.ControlsInstancesByName
+    ) -> OpenAiControls:
         # TODO: Assert model name matches.
-        args: dict[ str, __.a.Any ] = dict( model = controls[ 'model' ] )
+        args: OpenAiControls = dict( model = controls[ 'model' ] )
         args.update( {
             name.replace( '-', '_' ): value
             for name, value in controls.items( )
@@ -101,6 +103,7 @@ class ControlsProcessor(
 class SerdeProcessor(
     __.ConverserSerdeProcessor, class_decorators = ( __.standard_dataclass, )
 ):
+    ''' (De)serialization for OpenAI chat models. '''
 
     def deserialize_data( self, data: str ) -> __.a.Any:
         data_format = self.model.attributes.format_preferences.response_data
@@ -124,17 +127,14 @@ class SerdeProcessor(
 class Model(
     __.ConverserModel, class_decorators = ( __.standard_dataclass, )
 ):
+    ''' OpenAI chat model. '''
 
     @classmethod
     def from_descriptor(
-        selfclass,
-        client: __.Client,
-        name: str,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+        selfclass, client: __.Client, name: str, descriptor: ModelDescriptor
     ) -> __.a.Self:
         args = __.AccretiveDictionary( client = client, name = name )
-        args[ 'attributes' ] = (
-            Attributes.from_descriptor( descriptor ) )
+        args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
         return selfclass( **args )
 
     @property
@@ -159,9 +159,9 @@ class Model(
 
     async def converse_v0(
         self,
-        messages: __.AbstractSequence[ __.MessageCanister ],
+        messages: __.MessagesCanisters,
         supplements,
-        controls: __.AbstractDictionary[ str, __.Control.Instance ],
+        controls: __.ControlsInstancesByName,
         reactors, # TODO? Accept context manager with reactor functions.
     ):
         messages_native = (
@@ -191,12 +191,10 @@ class Model(
 class InvocationsProcessor(
     __.InvocationsProcessor, class_decorators = ( __.standard_dataclass, )
 ):
-    ''' Handles functions and tool calls. '''
+    ''' Handles functions and tool calls for OpenAI chat models. '''
 
     async def __call__(
-        self,
-        # TODO: Use InvocationRequest instance as argument.
-        request: __.AbstractDictionary[ str, __.a.Any ],
+        self, request: __.InvocationRequest
     ) -> __.MessageCanister:
         request_context = request[ 'context__' ]
         result = await request[ 'invocable__' ]( )
@@ -251,7 +249,7 @@ class InvocationsProcessor(
         canister: __.MessageCanister,
         invocables: __.AccretiveNamespace,
         ignore_invalid_canister: bool = False,
-    ) -> __.AbstractSequence[ __.AbstractMutableDictionary[ str, __.a.Any ] ]:
+    ) -> __.InvocationsRequestsMutable:
         # TODO: Appropriate error classes.
         requests = __.invocation_requests_from_canister(
             processor = self,
@@ -284,8 +282,7 @@ class MessagesProcessor(
     ''' Handles conversation messages in OpenAI format. '''
 
     def nativize_messages_v0(
-        self,
-        canisters: __.AbstractIterable[ __.MessageCanister ],
+        self, canisters: __.MessagesCanisters
     ) -> list[ OpenAiMessage ]:
         messages_pre: list[ OpenAiMessage ] = [ ]
         for canister in canisters:
@@ -307,7 +304,9 @@ class Tokenizer(
         except KeyError: encoding = get_encoding( 'cl100k_base' )
         return len( encoding.encode( text ) )
 
-    def count_conversation_tokens_v0( self, messages, special_data ) -> int:
+    def count_conversation_tokens_v0(
+        self, messages: __.MessagesCanisters, supplements
+    ) -> int:
         # https://github.com/openai/openai-cookbook/blob/2e9704b3b34302c30174e7d8e7211cb8da603ca9/examples/How_to_count_tokens_with_tiktoken.ipynb
         from json import dumps
         model = self.model
@@ -323,7 +322,7 @@ class Tokenizer(
                 tokens_count += self.count_text_tokens( value_ )
                 if 'name' == index: tokens_count += tokens_for_actor_name
         iprocessor = self.model.invocations_processor
-        for invoker in special_data.get( 'invokers', ( ) ):
+        for invoker in supplements.get( 'invokers', ( ) ):
             tokens_count += (
                 self.count_text_tokens( dumps(
                     iprocessor.nativize_invocable( invoker ) ) ) )

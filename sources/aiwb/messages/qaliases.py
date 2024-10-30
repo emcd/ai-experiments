@@ -32,6 +32,7 @@ from .core import (
     DocumentCanister as     DocumentMessageCanister,
     InvocationCanister as   InvocationMessageCanister,
     Canister as             MessageCanister,
+    Canisters as            MessagesCanisters,
     DirectoryManager as     MessagesDirectoryManager,
     Role as                 MessageRole,
     ResultCanister as       ResultMessageCanister,

@@ -28,10 +28,11 @@
 
 
 from .core import (
-    Boolean as BooleanControl,
-    DefinitionBase as Control,
-    DiscreteInterval as DiscreteIntervalControl,
-    FlexArray as FlexArrayControl,
-    Options as OptionsControl,
-    Text as TextControl,
+    Boolean as                  BooleanControl,
+    ControlsInstancesByName,
+    DefinitionBase as           Control,
+    DiscreteInterval as         DiscreteIntervalControl,
+    FlexArray as                FlexArrayControl,
+    Options as                  OptionsControl,
+    Text as                     TextControl,
 )

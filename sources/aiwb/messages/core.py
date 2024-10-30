@@ -212,6 +212,10 @@ class UserCanister( Canister ):
     ''' Message canister for user role. '''
 
 
+# TODO: Python 3.12: Use type statement for aliases.
+Canisters: __.a.TypeAlias = __.AbstractIterable[ Canister ]
+
+
 # TODO: Cluster: Bundle of related canisters.
 #       * Image prompt and generations.
 #       * Chat user prompt, AI function invocation request, AI function

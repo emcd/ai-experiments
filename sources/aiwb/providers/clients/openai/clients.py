@@ -66,43 +66,6 @@ class ProviderVariants( __.Enum ):
 
 class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
 
-    async def access_model(
-        self,
-        auxdata: __.CoreGlobals,
-        genus: __.ModelGenera,
-        name: str,
-    ) -> __.Model:
-        # TODO? Cache nested dictionary of models for performance.
-        try:
-            return next(
-                model for model
-                in await self.survey_models( auxdata, genus = genus )
-                if name == model.name )
-        except StopIteration:
-            # TODO: Raise appropriate type of error.
-            raise LookupError(
-                f"Could not access {genus.value} model {name!r} "
-                f"on provider {self.name!r}." ) from None
-
-    async def access_model_default(
-        self,
-        auxdata: __.CoreGlobals,
-        genus: __.ModelGenera,
-    ) -> __.Model:
-        defaults = getattr( self.attributes.defaults, f"{genus.value}_model" )
-        models = await self.survey_models( auxdata = auxdata, genus = genus )
-        models_by_name = __.DictionaryProxy( {
-            model.name: model for model in models } )
-        try:
-            return next(
-                models_by_name[ default ] for default in defaults
-                if default in models_by_name )
-        except StopIteration:
-            # TODO: Raise appropriate type of error.
-            raise LookupError(
-                f"Could not access default {genus.value} model "
-                f"on provider {self.name!r}." ) from None
-
     def produce_model(
         self,
         genus: __.ModelGenera,

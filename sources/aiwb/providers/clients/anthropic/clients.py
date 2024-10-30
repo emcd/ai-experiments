@@ -67,23 +67,6 @@ class ProviderVariants( __.Enum ):
 
 class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
 
-    async def access_model(
-        self,
-        auxdata: __.CoreGlobals,
-        genus: __.ModelGenera,
-        name: str,
-    ) -> __.Model:
-        # TODO: Implement.
-        pass
-
-    async def access_model_default(
-        self,
-        auxdata: __.CoreGlobals,
-        genus: __.ModelGenera,
-    ) -> __.Model:
-        # TODO: Implement.
-        pass
-
     def produce_model(
         self,
         genus: __.ModelGenera,

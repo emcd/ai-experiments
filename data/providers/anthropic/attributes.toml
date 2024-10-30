@@ -4,7 +4,7 @@ format-version = 1
 # https://docs.anthropic.com/en/api/messages
 
 [converser]
-name-regex = '^claude-3-.*$'
+name-regex = '^claude-3(\..*)?-.*$'
 accepts-supervisor-instructions = true
 modalities = [ 'text', 'pictures' ]
 supports-continuous-response = true

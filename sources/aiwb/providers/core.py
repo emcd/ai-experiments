@@ -257,6 +257,12 @@ class ModelGenera( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 # TODO: Python 3.12: Use type statement for aliases.
+# TODO? Convert 'InvocationRequest' to class or typing.TypedDict.
+InvocationRequest: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
+InvocationRequestMutable: __.a.TypeAlias = (
+    __.AbstractMutableDictionary[ str, __.a.Any ] )
+InvocationsRequestsMutable: __.a.TypeAlias = (
+    __.AbstractIterable[ InvocationRequestMutable ] )
 ModelsIntegrators: __.a.TypeAlias = __.AbstractSequence[ ModelsIntegrator ]
 ModelsIntegratorsMutable: __.a.TypeAlias = (
     __.AbstractMutableSequence[ ModelsIntegrator ] )
