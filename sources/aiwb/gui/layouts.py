@@ -634,12 +634,12 @@ conversation_control_layout = {
         ],
     ),
     'selector_provider': dict(
+        # TODO: selector_provider_client
         component_class = Select,
         component_arguments = dict(
             name = 'Provider',
-            #options = [ 'OpenAI' ],
-            #value = 'OpenAI',
         ),
+        event_functions = dict( value = 'on_select_provider' ),
         populator_function = 'populate_providers_selector',
     ),
     'selector_model': dict(

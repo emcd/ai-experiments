@@ -149,6 +149,12 @@ async def on_select_model( components, event ):
     update_supervisor_prompt( components )
 
 
+async def on_select_provider( components, event ):
+    # TODO: on_select_provider_client
+    from .updaters import populate_models_selector
+    await populate_models_selector( components )
+
+
 async def on_select_system_prompt( components, event ):
     from .updaters import (
         populate_prompt_variables, update_invocations_prompt )
