@@ -49,3 +49,13 @@ class ModelOperateFailure( __.Omnierror ):
                 f"Could not perform {operation} with {model}.",
                 cause_message ) ) ) )
         super( ).__init__( message )
+
+
+class ProviderIncompatibilityError( __.SupportError ):
+    ''' Provider is not compatible with object. '''
+
+    def __init__( self, provider, entity_name ):
+        message = (
+            f"AI provider {provider.name!r} is not compatible "
+            f"with {entity_name}." )
+        super( ).__init__( message )

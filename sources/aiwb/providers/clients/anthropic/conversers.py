@@ -39,6 +39,7 @@ class Attributes(
     ''' Common attributes for Anthropic chat models. '''
 
     extra_tokens_per_message: int = 0
+    supports_computer_use: bool = False
 
     @classmethod
     def from_descriptor(
@@ -48,6 +49,7 @@ class Attributes(
         sdescriptor = descriptor.get( 'special', { } )
         for arg_name in (
             'extra-tokens-per-message',
+            'supports-computer-use',
         ):
             arg = sdescriptor.get( arg_name )
             if None is arg: continue
@@ -81,24 +83,36 @@ class InvocationsProcessor(
     async def __call__(
         self, request: __.InvocationRequest
     ) -> __.MessageCanister:
-        #request_context = request[ 'context__' ]
-        #result = await request[ 'invocable__' ]( )
-        # TODO: Implement.
-        pass
+        result = await request.invocation( )
+        specifics = request.specifics
+        result_context = {
+            'tool_use_id': specifics[ 'id' ], 'type': 'tool_result' }
+        from json import dumps
+        message = dumps( result )
+        canister = (
+            __.ResultMessageCanister( )
+            .add_content( message, mimetype = 'application/json' ) )
+        canister.attributes.model_context = {
+            'provider': self.model.provider.name,
+            'model': self.model.name,
+            'supplement': result_context,
+        } # TODO? Immutable
+        return canister
 
     def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
-        # TODO: Verify that this implementation is correct.
+        # TODO: return type: anthropic.types.ToolParam
         return dict(
             name = invoker.name,
             description = invoker.invocable.__doc__,
-            parameters = invoker.argschema )
+            input_schema = invoker.argschema )
 
     def nativize_invocables(
         self,
         invokers: __.AbstractIterable[ __.Invoker ],
     ) -> __.a.Any:
-        # TODO: Implement.
-        pass
+        # TODO: return type: list[ anthropic.types.ToolParam ]
+        tools = [ self.nativize_invocable( invoker ) for invoker in invokers ]
+        return dict( tools = tools )
 
     def requests_from_canister(
         self,
@@ -107,16 +121,29 @@ class InvocationsProcessor(
         canister: __.MessageCanister,
         invocables: __.AccretiveNamespace,
         ignore_invalid_canister: bool = False,
-    ) -> __.InvocationsRequestsMutable:
-        # TODO: Appropriate error classes.
+    ) -> __.InvocationsRequests:
+        # TODO: Provide supplements based on specification from invocable.
+        supplements[ 'model' ] = self.model
+        model_context = getattr( canister.attributes, 'model_context', { } )
+        if self.model.provider.name != model_context.get( 'provider' ):
+            if ignore_invalid_canister: return [ ]
+            raise __.ProviderIncompatibilityError(
+                provider = self.model.provider,
+                entity_name = "foreign invocation requests" )
         requests = __.invocation_requests_from_canister(
-            processor = self,
             auxdata = auxdata,
             supplements = supplements,
             canister = canister,
             invocables = invocables,
             ignore_invalid_canister = ignore_invalid_canister )
-        # TODO: Implement.
+        supplement = model_context.get( 'supplement', { } )
+        specifics = supplement.get( 'specifics', [ ] )
+        if len( requests ) != len( specifics ):
+            raise __.InvocationFormatError(
+                "Number of invocation requests must match "
+                "number of tool calls." )
+        for i, request in enumerate( requests ):
+            request.specifics.update( specifics[ i ] )
         return requests
 
 

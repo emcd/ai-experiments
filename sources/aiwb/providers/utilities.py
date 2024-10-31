@@ -82,38 +82,29 @@ async def acquire_models_integrators(
 
 
 def invocation_requests_from_canister(
-    processor: _interfaces.InvocationsProcessor,
     auxdata: __.CoreGlobals,
     supplements: __.AccretiveDictionary,
     canister: __.MessageCanister,
     invocables: __.AccretiveNamespace,
     ignore_invalid_canister: bool = False,
-) -> __.AbstractSequence[ __.AbstractMutableDictionary[ str, __.a.Any ] ]:
+) -> _core.InvocationsRequests:
     Error = _exceptions.InvocationFormatError
-    try: requests = _validate_invocation_requests_canister( canister )
-    except Error:
+    if not hasattr( canister.attributes, 'invocation_data' ):
         if ignore_invalid_canister: return [ ]
-        raise
-    # TODO: Provide supplements based on specification from invocable.
-    supplements[ 'model' ] = processor.model
+        raise Error( "Missing invocation data." ) # TODO: Better error.
+    descriptors = canister.attributes.invocation_data
+    if not isinstance( descriptors, __.AbstractSequence ):
+        if ignore_invalid_canister: return [ ]
+        raise Error( "Invocations requests is not sequence." )
+    # TODO: Construct context at caller.
     invokers = invocables.invokers
-    requests_ = [ ]
-    for request in requests:
-        if not isinstance( request, __.AbstractDictionary ):
-            raise Error( 'Tool use request is not dictionary.' )
-        if 'name' not in request:
-            raise Error( 'Name is missing from tool use request.' )
-        if ( name := request[ 'name' ] ) not in invokers:
-            raise Error( f"Tool {name!r} is not available." )
-        arguments = request.get( 'arguments', { } )
-        request_ = dict( request )
-        request_[ 'invocable__' ] = __.partial_function(
-            invokers[ name ],
-            auxdata = auxdata,
-            arguments = arguments,
-            supplements = supplements )
-        requests_.append( request_ )
-    return requests_
+    context = __.AccretiveNamespace(
+        auxdata = auxdata, invokers = invokers, supplements = supplements )
+    # TODO: Handle errors from construction attempts.
+    return tuple(
+        _core.InvocationRequest.from_descriptor(
+            descriptor = descriptor, context = context )
+        for descriptor in descriptors )
 
 
 _models_caches = __.AccretiveDictionary( )
@@ -235,15 +226,3 @@ async def _memcache_acquire_models(
             models_by_genus[ genus ].append( model )
     return tuple( __.chain.from_iterable(
         models_by_genus[ genus ] for genus in genera ) )
-
-
-def _validate_invocation_requests_canister(
-    canister: __.MessageCanister
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
-    Error = _exceptions.InvocationFormatError
-    if not hasattr( canister.attributes, 'invocation_data' ):
-        raise Error( "Missing invocation data." ) # TODO: Better error.
-    requests = canister.attributes.invocation_data
-    if not isinstance( requests, __.AbstractSequence ):
-        raise Error( "Tool use requests is not sequence." )
-    return requests

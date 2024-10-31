@@ -193,6 +193,43 @@ class ConverserTokensLimits(
         return selfclass( **args )
 
 
+class InvocationRequest(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, )
+):
+    ''' Provider-neutral invocation (tool use) request. '''
+
+    name: str
+    arguments: __.AbstractDictionary[ str, __.a.Any ]
+    invocation: __.a.Callable # TODO: Full signature.
+    specifics = __.AccretiveDictionary( ) # TODO: Signature.
+
+    @classmethod
+    def from_descriptor(
+        selfclass,
+        descriptor: InvocationDescriptor,
+        context, # TODO: Signature.
+    ) -> __.a.Self:
+        ''' Produces instance from descriptor dictionary. '''
+        from .exceptions import InvocationFormatError as Error
+        if not isinstance( descriptor, __.AbstractDictionary ):
+            raise Error( "Invocation descriptor is not dictionary." )
+        if 'name' not in descriptor:
+            raise Error( "Invocation descriptor without name." )
+        name = descriptor[ 'name' ]
+        if name not in context.invokers:
+            raise Error( f"Invocable {name!r} is not available." )
+        arguments = descriptor.get( 'arguments', { } )
+        # TODO: Provide supplements based on specification from invocable.
+        invocation = __.partial_function(
+            context.invokers[ name ],
+            auxdata = context.auxdata,
+            arguments = arguments,
+            supplements = context.supplements )
+        return selfclass(
+            name = name, arguments = arguments, invocation = invocation )
+
+
 class ModelIntegrationBehaviors( __.enum.IntFlag ):
     ''' How to fold attributes from model integrators together. '''
     # TODO: Immutable class attributes.
@@ -257,12 +294,10 @@ class ModelGenera( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-# TODO? Convert 'InvocationRequest' to class or typing.TypedDict.
-InvocationRequest: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
-InvocationRequestMutable: __.a.TypeAlias = (
-    __.AbstractMutableDictionary[ str, __.a.Any ] )
-InvocationsRequestsMutable: __.a.TypeAlias = (
-    __.AbstractIterable[ InvocationRequestMutable ] )
+InvocationDescriptor: __.a.TypeAlias = (
+    __.AbstractDictionary[ str, __.a.Any ] )
+InvocationsRequests: __.a.TypeAlias = (
+    __.AbstractSequence[ InvocationRequest ] )
 ModelsIntegrators: __.a.TypeAlias = __.AbstractSequence[ ModelsIntegrator ]
 ModelsIntegratorsMutable: __.a.TypeAlias = (
     __.AbstractMutableSequence[ ModelsIntegrator ] )

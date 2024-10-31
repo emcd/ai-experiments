@@ -249,9 +249,7 @@ class InvocationsProcessor(
 
     @__.abstract_member_function
     async def __call__(
-        self,
-        # TODO: Use InvocationRequest instance as argument.
-        request: __.AbstractDictionary[ str, __.a.Any ],
+        self, request: _core.InvocationRequest
     ) -> __.MessageCanister: # TODO? Return InvocationResult.
         ''' Uses invocable to produce result for conversation. '''
         raise NotImplementedError
@@ -277,7 +275,7 @@ class InvocationsProcessor(
         canister: __.MessageCanister,
         invocables: __.AccretiveNamespace,
         ignore_invalid_canister: bool = False,
-    ):
+    ) -> _core.InvocationsRequests:
         ''' Converts invocation requests into invoker coroutines. '''
         # TODO: Return InvocationRequest instance.
         raise NotImplementedError

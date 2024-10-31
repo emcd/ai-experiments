@@ -58,6 +58,7 @@ class Attributes(
     honors_supervisor_instructions: bool = False
     invocations_support_level: InvocationsSupportLevels = (
         InvocationsSupportLevels.Single )
+    supports_duplex_exchanges: bool = False
 
     @classmethod
     def from_descriptor(
@@ -69,6 +70,7 @@ class Attributes(
             'extra-tokens-for-actor-name',
             'extra-tokens-per-message',
             'honors-supervisor-instructions',
+            'supports-duplex-exchanges',
         ):
             arg = sdescriptor.get( arg_name )
             if None is arg: continue
@@ -100,28 +102,112 @@ class ControlsProcessor(
         return args
 
 
-class SerdeProcessor(
-    __.ConverserSerdeProcessor, class_decorators = ( __.standard_dataclass, )
+class InvocationsProcessor(
+    __.InvocationsProcessor, class_decorators = ( __.standard_dataclass, )
 ):
-    ''' (De)serialization for OpenAI chat models. '''
+    ''' Handles functions and tool calls for OpenAI chat models. '''
 
-    def deserialize_data( self, data: str ) -> __.a.Any:
-        data_format = self.model.attributes.format_preferences.response_data
-        match data_format:
-            case __.DataFormatPreferences.JSON:
-                from ....codecs.json import loads
-                return loads( data )
-        raise __.SupportError(
-            f"Cannot deserialize data from {data_format.value} format." )
+    async def __call__(
+        self, request: __.InvocationRequest
+    ) -> __.MessageCanister:
+        specifics = request.specifics
+        result = await request.invocation( )
+        if 'id' in specifics: # late 2023+ format: parallel tool calls
+            result_context = dict(
+                name = specifics[ 'function' ][ 'name' ],
+                role = 'tool',
+                tool_call_id = specifics[ 'id' ] )
+        else: # mid-2023 format: single function call
+            result_context = dict( name = request.name, role = 'function' )
+        from json import dumps
+        message = dumps( result )
+        canister = (
+            __.ResultMessageCanister( )
+            .add_content( message, mimetype = 'application/json' ) )
+        canister.attributes.model_context = {
+            'provider': self.model.provider.name,
+            'model': self.model.name,
+            'supplement': result_context,
+        } # TODO? Immutable
+        return canister
 
-    def serialize_data( self, data: __.a.Any ) -> str:
-        data_format = self.model.attributes.format_preferences.request_data
-        match data_format:
-            case __.DataFormatPreferences.JSON:
-                from json import dumps
-                return dumps( data )
-        raise __.SupportError(
-            f"Cannot serialize data to {data_format.value} format." )
+    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
+        return dict(
+            name = invoker.name,
+            description = invoker.invocable.__doc__,
+            parameters = invoker.argschema )
+
+    def nativize_invocables(
+        self,
+        invokers: __.AbstractIterable[ __.Invoker ],
+    ) -> __.a.Any:
+        if not self.model.attributes.supports_invocations: return { }
+        args = { }
+        match self.model.attributes.invocations_support_level:
+            case InvocationsSupportLevels.Concurrent:
+                args[ 'tools' ] = [
+                    {   'type': 'function',
+                        'function': self.nativize_invocable( invoker ) }
+                    for invoker in invokers ]
+            case InvocationsSupportLevels.Single:
+                args[ 'functions' ] = [
+                    self.nativize_invocable( invoker )
+                    for invoker in invokers ]
+        return args
+
+    def requests_from_canister(
+        self,
+        auxdata: __.CoreGlobals, *,
+        supplements: __.AccretiveDictionary,
+        canister: __.MessageCanister,
+        invocables: __.AccretiveNamespace,
+        ignore_invalid_canister: bool = False,
+    ) -> __.InvocationsRequests:
+        # TODO: Provide supplements based on specification from invocable.
+        supplements[ 'model' ] = self.model
+        model_context = getattr( canister.attributes, 'model_context', { } )
+        if self.model.provider.name != model_context.get( 'provider' ):
+            if ignore_invalid_canister: return [ ]
+            raise __.ProviderIncompatibilityError(
+                provider = self.model.provider,
+                entity_name = "foreign invocation requests" )
+        requests = __.invocation_requests_from_canister(
+            auxdata = auxdata,
+            supplements = supplements,
+            canister = canister,
+            invocables = invocables,
+            ignore_invalid_canister = ignore_invalid_canister )
+        supplement = model_context.get( 'supplement', { } )
+        if ( specifics := supplement.get( 'function_call' ) ):
+            if 1 != len( requests ):
+                raise __.InvocationFormatError(
+                    "Can only have one invocation request "
+                    "with legacy function." )
+            requests[ 0 ].specifics.update( specifics )
+        elif ( specifics := supplement.get( 'tool_calls' ) ):
+            if len( requests ) != len( specifics ):
+                raise __.InvocationFormatError(
+                    "Number of invocation requests must match "
+                    "number of tool calls." )
+            for i, request in enumerate( requests ):
+                request.specifics.update( specifics[ i ] )
+        return requests
+
+
+class MessagesProcessor(
+    __.MessagesProcessor, class_decorators = ( __.standard_dataclass, )
+):
+    ''' Handles conversation messages in OpenAI format. '''
+
+    def nativize_messages_v0(
+        self, canisters: __.MessagesCanisters
+    ) -> list[ OpenAiMessage ]:
+        messages_pre: list[ OpenAiMessage ] = [ ]
+        for canister in canisters:
+            if _decide_exclude_message( self.model, canister ): continue
+            message = _nativize_message( self.model, canister )
+            messages_pre.append( message )
+        return _refine_native_messages( self.model, messages_pre )
 
 
 class Model(
@@ -188,108 +274,28 @@ class Model(
         return _process_complete_response_v0( self, response, reactors )
 
 
-class InvocationsProcessor(
-    __.InvocationsProcessor, class_decorators = ( __.standard_dataclass, )
+class SerdeProcessor(
+    __.ConverserSerdeProcessor, class_decorators = ( __.standard_dataclass, )
 ):
-    ''' Handles functions and tool calls for OpenAI chat models. '''
+    ''' (De)serialization for OpenAI chat models. '''
 
-    async def __call__(
-        self, request: __.InvocationRequest
-    ) -> __.MessageCanister:
-        request_context = request[ 'context__' ]
-        result = await request[ 'invocable__' ]( )
-        if 'id' in request_context: # late 2023+ format: parallel tool calls
-            result_context = dict(
-                name = request_context[ 'function' ][ 'name' ],
-                role = 'tool',
-                tool_call_id = request_context[ 'id' ] )
-        else: # mid-2023 format: single function call
-            result_context = dict(
-                name = request[ 'name' ], role = 'function' )
-        from json import dumps
-        message = dumps( result )
-        canister = (
-            __.ResultMessageCanister( )
-            .add_content( message, mimetype = 'application/json' ) )
-        canister.attributes.model_context = {
-            'provider': self.model.provider.name,
-            'model': self.model.name,
-            'supplement': result_context,
-        } # TODO? Immutable
-        return canister
+    def deserialize_data( self, data: str ) -> __.a.Any:
+        data_format = self.model.attributes.format_preferences.response_data
+        match data_format:
+            case __.DataFormatPreferences.JSON:
+                from ....codecs.json import loads
+                return loads( data )
+        raise __.SupportError(
+            f"Cannot deserialize data from {data_format.value} format." )
 
-    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
-        return dict(
-            name = invoker.name,
-            description = invoker.invocable.__doc__,
-            parameters = invoker.argschema )
-
-    def nativize_invocables(
-        self,
-        invokers: __.AbstractIterable[ __.Invoker ],
-    ) -> __.a.Any:
-        if not self.model.attributes.supports_invocations: return { }
-        args = { }
-        match self.model.attributes.invocations_support_level:
-            case InvocationsSupportLevels.Concurrent:
-                args[ 'tools' ] = [
-                    {   'type': 'function',
-                        'function': self.nativize_invocable( invoker ) }
-                    for invoker in invokers ]
-            case InvocationsSupportLevels.Single:
-                args[ 'functions' ] = [
-                    self.nativize_invocable( invoker )
-                    for invoker in invokers ]
-        return args
-
-    def requests_from_canister(
-        self,
-        auxdata: __.CoreGlobals, *,
-        supplements: __.AccretiveDictionary,
-        canister: __.MessageCanister,
-        invocables: __.AccretiveNamespace,
-        ignore_invalid_canister: bool = False,
-    ) -> __.InvocationsRequestsMutable:
-        # TODO: Appropriate error classes.
-        requests = __.invocation_requests_from_canister(
-            processor = self,
-            auxdata = auxdata,
-            supplements = supplements,
-            canister = canister,
-            invocables = invocables,
-            ignore_invalid_canister = ignore_invalid_canister )
-        model_context = getattr( canister.attributes, 'model_context', { } )
-        supplement = model_context.get( 'supplement', { } )
-        if ( payload := supplement.get( 'function_call' ) ):
-            if 1 != len( requests ):
-                raise AssertionError(
-                    "Can only have one invocation request "
-                    "with legacy function." )
-            requests[ 0 ][ 'context__' ] = payload
-        elif ( payload := supplement.get( 'tool_calls' ) ):
-            if len( requests ) != len( payload ):
-                raise AssertionError(
-                    "Number of invocation requests must match "
-                    "number of tool calls." )
-            for i, request in enumerate( requests ):
-                request[ 'context__' ] = payload[ i ]
-        return requests
-
-
-class MessagesProcessor(
-    __.MessagesProcessor, class_decorators = ( __.standard_dataclass, )
-):
-    ''' Handles conversation messages in OpenAI format. '''
-
-    def nativize_messages_v0(
-        self, canisters: __.MessagesCanisters
-    ) -> list[ OpenAiMessage ]:
-        messages_pre: list[ OpenAiMessage ] = [ ]
-        for canister in canisters:
-            if _decide_exclude_message( self.model, canister ): continue
-            message = _nativize_message( self.model, canister )
-            messages_pre.append( message )
-        return _refine_native_messages( self.model, messages_pre )
+    def serialize_data( self, data: __.a.Any ) -> str:
+        data_format = self.model.attributes.format_preferences.request_data
+        match data_format:
+            case __.DataFormatPreferences.JSON:
+                from json import dumps
+                return dumps( data )
+        raise __.SupportError(
+            f"Cannot serialize data to {data_format.value} format." )
 
 
 class Tokenizer(

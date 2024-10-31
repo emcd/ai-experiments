@@ -266,6 +266,7 @@ allow-wildcard-with-all = false
 logging-format-style = 'new'
 [tool.pylint.'messages control']
 disable = [
+  'consider-using-assignment-expr',
   'consider-using-f-string',
   'duplicate-code',  # TODO: Re-enable after heuristic is fixed.
   'fixme',
