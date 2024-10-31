@@ -1,0 +1,8 @@
+format-version = 1
+
+[converser]
+name-regex = '^gpt-4o-realtime-preview(-.*)?$'
+modalities = [ 'audio', 'pictures', 'text' ]
+
+[converser.special]
+supports-duplex-exchanges = true

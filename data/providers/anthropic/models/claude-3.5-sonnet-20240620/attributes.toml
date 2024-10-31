@@ -1,0 +1,7 @@
+format-version = 1
+
+[converser]
+name-regex = '^claude-3\.5-sonnet-20240620$'
+
+[converser.special]
+supports-computer-use = false

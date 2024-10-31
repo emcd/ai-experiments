@@ -21,6 +21,7 @@ extra-tokens-for-actor-name = 1
 extra-tokens-per-message = 3
 honors-supervisor-instructions = true
 invocations-support-level = 'concurrent'
+supports-duplex-exchanges = false
 
 [converser.tokens-limits]
 per-response = 4_096
