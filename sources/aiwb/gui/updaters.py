@@ -169,7 +169,10 @@ def create_message( gui, dto ):
     widget.gui__ = gui_
     gui_.row_content.gui__ = gui_
     # TODO: Handle non-textual messages and text messages with attachments.
-    content = dto[ 0 ].data
+    if dto: content = dto[ 0 ].data
+    elif hasattr( dto.attributes, 'invocation_data' ):
+        content = dto.attributes.invocation_data
+    else: content = ''
     text_message = gui_.text_message
     if hasattr( text_message, 'value' ): text_message.value = content
     else: text_message.object = content
@@ -204,14 +207,18 @@ async def delete_conversation( components, descriptor ):
 
 def determine_message_layout( dto ):
     # TODO: Consider contents array.
-    mimetype = dto[ 0 ].mimetype
+    if dto: mimetype = dto[ 0 ].mimetype
+    elif hasattr( dto.attributes, 'invocation_data' ):
+        mimetype = 'application/json'
+    else: mimetype = 'text/plain' # TODO? Raise error.
     # TODO: Handle layouts for pictorial messages.
-    if 'text/plain' == mimetype:
-        from .layouts import plain_conversation_message_layout as layout
-    elif 'application/json' == mimetype:
-        from .layouts import json_conversation_message_layout as layout
-    else:
-        from .layouts import rich_conversation_message_layout as layout
+    match mimetype:
+        case 'application/json':
+            from .layouts import json_conversation_message_layout as layout
+        case 'text/plain':
+            from .layouts import plain_conversation_message_layout as layout
+        case _:
+            from .layouts import rich_conversation_message_layout as layout
     return layout
 
 

@@ -26,26 +26,31 @@
 
 def assimilate_canister_dto_from_gui( canister_components ):
     ''' Assimilates message canister from GUI display. '''
-    dto = canister_components.canister__
+    canister = canister_components.canister__
     behaviors = [ ]
     for behavior in ( 'active', 'pinned' ):
         if getattr( canister_components, f"toggle_{behavior}" ).value:
             behaviors.append( behavior )
-    dto.attributes.behaviors = behaviors
+    canister.attributes.behaviors = behaviors
     # TODO: Implement full array support.
-    data = (
-        canister_components.text_message.object
-        if hasattr( canister_components.text_message, 'object' )
-        else canister_components.text_message.value )
-    dto[ 0 ].data = data
+    if canister:
+        data = (
+            canister_components.text_message.object
+            if hasattr( canister_components.text_message, 'object' )
+            else canister_components.text_message.value )
+        canister[ 0 ].data = data
 
 
 def assimilate_canister_dto_to_gui( canister_components ):
     ''' Assimilates GUI display of message from canister. '''
-    dto = canister_components.canister__
+    canister = canister_components.canister__
     # TODO: Implement full array support.
-    canister_components.text_message.object = dto[ 0 ].data
-    behaviors = getattr( dto.attributes, 'behaviors', [ ] )
+    if canister:
+        canister_components.text_message.object = canister[ 0 ].data
+    elif hasattr( canister.attributes, 'invocation_data' ):
+        canister_components.text_message.object = (
+            canister.attributes.invocation_data )
+    behaviors = getattr( canister.attributes, 'behaviors', [ ] )
     for behavior in ( 'active', 'pinned' ):
         value = behavior in behaviors
         getattr( canister_components, f"toggle_{behavior}" ).value = value

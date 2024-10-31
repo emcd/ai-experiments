@@ -346,17 +346,17 @@ def _canister_from_response_element( model, element ):
         content = '' if delta else message.content
         # TODO: Lookup MIME type from model response format preferences.
         mimetype = 'text/markdown'
-        role = __.MessageRole.Assistant
-    elif message.function_call or message.tool_calls:
-        content = ''
-        mimetype = 'application/json'
-        role = __.MessageRole.Invocation
-    else:
-        raise AssertionError(
-            "Cannot create message canister from unknown message species." )
-    return (
-        role.produce_canister( attributes = attributes )
-        .add_content( content, mimetype = mimetype ) )
+        return (
+            __.MessageRole.Assistant
+            .produce_canister( attributes = attributes )
+            .add_content( content, mimetype = mimetype ) )
+    if message.function_call or message.tool_calls:
+        attributes.invocation_data = [ ]
+        return (
+            __.MessageRole.Invocation
+            .produce_canister( attributes = attributes ) )
+    raise AssertionError(
+        "Cannot create message canister from unknown message species." )
 
 
 def _collect_response_as_content_v0(
@@ -448,7 +448,7 @@ def _nativize_assistant_message(
     content: OpenAiMessageContent
     context = { 'role': 'assistant' }
     content = _nativize_message_content( model, canister )
-    if hasattr( canister.attributes, 'invocation_index' ):
+    if hasattr( canister.attributes, 'invocation_data' ):
         context = _nativize_invocation_message( model, canister )
         if ( extra_content := context.pop( 'content', None ) ):
             if isinstance( content, str ):
@@ -489,9 +489,10 @@ def _nativize_invocation_message(
                 supports_invocations = 'function_call' in supplement
             case InvocationsSupportLevels.Concurrent: pass
     if not supports_invocations:
-        index = getattr( canister.attributes, 'invocation_index', 0 )
+        from json import dumps
         content = '\n\n'.join( (
-            '## Functions Invocation Request ##', canister[ index ].data ) )
+            '## Functions Invocation Request ##',
+            dumps( canister.attributes.invocation_data ) ) )
         return dict( content = content, **context )
     context.update( supplement )
     return context
@@ -522,14 +523,14 @@ def _nativize_message_content(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessageContent:
     # TODO: Handle audio and image contents.
-    iindex = getattr( canister.attributes, 'invocation_index', -1 )
-    if 1 == len( canister ): content = canister[ 0 ].data
-    else:
-        # Build multipart message, skipping invocation if present.
-        content = [
-            { 'type': 'text', 'text': content_.data }
-            for i, content_ in enumerate( canister ) if iindex != i ]
-    return content
+    match len( canister ):
+        case 0: return ''
+        case 1: return canister[ 0 ].data
+        case _:
+            # Build multipart message.
+            return [
+                { 'type': 'text', 'text': content.data }
+                for content in canister ]
 
 
 def _nativize_result_message(
@@ -605,13 +606,7 @@ def _postprocess_response_canisters( model, indices, reactors ):
             invocation_data = _reconstitute_legacy_invocation( record )
         else: invocation_data = None
         if invocation_data:
-            if canister[ 0 ].data:
-                canister.add_content(
-                    invocation_data, mimetype = 'application/json' )
-                canister.attributes.invocation_index = len( canister ) - 1
-            else:
-                canister[ 0 ].data = invocation_data
-                canister.attributes.invocation_index = 0
+            canister.attributes.invocation_data = invocation_data
         reactors.updater( indices.references[ index ] )
 
 
@@ -683,16 +678,16 @@ def _process_iterative_response_element_v0(
 
 
 def _reconstitute_legacy_invocation( record ):
-    from json import dumps, loads
+    from json import loads
     invocation = record[ 'function_call' ]
-    return dumps( [ dict(
+    return [ dict(
         name = invocation[ 'name' ],
         arguments = loads( invocation[ 'arguments' ] ),
-    ) ] )
+    ) ]
 
 
 def _reconstitute_invocations( record ):
-    from json import dumps, loads
+    from json import loads
     invocations = record[ 'tool_calls' ]
     invocations_ = [ ]
     for invocation in invocations:
@@ -701,27 +696,20 @@ def _reconstitute_invocations( record ):
             name = function[ 'name' ],
             arguments = loads( function[ 'arguments' ] ),
         ) )
-    return dumps( invocations_ )
+    return invocations_
 
 
 def _refine_native_assistant_message(
     model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
-    # TODO: Appropriate error classes.
     anchor_role = anchor[ 'role' ]
     cursor_role = cursor[ 'role' ]
     anchor_name = anchor.get( 'name' )
     cursor_name = cursor.get( 'name' )
-    #anchor_invocation = 'content' not in anchor
-    #cursor_invocation = 'content' not in cursor
-    if anchor_role == cursor_role:
-        #if anchor_invocation or cursor_invocation:
-        #    raise AssertionError(
-        #        "Mixed assistant completion and invocation detected." )
-        if anchor_name == cursor_name:
-            _merge_native_message(
-                model, anchor, cursor, indicate_elision = True )
-            return NativeMessageRefinementActions.Merge
+    if anchor_role == cursor_role and anchor_name == cursor_name:
+        _merge_native_message(
+            model, anchor, cursor, indicate_elision = True )
+        return NativeMessageRefinementActions.Merge
     return NativeMessageRefinementActions.Retain
 
 

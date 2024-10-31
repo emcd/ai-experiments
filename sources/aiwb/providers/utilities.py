@@ -241,10 +241,9 @@ def _validate_invocation_requests_canister(
     canister: __.MessageCanister
 ) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
     Error = _exceptions.InvocationFormatError
-    from ..codecs.json import loads
-    index = getattr( canister.attributes, 'invocation_index', 0 )
-    try: requests = loads( canister[ index ].data )
-    except Exception as exc: raise Error( str( exc ) ) from exc
+    if not hasattr( canister.attributes, 'invocation_data' ):
+        raise Error( "Missing invocation data." ) # TODO: Better error.
+    requests = canister.attributes.invocation_data
     if not isinstance( requests, __.AbstractSequence ):
-        raise Error( 'Tool use requests is not sequence.' )
+        raise Error( "Tool use requests is not sequence." )
     return requests

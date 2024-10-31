@@ -255,24 +255,29 @@ def create_content( data, /, **descriptor ):
 async def restore_canister( manager, canister_state ):
     ''' Restores canister into memory from persistent storage. '''
     nomargs = { }
-    role = canister_state[ 'role' ]
-    if ( attributes := canister_state.get( 'attributes', { } ) ):
-        if 'model_context' in attributes: # TEMP: Until upgrade complete.
-            model_context = attributes[ 'model_context' ]
-            if 'provider' not in model_context:
-                attributes[ 'model_context' ] = {
-                    'provider': 'openai', 'supplement': model_context }
-        elif 'assistant' == role: # TEMP: Until upgrade complete.
-            attributes[ 'model_context' ] = { 'provider': 'openai' }
-        # TODO? Convert hyphenated keys to underscored.
-        nomargs[ 'attributes' ] = __.SimpleNamespace( **attributes )
-    canister = Role( role ).produce_canister( **nomargs )
+    role = Role( canister_state[ 'role' ] )
+    attributes = canister_state.get( 'attributes', { } )
     restorers = tuple(
         restore_content( manager, content_identity )
         for content_identity in canister_state.get( 'contents', ( ) ) )
-    contents = await __.gather_async( *restorers )
-    for content in contents:
-        canister.contents.append( content )
+    contents = list( await __.gather_async( *restorers ) )
+    if 'invocation_data' not in attributes: # TEMP: Until upgrade complete.
+        from json import loads
+        invocation_data = None
+        match role:
+            case Role.Assistant:
+                iindex = attributes.get( 'invocation_index', -1 )
+                if -1 != iindex: invocation_data = contents.pop( iindex ).data
+            case Role.Invocation:
+                if contents: invocation_data = contents.pop( 0 ).data
+                else: invocation_data = '[]'
+        if invocation_data:
+            attributes[ 'invocation_data' ] = loads( invocation_data )
+    if attributes:
+        # TODO? Convert hyphenated keys to underscored.
+        nomargs[ 'attributes' ] = __.SimpleNamespace( **attributes )
+    canister = role.produce_canister( **nomargs )
+    for content in contents: canister.contents.append( content )
     return canister
 
 

@@ -217,7 +217,7 @@ async def _use_invocables_if_desirable( components, message_components ):
     role = __.MessageRole.from_canister( canister )
     match role:
         case __.MessageRole.Assistant:
-            if hasattr( canister.attributes, 'invocation_index' ): pass
+            if hasattr( canister.attributes, 'invocation_data' ): pass
             else: return
         case __.MessageRole.Invocation: pass
         case _: return
@@ -238,7 +238,4 @@ def _update_conversation_progress( gui, message ):
 def _update_gui_on_chat( gui, canister_gui ):
     from .updaters import autoscroll_document
     _conversations.assimilate_canister_dto_to_gui( canister_gui )
-    #setattr(
-    #    handle.text_message, 'object',
-    #    getattr( handle.text_message, 'object' ) + content )
     autoscroll_document( gui )
