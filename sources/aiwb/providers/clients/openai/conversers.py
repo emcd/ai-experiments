@@ -450,9 +450,11 @@ def _nativize_assistant_message(
     content = _nativize_message_content( model, canister )
     if hasattr( canister.attributes, 'invocation_index' ):
         context = _nativize_invocation_message( model, canister )
-        if 'content' in context:
-            content = "{content_0}\n\n{content_f}".format(
-                content_0 = content, content_f = context.pop( 'content' ) )
+        if ( extra_content := context.pop( 'content', None ) ):
+            if isinstance( content, str ):
+                content = "{content_0}\n\n{content_f}".format(
+                    content_0 = content, content_f = extra_content )
+            else: content.append( { 'type': 'text', 'text': extra_content } )
     return dict( content = content, **context )
 
 
