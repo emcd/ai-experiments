@@ -448,6 +448,11 @@ def _nativize_assistant_message(
     content: OpenAiMessageContent
     context = { 'role': 'assistant' }
     content = _nativize_message_content( model, canister )
+    if hasattr( canister.attributes, 'invocation_index' ):
+        context = _nativize_invocation_message( model, canister )
+        if 'content' in context:
+            content = "{content_0}\n\n{content_f}".format(
+                content_0 = content, content_f = context.pop( 'content' ) )
     return dict( content = content, **context )
 
 
@@ -482,8 +487,9 @@ def _nativize_invocation_message(
                 supports_invocations = 'function_call' in supplement
             case InvocationsSupportLevels.Concurrent: pass
     if not supports_invocations:
+        index = getattr( canister.attributes, 'invocation_index', 0 )
         content = '\n\n'.join( (
-            '## Functions Invocation Request ##', canister[ 0 ].data ) )
+            '## Functions Invocation Request ##', canister[ index ].data ) )
         return dict( content = content, **context )
     context.update( supplement )
     return context
@@ -514,11 +520,13 @@ def _nativize_message_content(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessageContent:
     # TODO: Handle audio and image contents.
+    iindex = getattr( canister.attributes, 'invocation_index', -1 )
     if 1 == len( canister ): content = canister[ 0 ].data
     else:
+        # Build multipart message, skipping invocation if present.
         content = [
             { 'type': 'text', 'text': content_.data }
-            for content_ in canister ]
+            for i, content_ in enumerate( canister ) if iindex != i ]
     return content
 
 
@@ -590,9 +598,18 @@ def _postprocess_response_canisters( model, indices, reactors ):
         if not ( record := indices.records.get( index ) ): continue
         canister.attributes.model_context[ 'supplement' ] = record
         if 'tool_calls' in record:
-            canister[0].data = _reconstitute_invocations( record )
+            invocation_data = _reconstitute_invocations( record )
         elif 'function_call' in record:
-            canister[0].data = _reconstitute_legacy_invocation( record )
+            invocation_data = _reconstitute_legacy_invocation( record )
+        else: invocation_data = None
+        if invocation_data:
+            if canister[ 0 ].data:
+                canister.add_content(
+                    invocation_data, mimetype = 'application/json' )
+                canister.attributes.invocation_index = len( canister ) - 1
+            else:
+                canister[ 0 ].data = invocation_data
+                canister.attributes.invocation_index = 0
         reactors.updater( indices.references[ index ] )
 
 
@@ -693,12 +710,12 @@ def _refine_native_assistant_message(
     cursor_role = cursor[ 'role' ]
     anchor_name = anchor.get( 'name' )
     cursor_name = cursor.get( 'name' )
-    anchor_invocation = 'content' not in anchor
-    cursor_invocation = 'content' not in cursor
+    #anchor_invocation = 'content' not in anchor
+    #cursor_invocation = 'content' not in cursor
     if anchor_role == cursor_role:
-        if anchor_invocation or cursor_invocation:
-            raise AssertionError(
-                "Mixed assistant completion and invocation detected." )
+        #if anchor_invocation or cursor_invocation:
+        #    raise AssertionError(
+        #        "Mixed assistant completion and invocation detected." )
         if anchor_name == cursor_name:
             _merge_native_message(
                 model, anchor, cursor, indicate_elision = True )

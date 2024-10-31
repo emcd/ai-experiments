@@ -242,7 +242,8 @@ def _validate_invocation_requests_canister(
 ) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
     Error = _exceptions.InvocationFormatError
     from ..codecs.json import loads
-    try: requests = loads( canister[ 0 ].data )
+    index = getattr( canister.attributes, 'invocation_index', 0 )
+    try: requests = loads( canister[ index ].data )
     except Exception as exc: raise Error( str( exc ) ) from exc
     if not isinstance( requests, __.AbstractSequence ):
         raise Error( 'Tool use requests is not sequence.' )

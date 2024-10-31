@@ -213,8 +213,14 @@ async def _generate_conversation_title( components ):
 
 
 async def _use_invocables_if_desirable( components, message_components ):
-    role = __.MessageRole.from_canister( message_components.canister__ )
-    if __.MessageRole.Invocation is not role: return
+    canister = message_components.canister__
+    role = __.MessageRole.from_canister( canister )
+    match role:
+        case __.MessageRole.Assistant:
+            if hasattr( canister.attributes, 'invocation_index' ): pass
+            else: return
+        case __.MessageRole.Invocation: pass
+        case _: return
     if not message_components.toggle_active.value: return
     if not components.checkbox_auto_functions.value: return
     await use_invocables(
