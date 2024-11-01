@@ -29,6 +29,7 @@ from . import __
 # TODO? Use typing.TypedDictionary.
 AnthropicControls: __.a.TypeAlias = dict[ str, __.a.Any ]
 AnthropicMessage: __.a.TypeAlias = dict[ str, __.a.Any ]
+AnthropicMessageContent: __.a.TypeAlias = str | list[ dict[ str, __.a.Any ] ]
 AttributesDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
 ModelDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
 
@@ -66,12 +67,16 @@ class ControlsProcessor(
     def nativize_controls(
         self, controls: __.ControlsInstancesByName
     ) -> AnthropicControls:
-        # TODO: Assert model name matches.
-        args: AnthropicControls = dict( model = controls[ 'model' ] )
+        # TODO: Assert model name matches between object and controls.
+        args: AnthropicControls = dict(
+            max_tokens = self.model.attributes.tokens_limits.per_response,
+            model = self.model.name )
         args.update( {
             name.replace( '-', '_' ): value
             for name, value in controls.items( )
             if name in self.control_names } )
+        #if self.model.attributes.supports_continuous_response:
+        #    args[ 'stream' ] = True
         return args
 
 
@@ -155,8 +160,14 @@ class MessagesProcessor(
     def nativize_messages_v0(
         self, canisters: __.MessagesCanisters
     ) -> list[ AnthropicMessage ]:
-        # TODO: Implement.
-        pass
+        # TODO: return type: list[ anthropic.types.MessageParam ]
+        messages_pre: list[ AnthropicMessage ] = [ ]
+        for canister in canisters:
+            if _decide_exclude_message( self.model, canister ): continue
+            message = _nativize_message( self.model, canister )
+            messages_pre.append( message )
+        # TODO: Merge and refine.
+        return messages_pre
 
 
 class Model(
@@ -199,8 +210,32 @@ class Model(
         controls: __.ControlsInstancesByName,
         reactors, # TODO? Accept context manager with reactor functions.
     ):
-        # TODO: Implement.
-        pass
+        Error = __.partial_function(
+            __.ModelOperateFailure,
+            model = self, operation = 'chat completion' )
+        messages_native = (
+            self.messages_processor.nativize_messages_v0( messages ) )
+        ic( messages_native )
+        # TODO: Collect supervisor instructions.
+        controls_native = (
+            self.controls_processor.nativize_controls( controls ) )
+        #supplements_native = _nativize_supplements_v0( self, supplements )
+        args = dict( # TODO: invocations and supervisor instructions
+            messages = messages_native, **controls_native )
+        client = self.client.produce_implement( )
+        #should_stream = self.attributes.supports_continuous_response
+        should_stream = False
+        from anthropic import AnthropicError
+        if should_stream:
+            try: response = await client.messages.stream( **args )
+            except AnthropicError as exc: raise Error( cause = exc ) from exc
+            # TODO: Collect streaming response.
+        else:
+            try: response = await client.messages.create( **args )
+            except AnthropicError as exc: raise Error( cause = exc ) from exc
+            # TODO: Process complete response.
+        ic( response )
+        assert False
 
 
 class SerdeProcessor(
@@ -256,3 +291,134 @@ class Tokenizer(
         tokens_count = 0
         # TODO: Implement.
         return tokens_count
+
+
+def _decide_exclude_message(
+    model: Model, canister: __.MessageCanister
+) -> bool:
+    role = __.MessageRole.from_canister( canister )
+    match role:
+        case __.MessageRole.Supervisor:
+            # We collect system instructions separately,
+            # since there is not an Anthropic message type for them.
+            return True
+    return False
+
+
+def _nativize_assistant_message(
+    model: Model, canister: __.MessageCanister
+) -> AnthropicMessage:
+    context = { 'role': 'assistant' }
+    content = _nativize_message_content( model, canister )
+    if hasattr( canister.attributes, 'invocation_data' ):
+        context = _nativize_invocation_message( model, canister )
+        if ( extra_content := context.pop( 'content', None ) ):
+            if isinstance( content, str ):
+                content = [ { 'text': content, 'type': 'text' } ]
+            content.extend( extra_content )
+#            if isinstance( content, str ):
+#                if isinstance( extra_content, str ):
+#                    content = "{content_0}\n\n{content_f}".format(
+#                        content_0 = content, content_f = extra_content )
+#                else:
+#                    content = [
+#                        { 'text': content, 'type': 'text' }, *extra_content ]
+#            elif isinstance( extra_content, str ):
+#                content.append( { 'text': extra_content, 'type': 'text' } )
+#            else: content.extend( extra_content )
+    return dict( content = content, **context )
+
+
+def _nativize_document_message(
+    model: Model, canister: __.MessageCanister
+) -> AnthropicMessage:
+    context = { 'role': 'user' }
+    content = '\n\n'.join( (
+        '## Supplemental Information ##', canister[ 0 ].data ) )
+    return dict( content = content, **context )
+
+
+def _nativize_invocation_message(
+    model: Model, canister: __.MessageCanister
+) -> AnthropicMessage:
+    attributes = canister.attributes
+    content: AnthropicMessageContent
+    context = { 'role': 'assistant' }
+    model_context = getattr( attributes, 'model_context', { } ).copy( )
+    supplement = model_context.get( 'supplement', { } )
+    supports_invocations = (
+            model.attributes.supports_invocations
+        and model.provider.name == model_context.get( 'provider' )
+        and 'tool_use' in supplement )
+    if not supports_invocations:
+        from json import dumps
+        content = '\n\n'.join( (
+            '## Functions Invocation Request ##',
+            dumps( canister.attributes.invocation_data ) ) )
+        content = [ { 'text': content, 'type': 'text' } ]
+    else: content = supplement[ 'tool_use' ]
+    return dict( content = content, **context )
+
+
+def _nativize_message(
+    model: Model, canister: __.MessageCanister
+) -> AnthropicMessage:
+    role = __.MessageRole.from_canister( canister )
+    match role:
+        case __.MessageRole.Assistant:
+            return _nativize_assistant_message( model, canister )
+        case __.MessageRole.Document:
+            return _nativize_document_message( model, canister )
+        case __.MessageRole.Invocation:
+            return _nativize_invocation_message( model, canister )
+        case __.MessageRole.Result:
+            return _nativize_result_message( model, canister )
+        case __.MessageRole.User:
+            return _nativize_user_message( model, canister )
+    raise __.ProviderIncompatibilityError(
+        provider = model.provider, entity_name = f"role {role.value!r}" )
+
+
+def _nativize_message_content(
+    model: Model, canister: __.MessageCanister
+) -> AnthropicMessageContent:
+    # TODO: Handle audio and image contents.
+    match len( canister ):
+        case 0: return ''
+        case 1: return canister[ 0 ].data
+        case _:
+            # Build multipart message.
+            return [
+                { 'text': content.data, 'type': 'text' }
+                for content in canister ]
+
+
+def _nativize_result_message(
+    model: Model, canister: __.MessageCanister
+) -> AnthropicMessage:
+    attributes = canister.attributes
+    content: AnthropicMessageContent
+    context = { 'role': 'user' }
+    model_context = getattr( attributes, 'model_context', { } ).copy( )
+    supports_invocations = (
+            model.attributes.supports_invocations
+        and model.provider.name == model_context.get( 'provider' ) )
+    supplement = model_context[ 'supplement' ]
+    if not supports_invocations:
+        content = '\n\n'.join( (
+            '## Functions Invocation Result ##', canister[ 0 ].data ) )
+        content = [ { 'text': content, 'type': 'text' } ]
+    else:
+        content = [ {
+            'content': _nativize_message_content( model, canister ),
+            **supplement } ]
+    return dict( content = content, **context )
+
+
+def _nativize_user_message(
+    model: Model, canister: __.MessageCanister
+) -> AnthropicMessage:
+    content: AnthropicMessageContent
+    context = { 'role': 'user' }
+    content = _nativize_message_content( model, canister )
+    return dict( content = content, **context )

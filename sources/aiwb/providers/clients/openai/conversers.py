@@ -110,8 +110,8 @@ class InvocationsProcessor(
     async def __call__(
         self, request: __.InvocationRequest
     ) -> __.MessageCanister:
-        specifics = request.specifics
         result = await request.invocation( )
+        specifics = request.specifics
         if 'id' in specifics: # late 2023+ format: parallel tool calls
             result_context = dict(
                 name = specifics[ 'function' ][ 'name' ],
@@ -467,8 +467,7 @@ def _nativize_assistant_message(
 def _nativize_document_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
-    # Role not valid to OpenAI. We later convert marker to 'user'.
-    context = { 'role': '#document#' }
+    context = { 'role': 'user' }
     content = '\n\n'.join( (
         '## Supplemental Information ##', canister[ 0 ].data ) )
     return dict( content = content, **context )
@@ -507,7 +506,6 @@ def _nativize_invocation_message(
 def _nativize_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
-    # TODO: Appropriate error classes.
     role = __.MessageRole.from_canister( canister )
     match role:
         case __.MessageRole.Assistant:
@@ -522,7 +520,8 @@ def _nativize_message(
             return _nativize_supervisor_message( model, canister )
         case __.MessageRole.User:
             return _nativize_user_message( model, canister )
-    raise AssertionError( f"Unprocessed message role {role.value!r}." )
+    raise __.ProviderIncompatibilityError(
+        provider = model.provider, entity_name = f"role {role.value!r}" )
 
 
 def _nativize_message_content(
@@ -794,9 +793,5 @@ def _refine_native_user_message(
     if anchor_role == cursor_role and anchor_name == cursor_name:
         _merge_native_message(
             model, anchor, cursor, indicate_elision = True )
-        return NativeMessageRefinementActions.Merge
-    if '#document#' == cursor_role:
-        cursor[ 'role' ] = 'user'
-        _merge_native_message( model, anchor, cursor )
         return NativeMessageRefinementActions.Merge
     return NativeMessageRefinementActions.Retain
