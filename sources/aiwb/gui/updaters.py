@@ -109,7 +109,7 @@ def configure_message_interface( canister_gui, dto ):
         case __.MessageRole.Assistant:
             canister_gui.button_fork.visible = True
 #            try:
-#                irequests = extract_invocation_requests(
+#                irequests = await extract_invocation_requests(
 #                    gui,
 #                    component = canister,
 #                    silent_extraction_failure = True )
@@ -243,6 +243,7 @@ async def fork_conversation( components, index: int ):
 
 
 async def populate_conversation( components ):
+    ''' Populates entire conversation history. '''
     from . import layouts
     from .layouts import conversation_container_names
     for component_name in conversation_container_names:
@@ -253,7 +254,7 @@ async def populate_conversation( components ):
         layout = getattr( layouts, f"{component_name}_layout" )
         _components.register_event_reactors(
             components, layout, f"column_{component_name}" )
-    update_conversation_postpopulate( components )
+    await update_conversation_postpopulate( components )
 
 
 async def populate_dashboard( auxdata: _state.Globals ):
@@ -278,31 +279,37 @@ async def populate_dashboard( auxdata: _state.Globals ):
 
 
 async def populate_models_selector( components ):
+    ''' Populates selector with available models for current provider. '''
     # TODO: Different models selectors per model genus.
+    from .providers import access_provider_selection, mutex_models
     auxdata = components.auxdata__
     genus = __.AiModelGenera.Converser
-    provider = (
-        components.selector_provider.auxdata__[
-            components.selector_provider.value ] )
+    provider = await access_provider_selection( components )
     models = await provider.survey_models( auxdata = auxdata, genus = genus )
     model_names = tuple( model.name for model in models )
-    components.selector_model.auxdata__ = {
-        model.name: model for model in models }
-    components.selector_model.value = None
-    components.selector_model.options = list( model_names )
-    components.selector_model.value = (
-        ( await provider.access_model_default(
-            auxdata = auxdata, genus = genus ) ).name )
+    default = (
+        await provider.access_model_default(
+            auxdata = auxdata, genus = genus ) ).name
+    async with mutex_models:
+        components.selector_model.auxdata__ = {
+            model.name: model for model in models }
+        components.selector_model.value = None
+        components.selector_model.options = list( model_names )
+        components.selector_model.value = default
 
 
 async def populate_providers_selector( components ):
+    ''' Populates selector with available provider clients. '''
+    # TODO: populate_provider_clients_selector
+    from .providers import mutex_models, mutex_providers
     providers = components.auxdata__.providers
-    # TODO: Drop this auxdata and rely on main GUI auxdata instead.
-    components.selector_provider.auxdata__ = providers
-    components.selector_provider.value = None
     names = list( providers.keys( ) )
-    components.selector_provider.options = names
-    components.selector_provider.value = next( iter( names ) )
+    async with mutex_providers, mutex_models:
+        # TODO: Drop this auxdata and rely on main GUI auxdata instead.
+        components.selector_provider.auxdata__ = providers
+        components.selector_provider.value = None
+        components.selector_provider.options = names
+        components.selector_provider.value = next( iter( names ) )
 
 
 def populate_prompt_variables( gui, species, data = None ):
@@ -461,9 +468,10 @@ def update_conversation_hilite( gui, new_descriptor = None ):
     conversations.extend( indicators )
 
 
-def update_conversation_postpopulate( components ):
-    update_invocations_prompt( components )
-    update_supervisor_prompt( components )
+async def update_conversation_postpopulate( components ):
+    ''' Finalize conversation presentation after loading messages. '''
+    await update_invocations_prompt( components )
+    await update_supervisor_prompt( components )
 
 
 def update_conversation_status( gui, text = None, progress = False ):
@@ -494,10 +502,13 @@ def update_conversation_timestamp( gui ):
     sort_conversations_index( gui )
 
 
-def update_invocations_prompt( components ):
-    supports_invocations = (
-        components.selector_model.auxdata__[ components.selector_model.value ]
-        .attributes.supports_invocations )
+async def update_invocations_prompt( components ):
+    ''' Updates available invocables according to model and other factors. '''
+    from .providers import access_model_selection, mutex_models
+    async with mutex_models: # TODO: Bake into access.
+        supports_invocations = (
+            access_model_selection( components )
+            .attributes.supports_invocations )
     components.row_functions_prompt.visible = supports_invocations
     if supports_invocations:
         attributes = components.auxdata__.prompts.definitions[
@@ -515,10 +526,13 @@ def update_invocations_prompt( components ):
     update_invocables_selection( components )
 
 
-def update_supervisor_prompt( components ):
-    accepts_instructions = (
-        components.selector_model.auxdata__[ components.selector_model.value ]
-        .attributes.accepts_supervisor_instructions )
+async def update_supervisor_prompt( components ):
+    ''' Updates supervisor message according to model. '''
+    from .providers import access_model_selection, mutex_models
+    async with mutex_models: # TODO: Bake into access.
+        accepts_instructions = (
+            access_model_selection( components )
+            .attributes.accepts_supervisor_instructions )
     components.row_system_prompt.visible = accepts_instructions
 
 

@@ -202,7 +202,8 @@ class InvocationRequest(
     name: str
     arguments: __.AbstractDictionary[ str, __.a.Any ]
     invocation: __.a.Callable # TODO: Full signature.
-    specifics = __.AccretiveDictionary( ) # TODO: Signature.
+    specifics: __.AccretiveDictionary = ( # TODO: Full signature.
+        __.dataclass_declare( default_factory = __.AccretiveDictionary ) )
 
     @classmethod
     def from_descriptor(

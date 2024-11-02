@@ -25,7 +25,7 @@ from . import __
 from . import providers as _providers
 
 
-def extract_invocation_requests(
+async def extract_invocation_requests(
     components,
     component = None,
     silent_extraction_failure: bool = False,

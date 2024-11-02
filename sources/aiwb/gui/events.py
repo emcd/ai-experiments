@@ -143,13 +143,17 @@ async def on_select_invocables( components, event ):
 
 
 async def on_select_model( components, event ):
+    if None is event.new: return
+    ic( event )
     from .updaters import (
         update_invocations_prompt, update_supervisor_prompt )
-    update_invocations_prompt( components )
-    update_supervisor_prompt( components )
+    await update_invocations_prompt( components )
+    await update_supervisor_prompt( components )
 
 
 async def on_select_provider( components, event ):
+    if None is event.new: return
+    ic( event )
     # TODO: on_select_provider_client
     from .updaters import populate_models_selector
     await populate_models_selector( components )
@@ -159,7 +163,7 @@ async def on_select_system_prompt( components, event ):
     from .updaters import (
         populate_prompt_variables, update_invocations_prompt )
     populate_prompt_variables( components, species = 'supervisor' )
-    update_invocations_prompt( components )
+    await update_invocations_prompt( components )
 
 
 async def on_select_user_prompt_class( components, event ):

@@ -148,8 +148,6 @@ class InvocationsProcessor(
                 "Number of invocation requests must match "
                 "number of tool calls." )
         for i, request in enumerate( requests ):
-            ic( request.specifics )
-            ic( specifics[ i ] )
             request.specifics.update( specifics[ i ] )
         return requests
 

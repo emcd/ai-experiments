@@ -65,13 +65,13 @@ async def chat( components ):
     ): canister_components = await _chat( components )
     canister_components.canister__.attributes.behaviors = [ 'active' ]
     _conversations.assimilate_canister_dto_to_gui( canister_components )
+    await _use_invocables_if_desirable( components, canister_components )
     await _add_conversation_indicator_if_necessary( components )
     await update_and_save_conversations_index( components )
     if summarization:
         update_messages_post_summarization( components )
         components.toggle_summarize.value = False
     await update_and_save_conversation( components )
-    await _use_invocables_if_desirable( components, canister_components )
 
 
 @_update_conversation_status_on_error
@@ -86,7 +86,7 @@ async def use_invocables(
     truncate_conversation( components, index )
     model = _providers.access_model_selection( components )
     requests = (
-        extract_invocation_requests(
+        await extract_invocation_requests(
             components,
             silent_extraction_failure = silent_extraction_failure ) )
     if not requests: return

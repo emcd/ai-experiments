@@ -34,6 +34,9 @@ from abc import (
     ABCMeta as ABCFactory,
     abstractmethod as abstract_member_function,
 )
+from asyncio import (
+    Lock as MutexAsync,
+)
 from collections import namedtuple # TODO: Replace with dataclass.
 from collections.abc import (
     Awaitable as        AbstractAwaitable,
