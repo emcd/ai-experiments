@@ -101,7 +101,7 @@ def configure_message_interface( canister_gui, dto ):
 #    gui = canister_gui.parent__
     canister = canister_gui.row_canister
     behaviors = dto.attributes.behaviors
-    role = __.MessageRole.from_canister( dto )
+    role = dto.role
     canister.styles.update( _roles_styles[ role ] )
     # TODO: Use user-supplied logos, when available.
     canister_gui.toggle_active.name = _roles_emoji[ role ]

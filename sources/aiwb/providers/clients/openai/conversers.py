@@ -91,7 +91,7 @@ class ControlsProcessor(
     def nativize_controls(
         self, controls: __.ControlsInstancesByName
     ) -> OpenAiControls:
-        # TODO: Assert model name matches.
+        assert self.model.name == controls[ 'model' ] # TODO: enable for -O
         args: OpenAiControls = dict( model = controls[ 'model' ] )
         args.update( {
             name.replace( '-', '_' ): value
@@ -250,24 +250,22 @@ class Model(
         controls: __.ControlsInstancesByName,
         reactors, # TODO? Accept context manager with reactor functions.
     ):
-        messages_native = (
-            self.messages_processor.nativize_messages_v0( messages ) )
-        #ic( messages_native )
-        controls_native = (
-            self.controls_processor.nativize_controls( controls ) )
-        supplements_native = _nativize_supplements_v0( self, supplements )
+        args = _prepare_client_arguments(
+            model = self,
+            messages = messages,
+            supplements = supplements,
+            controls = controls )
         client = self.client.produce_implement( )
         from openai import OpenAIError
-        try:
-            response = await client.chat.completions.create(
-                messages = messages_native,
-                **supplements_native, **controls_native )
+        try: response = await client.chat.completions.create( **args )
         except OpenAIError as exc:
             raise __.ModelOperateFailure(
                 model = self, operation = 'chat completion', cause = exc
             ) from exc
-        should_stream = controls_native.get( 'stream', True )
-        if self.attributes.supports_continuous_response and should_stream:
+        should_stream = (
+                self.attributes.supports_continuous_response
+            and args.get( 'stream', True ) )
+        if should_stream:
             return (
                 await _process_iterative_response_v0(
                     self, response, reactors ) )
@@ -413,7 +411,7 @@ def _collect_response_as_legacy_invocation_v0(
 def _decide_exclude_message(
     model: Model, canister: __.MessageCanister
 ) -> bool:
-    role = __.MessageRole.from_canister( canister )
+    role = canister.role
     if not model.attributes.accepts_supervisor_instructions:
         if __.MessageRole.Supervisor is role: return True
     return False
@@ -506,7 +504,7 @@ def _nativize_invocation_message(
 def _nativize_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
-    role = __.MessageRole.from_canister( canister )
+    role = canister.role
     match role:
         case __.MessageRole.Assistant:
             return _nativize_assistant_message( model, canister )
@@ -597,6 +595,20 @@ def _nativize_user_message(
     context = { 'role': 'user' }
     content = _nativize_message_content( model, canister )
     return dict( content = content, **context )
+
+
+def _prepare_client_arguments(
+    model: Model,
+    messages: __.MessagesCanisters,
+    supplements,
+    controls: __.ControlsInstancesByName,
+) -> dict[ str, __.a.Any ]:
+    messages_native = model.messages_processor.nativize_messages_v0( messages )
+    #ic( messages_native )
+    controls_native = model.controls_processor.nativize_controls( controls )
+    supplements_native = _nativize_supplements_v0( model, supplements )
+    return dict(
+        messages = messages_native, **supplements_native, **controls_native )
 
 
 def _postprocess_response_canisters( model, indices, reactors ):

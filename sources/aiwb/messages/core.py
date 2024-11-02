@@ -133,20 +133,8 @@ class Role( __.Enum ): # TODO: Python 3.11: StrEnum
     @classmethod
     def from_canister( selfclass, canister: Canister ) -> __.a.Self:
         ''' Provides role associated with canister. '''
-        if isinstance( canister, AssistantCanister ):
-            return selfclass.Assistant
-        if isinstance( canister, DocumentCanister ):
-            return selfclass.Document
-        if isinstance( canister, InvocationCanister ):
-            return selfclass.Invocation
-        if isinstance( canister, ResultCanister ):
-            return selfclass.Result
-        if isinstance( canister, SupervisorCanister ):
-            return selfclass.Supervisor
-        if isinstance( canister, UserCanister ):
-            return selfclass.User
-        # TODO: Appropriate error class.
-        raise AssertionError( "Unknown canister type." )
+        # TODO: Use 'role' property on canister instead.
+        return canister.role
 
     def produce_canister( self, **nomargs ) -> Canister:
         ''' Produces canister from role. '''
@@ -160,8 +148,9 @@ class Role( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class Canister(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Message canister which can have multiple contents. '''
 
@@ -192,24 +181,59 @@ class Canister(
 
     def __len__( self ): return len( self.contents )
 
+    @property
+    @__.abstract_member_function
+    def role( self ) -> Role:
+        ''' Corresponding message role for canister. '''
 
-class AssistantCanister( Canister ):
+
+class AssistantCanister(
+    Canister, class_decorators = ( __.standard_dataclass, )
+):
     ''' Message canister for assistant role. '''
 
-class DocumentCanister( Canister ):
+    @property
+    def role( self ) -> Role: return Role.Assistant
+
+class DocumentCanister(
+    Canister, class_decorators = ( __.standard_dataclass, )
+):
     ''' Message canister for document role. '''
 
-class InvocationCanister( Canister ):
+    @property
+    def role( self ) -> Role: return Role.Document
+
+class InvocationCanister(
+    Canister, class_decorators = ( __.standard_dataclass, )
+):
     ''' Message canister for invocation role. '''
 
-class ResultCanister( Canister ):
+    @property
+    def role( self ) -> Role: return Role.Invocation
+
+class ResultCanister(
+    Canister, class_decorators = ( __.standard_dataclass, )
+):
     ''' Message canister for result role. '''
 
-class SupervisorCanister( Canister ):
+    @property
+    def role( self ) -> Role: return Role.Result
+
+class SupervisorCanister(
+    Canister, class_decorators = ( __.standard_dataclass, )
+):
     ''' Message canister for supervisor role. '''
 
-class UserCanister( Canister ):
+    @property
+    def role( self ) -> Role: return Role.Supervisor
+
+class UserCanister(
+    Canister, class_decorators = ( __.standard_dataclass, )
+):
     ''' Message canister for user role. '''
+
+    @property
+    def role( self ) -> Role: return Role.User
 
 
 # TODO: Python 3.12: Use type statement for aliases.

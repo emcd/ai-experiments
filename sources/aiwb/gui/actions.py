@@ -181,8 +181,7 @@ async def _chat( components ):
 def _detect_ai_completion( gui, component = None ):
     if None is component: component = gui.column_conversation_history[ -1 ]
     canister = component.gui__.canister__
-    role = __.MessageRole.from_canister( canister )
-    match role:
+    match canister.role:
         case __.MessageRole.Assistant: return True
         case _: return False
 
@@ -214,8 +213,7 @@ async def _generate_conversation_title( components ):
 
 async def _use_invocables_if_desirable( components, message_components ):
     canister = message_components.canister__
-    role = __.MessageRole.from_canister( canister )
-    match role:
+    match canister.role:
         case __.MessageRole.Assistant:
             if hasattr( canister.attributes, 'invocation_data' ): pass
             else: return

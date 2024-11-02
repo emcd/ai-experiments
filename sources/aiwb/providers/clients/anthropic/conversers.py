@@ -67,7 +67,7 @@ class ControlsProcessor(
     def nativize_controls(
         self, controls: __.ControlsInstancesByName
     ) -> AnthropicControls:
-        # TODO: Assert model name matches between object and controls.
+        assert self.model.name == controls[ 'model' ] # TODO: enable for -O
         args: AnthropicControls = dict(
             max_tokens = self.model.attributes.tokens_limits.per_response,
             model = self.model.name )
@@ -142,12 +142,14 @@ class InvocationsProcessor(
             invocables = invocables,
             ignore_invalid_canister = ignore_invalid_canister )
         supplement = model_context.get( 'supplement', { } )
-        specifics = supplement.get( 'specifics', [ ] )
+        specifics = supplement.get( 'tool_use', [ ] )
         if len( requests ) != len( specifics ):
             raise __.InvocationFormatError(
                 "Number of invocation requests must match "
                 "number of tool calls." )
         for i, request in enumerate( requests ):
+            ic( request.specifics )
+            ic( specifics[ i ] )
             request.specifics.update( specifics[ i ] )
         return requests
 
@@ -210,32 +212,127 @@ class Model(
         controls: __.ControlsInstancesByName,
         reactors, # TODO? Accept context manager with reactor functions.
     ):
-        Error = __.partial_function(
-            __.ModelOperateFailure,
-            model = self, operation = 'chat completion' )
-        messages_native = (
-            self.messages_processor.nativize_messages_v0( messages ) )
-        ic( messages_native )
-        # TODO: Collect supervisor instructions.
-        controls_native = (
-            self.controls_processor.nativize_controls( controls ) )
-        #supplements_native = _nativize_supplements_v0( self, supplements )
-        args = dict( # TODO: invocations and supervisor instructions
-            messages = messages_native, **controls_native )
-        client = self.client.produce_implement( )
-        #should_stream = self.attributes.supports_continuous_response
-        should_stream = False
-        from anthropic import AnthropicError
+        args = _prepare_client_arguments(
+            model = self,
+            messages = messages,
+            supplements = supplements,
+            controls = controls )
+        ic( args )
+        should_stream = (
+                self.attributes.supports_continuous_response
+            and args.get( 'stream', True ) )
+        should_stream = False # TEMP
         if should_stream:
-            try: response = await client.messages.stream( **args )
-            except AnthropicError as exc: raise Error( cause = exc ) from exc
-            # TODO: Collect streaming response.
-        else:
-            try: response = await client.messages.create( **args )
-            except AnthropicError as exc: raise Error( cause = exc ) from exc
-            # TODO: Process complete response.
-        ic( response )
-        assert False
+            return await _converse_continuous_v0( self, args, reactors )
+        return await _converse_v0( self, args, reactors )
+
+
+async def _converse_v0(
+    model: Model, arguments: dict[ str, __.a.Any ], reactors
+): # TODO: return signature
+    error = __.partial_function(
+        __.ModelOperateFailure, model = model, operation = 'chat completion' )
+    client = model.client.produce_implement( )
+    from anthropic import AnthropicError
+    try: response = await client.messages.create( **arguments )
+    except AnthropicError as exc: raise error( cause = exc ) from exc
+    # TODO: Process complete response.
+    ic( response )
+    return _process_complete_response_v0( model, response, reactors )
+
+
+def _canister_from_response_element( model, element ):
+    # TODO: Appropriate error classes.
+    attributes = __.SimpleNamespace(
+        behaviors = [ ],
+        model_context = {
+            'provider': model.provider.name,
+            'client': model.client.name,
+            'model': model.name,
+        },
+    )
+    match element.type:
+        case 'text':
+            content = element.text
+            # TODO: Lookup MIME type from model response format preferences.
+            mimetype = 'text/markdown'
+            return (
+                __.MessageRole.Assistant
+                .produce_canister( attributes = attributes )
+                .add_content( content, mimetype = mimetype ) )
+        case 'tool_use':
+            attributes.invocation_data = [ ]
+            return (
+                __.MessageRole.Invocation
+                .produce_canister( attributes = attributes ) )
+    raise AssertionError(
+        "Cannot create message canister from unknown message species." )
+
+
+def _reconstitute_invocations( records ):
+    invocations = [ ]
+    for record in records.values( ):
+        if 'tool_use' not in record: continue
+        tool_use = record[ 'tool_use' ]
+        name = tool_use.name
+        arguments = tool_use.input
+        invocations.append( dict( name = name, arguments = arguments ) )
+    return invocations
+
+
+def _postprocess_response_canisters( model, indices, reactors ):
+    # TODO? Deduplicate tool use from multiple responses.
+    invocation_data = supplement = None
+    if indices.records:
+        invocation_data = _reconstitute_invocations( indices.records )
+        tool_uses = [
+            record[ 'tool_use' ].to_dict( )
+            for record in indices.records.values( )
+            if 'tool_use' in record ]
+        # TODO? Record other Anthropic-specific parts of response.
+        supplement = dict( tool_use = tool_uses )
+    # TODO: Callbacks support for response arrays.
+    for index, canister in indices.canisters.items( ):
+        if index: continue
+        if invocation_data and supplement:
+            canister.attributes.invocation_data = invocation_data
+            canister.attributes.model_context[ 'supplement' ] = supplement
+            reactors.updater( indices.references[ index ] )
+
+
+def _process_complete_response_v0( model, response, reactors ):
+    indices = __.AccretiveNamespace(
+        canisters = __.AccretiveDictionary( ),
+        records = __.AccretiveDictionary( ),
+        references = __.AccretiveDictionary( ) )
+    indices.canisters.update( {
+        i: _canister_from_response_element( model, element )
+        for i, element in enumerate( response.content ) } )
+    indices.records.update( {
+        i: dict( tool_use = element )
+        for i, element in enumerate( response.content )
+        if 'tool_use' == element.type } )
+    # TODO: Callbacks support for response arrays.
+    indices.references.update( {
+        index: reactors.allocator( canister ) for index, canister
+        in indices.canisters.items( ) if not index } )
+    _postprocess_response_canisters( model, indices, reactors )
+    ic( indices.canisters )
+    ic( indices.records )
+    return indices.references[ 0 ]
+
+
+async def _converse_continuous_v0(
+    model: Model, arguments: dict[ str, __.a.Any ], reactors
+): # TODO: return signature
+    error = __.partial_function(
+        __.ModelOperateFailure, model = model, operation = 'chat completion' )
+    client = model.client.produce_implement( )
+    from anthropic import AnthropicError
+    try: response = await client.messages.stream( **arguments )
+    except AnthropicError as exc: raise error( cause = exc ) from exc
+    # TODO: Collect streaming response.
+    ic( response )
 
 
 class SerdeProcessor(
@@ -293,11 +390,21 @@ class Tokenizer(
         return tokens_count
 
 
+def _collect_supervisor_instructions(
+    model: Model, canisters: __.MessagesCanisters
+) -> dict[ str, str ]:
+    instructions = [ ]
+    for canister in canisters:
+        if __.MessageRole.Supervisor is not canister.role: continue
+        instructions.append( canister[ 0 ].data )
+    if not instructions: return { }
+    return dict( system = '\n\n'.join( instructions ) )
+
+
 def _decide_exclude_message(
     model: Model, canister: __.MessageCanister
 ) -> bool:
-    role = __.MessageRole.from_canister( canister )
-    match role:
+    match canister.role:
         case __.MessageRole.Supervisor:
             # We collect system instructions separately,
             # since there is not an Anthropic message type for them.
@@ -363,7 +470,7 @@ def _nativize_invocation_message(
 def _nativize_message(
     model: Model, canister: __.MessageCanister
 ) -> AnthropicMessage:
-    role = __.MessageRole.from_canister( canister )
+    role = canister.role
     match role:
         case __.MessageRole.Assistant:
             return _nativize_assistant_message( model, canister )
@@ -415,6 +522,15 @@ def _nativize_result_message(
     return dict( content = content, **context )
 
 
+def _nativize_supplements_v0( model: Model, supplements ):
+    nomargs = { }
+    if 'invokers' in supplements:
+        nomargs.update(
+            model.invocations_processor
+            .nativize_invocables( supplements[ 'invokers' ] ) )
+    return nomargs
+
+
 def _nativize_user_message(
     model: Model, canister: __.MessageCanister
 ) -> AnthropicMessage:
@@ -422,3 +538,20 @@ def _nativize_user_message(
     context = { 'role': 'user' }
     content = _nativize_message_content( model, canister )
     return dict( content = content, **context )
+
+
+def _prepare_client_arguments(
+    model: Model,
+    messages: __.MessagesCanisters,
+    supplements,
+    controls: __.ControlsInstancesByName,
+) -> dict[ str, __.a.Any ]:
+    messages_native = model.messages_processor.nativize_messages_v0( messages )
+    ic( messages_native )
+    controls_native = model.controls_processor.nativize_controls( controls )
+    supervisor_instructions = (
+        _collect_supervisor_instructions( model, messages ) )
+    supplements_native = _nativize_supplements_v0( model, supplements )
+    return dict(
+        messages = messages_native,
+        **supervisor_instructions, **supplements_native, **controls_native )
