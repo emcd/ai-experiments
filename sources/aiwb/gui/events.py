@@ -57,25 +57,41 @@ def generate_message_copier( components, layout, component_name ):
 
 
 async def on_adjust_documents_count( components, event ):
+    if components.mutex__.locked( ): return
     from .updaters import update_search_button
     update_search_button( components )
 
 
+async def on_change_canned_prompt( components, event ):
+    if components.mutex__.locked( ): return
+    from .updaters import update_prompt_text
+    await update_prompt_text( components, species = 'user' )
+
+
 async def on_change_freeform_prompt( components, event ):
     if not event.new: return
+    if components.mutex__.locked( ): return
     from .updaters import update_search_button, update_token_count
     source = components.text_freeform_prompt
     source.content_update_event = False
-    update_token_count( components )
+    await update_token_count( components )
     update_search_button( components )
 
 
+async def on_change_system_prompt( components, event ):
+    if components.mutex__.locked( ): return
+    from .updaters import update_prompt_text
+    await update_prompt_text( components, species = 'supervisor' )
+
+
 async def on_click_chat( components, event ):
+    if components.mutex__.locked( ): return
     from .actions import chat
     await chat( components )
 
 
 async def on_click_copy_message( components, event ):
+    if components.mutex__.locked( ): return
     # TODO: Handle non-text data.
     # Layer of convolution because not all panes have a value parameter
     # that is registered as a JS-serializable Parameter object.
@@ -97,6 +113,7 @@ async def on_click_delete_conversation( components, event ):
 
 
 async def on_click_fork_conversation( components, event ):
+    if components.mutex__.locked( ): return
     from .updaters import fork_conversation
     await fork_conversation( components.parent__, components.index__ )
 
@@ -107,11 +124,13 @@ async def on_click_remove_orphans( components, event ):
 
 
 async def on_click_search( components, event ):
+    if components.mutex__.locked( ): return
     from .actions import search
     await search( components )
 
 
 async def on_click_uncan_prompt( components, event ):
+    if components.mutex__.locked( ): return
     components.text_freeform_prompt.value = (
         str( components.text_canned_prompt.object ) )
     components.selector_user_prompt_class.value = 'freeform'
@@ -123,13 +142,15 @@ async def on_click_upgrade_conversations( components, event ):
 
 
 async def on_click_use_invocables( components, event ):
+    if components.mutex__.locked( ): return
     from .actions import use_invocables
     await use_invocables( components.parent__, components.index__ )
 
 
 async def on_select_canned_prompt( components, event ):
+    if components.mutex__.locked( ): return
     from .updaters import populate_prompt_variables
-    populate_prompt_variables( components, species = 'user' )
+    await populate_prompt_variables( components, species = 'user' )
 
 
 async def on_select_conversation( components, event ):
@@ -138,35 +159,36 @@ async def on_select_conversation( components, event ):
 
 
 async def on_select_invocables( components, event ):
+    if components.mutex__.locked( ): return
     from .updaters import update_invocables_selection
-    update_invocables_selection( components )
+    await update_invocables_selection( components )
 
 
 async def on_select_model( components, event ):
     if None is event.new: return
-    ic( event )
-    from .updaters import (
-        update_invocations_prompt, update_supervisor_prompt )
-    await update_invocations_prompt( components )
-    await update_supervisor_prompt( components )
+    if components.mutex__.locked( ): return
+    from .updaters import update_conversation_postpopulate
+    await update_conversation_postpopulate( components )
 
 
 async def on_select_provider( components, event ):
     if None is event.new: return
-    ic( event )
+    if components.mutex__.locked( ): return
     # TODO: on_select_provider_client
     from .updaters import populate_models_selector
     await populate_models_selector( components )
 
 
 async def on_select_system_prompt( components, event ):
+    if components.mutex__.locked( ): return
     from .updaters import (
         populate_prompt_variables, update_invocations_prompt )
-    populate_prompt_variables( components, species = 'supervisor' )
+    await populate_prompt_variables( components, species = 'supervisor' )
     await update_invocations_prompt( components )
 
 
 async def on_select_user_prompt_class( components, event ):
+    if components.mutex__.locked( ): return
     from .updaters import (
         update_and_save_conversation,
         update_chat_button,
@@ -183,6 +205,7 @@ async def on_select_user_prompt_class( components, event ):
 
 
 async def on_submit_freeform_prompt( components, event ):
+    if components.mutex__.locked( ): return
     if not event.new: return
     source = components.text_freeform_prompt
     if not source.value: return
@@ -192,21 +215,25 @@ async def on_submit_freeform_prompt( components, event ):
 
 
 async def on_toggle_canned_prompt_display( components, event ):
+    if components.mutex__.locked( ): return
     components.text_canned_prompt.visible = (
         components.toggle_canned_prompt_display.value )
 
 
 async def on_toggle_functions_active( components, event ):
+    if components.mutex__.locked( ): return
     from .updaters import update_and_save_conversation
     await update_and_save_conversation( components )
 
 
 async def on_toggle_functions_display( components, event ):
+    if components.mutex__.locked( ): return
     components.column_functions_json.visible = (
         components.toggle_functions_display.value )
 
 
 async def on_toggle_message_active( message_components, event ):
+    if message_components.parent__.mutex__.locked( ): return
     from .updaters import update_and_save_conversation
     if not message_components.toggle_active.value:
         message_components.toggle_pinned.value = False
@@ -214,15 +241,18 @@ async def on_toggle_message_active( message_components, event ):
 
 
 async def on_toggle_message_pinned( message_components, event ):
+    if message_components.parent__.mutex__.locked( ): return
     if message_components.toggle_pinned.value:
         message_components.toggle_active.value = True
 
 
 async def on_toggle_system_prompt_active( components, event ):
+    if components.mutex__.locked( ): return
     from .updaters import update_and_save_conversation
     await update_and_save_conversation( components )
 
 
 async def on_toggle_system_prompt_display( components, event ):
+    if components.mutex__.locked( ): return
     components.text_system_prompt.visible = (
         components.toggle_system_prompt_display.value )

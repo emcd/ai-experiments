@@ -39,7 +39,7 @@ async def extract_invocation_requests(
     # TODO: Provide supplements based on specification from invocable.
     supplements = __.AccretiveDictionary(
         controls = _providers.package_controls( components ) )
-    model = _providers.access_model_selection( components )
+    model = await _providers.access_model_selection( components )
     requests = model.invocations_processor.requests_from_canister(
         auxdata = components.auxdata__,
         supplements = supplements,

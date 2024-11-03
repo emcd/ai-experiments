@@ -84,7 +84,7 @@ async def use_invocables(
     from .invocables import extract_invocation_requests
     from .updaters import truncate_conversation
     truncate_conversation( components, index )
-    model = _providers.access_model_selection( components )
+    model = await _providers.access_model_selection( components )
     requests = (
         await extract_invocation_requests(
             components,
@@ -173,7 +173,7 @@ async def _chat( components ):
             lambda canister_components:
                 _update_gui_on_chat( components, canister_components ) ),
     )
-    model = _providers.access_model_selection( components )
+    model = await _providers.access_model_selection( components )
     return await model.converse_v0(
         messages, special_data, controls, callbacks )
 
@@ -189,7 +189,7 @@ def _detect_ai_completion( gui, component = None ):
 async def _generate_conversation_title( components ):
     from ..providers import chat_callbacks_minimal
     scribe = __.acquire_scribe( __package__ )
-    model = _providers.access_model_selection( components )
+    model = await _providers.access_model_selection( components )
     controls = _providers.package_controls( components )
     format_name = model.attributes.format_preferences.response_data.value
     prompt = (

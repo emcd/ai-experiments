@@ -62,7 +62,6 @@ async def inject_conversation( components, state ):
     ''' Injects saved state into current conversation. '''
     from . import layouts
     from .layouts import conversation_container_names
-    from .updaters import update_token_count
     layout = { }
     for container_name in conversation_container_names:
         layout.update( getattr( layouts, f"{container_name}_layout" ) )
@@ -85,7 +84,6 @@ async def inject_conversation( components, state ):
         elif hasattr( component, 'object' ):
             component.object = state[ name ][ 'value' ]
         else: continue
-    update_token_count( components )
 
 
 async def remove_orphans( components ):
@@ -211,7 +209,7 @@ async def restore_prompt_variables( components, row_name, state, species ):
     if not isinstance( container_state, __.AbstractDictionary ):
         container_state = _restore_prompt_variables_v0(
             components, container_state, species = species )
-    populate_prompt_variables(
+    await populate_prompt_variables(
         components, species = species, data = container_state )
 
 

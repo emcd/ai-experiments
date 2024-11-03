@@ -37,13 +37,13 @@ async def access_provider_selection( components ):
             [ components.selector_provider.value ] )
 
 
-def access_model_selection( components ):
+async def access_model_selection( components ):
     ''' Returns currently selected model. '''
     # TODO: Replace with something that can honor multiple models.
-    # TODO: wrap with mutex.
-    return (
-        components.selector_model.auxdata__
-        [ components.selector_model.value ] )
+    async with mutex_models:
+        return (
+            components.selector_model.auxdata__
+            [ components.selector_model.value ] )
 
 
 def package_controls( components ):

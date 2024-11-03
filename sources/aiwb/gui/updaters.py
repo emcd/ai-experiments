@@ -132,7 +132,9 @@ async def create_and_display_conversation( components, state = None ):
     ''' Creates new conversation in memory and displays it. '''
     from .classes import ConversationDescriptor
     descriptor = ConversationDescriptor( )
-    await create_conversation( components, descriptor, state = state )
+    components_ = (
+        await create_conversation( components, descriptor, state = state ) )
+    await update_conversation( components_ )
     # TODO: Async lock conversations index.
     update_conversation_hilite( components, new_descriptor = descriptor )
     display_conversation( components, descriptor )
@@ -150,10 +152,12 @@ async def create_conversation( components, descriptor, state = None ):
         _components.generate( components_, layout, f"column_{component_name}" )
     components_.auxdata__ = components.auxdata__
     components_.identity__ = descriptor.identity
+    components_.mutex__ = __.MutexAsync( )
     components_.parent__ = components
     descriptor.gui = components_
-    await populate_conversation( components_ )
-    if state: await inject_conversation( components_, state )
+    async with components_.mutex__:
+        await populate_conversation( components_ )
+        if state: await inject_conversation( components_, state )
     return components_
 
 
@@ -284,69 +288,82 @@ async def populate_models_selector( components ):
     from .providers import access_provider_selection, mutex_models
     auxdata = components.auxdata__
     genus = __.AiModelGenera.Converser
-    provider = await access_provider_selection( components )
-    models = await provider.survey_models( auxdata = auxdata, genus = genus )
-    model_names = tuple( model.name for model in models )
-    default = (
-        await provider.access_model_default(
-            auxdata = auxdata, genus = genus ) ).name
+    selector = components.selector_model
     async with mutex_models:
-        components.selector_model.auxdata__ = {
-            model.name: model for model in models }
-        components.selector_model.value = None
-        components.selector_model.options = list( model_names )
-        components.selector_model.value = default
+        provider = await access_provider_selection( components )
+        models = (
+            await provider.survey_models( auxdata = auxdata, genus = genus ) )
+        model_names = tuple( model.name for model in models )
+        selector.auxdata__ = { model.name: model for model in models }
+        if selector.value not in model_names: selector.value = None
+        selector.options = list( model_names )
+        if selector.value not in model_names:
+            selector.value = (
+                await provider.access_model_default(
+                    auxdata = auxdata, genus = genus ) ).name
 
 
 async def populate_providers_selector( components ):
     ''' Populates selector with available provider clients. '''
     # TODO: populate_provider_clients_selector
-    from .providers import mutex_models, mutex_providers
+    from .providers import mutex_providers
     providers = components.auxdata__.providers
+    selector = components.selector_provider
     names = list( providers.keys( ) )
-    async with mutex_providers, mutex_models:
+    async with mutex_providers:
         # TODO: Drop this auxdata and rely on main GUI auxdata instead.
-        components.selector_provider.auxdata__ = providers
-        components.selector_provider.value = None
-        components.selector_provider.options = names
-        components.selector_provider.value = next( iter( names ) )
+        selector.auxdata__ = providers
+        if selector.value not in names: selector.value = None
+        selector.options = names
+        # TODO: Set from default provider.
+        if selector.value not in names: selector.value = next( iter( names ) )
+    #await populate_models_selector( components )
 
 
-def populate_prompt_variables( gui, species, data = None ):
+async def populate_prompt_variables( components, species, data = None ):
+    ''' Populates relevant controls for prompt variables. '''
     from .controls import ContainerManager
     # TODO: Rename selectors to match species.
     # TEMP HACK: Use selector name as key until cutover to unified dict.
     template_class = 'system' if 'supervisor' == species else 'canned'
     row_name = f"row_{template_class}_prompt_variables"
     selector_name = f"selector_{template_class}_prompt"
-    selector = getattr( gui, selector_name )
+    selector = getattr( components, selector_name )
     name = selector.value
     if name not in selector.options:
         selector.value = name = next( iter( selector.options ) )
-    definition = gui.auxdata__.prompts.definitions[ name ]
+    definition = components.auxdata__.prompts.definitions[ name ]
     prompts_cache = selector.auxdata__.prompts_cache
     if None is not data: prompts_cache[ name ] = definition.deserialize( data )
     prompt = prompts_cache.get( name )
     if None is prompt:
         prompts_cache[ name ] = prompt = definition.produce_prompt( )
-    row = getattr( gui, row_name )
-    ContainerManager(
-        row, prompt.controls.values( ),
-        lambda event: _update_prompt_text( gui, species = species ) )
-    _update_prompt_text( gui, species = species )
-    if 'user' == species: postpopulate_canned_prompt_variables( gui )
-    elif 'supervisor' == species: postpopulate_system_prompt_variables( gui )
+    row = getattr( components, row_name )
+    match species:
+        case 'supervisor':
+            from .events import on_change_system_prompt
+            event_reactor = __.partial_function(
+                on_change_system_prompt, components )
+            postpopulator = postpopulate_system_prompt_variables
+        case _: # user
+            from .events import on_change_canned_prompt
+            event_reactor = __.partial_function(
+                on_change_canned_prompt, components )
+            postpopulator = postpopulate_canned_prompt_variables
+    ContainerManager( row, prompt.controls.values( ), event_reactor )
+    await update_prompt_text( components, species = species )
+    await postpopulator( components )
 
 
 async def populate_supervisor_prompts_selector( components ):
     _populate_prompts_selector( components, species = 'supervisor' )
-    populate_prompt_variables( components, species = 'supervisor' )
+    await populate_prompt_variables( components, species = 'supervisor' )
 
 
 async def populate_canned_prompts_selector( components ):
     # TODO? Rename 'canned' to 'user'.
     _populate_prompts_selector( components, species = 'user' )
-    populate_prompt_variables( components, species = 'user' )
+    await populate_prompt_variables( components, species = 'user' )
 
 
 async def populate_vectorstores_selector( components ):
@@ -355,22 +372,26 @@ async def populate_vectorstores_selector( components ):
     update_search_button( components )
 
 
-def postpopulate_canned_prompt_variables( gui ):
-    update_summarization_toggle( gui )
+async def postpopulate_canned_prompt_variables( components ):
+    ''' Updates default summarization action for user prompt. '''
+    update_summarization_toggle( components )
 
 
-def postpopulate_system_prompt_variables( gui ):
+async def postpopulate_system_prompt_variables( components ):
+    ''' Updates preferred user prompt for supervisor prompt. '''
     # TODO: Fix bug where canned prompt variables are not selected on init.
-    can_update = hasattr( gui.selector_canned_prompt, 'auxdata__' )
+    can_update = hasattr( components.selector_canned_prompt, 'auxdata__' )
     # If there is a canned prompt preference, then update accordingly.
     definition = (
-        gui.auxdata__.prompts.definitions[ gui.selector_system_prompt.value ] )
+        components.auxdata__.prompts
+        .definitions[ components.selector_system_prompt.value ] )
     attributes = definition.attributes
     user_prompt_preference = attributes.get( 'user-prompt-preference' )
     if can_update and None is not user_prompt_preference:
-        gui.selector_canned_prompt.value = user_prompt_preference[ 'name' ]
-        populate_prompt_variables(
-            gui, species = 'user',
+        components.selector_canned_prompt.value = (
+            user_prompt_preference[ 'name' ] )
+        await populate_prompt_variables(
+            components, species = 'user',
             data = user_prompt_preference.get( 'defaults', { } ) )
 
 
@@ -383,7 +404,9 @@ async def select_conversation( components, identity ):
     from .persistence import restore_conversation
     if None is new_descriptor.gui:
         components_ = await create_conversation( components, new_descriptor )
-        await restore_conversation( components_ )
+        async with components_.mutex__:
+            await restore_conversation( components_ )
+        await update_conversation( components_ )
         new_descriptor.gui = components_
     # TODO: Async lock conversations index.
     update_conversation_hilite( components, new_descriptor = new_descriptor )
@@ -408,30 +431,10 @@ def truncate_conversation( gui, index ):
     history.objects = history[ 0 : index + 1 ]
 
 
-def update_invocables_selection( components ):
-    ''' Reflect selected invocables in schemata display. '''
-    invokers = components.auxdata__.invocables.invokers
-    # TODO: Construct components from layout.
-    from panel.pane import JSON
-    from .layouts import _message_column_width_attributes, sizes
-    components.column_functions_json.objects = [
-        JSON(
-            invoker.argschema,
-            depth = -1, theme = 'light',
-            height_policy = 'auto', width_policy = 'max',
-            margin = sizes.standard_margin,
-            styles = { 'overflow': 'auto' },
-            **_message_column_width_attributes,
-        )
-        for name, invoker in invokers.items( )
-        if name in components.multichoice_functions.value ]
-    update_token_count( components )
-
-
 async def update_and_save_conversation( components ):
     ''' Updates conversation state and then saves it. '''
     from .persistence import save_conversation
-    update_token_count( components ) # TODO? async lock
+    await update_token_count( components ) # TODO? async lock
     await save_conversation( components )
 
 
@@ -447,6 +450,18 @@ def update_chat_button( gui ):
             not gui.text_tokens_total.value.endswith( '🚫' )
         and (   'canned' == gui.selector_user_prompt_class.value
              or gui.text_freeform_prompt.value ) )
+
+
+async def update_conversation( components ):
+    ''' Updates GUI to match conversation state.
+
+        Useful after event handlers have been disarmed, such as during
+        conversation restoration.
+    '''
+    await populate_providers_selector( components )
+    await populate_models_selector( components )
+    await update_conversation_postpopulate( components )
+    await update_token_count( components )
 
 
 def update_conversation_hilite( gui, new_descriptor = None ):
@@ -502,37 +517,58 @@ def update_conversation_timestamp( gui ):
     sort_conversations_index( gui )
 
 
+async def update_invocables_selection( components ):
+    ''' Reflect selected invocables in schemata display. '''
+    invokers = components.auxdata__.invocables.invokers
+    # TODO: Construct components from layout.
+    from panel.pane import JSON
+    from .layouts import _message_column_width_attributes, sizes
+    components.column_functions_json.objects = [
+        JSON(
+            invoker.argschema,
+            depth = -1, theme = 'light',
+            height_policy = 'auto', width_policy = 'max',
+            margin = sizes.standard_margin,
+            styles = { 'overflow': 'auto' },
+            **_message_column_width_attributes,
+        )
+        for name, invoker in invokers.items( )
+        if name in components.multichoice_functions.value ]
+    await update_token_count( components )
+
+
 async def update_invocations_prompt( components ):
     ''' Updates available invocables according to model and other factors. '''
-    from .providers import access_model_selection, mutex_models
-    async with mutex_models: # TODO: Bake into access.
-        supports_invocations = (
-            access_model_selection( components )
-            .attributes.supports_invocations )
+    from .providers import access_model_selection
+    supports_invocations = (
+        ( await access_model_selection( components ) )
+        .attributes.supports_invocations )
     components.row_functions_prompt.visible = supports_invocations
     if supports_invocations:
         attributes = components.auxdata__.prompts.definitions[
             components.selector_system_prompt.value ].attributes
         associated_functions = attributes.get( 'functions', { } )
-    else: associated_functions = { }
+    else: associated_functions = { } # TODO? Return instead of blanking.
     invokers = components.auxdata__.invocables.invokers
-    components.multichoice_functions.value = [ ]
-    components.multichoice_functions.options = [
-        name for name in invokers.keys( )
-        if name in associated_functions ]
-    components.multichoice_functions.value = [
-        name for name in invokers.keys( )
-        if associated_functions.get( name, False ) ]
-    update_invocables_selection( components )
+    multiselect = components.multichoice_functions
+    names = [
+        name for name in invokers.keys( ) if name in associated_functions ]
+    multiselect.value = [ # Preserve previous selections if possible.
+        element for element in multiselect.value if element in names ]
+    multiselect.options = names
+    if not multiselect.value:
+        multiselect.value = [
+            name for name in invokers.keys( )
+            if associated_functions.get( name, False ) ]
+    await update_invocables_selection( components )
 
 
 async def update_supervisor_prompt( components ):
     ''' Updates supervisor message according to model. '''
-    from .providers import access_model_selection, mutex_models
-    async with mutex_models: # TODO: Bake into access.
-        accepts_instructions = (
-            access_model_selection( components )
-            .attributes.accepts_supervisor_instructions )
+    from .providers import access_model_selection
+    accepts_instructions = (
+        ( await access_model_selection( components ) )
+        .attributes.accepts_supervisor_instructions )
     components.row_system_prompt.visible = accepts_instructions
 
 
@@ -544,6 +580,19 @@ def update_messages_post_summarization( gui ):
         if not message_gui.toggle_active.value: continue # already inactive
         if message_gui.toggle_pinned.value: continue # skip pinned messages
         message_gui.toggle_active.value = False
+
+
+async def update_prompt_text( components, species ):
+    ''' Renders prompt from template and variables. '''
+    # TODO: Rename selectors to match species.
+    template_class = 'system' if 'supervisor' == species else 'canned'
+    selector = getattr( components, f"selector_{template_class}_prompt" )
+    container = getattr( components, f"row_{template_class}_prompt_variables" )
+    container.auxdata__.manager.assimilate( )
+    prompt = selector.auxdata__.prompts_cache[ selector.value ]
+    text_prompt = getattr( components, f"text_{template_class}_prompt" )
+    text_prompt.object = prompt.render( components.auxdata__ )
+    await update_token_count( components )
 
 
 def update_search_button( gui ):
@@ -561,7 +610,9 @@ def update_summarization_toggle( gui ):
         'canned' == gui.selector_user_prompt_class.value and summarizes )
 
 
-def update_token_count( components ):
+async def update_token_count( components ):
+    ''' Displays current token usage against context window maximum. '''
+    if components.mutex__.locked( ): return
     if not components.selector_provider.options: return
     if not components.selector_model.options: return
     messages = _conversations.package_messages( components )
@@ -571,7 +622,7 @@ def update_token_count( components ):
     if content:
         messages.append( __.UserMessageCanister( ).add_content( content ) )
     special_data = _invocables.package_invocables( components )
-    model = _providers.access_model_selection( components )
+    model = await _providers.access_model_selection( components )
     tokens_count = (
         model.tokenizer
         .count_conversation_tokens_v0( messages, special_data ) )
@@ -599,15 +650,3 @@ def _populate_prompts_selector( gui, species ):
     selector.options = names
     selector.auxdata__ = getattr(
         selector, 'auxdata__', __.SimpleNamespace( prompts_cache = { } ) )
-
-
-def _update_prompt_text( gui, species ):
-    # TODO: Rename selectors to match species.
-    template_class = 'system' if 'supervisor' == species else 'canned'
-    selector = getattr( gui, f"selector_{template_class}_prompt" )
-    container = getattr( gui, f"row_{template_class}_prompt_variables" )
-    container.auxdata__.manager.assimilate( )
-    prompt = selector.auxdata__.prompts_cache[ selector.value ]
-    text_prompt = getattr( gui, f"text_{template_class}_prompt" )
-    text_prompt.object = prompt.render( gui.auxdata__ )
-    update_token_count( gui )
