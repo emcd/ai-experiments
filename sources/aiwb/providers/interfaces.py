@@ -200,7 +200,7 @@ class ConversationTokenizer(
     # TODO: count_conversation_tokens
 
     @__.abstract_member_function
-    def count_text_tokens( self, text: str ) -> int:
+    async def count_text_tokens( self, text: str ) -> int:
         ''' Counts tokens, using tokenizer for model, in text. '''
         raise NotImplementedError
 
@@ -208,8 +208,8 @@ class ConversationTokenizer(
     # TODO: Remove once cutover to conversation objects is complete.
 
     @__.abstract_member_function
-    def count_conversation_tokens_v0(
-        self, messages: __.MessagesCanisters, special_data
+    async def count_conversation_tokens_v0(
+        self, messages: __.MessagesCanisters, supplements
     ) -> int:
         ''' Counts tokens across entire conversation. '''
         raise NotImplementedError

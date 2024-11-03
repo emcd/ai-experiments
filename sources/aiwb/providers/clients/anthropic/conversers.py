@@ -225,101 +225,6 @@ class Model(
         return await _converse_v0( self, args, reactors )
 
 
-async def _converse_v0(
-    model: Model, arguments: dict[ str, __.a.Any ], reactors
-): # TODO: return signature
-    error = __.partial_function(
-        __.ModelOperateFailure, model = model, operation = 'chat completion' )
-    client = model.client.produce_implement( )
-    from anthropic import AnthropicError
-    try: response = await client.messages.create( **arguments )
-    except AnthropicError as exc: raise error( cause = exc ) from exc
-    # TODO: Process complete response.
-    ic( response )
-    return _process_complete_response_v0( model, response, reactors )
-
-
-def _canister_from_response_element( model, element ):
-    # TODO: Appropriate error classes.
-    attributes = __.SimpleNamespace(
-        behaviors = [ ],
-        model_context = {
-            'provider': model.provider.name,
-            'client': model.client.name,
-            'model': model.name,
-        },
-    )
-    match element.type:
-        case 'text':
-            content = element.text
-            # TODO: Lookup MIME type from model response format preferences.
-            mimetype = 'text/markdown'
-            return (
-                __.MessageRole.Assistant
-                .produce_canister( attributes = attributes )
-                .add_content( content, mimetype = mimetype ) )
-        case 'tool_use':
-            attributes.invocation_data = [ ]
-            return (
-                __.MessageRole.Invocation
-                .produce_canister( attributes = attributes ) )
-    raise AssertionError(
-        "Cannot create message canister from unknown message species." )
-
-
-def _reconstitute_invocations( records ):
-    invocations = [ ]
-    for record in records.values( ):
-        if 'tool_use' not in record: continue
-        tool_use = record[ 'tool_use' ]
-        name = tool_use.name
-        arguments = tool_use.input
-        invocations.append( dict( name = name, arguments = arguments ) )
-    return invocations
-
-
-def _postprocess_response_canisters( model, indices, reactors ):
-    # TODO? Deduplicate tool use from multiple responses.
-    invocation_data = supplement = None
-    if indices.records:
-        invocation_data = _reconstitute_invocations( indices.records )
-        tool_uses = [
-            record[ 'tool_use' ].to_dict( )
-            for record in indices.records.values( )
-            if 'tool_use' in record ]
-        # TODO? Record other Anthropic-specific parts of response.
-        supplement = dict( tool_use = tool_uses )
-    # TODO: Callbacks support for response arrays.
-    for index, canister in indices.canisters.items( ):
-        if index: continue
-        if invocation_data and supplement:
-            canister.attributes.invocation_data = invocation_data
-            canister.attributes.model_context[ 'supplement' ] = supplement
-            reactors.updater( indices.references[ index ] )
-
-
-def _process_complete_response_v0( model, response, reactors ):
-    indices = __.AccretiveNamespace(
-        canisters = __.AccretiveDictionary( ),
-        records = __.AccretiveDictionary( ),
-        references = __.AccretiveDictionary( ) )
-    indices.canisters.update( {
-        i: _canister_from_response_element( model, element )
-        for i, element in enumerate( response.content ) } )
-    indices.records.update( {
-        i: dict( tool_use = element )
-        for i, element in enumerate( response.content )
-        if 'tool_use' == element.type } )
-    # TODO: Callbacks support for response arrays.
-    indices.references.update( {
-        index: reactors.allocator( canister ) for index, canister
-        in indices.canisters.items( ) if not index } )
-    _postprocess_response_canisters( model, indices, reactors )
-    ic( indices.canisters )
-    ic( indices.records )
-    return indices.references[ 0 ]
-
-
 async def _converse_continuous_v0(
     model: Model, arguments: dict[ str, __.a.Any ], reactors
 ): # TODO: return signature
@@ -361,31 +266,65 @@ class Tokenizer(
     __.ConversationTokenizer, class_decorators = ( __.standard_dataclass, )
 ):
     ''' Tokenizes conversations and text with Anthropic tokenizers. '''
-    # TODO: async counter methods
     # Note: As of 2024-10-30, Anthropic has not released its tokenizer for the
     #       newer models. We, therefore, approximate as best we are able.
     #       Known reverse engineering attempts:
     #           https://github.com/javirandor/anthropic-tokenizer
     #           https://www.beren.io/2024-07-07-Right-to-Left-Integer-Tokenization/
 
-    def count_text_tokens( self, text: str ) -> int:
-        client = self.model.client.provide_implement( )
-        from asyncio import get_running_loop
-        from time import sleep
-        task = get_running_loop( ).create_task( client.count_tokens( text ) )
-        while not task.done( ): sleep( 0.001 )
-        return task.result( )
+    async def count_text_tokens( self, text: str ) -> int:
+        client = self.model.client.produce_implement( )
+        return await client.count_tokens( text )
 
-    def count_conversation_tokens_v0(
+    async def count_conversation_tokens_v0(
         self, messages: __.MessagesCanisters, supplements
     ) -> int:
-        # https://github.com/openai/openai-cookbook/blob/2e9704b3b34302c30174e7d8e7211cb8da603ca9/examples/How_to_count_tokens_with_tiktoken.ipynb
-        #from json import dumps
-        #model = self.model
-        #tokens_per_message = model.attributes.extra_tokens_per_message
+        # Note: For lack of better guidance, we loosely follow the OpenAI
+        #       guidance for token counting.
+        # TODO: Determine cost for field names or optional fields.
+        from json import dumps
+        model = self.model
         tokens_count = 0
-        # TODO: Implement.
+        for message in (
+            model.messages_processor.nativize_messages_v0( messages )
+        ):
+            for value in message.values( ):
+                value_ = value if isinstance( value, str ) else dumps( value )
+                tokens_count += await self.count_text_tokens( value_ )
+        iprocessor = self.model.invocations_processor
+        for invoker in supplements.get( 'invokers', ( ) ):
+            tokens_count += (
+                await self.count_text_tokens( dumps(
+                    iprocessor.nativize_invocable( invoker ) ) ) )
         return tokens_count
+
+
+def _canister_from_response_element( model, element ):
+    # TODO: Appropriate error classes.
+    attributes = __.SimpleNamespace(
+        behaviors = [ ],
+        model_context = {
+            'provider': model.provider.name,
+            'client': model.client.name,
+            'model': model.name,
+        },
+    )
+    match element.type:
+        case 'text':
+            content = element.text
+            # TODO: Lookup MIME type from model response format preferences.
+            mimetype = 'text/markdown'
+            return (
+                __.MessageRole.Assistant
+                .produce_canister( attributes = attributes )
+                .add_content( content, mimetype = mimetype ) )
+        case 'tool_use':
+            attributes.invocation_data = [ ]
+            return (
+                __.MessageRole.Invocation
+                .produce_canister( attributes = attributes ) )
+    raise AssertionError(
+        "Cannot create message canister from unknown message species." )
 
 
 def _collect_supervisor_instructions(
@@ -397,6 +336,20 @@ def _collect_supervisor_instructions(
         instructions.append( canister[ 0 ].data )
     if not instructions: return { }
     return dict( system = '\n\n'.join( instructions ) )
+
+
+async def _converse_v0(
+    model: Model, arguments: dict[ str, __.a.Any ], reactors
+): # TODO: return signature
+    error = __.partial_function(
+        __.ModelOperateFailure, model = model, operation = 'chat completion' )
+    client = model.client.produce_implement( )
+    from anthropic import AnthropicError
+    try: response = await client.messages.create( **arguments )
+    except AnthropicError as exc: raise error( cause = exc ) from exc
+    # TODO: Process complete response.
+    ic( response )
+    return _process_complete_response_v0( model, response, reactors )
 
 
 def _decide_exclude_message(
@@ -538,6 +491,26 @@ def _nativize_user_message(
     return dict( content = content, **context )
 
 
+def _postprocess_response_canisters( model, indices, reactors ):
+    # TODO? Deduplicate tool use from multiple responses.
+    invocation_data = supplement = None
+    if indices.records:
+        invocation_data = _reconstitute_invocations( indices.records )
+        tool_uses = [
+            record[ 'tool_use' ].to_dict( )
+            for record in indices.records.values( )
+            if 'tool_use' in record ]
+        # TODO? Record other Anthropic-specific parts of response.
+        supplement = dict( tool_use = tool_uses )
+    # TODO: Callbacks support for response arrays.
+    for index, canister in indices.canisters.items( ):
+        if index: continue
+        if invocation_data and supplement:
+            canister.attributes.invocation_data = invocation_data
+            canister.attributes.model_context[ 'supplement' ] = supplement
+            reactors.updater( indices.references[ index ] )
+
+
 def _prepare_client_arguments(
     model: Model,
     messages: __.MessagesCanisters,
@@ -553,3 +526,36 @@ def _prepare_client_arguments(
     return dict(
         messages = messages_native,
         **supervisor_instructions, **supplements_native, **controls_native )
+
+
+def _process_complete_response_v0( model, response, reactors ):
+    indices = __.AccretiveNamespace(
+        canisters = __.AccretiveDictionary( ),
+        records = __.AccretiveDictionary( ),
+        references = __.AccretiveDictionary( ) )
+    indices.canisters.update( {
+        i: _canister_from_response_element( model, element )
+        for i, element in enumerate( response.content ) } )
+    indices.records.update( {
+        i: dict( tool_use = element )
+        for i, element in enumerate( response.content )
+        if 'tool_use' == element.type } )
+    # TODO: Callbacks support for response arrays.
+    indices.references.update( {
+        index: reactors.allocator( canister ) for index, canister
+        in indices.canisters.items( ) if not index } )
+    _postprocess_response_canisters( model, indices, reactors )
+    ic( indices.canisters )
+    ic( indices.records )
+    return indices.references[ 0 ]
+
+
+def _reconstitute_invocations( records ):
+    invocations = [ ]
+    for record in records.values( ):
+        if 'tool_use' not in record: continue
+        tool_use = record[ 'tool_use' ]
+        name = tool_use.name
+        arguments = tool_use.input
+        invocations.append( dict( name = name, arguments = arguments ) )
+    return invocations

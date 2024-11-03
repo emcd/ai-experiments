@@ -624,7 +624,7 @@ async def update_token_count( components ):
     special_data = _invocables.package_invocables( components )
     model = await _providers.access_model_selection( components )
     tokens_count = (
-        model.tokenizer
+        await model.tokenizer
         .count_conversation_tokens_v0( messages, special_data ) )
     tokens_limit = model.attributes.tokens_limits.total
     tokens_report = f"{tokens_count} / {tokens_limit}"

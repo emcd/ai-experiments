@@ -301,14 +301,14 @@ class Tokenizer(
 ):
     ''' Tokenizes conversations and text with OpenAI tokenizers. '''
 
-    def count_text_tokens( self, text: str ) -> int:
+    async def count_text_tokens( self, text: str ) -> int:
         from tiktoken import encoding_for_model, get_encoding
         try: encoding = encoding_for_model( self.model.name )
         # TODO? Warn about unknown model via callback.
         except KeyError: encoding = get_encoding( 'cl100k_base' )
         return len( encoding.encode( text ) )
 
-    def count_conversation_tokens_v0(
+    async def count_conversation_tokens_v0(
         self, messages: __.MessagesCanisters, supplements
     ) -> int:
         # https://github.com/openai/openai-cookbook/blob/2e9704b3b34302c30174e7d8e7211cb8da603ca9/examples/How_to_count_tokens_with_tiktoken.ipynb
@@ -323,12 +323,12 @@ class Tokenizer(
             tokens_count += tokens_per_message
             for index, value in message.items( ):
                 value_ = value if isinstance( value, str ) else dumps( value )
-                tokens_count += self.count_text_tokens( value_ )
+                tokens_count += await self.count_text_tokens( value_ )
                 if 'name' == index: tokens_count += tokens_for_actor_name
         iprocessor = self.model.invocations_processor
         for invoker in supplements.get( 'invokers', ( ) ):
             tokens_count += (
-                self.count_text_tokens( dumps(
+                await self.count_text_tokens( dumps(
                     iprocessor.nativize_invocable( invoker ) ) ) )
             # TODO: Determine if metadata from multifunctions adds more tokens.
         return tokens_count
