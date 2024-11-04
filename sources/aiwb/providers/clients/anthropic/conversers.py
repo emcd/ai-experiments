@@ -215,27 +215,12 @@ class Model(
             messages = messages,
             supplements = supplements,
             controls = controls )
-        ic( args )
         should_stream = (
                 self.attributes.supports_continuous_response
             and args.get( 'stream', True ) )
-        should_stream = False # TEMP
         if should_stream:
             return await _converse_continuous_v0( self, args, reactors )
-        return await _converse_v0( self, args, reactors )
-
-
-async def _converse_continuous_v0(
-    model: Model, arguments: dict[ str, __.a.Any ], reactors
-): # TODO: return signature
-    error = __.partial_function(
-        __.ModelOperateFailure, model = model, operation = 'chat completion' )
-    client = model.client.produce_implement( )
-    from anthropic import AnthropicError
-    try: response = await client.messages.stream( **arguments )
-    except AnthropicError as exc: raise error( cause = exc ) from exc
-    # TODO: Collect streaming response.
-    ic( response )
+        return await _converse_complete_v0( self, args, reactors )
 
 
 class SerdeProcessor(
@@ -327,6 +312,14 @@ def _canister_from_response_element( model, element ):
         "Cannot create message canister from unknown message species." )
 
 
+def _collect_response_as_content_v0( model, indices, event, reactors ):
+    index = event.index
+    if not ( content := event.delta.text ): return
+    indices.canisters[ index ][ 0 ].data += content
+    if index: return # TODO: Support response arrays.
+    reactors.updater( indices.references[ index ] )
+
+
 def _collect_supervisor_instructions(
     model: Model, canisters: __.MessagesCanisters
 ) -> dict[ str, str ]:
@@ -338,7 +331,7 @@ def _collect_supervisor_instructions(
     return dict( system = '\n\n'.join( instructions ) )
 
 
-async def _converse_v0(
+async def _converse_complete_v0(
     model: Model, arguments: dict[ str, __.a.Any ], reactors
 ): # TODO: return signature
     error = __.partial_function(
@@ -347,9 +340,21 @@ async def _converse_v0(
     from anthropic import AnthropicError
     try: response = await client.messages.create( **arguments )
     except AnthropicError as exc: raise error( cause = exc ) from exc
-    # TODO: Process complete response.
-    ic( response )
     return _process_complete_response_v0( model, response, reactors )
+
+
+async def _converse_continuous_v0(
+    model: Model, arguments: dict[ str, __.a.Any ], reactors
+): # TODO: return signature
+    error = __.partial_function(
+        __.ModelOperateFailure, model = model, operation = 'chat completion' )
+    client = model.client.produce_implement( )
+    from anthropic import AnthropicError
+    try:
+        async with client.messages.stream( **arguments ) as response:
+            return await _process_continuous_response_v0(
+                model, response, reactors )
+    except AnthropicError as exc: raise error( cause = exc ) from exc
 
 
 def _decide_exclude_message(
@@ -361,6 +366,27 @@ def _decide_exclude_message(
             # since there is not an Anthropic message type for them.
             return True
     return False
+
+
+def _finalize_response_event_capture_v0( model, indices, event, reactors ):
+    index = event.index
+    match event.content_block.type:
+        case 'text': return # Already accumulated.
+        case 'tool_use':
+            indices.records[ index ] = dict(
+                tool_use = event.content_block )
+
+
+def _initialize_response_event_capture_v0( model, indices, event, reactors ):
+    index = event.index
+    if index in indices.canisters: return
+    match event.content_block.type:
+        case 'text': pass
+        case 'tool_use':
+            if indices.canisters: return # subordinate to text
+    indices.canisters[ index ] = canister = (
+        _canister_from_response_element( model, event.content_block ) )
+    indices.references[ index ] = reactors.allocator( canister )
 
 
 def _nativize_assistant_message(
@@ -491,6 +517,13 @@ def _nativize_user_message(
     return dict( content = content, **context )
 
 
+def _perform_response_event_capture_v0( model, indices, event, reactors ):
+    match event.delta.type:
+        case 'input_json_delta': return # Accumulate via SDK.
+        case 'text_delta':
+            _collect_response_as_content_v0( model, indices, event, reactors )
+
+
 def _postprocess_response_canisters( model, indices, reactors ):
     # TODO? Deduplicate tool use from multiple responses.
     invocation_data = supplement = None
@@ -518,7 +551,6 @@ def _prepare_client_arguments(
     controls: __.ControlsInstancesByName,
 ) -> dict[ str, __.a.Any ]:
     messages_native = model.messages_processor.nativize_messages_v0( messages )
-    ic( messages_native )
     controls_native = model.controls_processor.nativize_controls( controls )
     supervisor_instructions = (
         _collect_supervisor_instructions( model, messages ) )
@@ -545,9 +577,43 @@ def _process_complete_response_v0( model, response, reactors ):
         index: reactors.allocator( canister ) for index, canister
         in indices.canisters.items( ) if not index } )
     _postprocess_response_canisters( model, indices, reactors )
-    ic( indices.canisters )
-    ic( indices.records )
     return indices.references[ 0 ]
+
+
+async def _process_continuous_response_v0( model, response, reactors ):
+    indices = __.AccretiveNamespace(
+        canisters = __.AccretiveDictionary( ),
+        records = __.AccretiveDictionary( ),
+        references = __.AccretiveDictionary( ) )
+    async for event in response:
+        #ic( event )
+        try:
+            _process_response_event_v0( model, indices, event, reactors )
+        except Exception:
+            for reference in indices.references.values( ):
+                reactors.deallocator( reference )
+            raise
+    _postprocess_response_canisters( model, indices, reactors )
+    # TODO: Callbacks support for response arrays.
+    return indices.references[ 0 ]
+
+
+def _process_response_event_v0( model, indices, event, reactors ):
+    match event.type:
+        case 'content_block_delta':
+            _perform_response_event_capture_v0(
+                model, indices, event, reactors )
+        case 'content_block_start':
+            _initialize_response_event_capture_v0(
+                model, indices, event, reactors )
+        case 'content_block_stop':
+            _finalize_response_event_capture_v0(
+                model, indices, event, reactors )
+        case 'input_json': pass # Content block delta has index field.
+        case 'message_delta': pass # Content block delta has index field.
+        case 'message_start': pass # Content block delta has index field.
+        case 'message_stop': pass # TODO? Inspect 'stop_reason' and 'usage'.
+        case 'text': pass # Content block delta has index field.
 
 
 def _reconstitute_invocations( records ):

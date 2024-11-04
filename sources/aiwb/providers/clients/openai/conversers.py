@@ -662,7 +662,7 @@ async def _process_iterative_response_v0( model, response, reactors ):
                 _process_iterative_response_element_v0(
                     model, indices, element, reactors )
             except Exception:
-                for reference in indices.references:
+                for reference in indices.references.values( ):
                     reactors.deallocator( reference )
                 raise
     _postprocess_response_canisters( model, indices, reactors )
