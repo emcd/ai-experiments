@@ -28,9 +28,13 @@ mutex_models = __.MutexAsync( )
 mutex_providers = __.MutexAsync( )
 
 
-async def access_provider_selection( components ):
+async def access_provider_selection( components, ignore_mutex = False ):
     ''' Returns currently selected provider. '''
     # TODO: Replace with something that can honor multiple providers.
+    if ignore_mutex:
+        return (
+            components.auxdata__.providers
+            [ components.selector_provider.value ] )
     async with mutex_providers:
         return (
             components.auxdata__.providers
@@ -40,7 +44,7 @@ async def access_provider_selection( components ):
 async def access_model_selection( components ):
     ''' Returns currently selected model. '''
     # TODO: Replace with something that can honor multiple models.
-    async with mutex_models:
+    async with mutex_providers, mutex_models:
         return (
             components.selector_model.auxdata__
             [ components.selector_model.value ] )

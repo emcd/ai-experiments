@@ -24,7 +24,18 @@
 from __future__ import annotations
 
 from . import __
+from . import interfaces as _interfaces
 
 
 # TODO: Use accretive validator dictionaries for registries.
 preparers_registry = __.AccretiveDictionary( )
+
+
+def access_client_default(
+    auxdata: __.CoreGlobals, clients: _interfaces.ClientsByName
+) -> _interfaces.Client:
+    ''' Returns default client. '''
+    defaults = auxdata.configuration.get( 'default-provider', ( ) )
+    for default in defaults:
+        if default in clients: return clients[ default ]
+    return next( iter( clients.values( ) ) )

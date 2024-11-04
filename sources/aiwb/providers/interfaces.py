@@ -483,3 +483,7 @@ class ConverserSerdeProcessor(
     # TODO: deserialize_math / serialize_math
 
     # TODO: deserialize_text / serialize_text
+
+
+# TODO: Python 3.12: Use type statement for aliases.
+ClientsByName: __.a.TypeAlias = __.AbstractDictionary[ str, Client ]

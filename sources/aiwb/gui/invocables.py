@@ -49,11 +49,11 @@ async def extract_invocation_requests(
     return requests
 
 
-def package_invocables( components ):
+async def package_invocables( components ):
     ''' Packages special data from GUI to ship to AI provider. '''
     special_data = { }
     supports_invocations = (
-        components.selector_model.auxdata__[ components.selector_model.value ]
+        ( await _providers.access_model_selection( components ) )
         .attributes.supports_invocations )
     if supports_invocations:
         invokers = provide_invokers_selection( components )

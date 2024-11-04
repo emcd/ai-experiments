@@ -32,26 +32,6 @@ NativeMessages = __.a.TypeVar( 'NativeMessages', covariant = True )
 ProviderVariants = __.a.TypeVar( 'ProviderVariants', covariant = True )
 
 
-class ChatCallbacks(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
-):
-    ''' Callbacks for AI provider to correspond with caller. '''
-
-    allocator: __.a.Callable[ [ __.MessageCanister ], __.a.Any ] = (
-        lambda canister: canister )
-    deallocator: __.a.Callable[ [ __.a.Any ], None ] = (
-        lambda handle: None )
-    failure_notifier: __.a.Callable[ [ str ], None ] = (
-        lambda status: None )
-    progress_notifier: __.a.Callable[ [ int ], None ] = (
-        lambda tokens_count: None )
-    success_notifier: __.a.Callable[ [ __.a.Any ], None ] = (
-        lambda status: None )
-    updater: __.a.Callable[ [ __.a.Any ], None ] = (
-        lambda handle: None )
-
-
 class ClientDefaults(
     metaclass = __.ImmutableClass,
     class_decorators = ( __.standard_dataclass, ),
@@ -104,6 +84,26 @@ class ClientAttributes(
             ClientDefaults.from_descriptor(
                 descriptor.get( 'defaults', { } ) ) )
         return args
+
+
+class ConversationReactors(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
+):
+    ''' Callbacks for AI provider to correspond with caller. '''
+
+    allocator: __.a.Callable[ [ __.MessageCanister ], __.a.Any ] = (
+        lambda canister: canister )
+    deallocator: __.a.Callable[ [ __.a.Any ], None ] = (
+        lambda handle: None )
+    failure_notifier: __.a.Callable[ [ str ], None ] = (
+        lambda status: None )
+    progress_notifier: __.a.Callable[ [ int ], None ] = (
+        lambda tokens_count: None )
+    success_notifier: __.a.Callable[ [ __.a.Any ], None ] = (
+        lambda status: None )
+    updater: __.a.Callable[ [ __.a.Any ], None ] = (
+        lambda handle: None )
 
 
 class DataFormatPreferences( __.Enum ): # TODO: Python 3.11: StrEnum
@@ -308,8 +308,7 @@ ModelsIntegratorsByGenusMutable: __.a.TypeAlias = (
     __.AbstractMutableDictionary[ ModelGenera, ModelsIntegratorsMutable ] )
 
 
-chat_callbacks_minimal = ChatCallbacks( )
-# TODO: Use accretive validator dictionary for preparers registry.
+conversation_reactors_minimal = ConversationReactors( )
 
 
 def _merge_dictionaries_recursive(

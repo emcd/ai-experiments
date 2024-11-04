@@ -54,7 +54,7 @@ def _access_tokens_limit( context ):
 async def _analyze_file( context, path, control = None ):
     from ....messages import (
         AssistantCanister, Canister, SupervisorCanister, UserCanister )
-    from ....providers import chat_callbacks_minimal
+    from ....providers import conversation_reactors_minimal
     auxdata = context.auxdata
     controls = context.supplements[ 'controls' ]
     model = context.supplements[ 'model' ]
@@ -84,7 +84,7 @@ async def _analyze_file( context, path, control = None ):
             context, control, chunk, mime_type )
         messages.append( UserCanister( ).add_content( content ) )
         ai_canister = await model.converse_v0(
-            messages, { }, controls, chat_callbacks_minimal )
+            messages, { }, controls, conversation_reactors_minimal )
         # TODO: Handle combination of analysis and metadata.
         ai_messages.append( ai_canister[ 0 ].data )
     return ai_messages
@@ -117,7 +117,7 @@ def _determine_chunk_reader( path, mime_type = None ):
 
 async def _discriminate_dirents( context, dirents, control = None ):
     from ....messages import Canister, SupervisorCanister, UserCanister
-    from ....providers import chat_callbacks_minimal
+    from ....providers import conversation_reactors_minimal
     auxdata = context.auxdata
     controls = context.supplements[ 'controls' ]
     model = context.supplements[ 'model' ]
@@ -139,7 +139,7 @@ async def _discriminate_dirents( context, dirents, control = None ):
             context, control, dirents_batch, 'directory-entries' )
         messages.append( UserCanister( ).add_content( content ) )
         ai_canister = await model.converse_v0(
-            messages, { }, controls, chat_callbacks_minimal )
+            messages, { }, controls, conversation_reactors_minimal )
         #ic( ai_canister[ 0 ].data )
         result = (
             model.serde_processor.deserialize_data( ai_canister[ 0 ].data ) )

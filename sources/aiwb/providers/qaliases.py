@@ -28,5 +28,10 @@
 
 
 from .core import (
-    ModelGenera as      AiModelGenera,
+    ModelGenera as              AiModelGenera,
+    ConversationReactors,
+    conversation_reactors_minimal,
+)
+from .registries import (
+    access_client_default as    access_ai_provider_client_default,
 )

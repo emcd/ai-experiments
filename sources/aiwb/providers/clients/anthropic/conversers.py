@@ -256,6 +256,19 @@ class Tokenizer(
     #       Known reverse engineering attempts:
     #           https://github.com/javirandor/anthropic-tokenizer
     #           https://www.beren.io/2024-07-07-Right-to-Left-Integer-Tokenization/
+    # Note: As of 2024-11-01, two days after the above note was written,
+    #       Anthropic beta-released an API endpoint to count tokens:
+    #           https://docs.anthropic.com/en/docs/build-with-claude/token-counting
+    #       Tier 1 rate limit is 100 RPM, which is lower than our standard
+    #       400ms delay for recounts, assuming continuous typing into user
+    #       prompt text area. Use of the endpoint is free.
+    # TODO: Use Anthropic endpoint with zero retries. Fallback to old
+    #       tokenizer on error, including rate limit.
+    #       Or, queue GUI actions, including token tallies, and prevent more
+    #       than one token tally action to be in the queue at one time.
+    #       Need to consider network latency, especially for large
+    #       conversations. Might need to cache results by component and use a
+    #       change mask to only recalculate for components with altered data.
 
     async def count_text_tokens( self, text: str ) -> int:
         client = self.model.client.produce_implement( )

@@ -159,11 +159,10 @@ def _add_message( gui, canister ):
 
 
 async def _chat( components ):
-    from ..providers import ChatCallbacks
     messages = _conversations.package_messages( components )
     controls = _providers.package_controls( components )
-    special_data = _invocables.package_invocables( components )
-    callbacks = ChatCallbacks(
+    special_data = await _invocables.package_invocables( components )
+    callbacks = __.ConversationReactors(
         allocator = (
             lambda canister: _add_message( components, canister ) ),
         deallocator = (
@@ -187,7 +186,6 @@ def _detect_ai_completion( gui, component = None ):
 
 
 async def _generate_conversation_title( components ):
-    from ..providers import chat_callbacks_minimal
     scribe = __.acquire_scribe( __package__ )
     model = await _providers.access_model_selection( components )
     controls = _providers.package_controls( components )
@@ -204,7 +202,7 @@ async def _generate_conversation_title( components ):
         components, 'Generating conversation title...'
     ):
         ai_canister = await model.converse_v0(
-            messages, { }, controls, chat_callbacks_minimal )
+            messages, { }, controls, __.conversation_reactors_minimal )
     response = ai_canister[ 0 ].data
     scribe.info( f"New conversation title: {response}" )
     response = model.serde_processor.deserialize_data( response )

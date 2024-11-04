@@ -134,7 +134,7 @@ async def create_and_display_conversation( components, state = None ):
     descriptor = ConversationDescriptor( )
     components_ = (
         await create_conversation( components, descriptor, state = state ) )
-    await update_conversation( components_ )
+    await update_conversation( components_, select_defaults = True )
     # TODO: Async lock conversations index.
     update_conversation_hilite( components, new_descriptor = descriptor )
     display_conversation( components, descriptor )
@@ -282,42 +282,48 @@ async def populate_dashboard( auxdata: _state.Globals ):
     await create_and_display_conversation( components )
 
 
-async def populate_models_selector( components ):
+async def populate_models_selector( components, select_default = False ):
     ''' Populates selector with available models for current provider. '''
     # TODO: Different models selectors per model genus.
-    from .providers import access_provider_selection, mutex_models
+    from .providers import (
+        access_provider_selection, mutex_models, mutex_providers )
     auxdata = components.auxdata__
     genus = __.AiModelGenera.Converser
     selector = components.selector_model
     async with mutex_models:
-        provider = await access_provider_selection( components )
+        provider = (
+            await access_provider_selection(
+                components, ignore_mutex = mutex_providers.locked( ) ) )
         models = (
             await provider.survey_models( auxdata = auxdata, genus = genus ) )
         model_names = tuple( model.name for model in models )
         selector.auxdata__ = { model.name: model for model in models }
-        if selector.value not in model_names: selector.value = None
+        select_default = select_default or selector.value not in model_names
         selector.options = list( model_names )
-        if selector.value not in model_names:
+        if select_default:
             selector.value = (
                 await provider.access_model_default(
                     auxdata = auxdata, genus = genus ) ).name
 
 
-async def populate_providers_selector( components ):
+async def populate_providers_selector( components, select_default = False ):
     ''' Populates selector with available provider clients. '''
-    # TODO: populate_provider_clients_selector
     from .providers import mutex_providers
-    providers = components.auxdata__.providers
+    auxdata = components.auxdata__
+    providers = auxdata.providers
     selector = components.selector_provider
     names = list( providers.keys( ) )
     async with mutex_providers:
         # TODO: Drop this auxdata and rely on main GUI auxdata instead.
         selector.auxdata__ = providers
-        if selector.value not in names: selector.value = None
+        select_default = select_default or selector.value not in names
         selector.options = names
-        # TODO: Set from default provider.
-        if selector.value not in names: selector.value = next( iter( names ) )
-    #await populate_models_selector( components )
+        if select_default:
+            selector.value = (
+                __.access_ai_provider_client_default(
+                    auxdata, providers ) ).name
+        await populate_models_selector(
+            components, select_default = select_default )
 
 
 async def populate_prompt_variables( components, species, data = None ):
@@ -452,14 +458,14 @@ def update_chat_button( gui ):
              or gui.text_freeform_prompt.value ) )
 
 
-async def update_conversation( components ):
+async def update_conversation( components, select_defaults = False ):
     ''' Updates GUI to match conversation state.
 
         Useful after event handlers have been disarmed, such as during
         conversation restoration.
     '''
-    await populate_providers_selector( components )
-    await populate_models_selector( components )
+    await populate_providers_selector(
+        components, select_default = select_defaults )
     await update_conversation_postpopulate( components )
     await update_token_count( components )
 
@@ -621,7 +627,7 @@ async def update_token_count( components ):
     else: content = components.text_canned_prompt.object
     if content:
         messages.append( __.UserMessageCanister( ).add_content( content ) )
-    special_data = _invocables.package_invocables( components )
+    special_data = await _invocables.package_invocables( components )
     model = await _providers.access_model_selection( components )
     tokens_count = (
         await model.tokenizer
