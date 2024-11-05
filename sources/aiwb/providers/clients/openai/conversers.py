@@ -200,7 +200,7 @@ class MessagesProcessor(
     ''' Handles conversation messages in OpenAI format. '''
 
     def nativize_messages_v0(
-        self, canisters: __.MessagesCanisters
+        self, canisters: __.MessagesCanisters, supplements
     ) -> list[ OpenAiMessage ]:
         messages_pre: list[ OpenAiMessage ] = [ ]
         for canister in canisters:
@@ -317,8 +317,8 @@ class Tokenizer(
         tokens_per_message = model.attributes.extra_tokens_per_message
         tokens_for_actor_name = model.attributes.extra_tokens_for_actor_name
         tokens_count = 0
-        for message in (
-            model.messages_processor.nativize_messages_v0( messages )
+        for message in model.messages_processor.nativize_messages_v0(
+                messages, supplements
         ):
             tokens_count += tokens_per_message
             for index, value in message.items( ):
@@ -423,6 +423,10 @@ def _merge_native_message(
     cursor: OpenAiMessage,
     indicate_elision: bool = False,
 ):
+    if 'tool_calls' in anchor and 'tool_calls' in cursor:
+        tool_calls = anchor[ 'tool_calls' ]
+        tool_calls.extend( cursor[ 'tool_calls' ] )
+    if 'content' not in anchor or 'content' not in cursor: return
     anchor_content = anchor[ 'content' ]
     if isinstance( anchor_content, str ):
         anchor_content = [ { 'type': 'text', 'text': anchor_content } ]
@@ -603,10 +607,11 @@ def _prepare_client_arguments(
     supplements,
     controls: __.ControlsInstancesByName,
 ) -> dict[ str, __.a.Any ]:
-    messages_native = model.messages_processor.nativize_messages_v0( messages )
-    #ic( messages_native )
     controls_native = model.controls_processor.nativize_controls( controls )
     supplements_native = _nativize_supplements_v0( model, supplements )
+    messages_native = (
+        model.messages_processor.nativize_messages_v0(
+            messages, supplements ) )
     return dict(
         messages = messages_native, **supplements_native, **controls_native )
 
