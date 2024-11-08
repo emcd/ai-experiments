@@ -90,13 +90,13 @@ async def on_click_chat( components, event ):
     await chat( components )
 
 
-async def on_click_copy_message( components, event ):
-    if components.parent__.mutex__.locked( ): return
+async def on_click_copy_message( message_components, event ):
+    if message_components.parent__.mutex__.locked( ): return
     # TODO: Handle non-text data.
     # Layer of convolution because not all panes have a value parameter
     # that is registered as a JS-serializable Parameter object.
-    components.parent__.text_clipboard_export.value = (
-        str( components.text_message.object ) )
+    message_components.parent__.text_clipboard_export.value = (
+        str( message_components.text_message.object ) )
 
 
 async def on_click_create_conversation( components, event ):
@@ -112,10 +112,11 @@ async def on_click_delete_conversation( components, event ):
     await delete_conversation( components.parent__, descriptor )
 
 
-async def on_click_fork_conversation( components, event ):
-    if components.parent__.mutex__.locked( ): return
+async def on_click_fork_conversation( message_components, event ):
+    if message_components.parent__.mutex__.locked( ): return
     from .updaters import fork_conversation
-    await fork_conversation( components.parent__, components.index__ )
+    await fork_conversation(
+        message_components.parent__, message_components.index__ )
 
 
 async def on_click_remove_orphans( components, event ):
@@ -141,10 +142,11 @@ async def on_click_upgrade_conversations( components, event ):
     await upgrade_conversations( components )
 
 
-async def on_click_use_invocables( components, event ):
-    if components.parent__.mutex__.locked( ): return
+async def on_click_use_invocables( message_components, event ):
+    if message_components.parent__.mutex__.locked( ): return
     from .actions import use_invocables
-    await use_invocables( components.parent__, components.index__ )
+    await use_invocables(
+        message_components.parent__, message_components.index__ )
 
 
 async def on_select_canned_prompt( components, event ):
