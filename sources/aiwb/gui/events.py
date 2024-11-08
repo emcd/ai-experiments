@@ -91,7 +91,7 @@ async def on_click_chat( components, event ):
 
 
 async def on_click_copy_message( components, event ):
-    if components.mutex__.locked( ): return
+    if components.parent__.mutex__.locked( ): return
     # TODO: Handle non-text data.
     # Layer of convolution because not all panes have a value parameter
     # that is registered as a JS-serializable Parameter object.
@@ -113,7 +113,7 @@ async def on_click_delete_conversation( components, event ):
 
 
 async def on_click_fork_conversation( components, event ):
-    if components.mutex__.locked( ): return
+    if components.parent__.mutex__.locked( ): return
     from .updaters import fork_conversation
     await fork_conversation( components.parent__, components.index__ )
 
@@ -142,7 +142,7 @@ async def on_click_upgrade_conversations( components, event ):
 
 
 async def on_click_use_invocables( components, event ):
-    if components.mutex__.locked( ): return
+    if components.parent__.mutex__.locked( ): return
     from .actions import use_invocables
     await use_invocables( components.parent__, components.index__ )
 
