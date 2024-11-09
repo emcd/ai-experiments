@@ -815,7 +815,57 @@ conversation_message_common_layout = {
             height_policy = 'auto', width_policy = 'max',
         ),
         # TODO: Replace 'text_message' with 'pane_content'.
-        contains = [ 'text_message', 'row_actions' ],
+        contains = [ 'text_message', 'column_edit', 'row_actions' ],
+    ),
+    'column_edit': dict(
+        component_class = Column,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+            visible = False,
+        ),
+        contains = [
+            'text_message_edit',
+            'row_edit_actions',
+        ],
+    ),
+    'text_message_edit': dict(
+        component_class = AdaptiveTextArea,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+            max_height = 240,
+            margin = sizes.standard_margin,
+            submission_behavior = 'slack-alt',
+            **_message_column_width_attributes,
+        ),
+        event_functions = dict(
+            content_update_event = 'on_change_message_edit',
+            submission_event = 'on_submit_message_edit',
+        ),
+    ),
+    'row_edit_actions': dict(
+        component_class = Row,
+        contains = [
+            'button_edit_submit',
+            'button_edit_cancel',
+        ],
+    ),
+    'button_edit_submit': dict(
+        component_class = Button,
+        component_arguments = dict(
+            name = 'Submit',
+            button_type = 'primary',
+            **_action_button_attributes,
+        ),
+        event_functions = dict( on_click = 'on_click_message_edit_submit' ),
+    ),
+    'button_edit_cancel': dict(
+        component_class = Button,
+        component_arguments = dict(
+            name = 'Cancel',
+            button_type = 'default',
+            **_action_button_attributes,
+        ),
+        event_functions = dict( on_click = 'on_click_message_edit_cancel' ),
     ),
     'row_actions': dict(
         component_class = Row,
@@ -877,6 +927,7 @@ conversation_message_common_layout = {
             visible = False,
             **_icon_button_attributes,
         ),
+        event_functions = dict( on_click = 'on_click_message_edit' ),
     ),
     'button_fork': dict(
         component_class = Button,

@@ -78,6 +78,14 @@ async def on_change_freeform_prompt( components, event ):
     update_search_button( components )
 
 
+async def on_change_message_edit( message_components, event ):
+    if not event.new: return
+    if message_components.parent__.mutex__.locked( ): return
+    source = message_components.text_message_edit
+    source.content_update_event = False
+    # TODO? Update token counts.
+
+
 async def on_change_system_prompt( components, event ):
     if components.mutex__.locked( ): return
     from .updaters import update_prompt_text
@@ -119,6 +127,36 @@ async def on_click_fork_conversation( message_components, event ):
         message_components.parent__, message_components.index__ )
 
 
+async def on_click_message_edit( message_components, event ):
+    if message_components.parent__.mutex__.locked( ): return
+    from .conversations import alter_message_edit_mode
+    from .utilities import access_text_component_value
+    message_components.text_message_edit.value_to_ingest = (
+        access_text_component_value( message_components.text_message ) )
+    alter_message_edit_mode( message_components, True )
+
+
+async def on_click_message_edit_cancel( message_components, event ):
+    if message_components.parent__.mutex__.locked( ): return
+    from .conversations import alter_message_edit_mode
+    alter_message_edit_mode( message_components, False )
+
+
+async def on_click_message_edit_submit( message_components, event ):
+    if message_components.parent__.mutex__.locked( ): return
+    from .actions import chat
+    from .conversations import alter_message_edit_mode
+    from .updaters import truncate_conversation
+    from .utilities import assign_text_component_value
+    assign_text_component_value(
+        message_components.text_message,
+        message_components.text_message_edit.value )
+    alter_message_edit_mode( message_components, False )
+    components = message_components.parent__
+    truncate_conversation( components, message_components.index__ )
+    await chat( components )
+
+
 async def on_click_remove_orphans( components, event ):
     from .persistence import remove_orphans
     await remove_orphans( components )
@@ -132,7 +170,7 @@ async def on_click_search( components, event ):
 
 async def on_click_uncan_prompt( components, event ):
     if components.mutex__.locked( ): return
-    components.text_freeform_prompt.value = (
+    components.text_freeform_prompt.value_to_ingest = (
         str( components.text_canned_prompt.object ) )
     components.selector_user_prompt_class.value = 'freeform'
 
@@ -207,13 +245,23 @@ async def on_select_user_prompt_class( components, event ):
 
 
 async def on_submit_freeform_prompt( components, event ):
-    if components.mutex__.locked( ): return
     if not event.new: return
+    if components.mutex__.locked( ): return
     source = components.text_freeform_prompt
     if not source.value: return
     source.submission_event = False
-    from .actions import chat
-    await chat( components )
+    # Handle submission same as clicking chat button.
+    await on_click_chat( components, event )
+
+
+async def on_submit_message_edit( message_components, event ):
+    if not event.new: return
+    if message_components.parent__.mutex__.locked( ): return
+    source = message_components.text_message_edit
+    if not source.value: return
+    source.submission_event = False
+    # Handle submission same as clicking submit button.
+    await on_click_message_edit_submit( message_components, event )
 
 
 async def on_toggle_canned_prompt_display( components, event ):

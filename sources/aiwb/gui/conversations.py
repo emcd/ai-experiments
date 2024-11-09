@@ -24,6 +24,14 @@
 #from . import __
 
 
+def alter_message_edit_mode( message_components, mode ):
+    ''' Enables or disables edit mode for a message. '''
+    message_components.button_edit.enbaled = not mode
+    message_components.text_message.visible = not mode
+    message_components.column_edit.visible = mode
+    #message_components.row_edit_actions.visible = mode
+
+
 def assimilate_canister_dto_from_gui( canister_components ):
     ''' Assimilates message canister from GUI display. '''
     canister = canister_components.canister__

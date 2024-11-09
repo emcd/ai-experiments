@@ -311,6 +311,7 @@ class AdaptiveTextArea( ReactiveHTML ):
     placeholder = param.String( default = '' )
     submission_behavior = param.String( default = 'slack-alt' )
     value = param.String( default = '' )
+    value_to_ingest = param.String( default = '' )
 
     content_update_event = param.Event( )
     submission_event = param.Event( )
@@ -376,6 +377,14 @@ class AdaptiveTextArea( ReactiveHTML ):
                 return false;
             }
             return true;''',
+        'value_to_ingest': '''
+            if (data.value_to_ingest !== textarea.value) {
+                //textarea.focus();
+                textarea.value = data.value_to_ingest || '';
+                //void textarea.offsetHeight;
+                self.auto_resize();
+            }
+        ''',
         '_send_content_update_event': '''
             console.log('Sending update event.');
             data.value = textarea.value;
