@@ -91,7 +91,7 @@ class ControlsProcessor(
     def nativize_controls(
         self, controls: __.ControlsInstancesByName
     ) -> OpenAiControls:
-        assert self.model.name == controls[ 'model' ] # TODO: enable for -O
+        #assert self.model.name == controls[ 'model' ] # TODO: enable for -O
         args: OpenAiControls = dict( model = controls[ 'model' ] )
         args.update( {
             name.replace( '-', '_' ): value
@@ -496,10 +496,8 @@ def _nativize_invocation_message(
                 supports_invocations = 'function_call' in supplement
             case InvocationsSupportLevels.Concurrent: pass
     if not supports_invocations:
-        from json import dumps
-        content = '\n\n'.join( (
-            '## Functions Invocation Request ##',
-            dumps( canister.attributes.invocation_data ) ) )
+        # TODO? Customizable elision text.
+        content = '(Note: Functions invocation elided from conversation.)'
         return dict( content = content, **context )
     context.update( supplement )
     return context

@@ -34,6 +34,13 @@ AttributesDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
 ModelDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
 
 
+class NativeMessageRefinementActions( __.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Which action to perform on native message under refinement cursor. '''
+
+    Retain      = 'retain'
+    Merge       = 'merge'
+
+
 class Attributes(
     __.ConverserAttributes, class_decorators = ( __.standard_dataclass, )
 ):
@@ -67,7 +74,7 @@ class ControlsProcessor(
     def nativize_controls(
         self, controls: __.ControlsInstancesByName
     ) -> AnthropicControls:
-        assert self.model.name == controls[ 'model' ] # TODO: enable for -O
+        #assert self.model.name == controls[ 'model' ] # TODO: enable for -O
         args: AnthropicControls = dict(
             max_tokens = self.model.attributes.tokens_limits.per_response,
             model = self.model.name )
@@ -167,7 +174,7 @@ class MessagesProcessor(
             message = _nativize_message(
                 self.model, canister, supplements )
             messages_pre.append( message )
-        return messages_pre
+        return _refine_native_messages( self.model, messages_pre )
 
 
 class Model(
@@ -402,6 +409,22 @@ def _initialize_response_event_capture_v0( model, indices, event, reactors ):
     indices.references[ index ] = reactors.allocator( canister )
 
 
+def _merge_native_message(
+    model: Model,
+    anchor: AnthropicMessage,
+    cursor: AnthropicMessage,
+    indicate_elision: bool = False,
+):
+    ''' Merges cursor message into anchor message. '''
+    if not isinstance( anchor[ 'content' ], list ):
+        anchor[ 'content' ] = (
+            [ { 'text': anchor[ 'content' ], 'type': 'text' } ] )
+    if not isinstance( cursor[ 'content' ], list ):
+        cursor[ 'content' ] = (
+            [ { 'text': cursor[ 'content' ], 'type': 'text' } ] )
+    anchor[ 'content' ].extend( cursor[ 'content' ] )
+
+
 def _nativize_assistant_message(
     model: Model, canister: __.MessageCanister, supplements
 ) -> AnthropicMessage:
@@ -440,14 +463,12 @@ def _nativize_invocation_message(
     supports_invocations = (
             model.attributes.supports_invocations
         and model.provider.name == model_context.get( 'provider' )
-        and 'invocables' in supplements
+        and 'invokers' in supplements
         and 'tool_use' in supplement )
     if not supports_invocations:
-        from json import dumps
-        content = '\n\n'.join( (
-            '## Functions Invocation Request ##',
-            dumps( canister.attributes.invocation_data ) ) )
-        content = [ { 'text': content, 'type': 'text' } ]
+        # TODO? Customizable elision text.
+        text = '(Note: Functions invocation elided from conversation.)'
+        content = [ { 'text': text, 'type': 'text' } ]
     else: content = supplement[ 'tool_use' ]
     return dict( content = content, **context )
 
@@ -499,7 +520,7 @@ def _nativize_result_message(
     supports_invocations = (
             model.attributes.supports_invocations
         and model.provider.name == model_context.get( 'provider' )
-        and 'invocables' in supplements )
+        and 'invokers' in supplements )
     supplement = model_context[ 'supplement' ]
     if not supports_invocations:
         content = '\n\n'.join( (
@@ -640,3 +661,50 @@ def _reconstitute_invocations( records ):
         arguments = tool_use.input
         invocations.append( dict( name = name, arguments = arguments ) )
     return invocations
+
+
+def _refine_native_message(
+    model: Model,
+    anchor: AnthropicMessage,
+    cursor: AnthropicMessage,
+) -> NativeMessageRefinementActions:
+    ''' Determines how to handle cursor message relative to anchor. '''
+    anchor_role = anchor[ 'role' ]
+    cursor_role = cursor[ 'role' ]
+    if 'user' == anchor_role == cursor_role:
+        # Check if both messages contain tool results.
+        anchor_has_tool = any(
+            isinstance( block, dict ) and 'type' in block
+            and 'tool_result' == block[ 'type' ]
+            for block in anchor[ 'content' ]
+            if isinstance( anchor[ 'content' ], list ) )
+        cursor_has_tool = any(
+            isinstance( block, dict ) and 'type' in block
+            and 'tool_result' == block[ 'type' ]
+            for block in cursor[ 'content' ]
+            if isinstance( cursor[ 'content' ], list ) )
+        if anchor_has_tool and cursor_has_tool:
+            _merge_native_message( model, anchor, cursor )
+            return NativeMessageRefinementActions.Merge
+    return NativeMessageRefinementActions.Retain
+
+
+def _refine_native_messages(
+    model: Model,
+    messages_pre: list[ AnthropicMessage ],
+) -> list[ AnthropicMessage ]:
+    ''' Refines sequence of native messages. '''
+    anchor = None
+    messages: list[ AnthropicMessage ] = [ ]
+    for message_pre in messages_pre:
+        cursor = dict( message_pre )
+        if not anchor:
+            anchor = cursor
+            continue
+        action = _refine_native_message( model, anchor, cursor )
+        match action:
+            case NativeMessageRefinementActions.Merge: continue
+        messages.append( anchor )
+        anchor = cursor
+    if anchor: messages.append( anchor )
+    return messages

@@ -89,7 +89,7 @@ from uuid import uuid4
 
 import tyro
 
-from accretive import reclassify_modules
+from accretive import reclassify_modules # TODO: Replace with immutable.
 from accretive.qaliases import (
     AccretiveClass,
     AccretiveDictionary,
@@ -107,6 +107,9 @@ ClassDecorators: a.TypeAlias = AbstractIterable[ a.Callable[ [ type ], type ] ]
 NominativeArgumentsDictionary: a.TypeAlias = AbstractDictionary[ str, a.Any ]
 TextComparand: a.TypeAlias = str | re.Pattern
 TextComparands: a.TypeAlias = AbstractIterable[ TextComparand ]
+
+
+_immutability_label = 'immutability'
 
 
 class ImmutableClass( type ):
@@ -130,7 +133,7 @@ class ImmutableClass( type ):
             super( ).__delattr__( name )
 
     def __setattr__( selfclass, name: str, value: a.Any ):
-        if not _immutable_class__setattr__( selfclass, name, value ):
+        if not _immutable_class__setattr__( selfclass, name ):
             super( ).__setattr__( name, value )
 
 
@@ -155,7 +158,7 @@ class ImmutableProtocolClass( a.Protocol.__class__ ):
             super( ).__delattr__( name )
 
     def __setattr__( selfclass, name: str, value: a.Any ):
-        if not _immutable_class__setattr__( selfclass, name, value ):
+        if not _immutable_class__setattr__( selfclass, name ):
             super( ).__setattr__( name, value )
 
 
@@ -186,15 +189,16 @@ def _immutable_class__init__( class_: type ):
     # So, we wait until last possible moment to set immutability.
     del class_._class_decorators_
     if ( class_behaviors := class_.__dict__.get( '_class_behaviors_' ) ):
-        class_behaviors.add( 'immutability' )
+        class_behaviors.add( _immutability_label )
     # TODO: accretive set
-    else: setattr( class_, '_class_behaviors_', { 'immutability' } )
+    else: setattr( class_, '_class_behaviors_', { _immutability_label } )
 
 
 def _immutable_class__delattr__( class_: type, name: str ) -> bool:
     # Consult class attributes dictionary to ignore immutable base classes.
-    if 'immutable' not in class_.__dict__.get( '_class_behaviors_', ( ) ):
-        return False
+    if _immutability_label not in class_.__dict__.get(
+        '_class_behaviors_', ( )
+    ): return False
     raise AttributeError(
         "Cannot delete attribute {name!r} "
         "on class {class_fqname!r}.".format(
@@ -202,12 +206,11 @@ def _immutable_class__delattr__( class_: type, name: str ) -> bool:
             class_fqname = calculate_class_fqname( class_ ) ) )
 
 
-def _immutable_class__setattr__(
-    class_: type, name: str, value: a.Any
-) -> bool:
+def _immutable_class__setattr__( class_: type, name: str ) -> bool:
     # Consult class attributes dictionary to ignore immutable base classes.
-    if 'immutable' not in class_.__dict__.get( '_class_behaviors_', ( ) ):
-        return False
+    if _immutability_label not in class_.__dict__.get(
+        '_class_behaviors_', ( )
+    ): return False
     raise AttributeError(
         "Cannot assign attribute {name!r} "
         "on class {class_fqname!r}.".format(

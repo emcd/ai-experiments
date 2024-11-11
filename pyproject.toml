@@ -33,7 +33,7 @@ dependencies = [
   'unstructured',
 
   # TODO: Install in environment context as needed.
-  'anthropic',
+  'anthropic ~= 0.38.0', # TODO: Migrate to token-counting endpoint.
   'openai',
   'tiktoken',
 ]
@@ -321,6 +321,7 @@ ignored-argument-names = '''_.*'''
 redefining-builtins-modules = [ 'builtins', 'io' ]
 
 [tool.pyright]
+reportPrivateImportUsage = false
 reportSelfClsParameterName = false
 stubPath = 'sources/aiwb/_typedecls'
 
