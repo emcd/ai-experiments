@@ -189,6 +189,15 @@ class LocationSpeciesSupportError( __.SupportError ):
             f"Location species '{species}' not supported by {entity_name}." )
 
 
+class PermissionsClassValidityError( __.Omnierror, TypeError, ValueError ):
+    ''' Attempt to supply invalid class of object as permissions. '''
+
+    def __init__( self, class_ ):
+        fqname = __.calculate_class_fqname( class_ )
+        super( ).__init__(
+            f"Cannot use instances of class {fqname!r} as permissions." )
+
+
 class RelativeLocatorClassValidityError( __.Omnierror, TypeError, ValueError ):
     ''' Attempt to supply invalid class of object as relative locator. '''
 

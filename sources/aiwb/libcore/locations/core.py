@@ -335,3 +335,11 @@ ImpurityResolutionActionsTable: __.a.TypeAlias = (
 PermissionsTable: __.a.TypeAlias = (
     __.AbstractDictionary[ Possessor, Permissions ] )
 PossibleUrl: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
+
+
+def is_permissions_table( table: __.a.Any ) -> bool:
+    ''' Validates table is mapping from possessors to permissions. '''
+    if not isinstance( table, __.AbstractDictionary ): return False
+    return all(
+        isinstance( name, Possessor ) and isinstance( value, Permissions )
+        for name, value in table.items( ) )

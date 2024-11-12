@@ -366,6 +366,8 @@ class FileAdapter( _Common, __.FileAdapter ):
         Error = __.partial_function(
             __.LocationUpdateContentFailure, url = self.url )
         flags = _flags_from_file_update_options( options )
+        await _create_parent_directories(
+            self.url, __.Permissions_RCUD, error_to_raise = Error )
         try:
             from os import fstat
             from aiofiles import open as open_
@@ -397,9 +399,9 @@ def _access_mode_from_permissions(
     mode = 0
     for possessor, permissions_ in table.items( ):
         match possessor:
-            case __.Omnipopulation: mode_bitshifts.add( 0 )
-            case __.CurrentPopulation: mode_bitshifts.add( 3 )
-            case __.CurrentUser: mode_bitshifts.add( 6 )
+            case __.Possessor.Omnipopulation: mode_bitshifts.add( 0 )
+            case __.Possessor.CurrentPopulation: mode_bitshifts.add( 3 )
+            case __.Possessor.CurrentUser: mode_bitshifts.add( 6 )
         for bitshift in mode_bitshifts:
             if __.Permissions.Retrieve & permissions_:
                 mode |= ( R_OK << bitshift )
@@ -533,9 +535,8 @@ def _tabulate_permissions(
 ) -> __.PermissionsTable:
     if isinstance( permissions, __.Permissions ):
         return __.AccretiveDictionary( {
-            __.CurrentUser: permissions,
-            __.CurrentPopulation: permissions,
+            __.Possessor.CurrentUser: permissions,
+            __.Possessor.CurrentPopulation: permissions,
         } )
-    elif isinstance( permissions, __.PermissionsTable ):
-        return permissions
+    if __.is_permissions_table( permissions ): return permissions
     raise __.PermissionsClassValidityError( type( permissions ) )
