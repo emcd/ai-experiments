@@ -51,23 +51,32 @@ async def chat( components ):
         update_messages_post_summarization,
     )
     summarization = components.toggle_summarize.value
-    if 'canned' == components.selector_user_prompt_class.value:
-        prompt = components.text_canned_prompt.object
-        components.selector_user_prompt_class.value = 'freeform'
-    else:
-        prompt = components.text_freeform_prompt.value
-        components.text_freeform_prompt.value = ''
+    match components.selector_user_prompt_class.value:
+        case 'canned':
+            prompt = components.text_canned_prompt.object
+            components.selector_user_prompt_class.value = 'freeform'
+        case _:
+            prompt = components.text_freeform_prompt.value
+            components.text_freeform_prompt.value = ''
     if prompt:
         canister = __.UserMessageCanister( ).add_content( prompt )
         _add_message( components, canister )
-    with _update_conversation_progress(
-        components, 'Generating AI response...'
-    ): canister_components = await _chat( components )
-    canister_components.canister__.attributes.behaviors = [ 'active' ]
-    _conversations.assimilate_canister_dto_to_gui( canister_components )
-    await _use_invocables_if_desirable( components, canister_components )
+    while True: # TODO? Cutoff after N rounds.
+        with _update_conversation_progress(
+            components, 'Generating AI response...'
+        ): message_components = await _chat( components )
+        message_components.canister__.attributes.behaviors = [ 'active' ]
+        _conversations.assimilate_canister_dto_to_gui( message_components )
+        if not await _check_invocation_requests(
+            components, message_components
+        ): break
+        try: await use_invocables( components, message_components.index__ )
+        except Exception as exc: # TODO: Display error.
+            ic( __.exception_to_str( exc ) )
+            break
     await _add_conversation_indicator_if_necessary( components )
     await update_and_save_conversations_index( components )
+    # TODO: Invocation elision.
     if summarization:
         update_messages_post_summarization( components )
         components.toggle_summarize.value = False
@@ -95,15 +104,17 @@ async def use_invocables(
     with _update_conversation_progress( components, 'Invoking tools...' ):
         canisters = await __.gather_async( *invokers )
     for canister in canisters: _add_message( components, canister )
-    await chat( components )
-    # Elide invocation requests and results, if desired.
-    if components.checkbox_elide_function_history.value:
-        history = components.column_conversation_history
-        results_count = len( requests )
-        # TODO? Only elide results when function advises elision.
-        for i in range( -results_count - 2, -1 ):
-            history[ i ].gui__.toggle_active.value = (
-                history[ i ].gui__.toggle_pinned.value )
+# TODO: Move invocation elision to chat postprocessing.
+# TODO: Properly elide based on presence of invocation data.
+# TODO: Add enablement boolean for invocation data.
+#    # Elide invocation requests and results, if desired.
+#    if components.checkbox_elide_function_history.value:
+#        history = components.column_conversation_history
+#        results_count = len( requests )
+#        # TODO? Only elide results when function advises elision.
+#        for i in range( -results_count - 2, -1 ):
+#            history[ i ].gui__.toggle_active.value = (
+#                history[ i ].gui__.toggle_pinned.value )
 
 
 @_update_conversation_status_on_error
@@ -209,19 +220,17 @@ async def _generate_conversation_title( components ):
     return response[ 'title' ], response[ 'labels' ]
 
 
-async def _use_invocables_if_desirable( components, message_components ):
+async def _check_invocation_requests( components, message_components ) -> bool:
     canister = message_components.canister__
     match canister.role:
         case __.MessageRole.Assistant:
             if hasattr( canister.attributes, 'invocation_data' ): pass
-            else: return
+            else: return False
         case __.MessageRole.Invocation: pass
-        case _: return
-    if not message_components.toggle_active.value: return
-    if not components.checkbox_auto_functions.value: return
-    await use_invocables(
-        components, message_components.index__,
-        silent_extraction_failure = True )
+        case _: return False
+    if not message_components.toggle_active.value: return False
+    if not components.checkbox_auto_functions.value: return False
+    return True
 
 
 @__.exit_manager

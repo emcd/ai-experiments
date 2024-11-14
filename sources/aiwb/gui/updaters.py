@@ -29,6 +29,157 @@ from . import providers as _providers
 from . import state as _state
 
 
+class UpdateRequest(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
+):
+    ''' Request for update which may be deduplicated. '''
+
+    updater: __.a.Callable[ ..., __.a.Any ]
+    posargs: __.AbstractSequence[ __.a.Any ] = ( )
+    nomargs: __.AbstractDictionary[ str, __.a.Any ] = __.DictionaryProxy( { } )
+
+    def __hash__( self ) -> int:
+        return hash( (
+            self.updater,
+            tuple( id( arg ) for arg in self.posargs ),
+            tuple(
+                ( name, id( value ) ) for name, value
+                in self.nomargs.items( ) ) ) )
+
+    async def __call__( self ) -> None:
+        await self.updater( *self.posargs, **self.nomargs )
+
+
+# Note: As of this writing, Pylint is only dataclass-aware under certain
+#       circumstances.
+# pylint: disable=no-member,not-async-context-manager,unsubscriptable-object
+# pylint: disable=unsupported-assignment-operation,unsupported-membership-test
+
+class UpdatesDeduplicator(
+    metaclass = __.ImmutableClass,
+    class_decorators = ( __.standard_dataclass, ),
+):
+    ''' Deduplicates and schedules update requests for performance. '''
+
+    # TODO: Add update statistics tracking:
+    #       - Total calls per request type
+    #       - Total executions (vs skipped/deduped)
+    #       - Average/min/max execution time
+    #       - Last execution timestamp
+    #       Consider using a Statistics class to track these.
+
+    # TODO? Add timeout handling:
+    #       - Maximum wait time for locked mutex
+    #       - Maximum execution time for update
+    #       - Configurable timeout per request type
+    #       - Custom timeout handlers/recovery
+
+    master_mutex: __.MutexAsync = (
+        __.dataclass_declare( default_factory = __.MutexAsync ) )
+    updates_mutexes: dict[ UpdateRequest, __.MutexAsync ] = (
+        __.dataclass_declare( default_factory = dict ) )
+    updates_tasks: dict[ UpdateRequest, __.AbstractCoroutine ] = (
+        __.dataclass_declare( default_factory = dict ) )
+
+    async def __aenter__( self ): return self
+
+    async def __aexit__( self, *exc ):
+        scribe = __.acquire_scribe( __package__ )
+        async with self.master_mutex:
+            if not self.updates_mutexes: return
+            for task in self.updates_tasks.values( ):
+                scribe.info( "Cancelling pending update {request.updater}." )
+                task.cancel( )
+            scribe.info(
+                "Waiting for {count} GUI updates to complete.".format(
+                    count = len( self.updates_mutexes ) ) )
+            try:
+                await __.gather_async( *(
+                    mutex.acquire( )
+                    for mutex in self.updates_mutexes.values( ) ) )
+            except Exception as exc: # pylint: disable=broad-exception-caught
+                scribe.error(
+                    "Failed to cleanup pending GUI update. "
+                    "Cause: {error}".format(
+                        error = __.exception_to_str( exc ) ) )
+                # TODO? Reraise error.
+            finally:
+                for mutex in self.updates_mutexes.values( ):
+                    if mutex.locked( ): mutex.release( )
+
+    async def execute(
+        self,
+        updater: __.a.Callable[ ..., __.a.Any ],
+        posargs: __.AbstractSequence[ __.a.Any ] = ( ),
+        nomargs: __.AbstractDictionary[ str, __.a.Any ] = (
+            __.DictionaryProxy( { } ) ),
+    ) -> None:
+        ''' Executes update if not already in progress. '''
+        # TODO? Set of pending updates to ensure that trailing update is
+        #       processed if another is in progress.
+        scribe = __.acquire_scribe( __package__ )
+        request = UpdateRequest(
+            updater = updater, posargs = posargs, nomargs = nomargs )
+        async with self.master_mutex:
+            if request not in self.updates_mutexes:
+                self.updates_mutexes[ request ] = __.MutexAsync( )
+            mutex = self.updates_mutexes[ request ]
+        if mutex.locked( ):
+            scribe.debug( f"Waiting on in-progress update {updater}." )
+            async with mutex: # Block to prevent races.
+                scribe.debug( f"Existing update {updater} completed." )
+            return
+        scribe.debug( f"Executing update {updater}." )
+        try:
+            async with mutex: await request( )
+        finally:
+            async with self.master_mutex:
+                if not mutex.locked( ):
+                    self.updates_mutexes.pop( request, None )
+        scribe.debug( f"Completed update {request.updater}." )
+
+    async def schedule(
+        self,
+        updater: __.a.Callable[ ..., __.a.Any ],
+        posargs: __.AbstractSequence[ __.a.Any ] = ( ),
+        nomargs: __.AbstractDictionary[ str, __.a.Any ] = (
+            __.DictionaryProxy( { } ) ),
+        delay: float = 0.1,  # seconds
+    ) -> None:
+        ''' Schedules update on a delay if not already in progress. '''
+        scribe = __.acquire_scribe( __package__ )
+        request = UpdateRequest(
+            updater = updater, posargs = posargs, nomargs = nomargs )
+        async with self.master_mutex:
+            if request in self.updates_tasks: return
+            if request not in self.updates_mutexes:
+                self.updates_mutexes[ request ] = __.MutexAsync( )
+            mutex = self.updates_mutexes[ request ]
+        if mutex.locked( ): return # Do not block on lazy updates.
+        from asyncio import create_task, sleep
+
+        async def _execute( ):
+            await sleep( delay )
+            scribe.debug( f"Executing scheduled update {updater}." )
+            try:
+                async with mutex: await request( )
+            finally:
+                async with self.master_mutex:
+                    self.updates_tasks.pop( request, None )
+                    if not mutex.locked( ):
+                        self.updates_mutexes.pop( request, None )
+            scribe.debug( f"Completed scheduled update {updater}." )
+
+        async with self.master_mutex:
+            if request in self.updates_tasks:
+                self.updates_tasks[ request ].cancel( )
+            self.updates_tasks[ request ] = create_task( _execute( ) )
+
+# pylint: enable=no-member,not-async-context-manager,unsubscriptable-object
+# pylint: enable=unsupported-assignment-operation,unsupported-membership-test
+
+
 def add_conversation_indicator( components, descriptor, position = 0 ):
     ''' Adds conversation indicator to conversations index. '''
     from .classes import ConversationIndicator
@@ -419,16 +570,16 @@ async def select_conversation( components, identity ):
     display_conversation( components, new_descriptor )
 
 
-def sort_conversations_index( gui ):
-    conversations = gui.column_conversations_indicators
+def sort_conversations_index( components ):
+    ''' Sorts conversations by timestamp in descending order. '''
+    conversations = components.column_conversations_indicators
     conversations.descriptors__ = dict( sorted(
         conversations.descriptors__.items( ),
         key = lambda pair: pair[ 1 ].timestamp,
         reverse = True ) )
-    conversations.clear( )
-    conversations.extend( (
+    conversations.objects = [
         desc.indicator for desc in conversations.descriptors__.values( )
-        if None is not desc.indicator ) )
+        if None is not desc.indicator ]
 
 
 def truncate_conversation( gui, index ):
@@ -439,16 +590,14 @@ def truncate_conversation( gui, index ):
 
 async def update_and_save_conversation( components ):
     ''' Updates conversation state and then saves it. '''
-    from .persistence import save_conversation
-    await update_token_count( components ) # TODO? async lock
-    await save_conversation( components )
+    await components.auxdata__.gui.deduplicator.execute(
+        _update_and_save_conversation, posargs = ( components, ) )
 
 
 async def update_and_save_conversations_index( components ):
-    from .persistence import save_conversations_index
-    update_conversation_timestamp( components )
-    update_conversation_hilite( components )
-    await save_conversations_index( components )
+    ''' Updates conversation index state and then saves it. '''
+    await components.auxdata__.gui.deduplicator.execute(
+        _update_and_save_conversations_index, posargs = ( components, ) )
 
 
 def update_chat_button( gui ):
@@ -470,23 +619,21 @@ async def update_conversation( components, select_defaults = False ):
     await update_token_count( components )
 
 
-def update_conversation_hilite( gui, new_descriptor = None ):
-    conversations = gui.column_conversations_indicators
+def update_conversation_hilite( components, new_descriptor = None ):
+    ''' Highlights active conversation in index. '''
+    conversations = components.column_conversations_indicators
     old_descriptor = conversations.current_descriptor__
     if None is new_descriptor: new_descriptor = old_descriptor
     if new_descriptor is not old_descriptor:
         if None is not old_descriptor.indicator:
             # TODO: Cycle to a "previously seen" background color.
             old_descriptor.indicator.styles.pop( 'background', None )
+            old_descriptor.indicator.param.trigger( 'styles' )
     if None is not new_descriptor.indicator:
         # TODO: Use style variable rather than hard-coded value.
         new_descriptor.indicator.styles.update(
             { 'background': 'LightGray' } )
-    # TODO: Try using 'view.resize_layout()' in custom JS for proper fix.
-    # Hack: Reload indicators to force repaint.
-    indicators = list( conversations )
-    conversations.clear( )
-    conversations.extend( indicators )
+        new_descriptor.indicator.param.trigger( 'styles' )
 
 
 async def update_conversation_postpopulate( components ):
@@ -619,6 +766,38 @@ def update_summarization_toggle( gui ):
 async def update_token_count( components ):
     ''' Displays current token usage against context window maximum. '''
     if components.mutex__.locked( ): return
+    await components.auxdata__.gui.deduplicator.schedule(
+        _update_token_count, posargs = ( components, ), delay = 0.4 )
+
+
+def _populate_prompts_selector( gui, species ):
+    # TODO: Rename selectors to match species.
+    template_class = 'system' if 'supervisor' == species else 'canned'
+    selector = getattr( gui, f"selector_{template_class}_prompt" )
+    names = list( sorted( # Panel explicitly needs a list or dict.
+        name for name, definition
+        in gui.auxdata__.prompts.definitions.items( )
+        if      species == definition.species
+            and not definition.attributes.get( 'conceal', False ) ) )
+    selector.options = names
+    selector.auxdata__ = getattr(
+        selector, 'auxdata__', __.SimpleNamespace( prompts_cache = { } ) )
+
+
+async def _update_and_save_conversation( components ):
+    from .persistence import save_conversation
+    await update_token_count( components )
+    await save_conversation( components )
+
+
+async def _update_and_save_conversations_index( components ):
+    from .persistence import save_conversations_index
+    update_conversation_timestamp( components )
+    update_conversation_hilite( components )
+    await save_conversations_index( components )
+
+
+async def _update_token_count( components ):
     if not components.selector_provider.options: return
     if not components.selector_model.options: return
     messages = _conversations.package_messages( components )
@@ -642,17 +821,3 @@ async def update_token_count( components ):
     else: tokens_report = f"{tokens_report} 👌"
     components.text_tokens_total.value = tokens_report
     update_chat_button( components )
-
-
-def _populate_prompts_selector( gui, species ):
-    # TODO: Rename selectors to match species.
-    template_class = 'system' if 'supervisor' == species else 'canned'
-    selector = getattr( gui, f"selector_{template_class}_prompt" )
-    names = list( sorted( # Panel explicitly needs a list or dict.
-        name for name, definition
-        in gui.auxdata__.prompts.definitions.items( )
-        if      species == definition.species
-            and not definition.attributes.get( 'conceal', False ) ) )
-    selector.options = names
-    selector.auxdata__ = getattr(
-        selector, 'auxdata__', __.SimpleNamespace( prompts_cache = { } ) )

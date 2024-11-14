@@ -24,6 +24,7 @@
 from . import __
 from . import server as _server
 from . import state as _state
+from . import updaters as _updaters
 
 
 class Manager(
@@ -33,6 +34,7 @@ class Manager(
     ''' Manager for GUI components and server. '''
 
     components: __.SimpleNamespace
+    deduplicator: _updaters.UpdatesDeduplicator
     server: _server.Accessor
     transformers: __.AccretiveDictionary
 
@@ -61,6 +63,7 @@ async def prepare(
     server = _server.Accessor( components = components, control = guiserver )
     manager = Manager(
         components = components,
+        deduplicator = _updaters.UpdatesDeduplicator( ),
         server = server,
         transformers = __.AccretiveDictionary( ),
     )
