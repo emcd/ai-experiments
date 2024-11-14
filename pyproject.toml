@@ -33,7 +33,7 @@ dependencies = [
   'unstructured',
 
   # TODO: Install in environment context as needed.
-  'anthropic ~= 0.38.0', # TODO: Migrate to token-counting endpoint.
+  'anthropic',
   'openai',
   'tiktoken',
 ]

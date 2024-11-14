@@ -77,6 +77,8 @@ class UpdatesDeduplicator(
 
     master_mutex: __.MutexAsync = (
         __.dataclass_declare( default_factory = __.MutexAsync ) )
+    updates_insequent: set[ UpdateRequest ] = (
+        __.dataclass_declare( default_factory = set ) )
     updates_mutexes: dict[ UpdateRequest, __.MutexAsync ] = (
         __.dataclass_declare( default_factory = dict ) )
     updates_tasks: dict[ UpdateRequest, __.AbstractCoroutine ] = (
@@ -87,12 +89,13 @@ class UpdatesDeduplicator(
     async def __aexit__( self, *exc ):
         scribe = __.acquire_scribe( __package__ )
         async with self.master_mutex:
-            if not self.updates_mutexes: return
-            for task in self.updates_tasks.values( ):
-                scribe.info( "Cancelling pending update {request.updater}." )
+            for request, task in self.updates_tasks.items( ):
+                if task.done( ): continue
+                scribe.info( f"Cancellation of update {request.updater}." )
                 task.cancel( )
+            if not self.updates_mutexes: return
             scribe.info(
-                "Waiting for {count} GUI updates to complete.".format(
+                "Waiting for {count} updates to complete.".format(
                     count = len( self.updates_mutexes ) ) )
             try:
                 await __.gather_async( *(
@@ -100,7 +103,7 @@ class UpdatesDeduplicator(
                     for mutex in self.updates_mutexes.values( ) ) )
             except Exception as exc: # pylint: disable=broad-exception-caught
                 scribe.error(
-                    "Failed to cleanup pending GUI update. "
+                    "Failed to cleanup pending updates. "
                     "Cause: {error}".format(
                         error = __.exception_to_str( exc ) ) )
                 # TODO? Reraise error.
@@ -116,28 +119,28 @@ class UpdatesDeduplicator(
             __.DictionaryProxy( { } ) ),
     ) -> None:
         ''' Executes update if not already in progress. '''
-        # TODO? Set of pending updates to ensure that trailing update is
-        #       processed if another is in progress.
         scribe = __.acquire_scribe( __package__ )
         request = UpdateRequest(
             updater = updater, posargs = posargs, nomargs = nomargs )
         async with self.master_mutex:
+            # If update is queued, then current state will be covered.
+            if request in self.updates_insequent: return
+            self.updates_insequent.add( request )
             if request not in self.updates_mutexes:
                 self.updates_mutexes[ request ] = __.MutexAsync( )
             mutex = self.updates_mutexes[ request ]
-        if mutex.locked( ):
-            scribe.debug( f"Waiting on in-progress update {updater}." )
-            async with mutex: # Block to prevent races.
-                scribe.debug( f"Existing update {updater} completed." )
-            return
-        scribe.debug( f"Executing update {updater}." )
-        try:
-            async with mutex: await request( )
-        finally:
+        from asyncio import sleep
+        while mutex.locked( ): await sleep( 0.001 ) # TODO? Timeout.
+        async with mutex:
+            ic( f"Commencement of immediate update {updater}." )
+            scribe.debug( f"Commencement of immediate update {updater}." )
             async with self.master_mutex:
-                if not mutex.locked( ):
+                self.updates_insequent.discard( request )
+            try: await request( )
+            finally:
+                async with self.master_mutex:
                     self.updates_mutexes.pop( request, None )
-        scribe.debug( f"Completed update {request.updater}." )
+        scribe.debug( f"Completion of immediate update {updater}." )
 
     async def schedule(
         self,
@@ -152,28 +155,31 @@ class UpdatesDeduplicator(
         request = UpdateRequest(
             updater = updater, posargs = posargs, nomargs = nomargs )
         async with self.master_mutex:
-            if request in self.updates_tasks: return
+            # If update is queued, then current state will be covered.
+            if request in self.updates_insequent: return
+            self.updates_insequent.add( request )
             if request not in self.updates_mutexes:
                 self.updates_mutexes[ request ] = __.MutexAsync( )
             mutex = self.updates_mutexes[ request ]
-        if mutex.locked( ): return # Do not block on lazy updates.
         from asyncio import create_task, sleep
 
         async def _execute( ):
             await sleep( delay )
-            scribe.debug( f"Executing scheduled update {updater}." )
-            try:
-                async with mutex: await request( )
-            finally:
+            async with mutex:
+                scribe.debug( f"Commencement of scheduled update {updater}." )
                 async with self.master_mutex:
-                    self.updates_tasks.pop( request, None )
-                    if not mutex.locked( ):
+                    self.updates_insequent.discard( request )
+                try: await request( )
+                finally:
+                    async with self.master_mutex:
+                        self.updates_tasks.pop( request, None )
                         self.updates_mutexes.pop( request, None )
-            scribe.debug( f"Completed scheduled update {updater}." )
+            scribe.debug( f"Completion of scheduled update {updater}." )
 
+        while mutex.locked( ): await sleep( 0.001 ) # TODO? Timeout.
         async with self.master_mutex:
-            if request in self.updates_tasks:
-                self.updates_tasks[ request ].cancel( )
+            task = self.updates_tasks.get( request )
+            if task and not task.done( ): task.cancel( ) # Sanity.
             self.updates_tasks[ request ] = create_task( _execute( ) )
 
 # pylint: enable=no-member,not-async-context-manager,unsubscriptable-object

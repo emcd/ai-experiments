@@ -46,7 +46,6 @@ class Attributes(
 ):
     ''' Common attributes for Anthropic chat models. '''
 
-    extra_tokens_per_message: int = 0
     supports_computer_use: bool = False
 
     @classmethod
@@ -56,7 +55,6 @@ class Attributes(
         args = super( ).init_args_from_descriptor( descriptor )
         sdescriptor = descriptor.get( 'special', { } )
         for arg_name in (
-            'extra-tokens-per-message',
             'supports-computer-use',
         ):
             arg = sdescriptor.get( arg_name )
@@ -258,50 +256,73 @@ class Tokenizer(
     __.ConversationTokenizer, class_decorators = ( __.standard_dataclass, )
 ):
     ''' Tokenizes conversations and text with Anthropic tokenizers. '''
-    # Note: As of 2024-10-30, Anthropic has not released its tokenizer for the
-    #       newer models. We, therefore, approximate as best we are able.
-    #       Known reverse engineering attempts:
-    #           https://github.com/javirandor/anthropic-tokenizer
-    #           https://www.beren.io/2024-07-07-Right-to-Left-Integer-Tokenization/
-    # Note: As of 2024-11-01, two days after the above note was written,
-    #       Anthropic beta-released an API endpoint to count tokens:
-    #           https://docs.anthropic.com/en/docs/build-with-claude/token-counting
-    #       Tier 1 rate limit is 100 RPM, which is lower than our standard
-    #       400ms delay for recounts, assuming continuous typing into user
-    #       prompt text area. Use of the endpoint is free.
-    # TODO: Use Anthropic endpoint with zero retries. Fallback to old
-    #       tokenizer on error, including rate limit.
-    #       Or, queue GUI actions, including token tallies, and prevent more
-    #       than one token tally action to be in the queue at one time.
-    #       Need to consider network latency, especially for large
-    #       conversations. Might need to cache results by component and use a
-    #       change mask to only recalculate for components with altered data.
 
     async def count_text_tokens( self, text: str ) -> int:
+        # TODO: Caching.
+        # TODO? Client-side rate-limiting.
         client = self.model.client.produce_implement( )
-        return await client.count_tokens( text )
+        messages, extra_count = _sanitize_messages_for_tokenization(
+            dict( messages = [ { 'role': 'user', 'content': text } ] ) )
+        try:
+            response = await client.beta.messages.count_tokens(
+                messages = messages, model = self.model.name )
+        except Exception as exc:
+            # TODO? Use client-side fallback counting method.
+            raise __.ModelOperateFailure(
+                model = self.model,
+                operation = 'count text tokens',
+                cause = exc ) from exc
+        return response.input_tokens - extra_count
 
     async def count_conversation_tokens_v0(
         self, messages: __.MessagesCanisters, supplements
     ) -> int:
-        # Note: For lack of better guidance, we loosely follow the OpenAI
-        #       guidance for token counting.
-        # TODO: Determine cost for field names or optional fields.
-        from json import dumps
-        model = self.model
-        tokens_count = 0
-        for message in model.messages_processor.nativize_messages_v0(
-            messages, supplements
-        ):
-            for value in message.values( ):
-                value_ = value if isinstance( value, str ) else dumps( value )
-                tokens_count += await self.count_text_tokens( value_ )
-        iprocessor = self.model.invocations_processor
-        for invoker in supplements.get( 'invokers', ( ) ):
-            tokens_count += (
-                await self.count_text_tokens( dumps(
-                    iprocessor.nativize_invocable( invoker ) ) ) )
-        return tokens_count
+        # TODO: Caching.
+        # TODO? Client-side rate-limiting.
+        args = _prepare_client_arguments(
+            model = self.model,
+            messages = messages,
+            supplements = supplements,
+            controls = { } )
+        args.pop( 'max_tokens', None )
+        args.pop( 'stream', None )
+        messages_, extra_count = _sanitize_messages_for_tokenization( args )
+        args[ 'messages' ] = messages_
+        client = self.model.client.produce_implement( )
+        try: response = await client.beta.messages.count_tokens( **args )
+        except Exception as exc:
+            # TODO? Use client-side fallback counting method.
+            raise __.ModelOperateFailure(
+                model = self.model,
+                operation = 'count conversation tokens',
+                cause = exc ) from exc
+        return response.input_tokens - extra_count
+
+
+def _sanitize_messages_for_tokenization(
+    arguments: __.AbstractDictionary[ str, __.a.Any ]
+) -> tuple[ list[ AnthropicMessage ], int ]:
+    messages = list( arguments[ 'messages' ] )
+    # [anthropic.BadRequestError] Error code: 400
+    # all messages must have non-empty content except for the optional
+    # final assistant message
+    # [anthropic.BadRequestError] Error code: 400
+    # text content blocks must contain non-whitespace text
+    extra_message = { 'role': 'user', 'content': 'I' }
+    extra_count = 0
+    if not messages:
+        # [anthropic.BadRequestError] Error code: 400
+        # at least one message is required
+        extra_count += 1
+        return [ extra_message ], extra_count
+    message = messages[ -1 ]
+    # [anthropic.BadRequestError] Error code: 400
+    # When using tools, pre-filling the `assistant` response is
+    # not supported.
+    if 'tools' in arguments and 'assistant' == message[ 'role' ]:
+        messages.append( extra_message )
+        extra_count += 1
+    return messages, extra_count
 
 
 def _canister_from_response_element( model, element ):
@@ -459,7 +480,8 @@ def _nativize_invocation_message(
     # When no invocables are supplied, but previous invocations were
     # made, then we need to appease the following quirk:
     #     [anthropic.BadRequestError] Error code: 400 -
-    #     Requests which include `tool_use` or `tool_result` blocks must define tools.
+    #     Requests which include `tool_use` or `tool_result` blocks must
+    #     define tools.
     supports_invocations = (
             model.attributes.supports_invocations
         and model.provider.name == model_context.get( 'provider' )
@@ -516,7 +538,8 @@ def _nativize_result_message(
     # When no invocables are supplied, but previous invocations were
     # made, then we need to appease the following quirk:
     #     [anthropic.BadRequestError] Error code: 400 -
-    #     Requests which include `tool_use` or `tool_result` blocks must define tools.
+    #     Requests which include `tool_use` or `tool_result` blocks must
+    #     define tools.
     supports_invocations = (
             model.attributes.supports_invocations
         and model.provider.name == model_context.get( 'provider' )
