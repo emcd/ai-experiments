@@ -30,11 +30,16 @@
       instead of components namespace. Cannot pass GUI globals object, since
       each conversation has a mutated copy of the conversation-related
       components.
-    - Async queuing in GUI for actions.
     - Finish decoupling widgets from data in conversation save/restore.
     - Use `absent` object instead of `None` for optional arguments
       with no default.
     - Use immutable dataclasses and protocol classes wherever possible.
+
+* Documentation
+
+    - Architecture diagrams: overall, invocables, providers.
+    - Conventions and standards.
+    - Add missing docstrings to classes and functions.
 
 * General
 
