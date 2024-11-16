@@ -35,7 +35,7 @@
     * Prefer margins over padding for greater control. '''
 
 
-from types import SimpleNamespace
+from types import SimpleNamespace # TODO: Immutable.
 
 from panel.layout import Card, Column, HSpacer, Row
 from panel.pane import JSON, Markdown
@@ -52,7 +52,13 @@ from panel.widgets import (
     Toggle,
 )
 
-from .classes import AdaptiveTextArea, CompactSelector, ConversationMessage
+from .classes import (
+    AdaptiveTextArea,
+    CompactSelector,
+    ConversationMessage,
+    EventsInterceptor,
+    MenuObjects,
+)
 
 
 sizes = SimpleNamespace(
@@ -717,7 +723,8 @@ conversation_indicator_layout = {
     ),
     'row_indicator': dict(
         component_class = Row,
-        contains = [ 'text_title', 'row_actions' ],
+        #contains = [ 'text_title', 'row_actions' ],
+        contains = [ 'text_title', 'interceptor_actions' ],
     ),
     'text_title': dict(
         component_class = Markdown,
@@ -728,14 +735,11 @@ conversation_indicator_layout = {
             width = sizes.sidebar_width_max,
         ),
     ),
-    'row_actions': dict(
-        component_class = Row,
+    'interceptor_actions': dict(
+        component_class = EventsInterceptor,
         component_arguments = dict(
+            height_policy = 'auto', width_policy = 'min',
             styles = {
-                # TODO: Use theme colors.
-                'background-color': '#e8e8e8',
-                'border-radius': '5%',
-                'box-shadow': '-2px 2px 3px rgba(0, 0, 0, 0.2)',
                 'padding': f"{sizes.element_margin}px",
                 'position': 'absolute',
                 'right': f"{sizes.standard_margin}px",
@@ -744,6 +748,10 @@ conversation_indicator_layout = {
             },
             visible = False,
         ),
+        contains = [ 'menu_actions' ],
+    ),
+    'menu_actions': dict(
+        component_class = MenuObjects,
         contains = [
             'button_edit_title',
             'button_edit_labels',
@@ -753,22 +761,28 @@ conversation_indicator_layout = {
     'button_edit_title': dict(
         component_class = Button,
         component_arguments = dict(
+            name = 'Edit Title',
             icon = 'edit', icon_size = sizes.icon_size,
-            **_icon_button_attributes,
+            button_type = 'light',
+            **( _action_button_attributes | dict( width_policy = 'max' ) ),
         ),
     ),
     'button_edit_labels': dict(
         component_class = Button,
         component_arguments = dict(
+            name = 'Edit Labels',
             icon = 'bookmark-edit', icon_size = sizes.icon_size,
-            **_icon_button_attributes,
+            button_type = 'light',
+            **( _action_button_attributes | dict( width_policy = 'max' ) ),
         ),
     ),
     'button_delete': dict(
         component_class = Button,
         component_arguments = dict(
+            name = 'Delete',
             icon = 'trash', icon_size = sizes.icon_size,
-            **_icon_button_attributes,
+            button_type = 'danger',
+            **( _action_button_attributes | dict( width_policy = 'max' ) ),
         ),
         event_functions = dict( on_click = 'on_click_delete_conversation' ),
     ),

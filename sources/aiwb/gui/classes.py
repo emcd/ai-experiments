@@ -28,8 +28,9 @@
 
 import param
 
+from panel.custom import Children, ReactiveHTML
 from panel.layout import Row
-from panel.reactive import ReactiveHTML
+from panel.layout.base import ListLike
 
 from . import __
 
@@ -45,6 +46,100 @@ from . import __
 
 # https://github.com/bokeh/bokeh/blob/4e546e5fa7a14caa9812e9ef392a0d70054b28ce/bokehjs/src/less/widgets/inputs.less
 # AI-formatted CSS dump from browser.
+
+_bokeh_button_stylesheets = '''
+.bk-btn,::file-selector-button {
+    height: 100%;
+    display: inline-block;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+    cursor: pointer;
+    padding: var(--padding-vertical) var(--padding-horizontal);
+    font-size: var(--font-size);
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    outline: 0;
+    outline-offset: -5px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.bk-btn:hover,::file-selector-button:hover,.bk-btn:focus,::file-selector-button:focus {
+    text-decoration: none;
+}
+
+.bk-btn:active,::file-selector-button:active,.bk-active.bk-btn,.bk-active::file-selector-button {
+    background-image: none;
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+}
+
+.bk-btn[disabled] {
+    cursor: not-allowed;
+    pointer-events: none;
+    opacity: 0.65;
+    box-shadow: none;
+}
+
+.bk-btn-default {
+    color: #333;
+    background-color: #fff;
+    border-color: #ccc;
+}
+
+.bk-btn-default:hover {
+    background-color: #f5f5f5;
+    border-color: #b8b8b8;
+}
+
+.bk-active.bk-btn-default {
+    background-color: #ebebeb;
+    border-color: #adadad;
+}
+
+.bk-btn-default[disabled],.bk-btn-default[disabled]:hover,
+.bk-btn-default[disabled]:focus,.bk-btn-default[disabled]:active,
+.bk-active.bk-btn-default[disabled] {
+    background-color: #e6e6e6;
+    border-color: #ccc;
+}
+
+.bk-btn-default:focus,.bk-btn-default:active {
+    outline: 1px dotted #ccc;
+}
+'''
+
+_bokeh_font_stylesheets = '''
+:host {
+    --base-font: var(--bokeh-base-font, Helvetica, Arial, sans-serif);
+    --mono-font: var(--bokeh-mono-font, monospace);
+    --font-size: var(--bokeh-font-size, 12px);
+    --line-height: calc(20 / 14);
+    --line-height-computed: calc(var(--font-size) * var(--line-height));
+    --border-radius: 4px;
+    --padding-vertical: 6px;
+    --padding-horizontal: 12px;
+    --bokeh-top-level: 1000;
+}
+
+:host {
+    box-sizing: border-box;
+    font-family: var(--base-font);
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+    font-family: inherit;
+}
+
+pre, code {
+    font-family: var(--mono-font);
+    margin: 0;
+}
+'''
+
 _bokeh_input_stylesheets = '''
 :host {
     --input-min-height: calc(var(--line-height-computed) + 2*var(--padding-vertical) + 2px);
@@ -269,34 +364,45 @@ label:hover > .bk-description > .bk-icon,
 }
 '''
 
-_bokeh_font_stylesheets = '''
+_bokeh_menu_stylesheets = '''
 :host {
-    --base-font: var(--bokeh-base-font, Helvetica, Arial, sans-serif);
-    --mono-font: var(--bokeh-mono-font, monospace);
-    --font-size: var(--bokeh-font-size, 12px);
-    --line-height: calc(20 / 14);
-    --line-height-computed: calc(var(--font-size) * var(--line-height));
-    --border-radius: 4px;
-    --padding-vertical: 6px;
-    --padding-horizontal: 12px;
-    --bokeh-top-level: 1000;
+    position: relative;
 }
 
-:host {
-    box-sizing: border-box;
-    font-family: var(--base-font);
+.bk-menu {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    z-index: var(--bokeh-top-level);
+    cursor: pointer;
     font-size: var(--font-size);
-    line-height: var(--line-height);
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
 }
 
-*, *:before, *:after {
-    box-sizing: inherit;
-    font-family: inherit;
+.bk-menu.bk-above {
+    bottom: 100%;
 }
 
-pre, code {
-    font-family: var(--mono-font);
-    margin: 0;
+.bk-menu.bk-below {
+    top: 100%;
+}
+
+.bk-menu > .bk-divider {
+    height: 1px;
+    margin: calc(var(--line-height-computed)/2 - 1px) 0;
+    overflow: hidden;
+    background-color: #e5e5e5;
+}
+
+.bk-menu > :not(.bk-divider) {
+    padding: var(--padding-vertical) var(--padding-horizontal);
+}
+
+.bk-menu > :not(.bk-divider):hover,.bk-menu > :not(.bk-divider).bk-active {
+    background-color: #e6e6e6;
 }
 '''
 
@@ -510,13 +616,11 @@ class ConversationIndicator( ReactiveHTML ):
         #       Especially for 'delete' button as this results in a
         #       'bokeh.core.serialization.DeserializationError' from
         #       an unresolved reference after deletion.
-        # Cannot run callback directly. Trigger via Event parameter.
         self.clicked = True
 
     @param.depends( 'mouse_hover__', watch = True )
     def _handle_mouse_hover__( self ):
-        self.gui__.row_actions.visible = self.mouse_hover__
-
+        self.gui__.interceptor_actions.visible = self.mouse_hover__
 
 
 class ConversationMessage( ReactiveHTML ):
@@ -552,3 +656,113 @@ class ConversationMessage( ReactiveHTML ):
     @param.depends( 'mouse_hover__', watch = True )
     def _handle_mouse_hover__( self ):
         self.row__.gui__.row_actions.visible = self.mouse_hover__
+
+
+class EventsInterceptor( ListLike, ReactiveHTML ):
+    ''' Container which intercepts and posts DOM events. '''
+
+    clicked = param.Boolean( )
+    key_pressed = param.String( )
+    objects = Children( )
+
+    _scripts = {
+        'handle_click': '''
+            data.clicked = true;
+            event.stopPropagation();
+        ''',
+
+        'handle_keydown': '''
+            data.key_pressed = event.key;
+            event.stopPropagation();
+        ''',
+    }
+
+    _template = '''
+        <div id="EventsInterceptor" class="pn-container"
+            onclick="${script('handle_click')}"
+            onkeydown="${script('handle_keydown')}"
+        >
+            {% for obj in objects %}
+                <div id="object">${obj}</div>
+            {% endfor %}
+        </div>
+    '''.strip( )
+
+_menu_objects_stylesheets = '''
+        .menu-objects-container {
+            position: relative;
+        }
+
+        .menu-objects-menu {
+            box-sizing: border-box;
+            max-width: 336px;
+            overflow: visible;
+            position: fixed;
+            width: max-content;
+        }
+
+        .menu-objects-item {
+            cursor: default;
+        }
+
+        .bk-menu > .menu-objects-item:hover {
+            background-color: transparent;
+        }
+'''
+class MenuObjects( ListLike, ReactiveHTML ):
+    ''' Dropdown menu which can contain arbitrary widgets. '''
+
+    objects = Children( )
+
+    _stylesheets = [
+        _bokeh_font_stylesheets,
+        _bokeh_button_stylesheets,
+        _bokeh_menu_stylesheets,
+        _menu_objects_stylesheets,
+    ]
+
+    _scripts = {
+        'handle_mouseleave': '''
+            state.menuVisible = false;
+            menu.style.display = 'none';
+        ''',
+
+        'init': '''
+            state.menuVisible = false;
+        ''',
+
+        'toggle_menu': '''
+            state.menuVisible = !state.menuVisible;
+            if (state.menuVisible) {
+                // Position menu relative to toggle button
+                const toggleRect = toggle.getBoundingClientRect();
+                menu.style.top = `${toggleRect.bottom}px`;
+                menu.style.left = `${toggleRect.left}px`;
+                menu.style.display = 'block';
+            } else {
+                menu.style.display = 'none';
+            }
+        ''',
+    }
+
+    _template = '''
+        <div id="MenuObjects"
+            class="bk-Dropdpwn solid menu-objects-container"
+            onmouseleave="${script('handle_mouseleave')}"
+        >
+            <div class="bk-button-group">
+                <button id="toggle"
+                    class="bk-btn bk-btn-default"
+                    onclick="${script('toggle_menu')}"
+                >⋯</button>
+            </div>
+            <div id="menu"
+                class="bk-menu menu-objects-menu"
+                style="display: none;"
+            >
+                {% for obj in objects %}
+                    <div id="object" class="menu-objects-item">${obj}</div>
+                {% endfor %}
+            </div>
+        </div>
+    '''.strip( )
