@@ -25,11 +25,17 @@
 
 
 def alter_message_edit_mode( message_components, mode ):
-    ''' Enables or disables edit mode for a message. '''
-    message_components.button_edit.enbaled = not mode
+    ''' Enables or disables edit mode for message. '''
+    message_components.button_edit.enabled = not mode
     message_components.text_message.visible = not mode
     message_components.column_edit.visible = mode
-    #message_components.row_edit_actions.visible = mode
+
+
+def alter_title_edit_mode( indicator_components, mode ):
+    ''' Enables or disables edit mode for conversation title. '''
+    indicator_components.text_title.visible = not mode
+    indicator_components.column_title_edit.visible = mode
+    if mode: indicator_components.interceptor_actions.visible = False
 
 
 def assimilate_canister_dto_from_gui( canister_components ):

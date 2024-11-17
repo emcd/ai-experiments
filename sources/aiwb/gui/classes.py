@@ -620,7 +620,13 @@ class ConversationIndicator( ReactiveHTML ):
 
     @param.depends( 'mouse_hover__', watch = True )
     def _handle_mouse_hover__( self ):
-        self.gui__.interceptor_actions.visible = self.mouse_hover__
+        is_current = (
+            self.gui__.parent__.column_conversations_indicators
+            .current_descriptor__.identity
+            == self.identity__ )
+        self.gui__.interceptor_actions.visible = (
+            not self.gui__.column_title_edit.visible and self.mouse_hover__ )
+        self.gui__.button_title_regenerate.visible = is_current
 
 
 class ConversationMessage( ReactiveHTML ):

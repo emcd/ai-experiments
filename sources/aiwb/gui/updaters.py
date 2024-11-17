@@ -383,14 +383,15 @@ def determine_message_layout( dto ):
     return layout
 
 
-def display_conversation( gui, descriptor ):
+def display_conversation( components, descriptor ):
+    ''' Displays loaded conversation in GUI. '''
     from .layouts import conversation_container_names
-    conversations = gui.column_conversations_indicators
+    conversations = components.column_conversations_indicators
     conversations.current_descriptor__ = descriptor
     for component_name in conversation_container_names:
-        getattr( gui, f"interpolant_{component_name}" ).objects = [
+        getattr( components, f"interpolant_{component_name}" ).objects = [
             getattr( descriptor.gui, f"column_{component_name}" ) ]
-    gui.identity__ = descriptor.gui.identity__
+    components.identity__ = descriptor.gui.identity__
     autoscroll_document( descriptor.gui )
 
 

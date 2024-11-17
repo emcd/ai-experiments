@@ -155,7 +155,7 @@ async def _add_conversation_indicator_if_necessary( components ):
     # Do not proceed if we are in a function invocation. Wait for result.
     # Also, some models (e.g., GPT-4) are confused by the invocation.
     if not _detect_ai_completion( components ): return
-    title, labels = await _generate_conversation_title( components )
+    title, labels = await generate_conversation_title( components )
     descriptor.title = title
     descriptor.labels = labels
     add_conversation_indicator( components, descriptor  )
@@ -196,7 +196,7 @@ def _detect_ai_completion( gui, component = None ):
         case _: return False
 
 
-async def _generate_conversation_title( components ):
+async def generate_conversation_title( components ):
     scribe = __.acquire_scribe( __package__ )
     model = await _providers.access_model_selection( components )
     controls = _providers.package_controls( components )

@@ -25,6 +25,9 @@
 # pylint: disable=cyclic-import,missing-function-docstring
 
 
+from . import __
+
+
 _document_autoscroller_code = '''
 if (component.value == 'scrolling')
     window.scrollTo(0, document.body.scrollHeight);'''
@@ -53,6 +56,21 @@ def generate_message_copier( components, layout, component_name ):
     component = getattr( components, component_name )
     return dict(
         value = _message_copier_code,
+        args = dict( component = component ) )
+
+
+# TODO: Make focus switching work.
+_title_edit_focus_code = '''
+if (component.visible)
+    setTimeout(function() {
+        component.focus();
+    }, 0);
+'''
+def generate_title_edit_focus( components, layout, component_name ):
+    if not hasattr( components, component_name ): return
+    component = getattr( components, component_name )
+    return dict(
+        value = _title_edit_focus_code,
         args = dict( component = component ) )
 
 
@@ -166,6 +184,51 @@ async def on_click_search( components, event ):
     if components.mutex__.locked( ): return
     from .actions import search
     await search( components )
+
+
+async def on_click_title_edit( indicator_components, event ):
+    from .conversations import alter_title_edit_mode
+    from .utilities import access_text_component_value
+    indicator_components.text_title_edit.value = (
+        access_text_component_value( indicator_components.text_title ) )
+    alter_title_edit_mode( indicator_components, True )
+
+
+async def on_click_title_edit_submit( indicator_components, event ):
+    from .conversations import alter_title_edit_mode
+    from .persistence import save_conversations_index
+    from .utilities import assign_text_component_value
+    assign_text_component_value(
+        indicator_components.text_title,
+        indicator_components.text_title_edit.value )
+    alter_title_edit_mode( indicator_components, False )
+    components = indicator_components.parent__
+    conversations = components.column_conversations_indicators
+    descriptor = conversations.descriptors__[ indicator_components.identity__ ]
+    descriptor.title = indicator_components.text_title_edit.value
+    await save_conversations_index( components )
+
+
+async def on_click_title_edit_cancel( indicator_components, event ):
+    from .conversations import alter_title_edit_mode
+    alter_title_edit_mode( indicator_components, False )
+
+
+async def on_click_title_regenerate( indicator_components, event ):
+    from .actions import generate_conversation_title
+    from .persistence import save_conversations_index
+    from .utilities import assign_text_component_value
+    components = indicator_components.parent__
+    conversations = components.column_conversations_indicators
+    descriptor = conversations.descriptors__[ indicator_components.identity__ ]
+    try: title, labels = await generate_conversation_title( descriptor.gui )
+    except Exception as exc:
+        ic( __.exception_to_str( exc ) )
+        return
+    assign_text_component_value( indicator_components.text_title, title )
+    descriptor.title = title
+    descriptor.labels = labels
+    await save_conversations_index( components )
 
 
 async def on_click_uncan_prompt( components, event ):

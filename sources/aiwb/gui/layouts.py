@@ -723,8 +723,11 @@ conversation_indicator_layout = {
     ),
     'row_indicator': dict(
         component_class = Row,
-        #contains = [ 'text_title', 'row_actions' ],
-        contains = [ 'text_title', 'interceptor_actions' ],
+        contains = [ 'column_title', 'interceptor_actions' ],
+    ),
+    'column_title': dict(
+        component_class = Column,
+        contains = [ 'text_title', 'column_title_edit' ],
     ),
     'text_title': dict(
         component_class = Markdown,
@@ -733,6 +736,55 @@ conversation_indicator_layout = {
             margin = sizes.standard_margin,
             max_width = sizes.sidebar_width_max,
             width = sizes.sidebar_width_max,
+        ),
+    ),
+    'column_title_edit': dict(
+        component_class = EventsInterceptor,
+        component_arguments = dict(
+            visible = False,
+        ),
+        contains = [
+            'text_title_edit',
+            'row_title_edit_actions',
+        ],
+        #javascript_cb_generator = 'generate_title_edit_focus',
+    ),
+    'text_title_edit': dict(
+        component_class = TextInput,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+            margin = sizes.standard_margin,
+            max_width = sizes.sidebar_width_max - 2 * sizes.standard_margin,
+            width = sizes.sidebar_width_max - 2 * sizes.standard_margin,
+        ),
+    ),
+    'row_title_edit_actions': dict(
+        component_class = Row,
+        contains = [
+            'button_title_edit_submit',
+            'button_title_edit_cancel',
+        ],
+    ),
+    'button_title_edit_submit': dict(
+        component_class = Button,
+        component_arguments = dict(
+            name = 'Submit',
+            button_type = 'primary',
+            **_action_button_attributes,
+        ),
+        event_functions = dict(
+            on_click = 'on_click_title_edit_submit'
+        ),
+    ),
+    'button_title_edit_cancel': dict(
+        component_class = Button,
+        component_arguments = dict(
+            name = 'Cancel',
+            button_type = 'default',
+            **_action_button_attributes,
+        ),
+        event_functions = dict(
+            on_click = 'on_click_title_edit_cancel'
         ),
     ),
     'interceptor_actions': dict(
@@ -753,12 +805,13 @@ conversation_indicator_layout = {
     'menu_actions': dict(
         component_class = MenuObjects,
         contains = [
-            'button_edit_title',
-            'button_edit_labels',
+            'button_title_edit',
+            'button_title_regenerate',
+            'button_labels_edit',
             'button_delete',
         ],
     ),
-    'button_edit_title': dict(
+    'button_title_edit': dict(
         component_class = Button,
         component_arguments = dict(
             name = 'Edit Title',
@@ -766,8 +819,20 @@ conversation_indicator_layout = {
             button_type = 'light',
             **( _action_button_attributes | dict( width_policy = 'max' ) ),
         ),
+        event_functions = dict( on_click = 'on_click_title_edit' ),
     ),
-    'button_edit_labels': dict(
+    'button_title_regenerate': dict(
+        component_class = Button,
+        component_arguments = dict(
+            name = 'Regenerate Title',
+            icon = 'reload', icon_size = sizes.icon_size,
+            button_type = 'light',
+            visible = False,
+            **( _action_button_attributes | dict( width_policy = 'max' ) ),
+        ),
+        event_functions = dict( on_click = 'on_click_title_regenerate' ),
+    ),
+    'button_labels_edit': dict(
         component_class = Button,
         component_arguments = dict(
             name = 'Edit Labels',

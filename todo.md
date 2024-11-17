@@ -88,20 +88,11 @@
     - Search for conversations by title or label.
     - Mathematica/Jupyter-style In/Out cell groups.
       Message clusters: user prompt, tool calls, and AI response.
-    - Fade transition for conversation indicators?
-      See: https://stackoverflow.com/questions/32269019/text-overflow-fade-css?rq=3
     - Custom logo for human user in chat history.
     - Gravatar integration for human user logo in chat history?
-    - Dropdown menu instead of floating menu for conversation actions.
     - Thin hover-over menu under each message instead of floating menu for
       message actions.
     - Model information in thin bar under each message cohort.
-    - Copy button for code blocks embedded in message pane.
-      https://github.com/holoviz/panel/issues/6209
-      https://github.com/executablebooks/markdown-it-py/issues/324
-      https://github.com/ReAlign/markdown-it-copy/blob/master/index.js
-      https://github.com/DCsunset/markdown-it-code-copy/blob/master/index.js
-      https://github.com/executablebooks/sphinx-copybutton/blob/master/sphinx_copybutton/_static/copybutton.js_t
 
 * GUI: Page Header
 
