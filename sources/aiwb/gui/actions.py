@@ -58,9 +58,7 @@ async def chat( components ):
             components.selector_user_prompt_class.value = 'freeform'
         case _:
             prompt = components.text_freeform_prompt.value
-            # Force a change in value to clear.
-            components.text_freeform_prompt.value_to_ingest = prompt
-            components.text_freeform_prompt.value_to_ingest = ''
+            components.text_freeform_prompt.clear( )
     if prompt:
         canister = __.UserMessageCanister( ).add_content( prompt )
         _add_message( components, canister )
@@ -122,9 +120,7 @@ async def search( components ):
     ''' Performs search against vector databases. '''
     from .updaters import update_and_save_conversation
     prompt = components.text_freeform_prompt.value
-    # Force a change in value to clear.
-    components.text_freeform_prompt.value_to_ingest = prompt
-    components.text_freeform_prompt.value_to_ingest = ''
+    components.text_freeform_prompt.clear( )
     canister = __.UserMessageCanister( ).add_content( prompt )
     _add_message( components, canister )
     documents_count = components.slider_documents_count.value

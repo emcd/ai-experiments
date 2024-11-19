@@ -518,7 +518,13 @@ class AdaptiveTextArea( ReactiveHTML ):
         style.update( params.get( 'style', { } ) )
         self._style_css__ = '; '.join( map( ': '.join, style.items( ) ) )
 
-    # TODO: 'clear' method: clear the text area properly
+    def clear( self ):
+        ''' Clears text area. '''
+        value = self.value
+        # Force change event to occur when necessary.
+        # Otherwise, do not trigger change event to avoid flashing.
+        if value != self.value_to_ingest: self.value_to_ingest = value
+        if self.value_to_ingest: self.value_to_ingest = ''
 
 
 class CompactSelector( ReactiveHTML ):
