@@ -27,19 +27,20 @@ from . import invocables as _invocables
 from . import providers as _providers
 
 
-def _update_conversation_status_on_error( invocable ):
+def _update_conversation_status_on_error( actor ):
     from functools import wraps
     from .updaters import update_conversation_status
 
-    @wraps( invocable )
-    def invoker( gui, *posargs, **nomargs ):
-        update_conversation_status( gui ) # Clear any extant status.
-        try: return invocable( gui, *posargs, **nomargs )
-        except BaseException as exc:
-            update_conversation_status( gui, exc )
+    @wraps( actor )
+    async def report_on_action( components, *posargs, **nomargs ):
+        update_conversation_status( components ) # Clear any extant status.
+        try: return await actor( components, *posargs, **nomargs )
+        except Exception as exc:
+            update_conversation_status( components, content = exc )
             raise # TODO: Remove after traceback display is implemented.
+        # Allow non-error exceptions (e.g., SystemExit) to blow through.
 
-    return invoker
+    return report_on_action
 
 
 @_update_conversation_status_on_error
@@ -57,7 +58,9 @@ async def chat( components ):
             components.selector_user_prompt_class.value = 'freeform'
         case _:
             prompt = components.text_freeform_prompt.value
-            components.text_freeform_prompt.value = ''
+            # Force a change in value to clear.
+            components.text_freeform_prompt.value_to_ingest = prompt
+            components.text_freeform_prompt.value_to_ingest = ''
     if prompt:
         canister = __.UserMessageCanister( ).add_content( prompt )
         _add_message( components, canister )
@@ -70,10 +73,7 @@ async def chat( components ):
         if not await _check_invocation_requests(
             components, message_components
         ): break
-        try: await use_invocables( components, message_components.index__ )
-        except Exception as exc: # TODO: Display error.
-            ic( __.exception_to_str( exc ) )
-            break
+        await use_invocables( components, message_components.index__ )
     await _add_conversation_indicator_if_necessary( components )
     await update_and_save_conversations_index( components )
     # TODO: Invocation elision.
@@ -122,7 +122,9 @@ async def search( components ):
     ''' Performs search against vector databases. '''
     from .updaters import update_and_save_conversation
     prompt = components.text_freeform_prompt.value
-    components.text_freeform_prompt.value = ''
+    # Force a change in value to clear.
+    components.text_freeform_prompt.value_to_ingest = prompt
+    components.text_freeform_prompt.value_to_ingest = ''
     canister = __.UserMessageCanister( ).add_content( prompt )
     _add_message( components, canister )
     documents_count = components.slider_documents_count.value
@@ -196,7 +198,9 @@ def _detect_ai_completion( gui, component = None ):
         case _: return False
 
 
+@_update_conversation_status_on_error
 async def generate_conversation_title( components ):
+    ''' Generates conversation title from history. '''
     scribe = __.acquire_scribe( __package__ )
     model = await _providers.access_model_selection( components )
     controls = _providers.package_controls( components )
@@ -234,10 +238,11 @@ async def _check_invocation_requests( components, message_components ) -> bool:
 
 
 @__.exit_manager
-def _update_conversation_progress( gui, message ):
+def _update_conversation_progress( components, message ):
     from .updaters import update_conversation_status
-    yield update_conversation_status( gui, message, progress = True )
-    update_conversation_status( gui )
+    yield update_conversation_status(
+        components, content = message, progress = True )
+    update_conversation_status( components )
 
 
 def _update_gui_on_chat( gui, canister_gui ):

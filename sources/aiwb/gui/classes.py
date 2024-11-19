@@ -518,6 +518,8 @@ class AdaptiveTextArea( ReactiveHTML ):
         style.update( params.get( 'style', { } ) )
         self._style_css__ = '; '.join( map( ': '.join, style.items( ) ) )
 
+    # TODO: 'clear' method: clear the text area properly
+
 
 class CompactSelector( ReactiveHTML ):
 

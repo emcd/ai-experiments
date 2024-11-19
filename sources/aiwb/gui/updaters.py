@@ -649,23 +649,23 @@ async def update_conversation_postpopulate( components ):
     await update_supervisor_prompt( components )
 
 
-def update_conversation_status( gui, text = None, progress = False ):
-    gui.spinner_ai_progress.value = False
-    gui.spinner_ai_progress.visible = False
-    gui.text_conversation_status.visible = False
+def update_conversation_status( components, content = None, progress = False ):
+    ''' Updates conversation status headline and spinner. '''
+    components.spinner_ai_progress.value = False
+    components.spinner_ai_progress.visible = False
+    components.text_conversation_status.visible = False
     # TODO: Hide retry and stack trace inspection buttons.
     if progress:
-        gui.spinner_ai_progress.name = text
-        gui.spinner_ai_progress.visible = True
-        gui.spinner_ai_progress.value = True
-    elif None is not text:
-        if isinstance( text, Exception ):
+        components.spinner_ai_progress.name = content
+        components.spinner_ai_progress.visible = True
+        components.spinner_ai_progress.value = True
+    elif None is not content:
+        if isinstance( content, Exception ):
             # TODO: Add stack trace inspection button.
             # TODO: If retryable exception, add a retry button.
-            text = "{exc_class}: {exc}".format(
-                exc_class = type( text ), exc = text )
-        gui.text_conversation_status.value = text
-        gui.text_conversation_status.visible = True
+            content = __.exception_to_str( content )
+        components.text_conversation_status.value = content
+        components.text_conversation_status.visible = True
 
 
 def update_conversation_timestamp( gui ):

@@ -147,10 +147,11 @@ class Provider( __.Provider, class_decorators = ( __.standard_dataclass, ) ):
             auxdata, provider = self, descriptor = descriptor )
 
 
+# https://docs.anthropic.com/en/docs/about-claude/models
+# https://docs.anthropic.com/en/docs/resources/model-deprecations
 # TODO: Move lists of models to providers data.
 _model_names = __.DictionaryProxy( {
     ProviderVariants.Anthropic: (
-        'claude-instant-1.2',
         'claude-2.0',
         'claude-2.1',
         'claude-3-haiku-20240307',

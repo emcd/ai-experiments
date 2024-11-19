@@ -72,6 +72,9 @@ class ControlsProcessor(
     def nativize_controls(
         self, controls: __.ControlsInstancesByName
     ) -> AnthropicControls:
+        # TODO: https://docs.anthropic.com/en/api/rate-limits#updated-rate-limits
+        #       Cap max tokens by per-tier rate limits.
+        #       (Need to add tier awareness and custom configs.)
         #assert self.model.name == controls[ 'model' ] # TODO: enable for -O
         args: AnthropicControls = dict(
             max_tokens = self.model.attributes.tokens_limits.per_response,
