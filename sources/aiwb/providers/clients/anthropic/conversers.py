@@ -125,6 +125,7 @@ class InvocationsProcessor(
     ) -> __.a.Any:
         # TODO: return type: list[ anthropic.types.ToolParam ]
         tools = [ self.nativize_invocable( invoker ) for invoker in invokers ]
+        if tools: tools[ -1 ][ 'cache_control' ] = { 'type': 'ephemeral' }
         return dict( tools = tools )
 
     def requests_from_canister(
@@ -328,6 +329,24 @@ def _sanitize_messages_for_tokenization(
     return messages, extra_count
 
 
+def _append_user_cache_control_watermarks(
+    messages: list[ AnthropicMessage ]
+) -> list[ AnthropicMessage ]:
+    ''' Adds cache control to last two user messages in conversation. '''
+    for i, message in enumerate( reversed( messages ) ):
+        if 1 < i: break
+        if 'user' != message[ 'role' ]: continue
+        content = message[ 'content' ]
+        if isinstance( content, str ):
+            content = [ { 'text': content, 'type': 'text' } ]
+            message[ 'content' ] = content
+        for block in reversed( content ):
+            if block[ 'type' ] not in ( 'text', 'base64' ): continue
+            block[ 'cache_control' ] = { 'type': 'ephemeral' }
+            break
+    return messages
+
+
 def _canister_from_response_element( model, element ):
     # TODO: Appropriate error classes.
     attributes = __.SimpleNamespace(
@@ -372,7 +391,11 @@ def _collect_supervisor_instructions(
         if __.MessageRole.Supervisor is not canister.role: continue
         instructions.append( canister[ 0 ].data )
     if not instructions: return { }
-    return dict( system = '\n\n'.join( instructions ) )
+    return dict( system = [ {
+        'type': 'text',
+        'text': '\n\n'.join( instructions ),
+        'cache_control': { 'type': 'ephemeral' },
+    } ] )
 
 
 async def _converse_complete_v0(
@@ -733,4 +756,4 @@ def _refine_native_messages(
         messages.append( anchor )
         anchor = cursor
     if anchor: messages.append( anchor )
-    return messages
+    return _append_user_cache_control_watermarks( messages )
