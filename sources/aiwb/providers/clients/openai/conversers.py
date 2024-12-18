@@ -48,6 +48,13 @@ class NativeMessageRefinementActions( __.Enum ): # TODO: Python 3.11: StrEnum
     Merge       = 'merge'
 
 
+class NativeSupervisorRoles( __.Enum ):
+    ''' Which role to use for supervisor instructions. '''
+
+    System      = 'system'      # Default.
+    Developer   = 'developer'   # Reasoning models. Late 2024 and beyond.
+
+
 class Attributes(
     __.ConverserAttributes, class_decorators = ( __.standard_dataclass, )
 ):
@@ -58,6 +65,8 @@ class Attributes(
     honors_supervisor_instructions: bool = False
     invocations_support_level: InvocationsSupportLevels = (
         InvocationsSupportLevels.Single )
+    native_supervisor_role: NativeSupervisorRoles = (
+        NativeSupervisorRoles.System )
     supports_duplex_exchanges: bool = False
 
     @classmethod
@@ -80,6 +89,10 @@ class Attributes(
             args[ 'invocations_support_level' ] = (
                 InvocationsSupportLevels(
                     sdescriptor[ 'invocations-support-level' ] ) )
+        if 'native-supervisor-role' in sdescriptor:
+            args[ 'native_supervisor_role' ] = (
+                NativeSupervisorRoles(
+                    sdescriptor[ 'native-supervisor-role' ] ) )
         return selfclass( **args )
 
 
@@ -574,7 +587,8 @@ def _nativize_supervisor_message(
     model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     content: OpenAiMessageContent
-    if model.attributes.honors_supervisor_instructions: role = 'system'
+    if model.attributes.honors_supervisor_instructions:
+        role = model.attributes.native_supervisor_role.value
     else: role = 'user' # TODO? Add 'name' field to indicate supervisor.
     context = { 'role': role }
     content = _nativize_message_content( model, canister )
@@ -759,7 +773,8 @@ def _refine_native_message(
             return _refine_native_assistant_message( model, anchor, cursor )
         case 'function':
             return _refine_native_function_message( model, anchor, cursor )
-        case 'system': return NativeMessageRefinementActions.Retain
+        case 'developer' | 'system':
+            return NativeMessageRefinementActions.Retain
         case 'tool':
             return _refine_native_tool_message( model, anchor, cursor )
         case 'user':

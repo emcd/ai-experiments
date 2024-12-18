@@ -1,7 +1,7 @@
 format-version = 1
 
 [converser]
-name-regex = '^o1-mini(-.*)?$'
+name-regex = '^o1-preview(-.*)?$'
 replaces-controls = true
 accepts-supervisor-instructions = false
 modalities = [ 'text' ]
@@ -9,5 +9,5 @@ supports-continuous-response = false
 supports-invocations = false
 
 [converser.tokens-limits]
-per-response = 65_536
+per-response = 32_768
 total = 128_000

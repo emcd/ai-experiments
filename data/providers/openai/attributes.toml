@@ -6,7 +6,7 @@ format-version = 1
 # https://platform.openai.com/docs/guides/reasoning/beta-limitations
 
 [converser]
-name-regex = '^(chatgpt-4o(-.*)?|gpt-(3\.5-turbo|4o?)(-.*)?|o1-(mini|preview)(-.*)?)$'
+name-regex = '^(chatgpt-4o(-.*)?|gpt-(3\.5-turbo|4o?)(-.*)?|o1(-.*)?)$'
 accepts-supervisor-instructions = true
 modalities = [ 'text', 'pictures' ]
 supports-continuous-response = true
@@ -21,6 +21,7 @@ extra-tokens-for-actor-name = 1
 extra-tokens-per-message = 3
 honors-supervisor-instructions = true
 invocations-support-level = 'concurrent'
+native-supervisor-role = 'system'
 supports-duplex-exchanges = false
 
 [converser.tokens-limits]
