@@ -93,7 +93,14 @@ class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
             auxdata,
             client = self,
             genera = genera,
-            acquirer = _acquire_model_names )
+            acquirer = __.partial_function(
+                __.cache_acquire_model_names,
+                acquirer = self._acquire_model_names ) )
+
+    @__.abstract_member_function
+    async def _acquire_model_names( self ) -> __.AbstractSequence[ str ]:
+        ''' Acquires model names from API or other source. '''
+        raise NotImplementedError
 
 
 class AnthropicClient( Client, class_decorators = ( __.standard_dataclass, ) ):
@@ -129,6 +136,18 @@ class AnthropicClient( Client, class_decorators = ( __.standard_dataclass, ) ):
     @property
     def variant( self ) -> ProviderVariants:
         return ProviderVariants.Anthropic
+
+    async def _acquire_model_names( self ) -> __.AbstractSequence[ str ]:
+        aliases = (
+            'claude-3-opus-latest',
+            'claude-3-5-haiku-latest',
+            'claude-3-5-sonnet-latest',
+        )
+        results = tuple(
+            model.id for model
+            in ( await self.produce_implement( ).models.list( ) ).data
+            if 'model' == model.type ) # pylint: disable=magic-value-comparison
+        return sorted( frozenset( ( *aliases, *results ) ) )
 
 
 # TODO: AwsBedrockClient
@@ -181,43 +200,8 @@ _model_names = __.DictionaryProxy( {
         'claude-3-5-sonnet-v2@20241022',
     ),
 } )
+# TODO? Use for AWS Bedrock and Google Vertex.
 async def _acquire_model_names(
     auxdata: __.CoreGlobals, client: Client
 ) -> __.AbstractSequence[ str ]:
     return _model_names[ client.variant ]
-
-
-_models_by_client = __.AccretiveDictionary( )
-async def _memcache_acquire_models(
-    auxdata: __.CoreGlobals,
-    client: Client,
-    genera: __.AbstractCollection[ __.ModelGenera ],
-    acquirer: __.a.Callable, # TODO: Full signature.
-) -> __.AbstractSequence[ __.Model ]:
-    # TODO: Consider cache expiration.
-    if client.name in _models_by_client:
-        models_by_genus = _models_by_client[ client.name ]
-        if all( genus in models_by_genus for genus in genera ):
-            return tuple( __.chain.from_iterable(
-                models_by_genus[ genus ] for genus in genera ) )
-    else:
-        _models_by_client[ client.name ] = (
-            __.AccretiveProducerDictionary( list ) )
-    models_by_genus = _models_by_client[ client.name ]
-    integrators = (
-        await __.memcache_acquire_models_integrators(
-            auxdata, provider = client.provider ) )
-    names = await acquirer( auxdata, client )
-    for genus in genera:
-        models_by_genus[ genus ].clear( )
-        for name in names:
-            descriptor: __.AbstractDictionary[ str, __.a.Any ] = { }
-            for integrator in integrators[ genus ]:
-                # TODO: Pass client to get variant.
-                descriptor = integrator( name, descriptor )
-            if not descriptor: continue
-            model = client.produce_model(
-                name = name, genus = genus, descriptor = descriptor )
-            models_by_genus[ genus ].append( model )
-    return tuple( __.chain.from_iterable(
-        models_by_genus[ genus ] for genus in genera ) )

@@ -92,13 +92,21 @@ class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
             auxdata,
             client = self,
             genera = genera,
-            acquirer = _cache_acquire_model_names )
+            acquirer = __.partial_function(
+                __.cache_acquire_model_names,
+                acquirer = self._acquire_model_names ) )
+
+    @__.abstract_member_function
+    async def _acquire_model_names( self ) -> __.AbstractSequence[ str ]:
+        ''' Acquires model names from API or other source. '''
+        raise NotImplementedError
 
 
 # TODO: MicrosoftAzureClient
 
 
 class OpenAiClient( Client, class_decorators = ( __.standard_dataclass, ) ):
+    ''' Client which talks to native OpenAI service. '''
 
     @classmethod
     async def assert_environment( selfclass, auxdata: __.CoreGlobals ):
@@ -132,6 +140,11 @@ class OpenAiClient( Client, class_decorators = ( __.standard_dataclass, ) ):
     def variant( self ) -> ProviderVariants:
         return ProviderVariants.OpenAi
 
+    async def _acquire_model_names( self ) -> __.AbstractSequence[ str ]:
+        return sorted( map(
+            lambda model: model.id,
+            ( await self.produce_implement( ).models.list( ) ).data ) )
+
 
 class Provider( __.Provider, class_decorators = ( __.standard_dataclass, ) ):
 
@@ -141,41 +154,3 @@ class Provider( __.Provider, class_decorators = ( __.standard_dataclass, ) ):
         variant = ProviderVariants( descriptor.get( 'variant', 'openai' ) )
         return await variant.produce_client(
             auxdata, provider = self, descriptor = descriptor )
-
-
-async def _cache_acquire_model_names(
-    auxdata: __.CoreGlobals, client: Client
-) -> __.AbstractSequence[ str ]:
-    # TODO? Use cache accessor from libcore.locations.
-    from json import dumps, loads
-    from operator import attrgetter
-    from aiofiles import open as open_
-    from openai import APIError
-    scribe = __.acquire_scribe( __package__ )
-    # TODO: Per-client cache.
-    file = auxdata.provide_cache_location(
-        'providers', __.provider_name, 'models.json' )
-    if file.is_file( ):
-        # TODO: Get cache expiration interval from configuration.
-        interval = __.TimeDelta( seconds = 4 * 60 * 60 ) # 4 hours
-        then = ( __.DateTime.now( __.TimeZone.utc ) - interval ).timestamp( )
-        if file.stat( ).st_mtime > then:
-            async with open_( file ) as stream:
-                return loads( await stream.read( ) )
-    try:
-        models = sorted( map(
-            attrgetter( 'id' ),
-            ( await client.produce_implement( ).models.list( ) ).data ) )
-    except APIError as exc:
-        if file.is_file( ):
-            auxdata.notifications.enqueue_apprisal(
-                summary = "Connection error. Loading stale models cache.",
-                exception = exc,
-                scribe = scribe )
-            async with open_( file ) as stream:
-                return loads( await stream.read( ) )
-        raise
-    file.parent.mkdir( exist_ok = True, parents = True )
-    async with open_( file, 'w' ) as stream:
-        await stream.write( dumps( models, indent = 4 ) )
-    return models

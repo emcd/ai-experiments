@@ -81,6 +81,45 @@ async def acquire_models_integrators(
         in integrators.items( ) } )
 
 
+async def cache_acquire_model_names(
+    auxdata: __.CoreGlobals,
+    client: _interfaces.Client,
+    acquirer: __.a.Callable[
+        [ ],
+        __.AbstractCoroutine[ __.a.Any, __.a.Any, __.AbstractSequence[ str ] ],
+    ],
+) -> __.AbstractSequence[ str ]:
+    ''' Acquires model names with persistent caching. '''
+    # TODO? Use cache accessor from libcore.locations.
+    from json import dumps, loads
+    from aiofiles import open as open_
+    scribe = __.acquire_scribe( __package__ )
+    file = auxdata.provide_cache_location(
+        'providers',
+        client.provider.name,
+        f'models--{client.variant.name}.json' )
+    if file.is_file( ):
+        # TODO: Get cache expiration interval from configuration.
+        interval = __.TimeDelta( seconds = 4 * 60 * 60 ) # 4 hours
+        then = ( __.DateTime.now( __.TimeZone.utc ) - interval ).timestamp( )
+        if file.stat( ).st_mtime > then:
+            async with open_( file ) as stream:
+                return loads( await stream.read( ) )
+    try: models = await acquirer( )
+    except Exception as exc:
+        if not file.is_file( ): raise
+        auxdata.notifications.enqueue_apprisal(
+            summary = "Connection error. Loading stale models cache.",
+            exception = exc,
+            scribe = scribe )
+        async with open_( file ) as stream:
+            return loads( await stream.read( ) )
+    file.parent.mkdir( exist_ok = True, parents = True )
+    async with open_( file, 'w' ) as stream:
+        await stream.write( dumps( models, indent = 4 ) )
+    return models
+
+
 def invocation_requests_from_canister(
     auxdata: __.CoreGlobals,
     supplements: __.AccretiveDictionary,
