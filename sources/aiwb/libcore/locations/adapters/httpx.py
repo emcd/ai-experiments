@@ -310,7 +310,7 @@ def _inode_from_headers(
     content_type = headers.get( 'Content-Type', '' )
     mimetype, _, params = content_type.partition( ';' )
     charset = None
-    if mimetype.startswith( 'text/' ) and 'charset=' in params:
+    if __.is_textual_mimetype( mimetype ) and 'charset=' in params:
         charset = params.split( 'charset=' )[ -1 ].strip( )
     mimetype = mimetype or None
     mtime = headers.get( 'Last-Modified' )

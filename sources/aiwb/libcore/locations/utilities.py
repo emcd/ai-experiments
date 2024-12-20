@@ -60,10 +60,9 @@ def honor_inode_attributes(
         else: aname = 'mimetype'
     charset = inode.charset
     if not aname and Iattrs.Charset & attributes and not charset:
-        if not mimetype or not mimetype.startswith( 'text/' ): charset = None
-        elif have_content:
-            from chardet import detect
-            charset = detect( content )[ 'encoding' ]
+        if not mimetype: charset = None
+        elif have_content and is_textual_mimetype( mimetype, possible = True ):
+            charset = _detect_charset( content )
         else: aname = 'charset'
     mtime = inode.mtime
     if not aname and Iattrs.Mtime & attributes and not mtime:
@@ -79,3 +78,35 @@ def honor_inode_attributes(
         content_id = content_id,
         mimetype = mimetype, charset = charset,
         mtime = mtime, etime = etime )
+
+
+def is_textual_mimetype( mimetype: str, possible: bool = False ) -> bool:
+    if possible and 'application/octet-stream' == mimetype: return True
+    if mimetype.startswith( 'text/' ): return True
+    if mimetype in (
+        'application/ecmascript',
+        'application/graphql',
+        'application/javascript',
+        'application/json',
+        'application/ld+json',
+        'application/xml',
+        'application/yaml',
+        'application/x-httpd-php',
+        'application/x-javascript',
+        'application/x-latex',
+        'application/x-tex',
+        'application/x-yaml',
+        'image/svg+xml',
+    ): return True
+    return False
+
+
+def _detect_charset( content: bytes ) -> str | None:
+    from chardet import detect
+    charset = detect( content )[ 'encoding' ]
+    if None is charset: return charset
+    if charset.startswith( 'utf' ): return charset
+    # Shake out false positives, like 'ascii' or 'MacRoman'.
+    try: content.decode( 'utf-8' )
+    except UnicodeDecodeError: return charset
+    return 'utf-8'

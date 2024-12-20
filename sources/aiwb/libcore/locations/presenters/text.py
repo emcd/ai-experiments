@@ -56,7 +56,7 @@ class FilePresenter(
         bytes_result = await self.accessor.acquire_content_result(
             attributes = attributes )
         mimetype = bytes_result.inode.mimetype
-        if not mimetype.startswith( 'text/' ):
+        if not __.is_textual_mimetype( mimetype ):
             reason = f"File content is not text. MIME Type: {mimetype!r}"
             raise Error( reason = reason )
         charset = charset or bytes_result.inode.charset
