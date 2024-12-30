@@ -738,6 +738,39 @@ def _refine_native_message(
     return NativeMessageRefinementActions.Retain
 
 
+def _filter_unmatched_tool_uses(
+    messages: list[ AnthropicMessage ]
+) -> list[ AnthropicMessage ]:
+    ''' Filters out tool use blocks that have no matching result. '''
+    tool_result_ids = set( )
+    filtered_messages: list[ AnthropicMessage ] = [ ]
+    for message in reversed( messages ):
+        content = message[ 'content' ]
+        if not isinstance( content, list ):
+            filtered_messages.append( message )
+            continue
+        filtered_blocks = [ ]
+        for block in content:
+            if not isinstance( block, dict ):
+                filtered_blocks.append( block )
+                continue
+            match block.get( 'type' ):
+                case 'tool_result':
+                    if 'tool_use_id' in block:
+                        tool_result_ids.add( block[ 'tool_use_id' ] )
+                    filtered_blocks.append( block )
+                case 'tool_use':
+                    if block.get( 'id' ) in tool_result_ids:
+                        filtered_blocks.append( block )
+                case _:
+                    filtered_blocks.append( block )
+        if filtered_blocks:
+            message_filtered = dict( message )
+            message_filtered[ 'content' ] = filtered_blocks
+            filtered_messages.append( message_filtered )
+    return list( reversed( filtered_messages ) )
+
+
 def _refine_native_messages(
     model: Model,
     messages_pre: list[ AnthropicMessage ],
@@ -745,6 +778,7 @@ def _refine_native_messages(
     ''' Refines sequence of native messages. '''
     anchor = None
     messages: list[ AnthropicMessage ] = [ ]
+    messages_pre = _filter_unmatched_tool_uses( messages_pre )
     for message_pre in messages_pre:
         cursor = dict( message_pre )
         if not anchor:
