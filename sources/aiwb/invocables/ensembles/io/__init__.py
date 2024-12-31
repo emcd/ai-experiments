@@ -31,7 +31,9 @@ from .argschemata import (
     acquire_content_argschema,
     survey_directory_argschema,
     update_content_argschema,
+    update_content_partial_argschema,
 )
+from .differences import write_pieces
 from .operations import list_folder, read, write_file
 
 
@@ -65,6 +67,7 @@ _invocables = (
     ( read, acquire_content_argschema ),
     ( list_folder, survey_directory_argschema ),
     ( write_file, update_content_argschema ),
+    ( write_pieces, update_content_partial_argschema ),
 )
 
 

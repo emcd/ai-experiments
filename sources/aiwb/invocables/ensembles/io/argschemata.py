@@ -20,6 +20,17 @@
 
 ''' Argument schemata for I/O operations. '''
 
+_acquire_content_number_lines_description = '''
+Return dictionary, mapping line number to line content?
+
+When true, content is returned as a dictionary where keys are
+line numbers (1-based) and values are the lines without their
+trailing newlines. This format is designed to aid partial
+content updates.
+
+When false, content is returned as a string, preserving all
+newlines.
+'''
 
 _directory_filter_description = '''
 Filter to apply on directory listing.
@@ -39,6 +50,107 @@ If this flag is set, then it is recommended to also enable filters like
 '@gitignore' and '+vcs' to prevent unnecessary results from being returned.
 '''
 
+_update_content_context_description = '''
+Context for locating where to apply a partial content update.
+
+The before and after contexts help locate where the operation should be
+applied:
+* before: null means beginning of file, otherwise lines that must appear before
+  operation
+* after: null means end of file, otherwise lines that must appear after
+  operation
+* nth_match: Which occurrence to match (1-based, defaults to 1, only needed
+  when identical contexts appear multiple times in the file)
+
+Contexts can be multiline strings. Including more lines in a context will make
+the match more specific. For example:
+* "def example():" matches any function named example
+* "def example():\\n    \"\"\"Example function.\"\"\"" matches only functions
+  with that specific docstring
+
+For INSERT operations:
+* if after context is provided, it must immediately follow before context
+
+For DELETE and REPLACE operations:
+* gap between contexts defines what will be modified
+
+Note: The tool preserves newlines exactly as provided in both contexts and
+content. If you want a trailing newline in your content, you must include it
+explicitly.
+'''
+
+_update_content_partial_content_description = '''
+Content to insert or replace with.
+
+For INSERT and REPLACE operations:
+* Required
+* Must be a string (not a list or other type)
+* Use \\n to separate multiple lines
+* No trailing newline needed unless you want to:
+  - Add a newline at the end of the file
+  - Add extra blank lines after the content
+* Examples:
+  - '    x = 42'         # Inserts/replaces single line
+  - '    x = 42\\n    y = 84'  # Inserts/replaces two lines
+  - '    x = 42\\n'      # Inserts/replaces and adds newline
+* For multiple contiguous insertions, combine into single operation
+* Empty string creates empty line
+
+For DELETE operations:
+* Not used (will be ignored)
+'''
+
+_update_content_partial_end_description = '''
+Last line number of the operation.
+
+For INSERT operations:
+* Not used (will be ignored)
+
+For DELETE and REPLACE operations:
+* Last line to be modified (inclusive)
+* Must be greater than or equal to start line
+* Must be a valid line number (1 through last line)
+* Example: start=1, end=1 affects single line
+'''
+
+_update_content_partial_return_description = '''
+Return entire content after successful update?
+
+When true, includes complete content of file with line numbers after the
+update as part of the success response. This makes it easy to verify the
+changes or use the result in subsequent operations.
+
+When false, only returns basic operation information in success response.
+'''
+
+_update_content_partial_start_description = '''
+First line number of the operation.
+
+For INSERT operations:
+* Specifies the line after which content will be inserted
+* Use 0 to insert at the beginning of the file
+* Content will appear on new lines after the specified line
+* For multiple insertions at same position, combine into single operation
+
+For DELETE and REPLACE operations:
+* First line to be modified
+* Must be a valid line number (1 through last line)
+* When used with end, forms an inclusive range
+'''
+
+_update_content_operation_description = '''
+Type of partial content update operation.
+
+Choices:
+* insert: Insert new content at the specified position
+* delete: Remove content between start and end lines
+* replace: Replace content between start and end lines with new content
+
+Notes:
+* Operations are applied in order of increasing line numbers
+* Multiple operations must not affect overlapping lines
+'''
+
 _update_content_option_description = '''
 File update behavior option.
 
@@ -56,6 +168,11 @@ acquire_content_argschema = {
         'location': {
             'type': 'string',
             'description': 'URL or local filesystem path to be read.'
+        },
+        'number-lines': {
+            'type': 'boolean',
+            'description': _acquire_content_number_lines_description,
+            'default': False,
         },
     },
     'required': [ 'location' ],
@@ -114,4 +231,135 @@ update_content_argschema = {
     },
     # TODO? Require 'options' for OpenAI strict schema.
     'required': [ 'location', 'contents' ],
+}
+
+#update_content_partial_argschema = {
+#    'type': 'object',
+#    'properties': {
+#        'location': {
+#            'type': 'string',
+#            'description': 'URL or local path of the file to be modified.'
+#        },
+#        'operations': {
+#            'type': 'array',
+#            'items': {
+#                'type': 'object',
+#                'properties': {
+#                    'opcode': {
+#                        'type': 'string',
+#                        'enum': ['insert', 'delete', 'replace'],
+#                        'description': _update_content_operation_description
+#                    },
+#                    'context': {
+#                        'type': 'object',
+#                        'properties': {
+#                            'before': {
+#                                'type': ['string', 'null'],
+#                                'description': (
+#'Context that must appear before operation point (null = beginning of file). '
+#'Can be multiline.' ),
+#                            },
+#                            'after': {
+#                                'type': ['string', 'null'],
+#                                'description': (
+#'Context that must appear after operation point (null = end of file). '
+#'Can be multiline.' ),
+#                            },
+#                            'nth_match': {
+#                                'type': 'integer',
+#                                'description': (
+#'Which occurrence to match (1-based, only needed for repeated contexts)' ),
+#                                'minimum': 1,
+#                                'default': 1
+#                            }
+#                        },
+#                        'required': ['before', 'after'],
+#                        'description': _update_content_context_description
+#                    },
+#                    'content': {
+#                        'type': 'string',
+#                        'description': (
+#'Content to insert or replace with (not used for delete operations). '
+#'Include explicit newlines where desired.' ),
+#                    }
+#                },
+#                'required': ['opcode', 'context']
+#            },
+#            'minItems': 1,
+#            'description': 'Sequence of modification operations to apply'
+#        }
+#    },
+#    'required': ['location', 'operations']
+#}
+
+update_content_partial_argschema = {
+    'type': 'object',
+    'properties': {
+        'location': {
+            'type': 'string',
+            'description': 'URL or local path of the file to be modified.'
+        },
+        'operations': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'opcode': {
+                        'type': 'string',
+                        'enum': ['insert', 'delete', 'replace'],
+                        'description': _update_content_operation_description,
+                    },
+                    'start': {
+                        'type': 'integer',
+                        'minimum': 0,
+                        'description':
+                            _update_content_partial_start_description,
+                    },
+                    'end': {
+                        'type': 'integer',
+                        'minimum': 1,
+                        'description':
+                            _update_content_partial_end_description,
+                    },
+                    'content': {
+                        'type': 'string',
+                        'description':
+                            _update_content_partial_content_description,
+                    },
+                    'return-content': {
+                        'type': 'boolean',
+                        'description':
+                            _update_content_partial_return_description,
+                        'default': True
+                    },
+                },
+                'required': ['opcode', 'start'],
+                'allOf': [
+                    {
+                        'if': {
+                            'properties': {
+                                'opcode': {'enum': ['insert', 'replace']}
+                            }
+                        },
+                        'then': {
+                            'required': ['content']
+                        }
+                    },
+                    {
+                        'if': {
+                            'properties': {
+                                'opcode': {'enum': ['delete', 'replace']}
+                            }
+                        },
+                        'then': {
+                            'required': ['start', 'end']
+                        }
+                    }
+                ]
+            },
+            'minItems': 1,
+            'description': 'Sequence of modification operations to apply'
+        }
+    },
+    'required': ['location', 'operations']
 }

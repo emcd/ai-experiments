@@ -20,9 +20,21 @@
 
 ''' Internal imports and utilities for I/O invocables. '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F401,F403,F405
 # pylint: disable=unused-import
 
 
 from ....libcore.locations.qaliases import *
 from ..__ import *
+
+
+async def accessor_from_arguments(
+    arguments: Arguments,
+    species: Optional[ LocationSpecies ] = absent,
+) -> SpecificLocationAccessor:
+    url = Url.from_url( arguments.pop( 'location' ) )
+    adapter = location_adapter_from_url( url )
+    if adapter.is_cache_manager( ): accessor = adapter.produce_cache( )
+    else: accessor = adapter
+    if LocationSpecies.File is species: return accessor.as_file( )
+    return await accessor.as_specific( species = species )

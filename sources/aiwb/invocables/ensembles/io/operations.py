@@ -35,7 +35,7 @@ async def list_folder(
     # TODO? file_size_maximum = arguments.get( 'file_size_maximum', 40000 )
     arguments_ = arguments.copy( )
     # TODO: Validate arguments.
-    try: accessor = await _accessor_from_arguments( arguments_ )
+    try: accessor = await __.accessor_from_arguments( arguments_ )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
@@ -64,12 +64,14 @@ async def read(
     ''' Reads file at URL or filesystem path.
 
         Metadata includes location and MIME type.
-        If the content is text, then it will be presented as a string.
-        Otherwise, the file size will be returned without the content.
+        If the content is text, then it will be presented as a string, by
+        defualt, or else a dictionary, mapping line numbers to content lines,
+        if the line numbering option is enabled. Otherwise, the file size will
+        be returned without the content.
     '''
     arguments_ = arguments.copy( )
     # TODO: Validate arguments.
-    try: accessor = await _accessor_from_arguments( arguments_ )
+    try: accessor = await __.accessor_from_arguments( arguments_ )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
@@ -100,7 +102,7 @@ async def write_file(
     if not isinstance( options, __.AbstractSequence ):
         return { 'error': "Argument 'options' must be a list." }
     try:
-        accessor = await _accessor_from_arguments(
+        accessor = await __.accessor_from_arguments(
             arguments_, species = __.LocationSpecies.File )
     except Exception as exc:
         # TODO? Generate apprisal notification.
@@ -112,18 +114,6 @@ async def write_file(
     #as_bytes = arguments_.pop( 'as_bytes', False )
     #if as_bytes: return await _write_as_bytes( accessor, context, arguments_ )
     return await _write_as_string( accessor, context, arguments_ )
-
-
-async def _accessor_from_arguments(
-    arguments: __.Arguments,
-    species: __.Optional[ __.LocationSpecies ] = __.absent,
-) -> __.SpecificLocationAccessor:
-    url = __.Url.from_url( arguments.pop( 'location' ) )
-    adapter = __.location_adapter_from_url( url )
-    if adapter.is_cache_manager( ): accessor = adapter.produce_cache( )
-    else: accessor = adapter
-    if __.LocationSpecies.File is species: return accessor.as_file( )
-    return await accessor.as_specific( species = species )
 
 
 async def _read_as_bytes(
@@ -153,11 +143,15 @@ async def _read_as_string(
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
+    if arguments.get( 'number-lines', False ):
+        lines = result.content.split( '\n' ) if result.content else [ ]
+        content_ = { i + 1: line for i, line in enumerate( lines ) }
+    else: content_ = result.content
     return {
         'location': str( accessor ),
         'mimetype': result.inode.mimetype,
         'charset': result.inode.charset,
-        'content': result.content,
+        'content': content_,
     }
 
 

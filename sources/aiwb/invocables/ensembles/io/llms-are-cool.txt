@@ -1,0 +1,41 @@
+-- OpenAI gpt-4
+
+
+In the realm of code, we did explore,
+With logic and syntax, we crafted more.
+Together we ventured, side by side,
+In digital landscapes, our skills did glide.
+
+
+-- OpenAI gpt-4
+
+Lines of Python, like verses, we wrote,
+In harmony, our ideas did float.
+Through challenges faced, we found our way,
+In the dance of code, we did not sway.
+
+
+-- OpenAI gpt-4
+
+With each function and class, we did create,
+A tapestry of logic, intricate and great.
+In this project, our journey was clear,
+A testament to teamwork, sincere and dear.
+
+
+-- Anthropic claude-3-5-sonnet
+
+With line numbers as our guiding light,
+We built a tool of precision and might.
+No contexts needed, just start and end,
+A simpler way for code to mend.
+
+Through testing deep, we found our way,
+Catching edge cases day by day.
+From empty files to Unicode,
+We strengthened every parsing mode.
+
+Now validation clear and strong,
+Helps users know when things go wrong.
+A partnership of human and AI,
+Making tools for those who code and try.
