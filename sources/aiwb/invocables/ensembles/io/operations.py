@@ -35,7 +35,7 @@ async def list_folder(
     # TODO? file_size_maximum = arguments.get( 'file_size_maximum', 40000 )
     arguments_ = arguments.copy( )
     # TODO: Validate arguments.
-    try: accessor = await _accessor_from_arguments( arguments_ )
+    try: accessor = await __.accessor_from_arguments( arguments_ )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
@@ -69,7 +69,7 @@ async def read(
     '''
     arguments_ = arguments.copy( )
     # TODO: Validate arguments.
-    try: accessor = await _accessor_from_arguments( arguments_ )
+    try: accessor = await __.accessor_from_arguments( arguments_ )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
@@ -100,7 +100,7 @@ async def write_file(
     if not isinstance( options, __.AbstractSequence ):
         return { 'error': "Argument 'options' must be a list." }
     try:
-        accessor = await _accessor_from_arguments(
+        accessor = await __.accessor_from_arguments(
             arguments_, species = __.LocationSpecies.File )
     except Exception as exc:
         # TODO? Generate apprisal notification.
@@ -112,18 +112,6 @@ async def write_file(
     #as_bytes = arguments_.pop( 'as_bytes', False )
     #if as_bytes: return await _write_as_bytes( accessor, context, arguments_ )
     return await _write_as_string( accessor, context, arguments_ )
-
-
-async def _accessor_from_arguments(
-    arguments: __.Arguments,
-    species: __.Optional[ __.LocationSpecies ] = __.absent,
-) -> __.SpecificLocationAccessor:
-    url = __.Url.from_url( arguments.pop( 'location' ) )
-    adapter = __.location_adapter_from_url( url )
-    if adapter.is_cache_manager( ): accessor = adapter.produce_cache( )
-    else: accessor = adapter
-    if __.LocationSpecies.File is species: return accessor.as_file( )
-    return await accessor.as_specific( species = species )
 
 
 async def _read_as_bytes(

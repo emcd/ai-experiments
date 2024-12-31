@@ -7,6 +7,7 @@ analyze = false
 list_folder = true
 read = true
 write_file = true
+write_pieces = true
 
 [attributes.user-prompt-preference]
 name = 'Recap: Requirements + Code'
