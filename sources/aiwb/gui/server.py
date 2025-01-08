@@ -51,7 +51,7 @@ class Control(
 
     address: str = '127.0.0.1'
     port: int = 0
-    reload: bool = True
+    reload: bool = False
 
     def with_address_and_port( self, address: str, port: int ) -> __.a.Self:
         ''' Returns new instance with mutated address and port. '''
