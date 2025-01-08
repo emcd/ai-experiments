@@ -24,6 +24,9 @@ from __future__ import annotations
 
 from . import __
 
+# TODO: Revisit caching. May need notion of keepalive chat completions
+#       to maintain cache warmth when user is formulating a long response.
+
 
 # TODO: Python 3.12: Use type statement for aliases.
 # TODO? Use typing.TypedDictionary.
@@ -125,7 +128,10 @@ class InvocationsProcessor(
     ) -> __.a.Any:
         # TODO: return type: list[ anthropic.types.ToolParam ]
         tools = [ self.nativize_invocable( invoker ) for invoker in invokers ]
-        if tools: tools[ -1 ][ 'cache_control' ] = { 'type': 'ephemeral' }
+        # Note: Caching of invocables is not worth it in sporadic
+        #       conversational contexts. Only worthwhile when tools are being
+        #       continuously shared by multiple conversational contexts.
+        #if tools: tools[ -1 ][ 'cache_control' ] = { 'type': 'ephemeral' }
         return dict( tools = tools )
 
     def requests_from_canister(
@@ -333,18 +339,25 @@ def _append_user_cache_control_watermarks(
     messages: list[ AnthropicMessage ]
 ) -> list[ AnthropicMessage ]:
     ''' Adds cache control to last two user messages in conversation. '''
-    for i, message in enumerate( reversed( messages ) ):
-        if 1 < i: break
-        if 'user' != message[ 'role' ]: continue
-        content = message[ 'content' ]
-        if isinstance( content, str ):
-            content = [ { 'text': content, 'type': 'text' } ]
-            message[ 'content' ] = content
-        for block in reversed( content ):
-            if block[ 'type' ] not in ( 'text', 'base64' ): continue
-            block[ 'cache_control' ] = { 'type': 'ephemeral' }
-            break
+    # Note: Caching of user messages is not worth it in sporadic
+    #       conversational contexts. Only worthwhile when messages are
+    #       being continuously shared by multiple conversational contexts
+    #       or conversation frequency is higher than once per 5 minutes.
+    #       We could consider a heuristic with tool use detection, since that
+    #       typically indicates higher frequency.
     return messages
+#    for i, message in enumerate( reversed( messages ) ):
+#        if 1 < i: break
+#        if 'user' != message[ 'role' ]: continue
+#        content = message[ 'content' ]
+#        if isinstance( content, str ):
+#            content = [ { 'text': content, 'type': 'text' } ]
+#            message[ 'content' ] = content
+#        for block in reversed( content ):
+#            if block[ 'type' ] not in ( 'text', 'base64' ): continue
+#            block[ 'cache_control' ] = { 'type': 'ephemeral' }
+#            break
+#    return messages
 
 
 def _canister_from_response_element( model, element ):
@@ -394,7 +407,10 @@ def _collect_supervisor_instructions(
     return dict( system = [ {
         'type': 'text',
         'text': '\n\n'.join( instructions ),
-        'cache_control': { 'type': 'ephemeral' },
+        # Note: Caching of supervisor instructions is not worth it in sporadic
+        #       conversational contexts. Only worthwhile when instructions are
+        #       being continuously shared by multiple conversational contexts.
+        #'cache_control': { 'type': 'ephemeral' },
     } ] )
 
 
