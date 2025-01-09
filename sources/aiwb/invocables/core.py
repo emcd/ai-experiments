@@ -32,6 +32,31 @@ ArgumentsModel: __.a.TypeAlias = __.DictionaryProxy[ str, __.a.Any ]
 #ArgumentsModel: __.a.TypeAlias = type[ __.pydantic.BaseModel ]
 
 
+
+class Deduplicator(
+    __.a.Protocol,
+    metaclass = __.ImmutableProtocolClass,
+    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+):
+    ''' Determines if tool invocations can be deduplicated. '''
+
+    invocable_name: str
+    arguments: __.AbstractDictionary[ str, __.a.Any ]
+
+    @classmethod
+    @__.abstract_member_function
+    def provide_invocable_names( selfclass ) -> __.AbstractCollection[ str ]:
+        raise NotImplementedError
+
+    @__.abstract_member_function
+    def is_duplicate(
+        self,
+        invocable_name: str,
+        arguments: __.AbstractDictionary[ str, __.a.Any ],
+    ) -> bool:
+        raise NotImplementedError
+
+
 class Context(
     metaclass = __.ImmutableClass,
     class_decorators = ( __.standard_dataclass, ),
@@ -81,6 +106,7 @@ class Invoker(
     ensemble: Ensemble
     invocable: Invocable
     argschema: ArgumentsModel # TODO: Transform/validate on init.
+    deduplicator_class: __.Nullable[ type[ Deduplicator ] ] = None
 
     @classmethod
     def from_invocable(
@@ -88,6 +114,7 @@ class Invoker(
         ensemble: Ensemble,
         invocable: Invocable,
         argschema: ArgumentsModel,
+        deduplicator_class: __.Nullable[ type[ Deduplicator ] ] = None,
     ) -> __.a.Self:
         ''' Produces invoker from invocable and arguments model.
 
@@ -97,7 +124,8 @@ class Invoker(
             name = invocable.__name__,
             ensemble = ensemble,
             invocable = invocable,
-            argschema = _validate_argschema( argschema ) )
+            argschema = _validate_argschema( argschema ),
+            deduplicator_class = deduplicator_class )
 
     async def __call__(
         self,
@@ -113,6 +141,7 @@ class Invoker(
 Invocable: __.a.TypeAlias = (
     __.a.Callable[
         [ __.Globals, Invoker, Arguments, __.AccretiveNamespace ],
+        #[ Context, Arguments ],
         __.AbstractCoroutine[ __.a.Any, __.a.Any, __.a.Any ] ] )
 
 

@@ -27,6 +27,8 @@
 from __future__ import annotations
 
 from . import __
+from .deduplicators import IoContentDeduplicator, SurveyDirectoryDeduplicator
+
 from .argschemata import (
     acquire_content_argschema,
     survey_directory_argschema,
@@ -60,8 +62,27 @@ class Ensemble(
     async def prepare_invokers(
         self, auxdata: __.Globals
     ) -> __.AbstractDictionary[ str, __.Invoker ]:
-        return self.produce_invokers_from_registry( auxdata, _invocables )
-
+        registry = [
+            (   invocable,
+                argschema,
+                IoContentDeduplicator
+                if invocable.__name__
+                in IoContentDeduplicator.provide_invocable_names( )
+                else SurveyDirectoryDeduplicator
+                if invocable.__name__
+                in SurveyDirectoryDeduplicator.provide_invocable_names( )
+                else None )
+            for invocable, argschema in _invocables ]
+        return __.DictionaryProxy( {
+            invoker.name: invoker for invoker in (
+                __.Invoker.from_invocable(
+                    ensemble = self,
+                    invocable = invocable,
+                    argschema = argschema,
+                    deduplicator_class = deduplicator_class )
+                for invocable, argschema, deduplicator_class in registry
+            )
+        } )
 
 _invocables = (
     ( read, acquire_content_argschema ),

@@ -363,6 +363,7 @@ system_prompts_layout = {
             'toggle_functions_display',
             'checkbox_auto_functions',
             'checkbox_elide_function_history',
+            'checkbox_deduplicate_invocations',
         ],
     ),
     'toggle_functions_display': dict(
@@ -385,6 +386,14 @@ system_prompts_layout = {
         component_arguments = dict(
             name = 'Function History Elision',
             value = False,
+            align = 'center',
+        ),
+    ),
+    'checkbox_deduplicate_invocations': dict(
+        component_class = Checkbox,
+        component_arguments = dict(
+            name = 'Deduplicate Results',
+            value = True,
             align = 'center',
         ),
     ),

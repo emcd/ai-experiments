@@ -28,6 +28,7 @@ from ..__ import *
 from ..core import (
     Arguments,
     Context,
+    Deduplicator,
     Ensemble,
     Invoker,
     preparers,

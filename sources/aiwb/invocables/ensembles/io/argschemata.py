@@ -50,35 +50,6 @@ If this flag is set, then it is recommended to also enable filters like
 '@gitignore' and '+vcs' to prevent unnecessary results from being returned.
 '''
 
-_update_content_context_description = '''
-Context for locating where to apply a partial content update.
-
-The before and after contexts help locate where the operation should be
-applied:
-* before: null means beginning of file, otherwise lines that must appear before
-  operation
-* after: null means end of file, otherwise lines that must appear after
-  operation
-* nth_match: Which occurrence to match (1-based, defaults to 1, only needed
-  when identical contexts appear multiple times in the file)
-
-Contexts can be multiline strings. Including more lines in a context will make
-the match more specific. For example:
-* "def example():" matches any function named example
-* "def example():\\n    \"\"\"Example function.\"\"\"" matches only functions
-  with that specific docstring
-
-For INSERT operations:
-* if after context is provided, it must immediately follow before context
-
-For DELETE and REPLACE operations:
-* gap between contexts defines what will be modified
-
-Note: The tool preserves newlines exactly as provided in both contexts and
-content. If you want a trailing newline in your content, you must include it
-explicitly.
-'''
-
 _update_content_partial_content_description = '''
 Content to insert or replace with.
 
@@ -232,65 +203,6 @@ update_content_argschema = {
     # TODO? Require 'options' for OpenAI strict schema.
     'required': [ 'location', 'contents' ],
 }
-
-#update_content_partial_argschema = {
-#    'type': 'object',
-#    'properties': {
-#        'location': {
-#            'type': 'string',
-#            'description': 'URL or local path of the file to be modified.'
-#        },
-#        'operations': {
-#            'type': 'array',
-#            'items': {
-#                'type': 'object',
-#                'properties': {
-#                    'opcode': {
-#                        'type': 'string',
-#                        'enum': ['insert', 'delete', 'replace'],
-#                        'description': _update_content_operation_description
-#                    },
-#                    'context': {
-#                        'type': 'object',
-#                        'properties': {
-#                            'before': {
-#                                'type': ['string', 'null'],
-#                                'description': (
-#'Context that must appear before operation point (null = beginning of file). '
-#'Can be multiline.' ),
-#                            },
-#                            'after': {
-#                                'type': ['string', 'null'],
-#                                'description': (
-#'Context that must appear after operation point (null = end of file). '
-#'Can be multiline.' ),
-#                            },
-#                            'nth_match': {
-#                                'type': 'integer',
-#                                'description': (
-#'Which occurrence to match (1-based, only needed for repeated contexts)' ),
-#                                'minimum': 1,
-#                                'default': 1
-#                            }
-#                        },
-#                        'required': ['before', 'after'],
-#                        'description': _update_content_context_description
-#                    },
-#                    'content': {
-#                        'type': 'string',
-#                        'description': (
-#'Content to insert or replace with (not used for delete operations). '
-#'Include explicit newlines where desired.' ),
-#                    }
-#                },
-#                'required': ['opcode', 'context']
-#            },
-#            'minItems': 1,
-#            'description': 'Sequence of modification operations to apply'
-#        }
-#    },
-#    'required': ['location', 'operations']
-#}
 
 update_content_partial_argschema = {
     'type': 'object',

@@ -72,9 +72,9 @@ async def chat( components ):
             components, message_components
         ): break
         await use_invocables( components, message_components.index__ )
+        await _deactivate_duplicate_invocations( components )
     await _add_conversation_indicator_if_necessary( components )
     await update_and_save_conversations_index( components )
-    # TODO: Invocation elision.
     if summarization:
         update_messages_post_summarization( components )
         components.toggle_summarize.value = False
@@ -186,11 +186,13 @@ async def _chat( components ):
         messages, special_data, controls, callbacks )
 
 
-def _detect_ai_completion( gui, component = None ):
-    if None is component: component = gui.column_conversation_history[ -1 ]
+def _detect_ai_completion( components, component = None ):
+    if None is component:
+        component = components.column_conversation_history[ -1 ]
     canister = component.gui__.canister__
     match canister.role:
-        case __.MessageRole.Assistant: return True
+        case __.MessageRole.Assistant:
+            return not hasattr( canister.attributes, 'invocation_data' )
         case _: return False
 
 
@@ -231,6 +233,71 @@ async def _check_invocation_requests( components, message_components ) -> bool:
     if not message_components.toggle_active.value: return False
     if not components.checkbox_auto_functions.value: return False
     return True
+
+
+async def _deactivate_duplicate_invocations( components ):
+    if not components.checkbox_deduplicate_invocations.value: return
+    deactivations = await _deduplicate_invocations( components )
+    for index in deactivations:
+        invocation_components = (
+            components.column_conversation_history[ index ].gui__ )
+        invocation_canister = invocation_components.canister__
+        behaviors = getattr( invocation_canister.attributes, 'behaviors', [ ] )
+        behaviors = [
+            behavior for behavior in behaviors if 'active' != behavior ]
+        invocation_canister.attributes.behaviors = behaviors
+        _conversations.assimilate_canister_dto_to_gui( invocation_components )
+
+
+async def _deduplicate_invocations(
+    components
+) -> __.AbstractSequence[ int ]:
+    ''' Deduplicates invocations and their results. '''
+    history = components.column_conversation_history
+    deduplicators = { }  # { tool_name: [ deduplicator_instances ] }
+    deactivations = [ ]
+    for i in range( len( history ) - 1, -1, -1 ): # Process in reverse order
+        message_components = history[ i ].gui__
+        canister = message_components.canister__
+        if not hasattr( canister.attributes, 'invocation_data' ): continue
+        if not message_components.toggle_active.value: continue
+        invocation_data = canister.attributes.invocation_data
+        all_duplicates = True
+        for j, invocation in enumerate( invocation_data ):
+            name = invocation[ 'name' ]
+            if name not in components.auxdata__.invocables.invokers:
+                all_duplicates = False
+                continue
+            invoker = components.auxdata__.invocables.invokers[ name ]
+            if invoker.deduplicator_class is None:
+                all_duplicates = False
+                continue
+            for dedup in deduplicators.get( name, [ ] ):
+                # Check if this call is duplicated by any newer ones.
+                if not dedup.is_duplicate( name, invocation[ 'arguments' ] ):
+                    continue
+                result_index = i + j + 1
+                result_components = history[ result_index ].gui__
+                if (    result_index < len( history )
+                    and result_components.toggle_active.value
+                    and not result_components.toggle_pinned.value
+                ): deactivations.append( result_index )
+                break
+            else:
+                # Not duplicated, so this one might duplicate older ones.
+                dedup = invoker.deduplicator_class(
+                    invocable_name = name,
+                    arguments = invocation[ 'arguments' ] )
+                all_duplicates = False
+                for name_ in (
+                    invoker.deduplicator_class.provide_invocable_names( )
+                ): deduplicators.setdefault( name_, [ ] ).append( dedup )
+        # If all calls would be deduplicated, we can disable invocation.
+        if (    all_duplicates
+            and canister.role is __.MessageRole.Invocation
+            and not message_components.toggle_pinned.value
+        ): deactivations.append( i )
+    return tuple( sorted( deactivations, reverse = True ) )
 
 
 @__.exit_manager

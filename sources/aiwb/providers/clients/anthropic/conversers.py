@@ -456,8 +456,7 @@ def _finalize_response_event_capture_v0( model, indices, event, reactors ):
     match event.content_block.type:
         case 'text': return # Already accumulated.
         case 'tool_use':
-            indices.records[ index ] = dict(
-                tool_use = event.content_block )
+            indices.records[ index ] = dict( tool_use = event.content_block )
 
 
 def _initialize_response_event_capture_v0( model, indices, event, reactors ):
@@ -723,7 +722,7 @@ def _reconstitute_invocations( records ):
         if 'tool_use' not in record: continue
         tool_use = record[ 'tool_use' ]
         name = tool_use.name
-        arguments = tool_use.input
+        arguments = dict( tool_use.input )
         invocations.append( dict( name = name, arguments = arguments ) )
     return invocations
 

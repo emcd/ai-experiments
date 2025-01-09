@@ -202,9 +202,10 @@ async def write_pieces(
         return { 'error': "Argument 'location' is required." }
     if 'operations' not in arguments:
         return { 'error': "Argument 'operations' is required." }
+    arguments_ = arguments.copy( )
     try:
         accessor = await __.accessor_from_arguments(
-            arguments, species = __.LocationSpecies.File )
+            arguments_, species = __.LocationSpecies.File )
     except Exception as exc: return { 'error': str( exc ) }
     try: content, file_length = await acquire_content( accessor )
     except Exception as exc: return { 'error': str( exc ) }
@@ -217,7 +218,7 @@ async def write_pieces(
                 end = op.get( 'end' ),
                 content = op.get( 'content' )
             )
-            for op in arguments[ 'operations' ]
+            for op in arguments_[ 'operations' ]
         ]
         validated_ops = verify_operations( operations, file_length )
     except Exception as exc: return { 'error': str( exc ) }
@@ -229,7 +230,7 @@ async def write_pieces(
         return { 'error': str( exc ) }
     try: result = await update_content( accessor, modified_content )
     except Exception as exc: return { 'error': str( exc ) }
-    if arguments.get( 'return-content', True ):
+    if arguments_.get( 'return-content', True ):
         content_lines = (
             modified_content.split( '\n' ) if modified_content else [ ] )
         result[ 'success' ][ 'content' ] = {
