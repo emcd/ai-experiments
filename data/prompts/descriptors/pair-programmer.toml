@@ -6,7 +6,7 @@ templates = [ 'pair-programmer' ]
 analyze = false
 list_folder = true
 read = true
-write_file = true
+write_file = false
 write_pieces = true
 
 [attributes.user-prompt-preference]

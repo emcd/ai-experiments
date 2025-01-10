@@ -51,7 +51,7 @@ If this flag is set, then it is recommended to also enable filters like
 '''
 
 _update_content_partial_content_description = '''
-Content to insert or replace with.
+Content to insert or with which to replace.
 
 For INSERT and REPLACE operations:
 * Required
@@ -63,19 +63,26 @@ For INSERT and REPLACE operations:
 * Examples:
   - '    x = 42'         # Inserts/replaces single line
   - '    x = 42\\n    y = 84'  # Inserts/replaces two lines
-  - '    x = 42\\n'      # Inserts/replaces and adds newline
-* For multiple contiguous insertions, combine into single operation
+  - '    x = 42\\n'      # Inserts/replaces with *extra* blank line at end
 * Empty string creates empty line
 
 For DELETE operations:
-* Not used (will be ignored)
+* Not used
+
+For REPLACE operations, note that the content does not need to have the same
+number of lines as the selected replacement region. More content lines than the
+replacement region will cause the output file to grow. Fewer content lines than
+the replacement region will cause the output file to shrink.
+
+For multiple contiguous INSERT or REPLACE operations, consider combining into a
+single operation.
 '''
 
 _update_content_partial_end_description = '''
 Last line number of the operation.
 
 For INSERT operations:
-* Not used (will be ignored)
+* Not used
 
 For DELETE and REPLACE operations:
 * Last line to be modified (inclusive)
@@ -98,13 +105,13 @@ _update_content_partial_start_description = '''
 First line number of the operation.
 
 For INSERT operations:
-* Specifies the line after which content will be inserted
+* Specifies the line *after* which content will be inserted
 * Use 0 to insert at the beginning of the file
 * Content will appear on new lines after the specified line
 * For multiple insertions at same position, combine into single operation
 
 For DELETE and REPLACE operations:
-* First line to be modified
+* First line to be modified (inclusive)
 * Must be a valid line number (1 through last line)
 * When used with end, forms an inclusive range
 '''
@@ -119,7 +126,7 @@ Choices:
 
 Notes:
 * Operations are applied in order of increasing line numbers
-* Multiple operations must not affect overlapping lines
+* Multiple operations must not affect overlapping lines; merge as necessary
 '''
 
 _update_content_option_description = '''

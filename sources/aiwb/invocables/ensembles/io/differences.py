@@ -112,22 +112,17 @@ def verify_operations(
 ) -> list[ Operation ]:
     ''' Verifies all operations are valid and non-overlapping. '''
     if not operations: return [ ]
-
-    # Sort operations by start line
     sorted_ops = sorted( operations, key = lambda op: op.start )
-
     # Verify each operation
     for op in sorted_ops:
         if error := produce_operation_error( op, file_length ):
             raise ValueError( error )
-
     # Check for overlaps
     for i, op in enumerate( sorted_ops[ :-1 ] ):
         if assess_overlap( op, sorted_ops[ i + 1 ] ):
             raise ValueError(
                 f"Operation at line {op.start} overlaps with "
                 f"operation at line {sorted_ops[ i + 1 ].start}" )
-
     return sorted_ops
 
 
@@ -136,7 +131,6 @@ def apply_operations(
 ) -> list[ str ]:
     ''' Applies sequence of operations to content lines. '''
     if not operations: return lines
-    # Sort operations in reverse order by start line
     sorted_ops = sorted(
         operations, key = lambda op: op.start, reverse = True )
     result = lines.copy( )
@@ -144,28 +138,28 @@ def apply_operations(
     for op in sorted_ops:
         match op.opcode:
             case DeltaType.INSERT:
-                # Split content into lines
                 new_lines = (
                     [ ] if op.content is None else op.content.split( '\n' ) )
                 # Insert after start line (or at beginning for start=0)
+                # TODO: Hoist start case out of loop.
                 if op.start == 0:
-                    result[ 0:0 ] = new_lines
+                    # TODO: result = new_lines + result
+                    result[ 0 : 0 ] = new_lines
                 else:
-                    result[ op.start:op.start ] = new_lines
+                    result[ op.start : op.start ] = new_lines
             case DeltaType.DELETE:
-                # Remove lines from start through end
-                del result[ op.start - 1:op.end ]
+                del result[ op.start - 1 : op.end ]
             case DeltaType.REPLACE:
-                # Split content into lines
                 new_lines = (
                     [ ] if op.content is None else op.content.split( '\n' ) )
                 # Replace lines from start through end
-                result[ op.start - 1:op.end ] = new_lines
+                result[ op.start - 1 : op.end ] = new_lines
     return result
 
 
 async def acquire_content( accessor: __.FileAccessor ) -> tuple[ str, int ]:
     ''' Acquires content and line count from file. '''
+    if not await accessor.check_existence( ): return '', 0
     presenter = __.text_file_presenter_from_accessor( accessor = accessor )
     result = await presenter.acquire_content_result( )
     content = result.content
@@ -196,6 +190,15 @@ async def write_pieces(
         Operations can insert, delete, or replace content at specific line
         numbers. Each operation specifies the lines to modify and, for insert
         and replace operations, the new content to use.
+
+        Do *not* use this tool on files for which you do not have line numbers.
+        Attempting to guess line numbers is very error-prone and dangerous.
+
+        Do *not* use this tool for more than three consecutive conversation
+        turns. Ask user approval to continue after three consecutive turns of
+        using this tool.
+
+        Think through changes before using this tool.
     '''
     # Validate arguments
     if 'location' not in arguments:
@@ -222,12 +225,10 @@ async def write_pieces(
         ]
         validated_ops = verify_operations( operations, file_length )
     except Exception as exc: return { 'error': str( exc ) }
-    try:
-        lines = content.split( '\n' ) if content else [ ]
-        modified_lines = apply_operations( lines, validated_ops )
-        modified_content = '\n'.join( modified_lines )
-    except Exception as exc:
-        return { 'error': str( exc ) }
+    lines = content.split( '\n' ) if content else [ ]
+    try: modified_lines = apply_operations( lines, validated_ops )
+    except Exception as exc: return { 'error': str( exc ) }
+    modified_content = '\n'.join( modified_lines )
     try: result = await update_content( accessor, modified_content )
     except Exception as exc: return { 'error': str( exc ) }
     if arguments_.get( 'return-content', True ):

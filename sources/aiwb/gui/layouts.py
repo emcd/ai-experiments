@@ -357,6 +357,7 @@ system_prompts_layout = {
         ),
         event_functions = dict( value = 'on_select_invocables' ),
     ),
+    # TODO: Remove 'checkbox_elide_function_history'.
     'row_function_options': dict(
         component_class = Row,
         contains = [
@@ -387,6 +388,7 @@ system_prompts_layout = {
             name = 'Function History Elision',
             value = False,
             align = 'center',
+            visible = False,
         ),
     ),
     'checkbox_deduplicate_invocations': dict(
