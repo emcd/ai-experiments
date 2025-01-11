@@ -732,14 +732,25 @@ async def update_supervisor_prompt( components ):
     components.row_system_prompt.visible = accepts_instructions
 
 
-def update_messages_post_summarization( gui ):
-    ''' Exclude conversation items above summarization request. '''
-    # TODO: Account for documents.
-    for i in range( len( gui.column_conversation_history ) - 2 ):
-        message_gui = gui.column_conversation_history[ i ].gui__
-        if not message_gui.toggle_active.value: continue # already inactive
-        if message_gui.toggle_pinned.value: continue # skip pinned messages
-        message_gui.toggle_active.value = False
+def update_messages_post_summarization( components ):
+    ''' Excludes conversation items above summarization request.
+
+        Skips messages with Document, Invocation, and Result roles,
+        as well as other roles which have invocation data.
+    '''
+    for i in range( len( components.column_conversation_history ) - 2 ):
+        message_components = components.column_conversation_history[ i ].gui__
+        if not message_components.toggle_active.value: continue
+        if message_components.toggle_pinned.value: continue
+        canister = message_components.canister__
+        # TODO: Detect if all invocation data is masked.
+        #       If yes, then deactivate.
+        if hasattr( canister.attributes, 'invocation_data' ): continue
+        match canister.role:
+            case __.MessageRole.Document: continue
+            case __.MessageRole.Invocation: continue
+            case __.MessageRole.Result: continue
+        message_components.toggle_active.value = False
 
 
 async def update_prompt_text( components, species ):
