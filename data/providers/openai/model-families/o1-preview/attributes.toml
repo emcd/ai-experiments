@@ -5,7 +5,7 @@ name-regex = '^o1-preview(-.*)?$'
 replaces-controls = true
 accepts-supervisor-instructions = false
 modalities = [ 'text' ]
-supports-continuous-response = false
+supports-continuous-response = true
 supports-invocations = false
 
 [converser.tokens-limits]

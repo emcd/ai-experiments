@@ -1,0 +1,18 @@
+format-version = 1
+
+[converser]
+name-regex = '^o3-mini(-.*)?$'
+replaces-controls = true
+accepts-supervisor-instructions = true
+modalities = [ 'text' ]
+supports-continuous-response = true
+supports-invocations = true
+
+[converser.special]
+native-supervisor-role = 'developer'
+
+[converser.tokens-limits]
+per-response = 100_000
+total = 200_000
+
+# TODO: Controls with thinking effort.
