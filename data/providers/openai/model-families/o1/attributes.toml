@@ -5,7 +5,7 @@ name-regex = '^o1(-.*)?$'
 replaces-controls = true
 accepts-supervisor-instructions = true
 modalities = [ 'text' ]
-supports-continuous-response = false
+supports-continuous-response = true
 supports-invocations = true
 
 [converser.special]
