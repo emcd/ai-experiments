@@ -57,7 +57,7 @@ factory = 'openai'
 enable = true
 
 [providers.defaults]
-converser-model = [ 'gpt-4.1', 'gpt-4o', 'chatgpt-4o-latest', 'gpt-4o-mini' ]
+converser-model = [ 'gpt-4.1', 'o4-mini', 'gpt-4o', 'chatgpt-4o-latest', 'gpt-4o-mini' ]
 
 #[[providers]]
 #name = 'OpenAI (Azure)'

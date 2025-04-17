@@ -6,7 +6,7 @@ format-version = 1
 # https://platform.openai.com/docs/guides/reasoning/beta-limitations
 
 [converser]
-name-regex = '^(chatgpt-4o(-.*)?|gpt-(3\.5-turbo|4o|4\.(1|5)?)(-.*)?|(o1|o3)(-.*)?)$'
+name-regex = '^(chatgpt-4o(-.*)?|gpt-(3\.5-turbo|4o|4\.(1|5)?)(-.*)?|(o1|o3|o4-mini)(-.*)?)$'
 accepts-supervisor-instructions = true
 modalities = [ 'text', 'pictures' ]
 supports-continuous-response = true
