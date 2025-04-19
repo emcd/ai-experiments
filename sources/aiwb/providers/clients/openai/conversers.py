@@ -207,6 +207,50 @@ class InvocationsProcessor(
         return requests
 
 
+def _filter_unmatched_tool_calls(
+    messages: list[ OpenAiMessage ]
+) -> list[ OpenAiMessage ]:
+    ''' Filters out tool calls which have no matching results. '''
+    tool_result_ids = set( )
+    for message in messages:
+        if message.get( 'role' ) == 'tool' and 'tool_call_id' in message:
+            tool_result_ids.add( message[ 'tool_call_id' ] )
+    filtered_messages: list[ OpenAiMessage ] = [ ]
+    for message in messages:
+        if message.get( 'role' ) == 'assistant' and 'tool_calls' in message:
+            kept = [ ]
+            for call in message[ 'tool_calls' ]:
+                if call.get( 'id' ) in tool_result_ids:
+                    kept.append( call )
+            if not kept: continue
+            message_filtered = dict( message )
+            message_filtered[ 'tool_calls' ] = kept
+            filtered_messages.append( message_filtered )
+        else:
+            filtered_messages.append( message )
+    return filtered_messages
+
+
+def _filter_stray_tool_results(
+    messages: list[ OpenAiMessage ]
+) -> list[ OpenAiMessage ]:
+    ''' Filters out tool call results which have no matching calls. '''
+    valid_call_ids: set[ str ] = set( )
+    for message in messages:
+        if message.get( 'role' ) == 'assistant' and 'tool_calls' in message:
+            for call in message[ 'tool_calls' ]:
+                cid = call.get( 'id' )
+                if cid is None: continue
+                valid_call_ids.add( cid )
+    filtered: list[ OpenAiMessage ] = [ ]
+    for message in messages:
+        if message.get( 'role' ) == 'tool':
+            tid = message.get( 'tool_call_id' )
+            if tid not in valid_call_ids: continue
+        filtered.append( message )
+    return filtered
+
+
 class MessagesProcessor(
     __.MessagesProcessor, class_decorators = ( __.standard_dataclass, )
 ):
@@ -217,9 +261,13 @@ class MessagesProcessor(
     ) -> list[ OpenAiMessage ]:
         messages_pre: list[ OpenAiMessage ] = [ ]
         for canister in canisters:
-            if _decide_exclude_message( self.model, canister ): continue
+            if _decide_exclude_message( self.model, canister ):
+                continue
             message = _nativize_message( self.model, canister )
             messages_pre.append( message )
+        # TODO: Move filters into '_refine_native_messages'.
+        messages_pre = _filter_unmatched_tool_calls( messages_pre )
+        messages_pre = _filter_stray_tool_results( messages_pre )
         return _refine_native_messages( self.model, messages_pre )
 
 
