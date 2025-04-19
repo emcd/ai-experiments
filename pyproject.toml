@@ -21,7 +21,7 @@ dependencies = [
   'importlib-resources', # TODO: Python 3.12: Remove.
   'jsonschema',
   'mako', # TODO? Replace with Jinja2.
-  'panel', # ~= 1.4 (if necessary)
+  'panel~=1.5.5',
   'platformdirs',
   'python-dotenv',
   'python-magic',
@@ -29,7 +29,7 @@ dependencies = [
   'tomli', # TODO: Python 3.11: Remove.
   'tomli-w', # TODO? Remove. Use pretty JSON for machine-generated files.
   'typing-extensions',
-  'tyro~=0.8.14',
+  'tyro',
   'unstructured',
 
   # TODO: Install in environment context as needed.
