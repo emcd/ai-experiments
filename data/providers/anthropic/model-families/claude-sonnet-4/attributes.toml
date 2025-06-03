@@ -7,6 +7,6 @@ name-regex = '^claude-sonnet-4(-.*)?$'
 supports-computer-use = true
 
 [converser.tokens-limits]
-per-response = 8192 # Extended thinking: 64K / 128K (beta).
+per-response = 64_000
 
 # TODO: Define controls for extended thinking.
