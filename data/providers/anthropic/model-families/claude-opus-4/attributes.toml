@@ -1,12 +1,12 @@
 format-version = 1
 
 [converser]
-name-regex = '^claude-3-7-sonnet(-.*)?$'
+name-regex = '^claude-opus-4(-.*)?$'
 
 [converser.special]
 supports-computer-use = true
 
 [converser.tokens-limits]
-per-response = 64_000
+per-response = 32_000
 
 # TODO: Define controls for extended thinking.
