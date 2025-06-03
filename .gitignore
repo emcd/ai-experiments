@@ -1,6 +1,9 @@
-.*.swp
 .env
 .ipynb_checkpoints/
 .tool-versions
+.*.swp
+AGENTS.md
+CLAUDE.md
+CONVENTIONS.md
 __pycache__/
 bug-reports/
