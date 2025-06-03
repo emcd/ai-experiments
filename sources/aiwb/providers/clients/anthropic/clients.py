@@ -143,6 +143,8 @@ class AnthropicClient( Client, class_decorators = ( __.standard_dataclass, ) ):
             'claude-3-5-haiku-latest',
             'claude-3-5-sonnet-latest',
             'claude-3-7-sonnet-latest',
+            'claude-opus-4-0',
+            'claude-sonnet-4-0',
         )
         results = tuple(
             model.id for model
@@ -185,6 +187,10 @@ _model_names = __.DictionaryProxy( {
         'claude-3-5-sonnet-latest',
         'claude-3-7-sonnet-20250219',
         'claude-3-7-sonnet-latest',
+        'claude-opus-4-0',
+        'claude-opus-4-20250514',
+        'claude-sonnet-4-0',
+        'claude-sonnet-4-20250514',
     ),
     ProviderVariants.AwsBedrock: (
         'anthropic.claude-3-haiku-20240307-v1:0',
@@ -194,6 +200,8 @@ _model_names = __.DictionaryProxy( {
         'anthropic.claude-3-5-sonnet-20240620-v1:0',
         'anthropic.claude-3-5-sonnet-20241022-v2:0',
         'anthropic.claude-3-7-sonnet-20250219-v1:0',
+        'anthropic.claude-opus-4-20250514-v1:0',
+        'anthropic.claude-sonnet-4-20250514-v1:0',
     ),
     ProviderVariants.GoogleVertex: (
         'claude-3-haiku@20240307',
@@ -203,6 +211,8 @@ _model_names = __.DictionaryProxy( {
         'claude-3-5-sonnet@20240620',
         'claude-3-5-sonnet-v2@20241022',
         'claude-3-7-sonnet@20250219',
+        'claude-opus-4@20250514',
+        'claude-sonnet-4@20250514',
     ),
 } )
 # TODO? Use for AWS Bedrock and Google Vertex.

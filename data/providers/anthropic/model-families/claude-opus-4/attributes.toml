@@ -1,0 +1,12 @@
+format-version = 1
+
+[converser]
+name-regex = '^claude-opus-4(-.*)?$'
+
+[converser.special]
+supports-computer-use = true
+
+[converser.tokens-limits]
+per-response = 8192 # Extended thinking: 64K / 128K (beta).
+
+# TODO: Define controls for extended thinking.
