@@ -149,6 +149,7 @@ class AnthropicClient( Client, class_decorators = ( __.standard_dataclass, ) ):
         results = tuple(
             model.id for model
             in ( await self.produce_implement( ).models.list( ) ).data
+            if 'model' == model.type )
         return sorted( frozenset( ( *aliases, *results ) ) )
 
 

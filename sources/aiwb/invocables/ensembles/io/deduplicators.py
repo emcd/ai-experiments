@@ -39,7 +39,7 @@
 
     Note: Directory survey operations (``list_folder``) are handled by
     ``SurveyDirectoryDeduplicator``.
-
+'''
 
 from __future__ import annotations
 

@@ -50,6 +50,7 @@ def generate( components, layout, component_name ):
 
 async def populate( components, layout, component_name ):
     ''' Recursively populates components with values. '''
+    from . import updaters as registry
     entry = layout[ component_name ]
     # TODO: Parallel fanout once we can guarantee dependency ordering.
     #populators = (
@@ -72,6 +73,7 @@ async def prepare( auxdata: _state.Globals ):
 
 def register_event_reactors( components, layout, component_name ):
     ''' Recursively registers callbacks for components. '''
+    from . import events as registry
     entry = layout[ component_name ]
     for element_name in entry.get( 'contains', ( ) ):
         register_event_reactors( components, layout, element_name )
