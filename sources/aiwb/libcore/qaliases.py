@@ -24,7 +24,6 @@
 '''
 
 # ruff: noqa: F401,F403
-# pylint: disable=unused-import
 
 
 from .application import Information as ApplicationInformation

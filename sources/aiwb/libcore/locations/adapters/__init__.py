@@ -21,7 +21,6 @@
 ''' Location access adapters. '''
 
 # ruff: noqa: F401
-# pylint: disable=unused-import
 
 
 from . import __

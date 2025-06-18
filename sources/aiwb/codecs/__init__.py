@@ -25,7 +25,6 @@
     in what you send." RIP, Jon. '''
 
 # ruff: noqa: F401,F403
-# pylint: disable=unused-import
 
 
 from . import __

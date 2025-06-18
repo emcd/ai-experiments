@@ -21,7 +21,6 @@
 ''' Common declarations and utilities for controls. '''
 
 # ruff: noqa: F403
-# pylint: disable=unused-import
 
 
 from ..__ import *

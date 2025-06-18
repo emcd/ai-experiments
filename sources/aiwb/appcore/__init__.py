@@ -21,7 +21,6 @@
 ''' Core entities for use with applications. '''
 
 # ruff: noqa: F401,F403,F405
-# pylint: disable=unused-import
 
 
 from . import __

@@ -21,7 +21,6 @@
 ''' Factories, mass applicators, and registries. '''
 
 # ruff: noqa: F401
-# pylint: disable=unused-import
 
 
 from __future__ import annotations

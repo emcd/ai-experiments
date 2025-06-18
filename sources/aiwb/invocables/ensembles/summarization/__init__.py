@@ -21,7 +21,6 @@
 ''' Standard ensemble for summarization. '''
 
 # ruff: noqa: F401,F403
-# pylint: disable=unused-import
 
 
 from __future__ import annotations

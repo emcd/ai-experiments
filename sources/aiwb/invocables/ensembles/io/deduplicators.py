@@ -39,7 +39,6 @@
 
     Note: Directory survey operations (``list_folder``) are handled by
     ``SurveyDirectoryDeduplicator``.
-''' # pylint: disable=line-too-long
 
 
 from __future__ import annotations

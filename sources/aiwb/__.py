@@ -21,7 +21,6 @@
 ''' Base functionality to support AI workbench. '''
 
 # ruff: noqa: F401
-# pylint: disable=unused-import
 
 # TODO: Move immutability machinery to separate package.
 
@@ -252,9 +251,10 @@ class ImmutableProtocol( a.Protocol, metaclass = ImmutableProtocolClass ):
             "of class {class_fqname!r}.".format(
                 name = name,
                 class_fqname = calculate_class_fqname( type( self ) ) ) )
+class Falsifier( metaclass = ImmutableClass ):
 
 
-class Falsifier( metaclass = ImmutableClass ): # pylint: disable=eq-without-hash
+
     ''' Produces falsey objects.
 
         :py:class:`object` produces truthy objects.

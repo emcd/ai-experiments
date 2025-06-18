@@ -22,7 +22,6 @@
 
 
 # Note: Cyclic imports are at runtime after module initialization.
-# pylint: disable=cyclic-import,missing-function-docstring
 
 
 from . import __

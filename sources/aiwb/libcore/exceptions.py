@@ -21,7 +21,6 @@
 ''' Fundamental exceptions. '''
 
 # ruff: noqa: F401,F403
-# pylint: disable=unused-import
 
 
 from .base import Omniexception, SupportError

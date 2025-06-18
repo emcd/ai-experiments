@@ -21,7 +21,6 @@
 ''' Abstractions and common implementations for various kinds of locations. '''
 
 # ruff: noqa: F401,F403
-# pylint: disable=unused-import
 
 
 from . import __

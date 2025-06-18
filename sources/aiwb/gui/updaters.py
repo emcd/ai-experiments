@@ -53,8 +53,6 @@ class UpdateRequest(
 
 # Note: As of this writing, Pylint is only dataclass-aware under certain
 #       circumstances.
-# pylint: disable=no-member,not-async-context-manager,unsubscriptable-object
-# pylint: disable=unsupported-assignment-operation,unsupported-membership-test
 
 class UpdatesDeduplicator(
     metaclass = __.ImmutableClass,
@@ -101,7 +99,6 @@ class UpdatesDeduplicator(
                 await __.gather_async( *(
                     mutex.acquire( )
                     for mutex in self.updates_mutexes.values( ) ) )
-            except Exception as exc: # pylint: disable=broad-exception-caught
                 scribe.error(
                     "Failed to cleanup pending updates. "
                     "Cause: {error}".format(
