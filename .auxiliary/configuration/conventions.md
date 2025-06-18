@@ -80,11 +80,3 @@
   line. The name of the author should be your model name. The email address
   should either be one which you have been designated to use or else a
   commonly-known no-reply address.
-
-## Interactive Collaboration on User Terminal
-(These instructions do not apply when responding to Github issues!)
-
-- Do not commit until you have user approval to do so.
-- Add the `--no-gpg-sign` option to the `git commit` command to suppress GPG
-  passphrase challenges. (These challenges conflict with the alternate console
-  screen, managed by some CLI agents, resulting in an unusable terminal.)
