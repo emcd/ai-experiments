@@ -15,6 +15,7 @@ dependencies = [
   'chardet',
   'exceptiongroup', # TODO: Python 3.11: Remove.
   'fastapi[standard]',
+  'frigid~=4.0',
   'gitignorefile',
   'httpx',
   'icecream',
@@ -340,9 +341,68 @@ python_functions = [ 'test_[0-9][0-9][0-9]_*' ]
 cache_dir = '.auxiliary/caches/pytest'
 
 [tool.ruff]
-builtins = [ 'ic' ]
+builtins = [ 'ic', 'ictr' ]
 cache-dir = '.auxiliary/caches/ruff'
+indent-width = 4
+line-length = 79
 [tool.ruff.lint]
+dummy-variable-rgx = '^_$'
 ignore = [
-  'E701', # Multiple statements on one line
+  'E701',     # multiple-statements-on-one-line-colon
+  'PLC0415',  # import-outside-top-level
+  'SIM300',   # yoda-condition: scarred by assignment expressions, I am
 ]
+select = [ # default: E4, E7, E9, F
+  'A',        # Flake8 builtins rules
+  'B006',     # mutable-argument-default
+  'B008',     # function-call-in-default-argument
+  'B011',     # assert-false
+  'B023',     # function-uses-loop-variable
+  'B904',     # raise-without-from-inside-except
+  'B909',     # PREVIEW: loop-iterator-mutation
+  'C90',      # McCabe complexity rules
+  'E101',     # mixed-spaces-and-tabs
+  'E111',     # PREVIEW: indentation-with-invalid-multiple
+  'E112',     # PREVIEW: no-indented-block
+  'E4',       # Pycodestyle import rules
+  'E501',     # line-too-long
+  'E7',       # Pycodestyle general rules
+  'E9',       # Pycodestyle runtime errors
+  'F',        # Pyflakes rules
+  'PERF',     # Perflint rules
+  'PLC',      # Pylint convention rules
+  'PLE',      # Pylint error rules
+  'PLR',      # Pylint refactor rules
+  'PLW',      # Pylint warning rules
+  'RET',      # Flake8 return rules
+  'RUF',      # Ruff rules
+  'S',        # Flake8 Bandit rules
+  'SIM',      # Flake8 simplify rules
+  'SLF',      # Flake8 self rules
+  'TRY',      # Tryceratops rules
+]
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+[tool.ruff.lint.per-file-ignores]
+'__init__.py' = [
+  'F401',     # unused-import
+  'F403',     # undefined-local-with-import-star
+  'F405',     # undefined-local-with-import-star-usage
+]
+'tests/**/*.py' = [
+  'PLR0124',  # comparison-with-itself
+  'PLR0913',  # too-many-arguments
+  'PLR0915',  # too-many-statements
+  'PLR1704',  # redefined-argument-from-local
+  'PLR2004',  # magic-value-comparison
+  'PLW0129',  # assert-on-string-literal
+  'PLW0603',  # global-statement
+  'PLW0642',  # self-assignment
+  'S101',     # assert
+  'SLF001',   # private-member-accessed
+  'TRY',      # Tryceratops rules
+]
+[tool.ruff.lint.pylint]
+max-locals = 10
+max-public-methods = 10
+max-statements = 30
