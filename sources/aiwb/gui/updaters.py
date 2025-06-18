@@ -99,6 +99,7 @@ class UpdatesDeduplicator(
                 await __.gather_async( *(
                     mutex.acquire( )
                     for mutex in self.updates_mutexes.values( ) ) )
+            except Exception as exc:
                 scribe.error(
                     "Failed to cleanup pending updates. "
                     "Cause: {error}".format(
@@ -179,8 +180,6 @@ class UpdatesDeduplicator(
             if task and not task.done( ): task.cancel( ) # Sanity.
             self.updates_tasks[ request ] = create_task( _execute( ) )
 
-# pylint: enable=no-member,not-async-context-manager,unsubscriptable-object
-# pylint: enable=unsupported-assignment-operation,unsupported-membership-test
 
 
 def add_conversation_indicator( components, descriptor, position = 0 ):
