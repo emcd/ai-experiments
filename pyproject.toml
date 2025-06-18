@@ -122,16 +122,11 @@ python = '3.10'
 [tool.hatch.envs.develop]
 description = ''' Development environment. '''
 dependencies = [
-  'bandit',
   'coverage[toml]',
-  'mypy',
   'pre-commit',
-  'pylint',
   'pyright',
   'pytest',
   'ruff',
-  'semgrep',
-  'tryceratops',
 
   'types-aiofiles',
   'types-jsonschema',
