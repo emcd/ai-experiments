@@ -251,10 +251,9 @@ class ImmutableProtocol( a.Protocol, metaclass = ImmutableProtocolClass ):
             "of class {class_fqname!r}.".format(
                 name = name,
                 class_fqname = calculate_class_fqname( type( self ) ) ) )
+
+
 class Falsifier( metaclass = ImmutableClass ):
-
-
-
     ''' Produces falsey objects.
 
         :py:class:`object` produces truthy objects.
