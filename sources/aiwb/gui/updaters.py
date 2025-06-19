@@ -53,7 +53,7 @@ class UpdateRequest(
 
 # Note: As of this writing, Pylint is only dataclass-aware under certain
 #       circumstances.
-# pylint: disable=no-member,not-async-context-manager,unsubscriptable-object
+# pylint: disable=unsubscriptable-object
 # pylint: disable=unsupported-assignment-operation,unsupported-membership-test
 
 class UpdatesDeduplicator(
@@ -182,7 +182,7 @@ class UpdatesDeduplicator(
             if task and not task.done( ): task.cancel( ) # Sanity.
             self.updates_tasks[ request ] = create_task( _execute( ) )
 
-# pylint: enable=no-member,not-async-context-manager,unsubscriptable-object
+# pylint: enable=unsubscriptable-object
 # pylint: enable=unsupported-assignment-operation,unsupported-membership-test
 
 

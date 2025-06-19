@@ -21,7 +21,6 @@
 ''' Internal imports and utilities for I/O invocables. '''
 
 # ruff: noqa: F401,F403,F405
-# pylint: disable=unused-import
 
 
 from ....libcore.locations.qaliases import *

@@ -21,7 +21,6 @@
 ''' Internal imports and utilities for Holoviz Panel GUI. '''
 
 # ruff: noqa: F403
-# pylint: disable=unused-import,unused-wildcard-import,wildcard-import
 
 
 from ..__ import *

@@ -21,7 +21,6 @@
 ''' Base functionality to support AI workbench. '''
 
 # ruff: noqa: F401
-# pylint: disable=unused-import
 
 # TODO: Move immutability machinery to separate package.
 

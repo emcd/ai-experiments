@@ -21,7 +21,6 @@
 ''' Persistence functions for Holoviz Panel GUI. '''
 
 # Note: Cyclic imports are at runtime and not during module initialization.
-# pylint: disable=cyclic-import
 
 
 from . import __

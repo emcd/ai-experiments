@@ -188,12 +188,12 @@ class Inode(
     species: LocationSpecies
     permissions: Permissions
     supplement: AdapterInode
-    bytes_count: __.Nullable[ int ] = None
-    content_id: __.Nullable[ str ] = None
-    mimetype: __.Nullable[ str ] = None
-    charset: __.Nullable[ str ] = None
-    mtime: __.Nullable[ __.DateTime ] = None # modification time
-    etime: __.Nullable[ __.DateTime ] = None # expiration time
+    bytes_count: __.a.Nullable[ int ] = None
+    content_id: __.a.Nullable[ str ] = None
+    mimetype: __.a.Nullable[ str ] = None
+    charset: __.a.Nullable[ str ] = None
+    mtime: __.a.Nullable[ __.DateTime ] = None # modification time
+    etime: __.a.Nullable[ __.DateTime ] = None # expiration time
 
     def is_directory( self ) -> bool:
         ''' Does inode represent a directory? '''

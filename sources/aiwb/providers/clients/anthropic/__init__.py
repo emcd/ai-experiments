@@ -21,7 +21,6 @@
 ''' Implementation of Anthropic AI provider. '''
 
 # ruff: noqa: F401
-# pylint: disable=unused-import
 
 
 from . import __

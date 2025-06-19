@@ -429,7 +429,7 @@ async def _create_parent_directories(
         raise error_to_raise( reason = str( exc ) ) from exc
 
 
-def _derive_mimetype( species: __.LocationSpecies ) -> __.Nullable[ str ]:
+def _derive_mimetype( species: __.LocationSpecies ) -> __.a.Nullable[ str ]:
     match species:
         case __.LocationSpecies.Blocks:     return 'inode/blockdevice'
         case __.LocationSpecies.Directory:  return 'inode/directory'

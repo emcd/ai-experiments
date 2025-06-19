@@ -21,7 +21,6 @@
 ''' Common utilities for invocables. '''
 
 # ruff: noqa: F401,F403
-# pylint: disable=unused-import
 
 
 from ..__ import *

@@ -21,7 +21,6 @@
 ''' Internal imports and utilities for the library core. '''
 
 # ruff: noqa: F401,F403
-# pylint: disable=unused-import
 
 
 from platformdirs import PlatformDirs

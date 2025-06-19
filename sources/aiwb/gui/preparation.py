@@ -29,7 +29,7 @@ from . import updaters as _updaters
 
 class Manager(
     metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, )
+    class_decorators = ( __.standard_dataclass, ),
 ):
     ''' Manager for GUI components and server. '''
 

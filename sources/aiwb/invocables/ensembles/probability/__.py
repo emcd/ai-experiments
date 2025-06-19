@@ -21,7 +21,6 @@
 ''' Internal imports and utilities for probability invocables. '''
 
 # ruff: noqa: F401,F403
-# pylint: disable=unused-import
 
 
 from ..__ import *

@@ -21,7 +21,6 @@
 ''' Standard annotations across Python versions. '''
 
 # ruff: noqa: F401
-# pylint: disable=unused-import
 
 
 from typing_extensions import (
