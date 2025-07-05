@@ -42,7 +42,7 @@ class Globals(
     ''' Immutable global data. Required by many library functions. '''
 
     application: _application.Information
-    configuration: __.AccretiveDictionary
+    configuration: __.accret.Dictionary
     directories: __.PlatformDirs
     distribution: _distribution.Information
     exits: __.ExitsAsync # TODO? Make accretive.

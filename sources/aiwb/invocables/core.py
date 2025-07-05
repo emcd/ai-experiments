@@ -65,7 +65,7 @@ class Context(
 
     auxdata: __.Globals
     invoker: Invoker
-    supplements: __.AccretiveNamespace
+    supplements: __.accret.Namespace
 
 
 class Ensemble(
@@ -131,7 +131,7 @@ class Invoker(
         self,
         auxdata: __.Globals,
         arguments: Arguments, *,
-        supplements: __.AccretiveDictionary = None,
+        supplements: __.accret.Dictionary = None,
     ) -> __.a.Any:
         context = Context(
             auxdata = auxdata, invoker = self, supplements = supplements )
@@ -140,13 +140,13 @@ class Invoker(
 
 Invocable: __.a.TypeAlias = (
     __.a.Callable[
-        [ __.Globals, Invoker, Arguments, __.AccretiveNamespace ],
+        [ __.Globals, Invoker, Arguments, __.accret.Namespace ],
         #[ Context, Arguments ],
         __.AbstractCoroutine[ __.a.Any, __.a.Any, __.a.Any ] ] )
 
 
 # TODO: Use accretive validator dictionary for preparers registry.
-preparers = __.AccretiveDictionary( )
+preparers = __.accret.Dictionary( )
 
 
 def descriptors_from_configuration(
@@ -177,7 +177,7 @@ async def prepare( auxdata ):
     ensembles = await prepare_ensembles( auxdata )
     invokers = await prepare_invokers( auxdata, ensembles )
     # TODO: Return accessor object instead of accretive namespace.
-    return __.AccretiveNamespace( ensembles = ensembles, invokers = invokers )
+    return __.accret.Namespace( ensembles = ensembles, invokers = invokers )
 
 
 async def prepare_ensembles( auxdata ):
@@ -192,7 +192,7 @@ async def prepare_ensembles( auxdata ):
         for name, descriptor in descriptors.items( ) } )
     results = await __.gather_async(
         *preparers_.values( ), return_exceptions = True )
-    ensembles = __.AccretiveDictionary( )
+    ensembles = __.accret.Dictionary( )
     for name, result in zip( preparers_.keys( ), results ):
         match result:
             case __.g.Error( error ):

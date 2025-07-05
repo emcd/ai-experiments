@@ -29,4 +29,3 @@ from . import probability
 from . import summarization
 
 
-__.reclassify_modules( globals( ) )

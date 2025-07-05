@@ -28,4 +28,3 @@ from . import clients
 from . import preparation
 
 
-__.reclassify_modules( globals( ) )

@@ -20,8 +20,6 @@
 
 ''' GUI with Holoviz Panel widgets. '''
 
-# ruff: noqa: F401,F403,F405
-
 
 from . import __
 from . import cli
@@ -38,5 +36,4 @@ def main( ):
     execute_cli( )
 
 
-__.reclassify_modules( globals( ) )
-__class__ = __.AccretiveModule
+__.immut.reclassify_modules( __name__, recursive = True )

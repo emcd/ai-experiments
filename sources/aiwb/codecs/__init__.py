@@ -31,4 +31,3 @@ from . import __
 from . import json
 
 
-__.reclassify_modules( globals( ) )

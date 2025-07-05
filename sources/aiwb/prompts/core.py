@@ -117,7 +117,7 @@ class Store(
                 distribution_data = distribution.provide_data_location( ),
                 user_data = auxdata.directories.user_data_path,
                 user_home = __.Path.home( ) ) ).expose_implement( )
-        return __.AccretiveDictionary( name = name, location = location )
+        return __.accret.Dictionary( name = name, location = location )
 
     @__.abstract_member_function
     async def acquire_definitions(
@@ -128,7 +128,7 @@ class Store(
 
 
 # TODO: Use accretive validator dictionary for flavors registry.
-flavors = __.AccretiveDictionary( )
+flavors = __.accret.Dictionary( )
 
 
 async def acquire_definitions(
@@ -208,4 +208,4 @@ async def prepare( auxdata ):
     ''' Load prompt stores and definitions. '''
     stores = await acquire_stores( auxdata )
     definitions = await acquire_definitions( auxdata, stores )
-    return __.AccretiveNamespace( stores = stores, definitions = definitions )
+    return __.accret.Namespace( stores = stores, definitions = definitions )

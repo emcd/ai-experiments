@@ -46,7 +46,7 @@ class ClientDefaults(
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
         ''' Produces client defaults instance from descriptor. '''
-        args = __.AccretiveDictionary( )
+        args = __.accret.Dictionary( )
         for arg_name in ( 'converser-model', ):
             arg = descriptor.get( arg_name )
             if None is arg: continue
@@ -79,7 +79,7 @@ class ClientAttributes(
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.AbstractDictionary[ str, __.a.Any ]:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = __.AccretiveDictionary( )
+        args = __.accret.Dictionary( )
         args[ 'defaults' ] = (
             ClientDefaults.from_descriptor(
                 descriptor.get( 'defaults', { } ) ) )
@@ -154,7 +154,7 @@ class ConverserFormatPreferences(
         selfclass,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
-        args = __.AccretiveDictionary( )
+        args = __.accret.Dictionary( )
         for arg_species in ( 'data', 'math', 'text' ):
             match arg_species:
                 case 'data': preferences_class = DataFormatPreferences
@@ -184,7 +184,7 @@ class ConverserTokensLimits(
         selfclass,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
-        args = __.AccretiveDictionary( )
+        args = __.accret.Dictionary( )
         for arg_name in ( 'per-response', 'total' ):
             arg = descriptor.get( arg_name )
             if None is arg: continue
@@ -202,8 +202,8 @@ class InvocationRequest(
     name: str
     arguments: __.AbstractDictionary[ str, __.a.Any ]
     invocation: __.a.Callable # TODO: Full signature.
-    specifics: __.AccretiveDictionary = ( # TODO: Full signature.
-        __.dataclass_declare( default_factory = __.AccretiveDictionary ) )
+    specifics: __.accret.Dictionary = ( # TODO: Full signature.
+        __.dataclass_declare( default_factory = __.accret.Dictionary ) )
 
     @classmethod
     def from_descriptor(

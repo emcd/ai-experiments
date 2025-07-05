@@ -30,4 +30,3 @@ from . import flavors
 from .core import *
 
 
-__.reclassify_modules( globals( ) )

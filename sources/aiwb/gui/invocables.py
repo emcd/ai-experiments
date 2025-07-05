@@ -37,7 +37,7 @@ async def extract_invocation_requests(
     # TODO: Use selected multichoice values instead of all possible.
     invocables = components.auxdata__.invocables
     # TODO: Provide supplements based on specification from invocable.
-    supplements = __.AccretiveDictionary(
+    supplements = __.accret.Dictionary(
         controls = _providers.package_controls( components ) )
     model = await _providers.access_model_selection( components )
     requests = model.invocations_processor.requests_from_canister(

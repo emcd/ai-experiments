@@ -28,4 +28,3 @@ from . import aiofiles
 from . import httpx
 
 
-__.reclassify_modules( globals( ) )

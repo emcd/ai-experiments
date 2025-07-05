@@ -40,4 +40,3 @@ from . import vcs
 # TODO? +mtime<30d
 
 
-__.reclassify_modules( globals( ) )

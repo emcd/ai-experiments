@@ -34,4 +34,3 @@ from . import text
 from .text import FilePresenter as TextFilePresenter
 
 
-__.reclassify_modules( globals( ) )

@@ -94,7 +94,7 @@ def register_event_reactors( components, layout, component_name ):
             **cb_generator( components, layout, component_name ) )
 
 
-_icons_cache = __.AccretiveDictionary( )
+_icons_cache = __.accret.Dictionary( )
 async def _prepare_icons_cache( auxdata ):
     directory = auxdata.distribution.provide_data_location( 'icons' )
     files = tuple( directory.glob( '*.svg' ) )

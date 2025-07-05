@@ -59,4 +59,3 @@ _invocables = (
 )
 
 
-__.reclassify_modules( globals( ) )

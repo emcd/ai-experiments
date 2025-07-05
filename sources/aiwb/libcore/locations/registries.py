@@ -44,10 +44,10 @@ FiltersRegistry: __.a.TypeAlias = (
 
 
 # TODO: Use accretive validator dictionaries for registries.
-adapters_registry: AdaptersRegistry = __.AccretiveDictionary( )
-caches_registry: CachesRegistry = __.AccretiveDictionary( )
-file_presenters_registry: FilePresentersRegistry = __.AccretiveDictionary( )
-filters_registry: FiltersRegistry = __.AccretiveDictionary( )
+adapters_registry: AdaptersRegistry = __.accret.Dictionary( )
+caches_registry: CachesRegistry = __.accret.Dictionary( )
+file_presenters_registry: FilePresentersRegistry = __.accret.Dictionary( )
+filters_registry: FiltersRegistry = __.accret.Dictionary( )
 
 
 def adapter_from_url( url: _core.PossibleUrl ) -> _interfaces.GeneralAdapter:

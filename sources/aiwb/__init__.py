@@ -20,8 +20,6 @@
 
 ''' Support for interactions with generative artificial intelligences. '''
 
-# ruff: noqa: F401,F403
-
 
 __version__ = '1.0a202404271857'
 
@@ -40,5 +38,4 @@ from .controls.qaliases import *
 from .messages.qaliases import *
 
 
-__.reclassify_modules( globals( ) )
-__class__ = __.AccretiveModule
+__.immut.reclassify_modules( __name__, recursive = True )

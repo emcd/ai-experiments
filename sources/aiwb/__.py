@@ -86,17 +86,11 @@ from types import (
 from urllib.parse import urlparse
 from uuid import uuid4
 
-import tyro
+import accretive as         accret
+import frigid as            immut
+import typing_extensions as typx
+import                      tyro
 
-from accretive import reclassify_modules # TODO: Replace with immutable.
-from accretive.qaliases import (
-    AccretiveClass,
-    AccretiveDictionary,
-    AccretiveModule,
-    AccretiveNamespace,
-    AccretiveObject,
-    AccretiveProducerDictionary,
-)
 
 from . import _annotations as a
 from . import _generics as g

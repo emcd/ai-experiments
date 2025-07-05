@@ -34,4 +34,3 @@ from ._api import *
 from .preparation import prepare
 
 
-__.reclassify_modules( globals( ) )

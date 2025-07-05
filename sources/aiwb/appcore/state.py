@@ -31,18 +31,18 @@ class Globals(
     ''' Immutable global data. Required by many application functions. '''
 
     # TODO: Use proper types.
-    invocables: __.AccretiveNamespace
+    invocables: __.accret.Namespace
     prompts: __.DictionaryProxy
-    providers: __.AccretiveDictionary
+    providers: __.accret.Dictionary
     vectorstores: dict
 
     @classmethod
     def from_base(
         selfclass,
         base: __.CoreGlobals, *,
-        invocables: __.AccretiveNamespace,
+        invocables: __.accret.Namespace,
         prompts: __.DictionaryProxy,
-        providers: __.AccretiveDictionary,
+        providers: __.accret.Dictionary,
         vectorstores: dict,
     ) -> __.a.Self:
         ''' Produces DTO from base DTO plus attribute injections. '''

@@ -39,4 +39,3 @@ from .preparation import register_defaults
 from ._api import *
 
 
-__.reclassify_modules( globals( ) )

@@ -10,12 +10,12 @@ license = 'Apache-2.0'
 readme = { 'file' = 'README.md', 'content-type' = 'text/markdown' }
 requires-python = '>= 3.10'
 dependencies = [
-  'accretive~=3.0',
+  'accretive~=4.1',
   'aiofiles',
   'chardet',
   'exceptiongroup', # TODO: Python 3.11: Remove.
   'fastapi[standard]',
-  'frigid~=4.0',
+  'frigid~=4.1',
   'gitignorefile',
   'httpx',
   'icecream',
@@ -141,11 +141,7 @@ dependencies = [
 [tool.hatch.envs.develop.scripts]
 linters = [
   'ruff check --quiet sources documentation tests',
-  'bandit --configfile pyproject.toml --quiet --recursive sources',
-  'tryceratops sources',
-  'mypy sources',
-  'pylint sources documentation tests',
-  'semgrep --config p/python --error --quiet --skip-unknown-extensions sources',
+  # TODO: Pyright
 ]
 packagers = [
   'hatch build',
@@ -181,144 +177,6 @@ disable_error_code = [ 'attr-defined', 'import-untyped', 'name-defined', 'operat
 implicit_optional = true
 pretty = true
 #strict = true
-
-# https://pylint.pycqa.org/en/latest/user_guide/configuration/index.html
-[tool.pylint.main]
-fail-under = 10
-# TODO: jobs: Consider parallelization if output interleaving, dependency
-#             grouping, and similarities detection bugs have been fixed.
-load-plugins = [
-  # 'pylint.extensions.bad_builtin',
-  'pylint.extensions.broad_try_clause',
-  'pylint.extensions.check_elif',
-  'pylint.extensions.code_style',
-  'pylint.extensions.confusing_elif',
-  # 'pylint.extensions.consider_ternary_expression',
-  'pylint.extensions.dict_init_mutate',
-  'pylint.extensions.dunder',
-  'pylint.extensions.eq_without_hash',
-  'pylint.extensions.for_any_all',
-  'pylint.extensions.magic_value',
-  'pylint.extensions.mccabe',
-  'pylint.extensions.no_self_use',
-  'pylint.extensions.overlapping_exceptions',
-  'pylint.extensions.private_import',
-  'pylint.extensions.redefined_loop_name',
-  'pylint.extensions.redefined_variable_type',
-  # 'pylint.extensions.set_membership',
-  # 'pylint.extensions.while_used',
-]
-recursive = false
-suggestion-mode = true
-[tool.pylint.basic]
-class-const-naming-style = 'any'
-class-const-rgx = '([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$'
-const-rgx = '([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$'
-good-names = [ '_', '__' ]
-include-naming-hint = true
-[tool.pylint.broad_try_clause]
-max-try-statements = 2
-[tool.pylint.classes]
-defining-attr-methods = [ '__init__', '__new__', '__post_init__' ]
-exclude-protected = [ ]
-valid-classmethod-first-arg = [ 'selfclass' ]
-valid-metaclass-classmethod-first-arg = [ 'maker', 'factory' ]
-[tool.pylint.design]
-# TODO: exclude-too-few-public-methods: Consider exception hierarchies.
-ignored-parents = [
-  'aiwb.libcore.base.Omnierror',
-  'aiwb.libcore.base.Omniexception',
-  'enum.Enum',
-  'panel.reactive.ReactiveHTML',
-  'panel.template.base.Template',
-  'typing.Protocol',
-]
-max-args = 5
-max-attributes = 7
-max-bool-expr = 3
-max-branches = 12
-max-locals = 10
-max-parents = 3
-max-public-methods = 10
-max-returns = 6
-max-statements = 30
-min-public-methods = 1
-[tool.pylint.exceptions]
-overgeneral-exceptions = [
-  'aiwb.libcore.base.Omnierror',
-  'aiwb.libcore.base.Omniexception',
-  'builtins.BaseException',
-  'builtins.Exception',
-]
-[tool.pylint.format]
-ignore-long-lines = '''^(\s*<?https?://\S+>?|([^'"]*\s+)?#.*)$'''
-max-line-length = 79
-max-module-lines = 800
-single-line-class-stmt = true
-single-line-if-stmt = true
-[tool.pylint.imports]
-allow-wildcard-with-all = false
-# TODO: ext-import-graph
-# TODO: int-import-graph
-[tool.pylint.logging]
-logging-format-style = 'new'
-[tool.pylint.'messages control']
-disable = [
-  'consider-using-assignment-expr',
-  'consider-using-f-string',
-  'duplicate-code',  # TODO: Re-enable after heuristic is fixed.
-  'fixme',
-  'f-string-without-interpolation',
-  'import-outside-toplevel',
-  'logging-format-interpolation',
-  'logging-fstring-interpolation',
-  'multiple-statements',
-  'typevar-name-incorrect-variance',
-  'reimported',
-  'too-few-public-methods',
-  'ungrouped-imports',
-  'use-dict-literal',
-  'wrong-import-order',
-  'wrong-import-position',
-]
-[tool.pylint.refactoring]
-max-nested-blocks = 3
-never-returning-functions = [ 'sys.exit', 'argparse.parse_error' ]
-[tool.pylint.reports]
-msg-template = '{path} {line:3d},{column:2d} [{symbol}] {msg}'
-output-format = 'colorized'
-reports = false
-score = true
-[tool.pylint.similarities]
-ignore-comments = true
-ignore-docstrings = true
-ignore-imports = true
-ignore-signatures = true
-min-similarity-lines = 5
-[tool.pylint.spelling]
-max-spelling-suggestions = 4
-# TODO: spelling-dict
-[tool.pylint.typecheck]
-contextmanager-decorators = [ 'contextlib.contextmanager' ]
-ignored-checks-for-mixins = [
-  'attribute-defined-outside-init',
-  'no-member',
-  'not-async-context-manager',
-  'not-context-manager',
-]
-#ignored-classes = [ 'thread._local', '_thread._local', 'argparse.Namespace' ]
-ignore-mixin-members = false
-missing-member-hint = true
-missing-member-hint-distance = 1
-missing-member-max-choices = 2
-# TODO? mixin-class-rgx
-# TODO: signature-mutators
-[tool.pylint.variables]
-additional-builtins = [ 'ic' ]
-callbacks = [ ]
-dummy-variables-rgx = '''_$'''
-ignored-argument-names = '''_.*'''
-redefining-builtins-modules = [ 'builtins', 'io' ]
 
 [tool.pyright]
 reportPrivateImportUsage = false

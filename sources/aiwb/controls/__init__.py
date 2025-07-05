@@ -27,4 +27,3 @@ from . import __
 from . import core
 
 
-__.reclassify_modules( globals( ) )

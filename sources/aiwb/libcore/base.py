@@ -24,8 +24,7 @@
 from . import __
 
 
-class Omniexception( BaseException, metaclass = __.AccretiveClass ):
-    # TODO: Instance immutability.
+class Omniexception( __.immut.Object, BaseException ):
     ''' Base for all exceptions raised by package API. '''
 
 

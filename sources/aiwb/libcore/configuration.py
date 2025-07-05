@@ -33,7 +33,7 @@ async def acquire(
     distribution: _distribution.Information,
     edits: _dictedits.Edits = ( ),
     file: __.Optional[ _locations.Url ] = __.absent,
-) -> __.AccretiveDictionary:
+) -> __.accret.Dictionary:
     ''' Loads configuration as dictionary. '''
     if __.absent is file:
         from shutil import copyfile
@@ -51,7 +51,7 @@ async def acquire(
         application_name, directories, configuration.get( 'includes', ( ) ) )
     for include in includes: configuration.update( include )
     for edit in edits: edit( configuration )
-    return __.AccretiveDictionary( configuration )
+    return __.accret.Dictionary( configuration )
 
 
 async def _acquire_includes(

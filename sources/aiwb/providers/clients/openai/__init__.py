@@ -29,4 +29,3 @@ from . import conversers
 from . import preparation
 
 
-__.reclassify_modules( globals( ) )

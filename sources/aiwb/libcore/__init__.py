@@ -77,4 +77,3 @@ def main( ):
     execute_cli( )
 
 
-__.reclassify_modules( globals( ) )

@@ -122,9 +122,9 @@ async def cache_acquire_model_names(
 
 def invocation_requests_from_canister(
     auxdata: __.CoreGlobals,
-    supplements: __.AccretiveDictionary,
+    supplements: __.accret.Dictionary,
     canister: __.MessageCanister,
-    invocables: __.AccretiveNamespace,
+    invocables: __.accret.Namespace,
     ignore_invalid_canister: bool = False,
 ) -> _core.InvocationsRequests:
     Error = _exceptions.InvocationFormatError
@@ -137,7 +137,7 @@ def invocation_requests_from_canister(
         raise Error( "Invocations requests is not sequence." )
     # TODO: Construct context at caller.
     invokers = invocables.invokers
-    context = __.AccretiveNamespace(
+    context = __.accret.Namespace(
         auxdata = auxdata, invokers = invokers, supplements = supplements )
     # TODO: Handle errors from construction attempts.
     return tuple(
@@ -146,7 +146,7 @@ def invocation_requests_from_canister(
         for descriptor in descriptors )
 
 
-_models_caches = __.AccretiveDictionary( )
+_models_caches = __.accret.Dictionary( )
 async def memcache_acquire_models(
     auxdata: __.CoreGlobals,
     client: _interfaces.Client,
@@ -156,7 +156,7 @@ async def memcache_acquire_models(
     ''' Caches models in memory, as necessary. '''
     provider_name = client.provider.name
     if provider_name not in _models_caches:
-        _models_caches[ provider_name ] = __.AccretiveDictionary( )
+        _models_caches[ provider_name ] = __.accret.Dictionary( )
     models_by_client = _models_caches[ provider_name ]
     client_name = client.name
     # TODO: Consider cache expiration.
@@ -167,7 +167,7 @@ async def memcache_acquire_models(
                 models_by_genus[ genus ] for genus in genera ) )
     else:
         models_by_client[ client_name ] = (
-            __.AccretiveProducerDictionary( list ) )
+            __.accret.ProducerDictionary( list ) )
     models_by_genus = models_by_client[ client.name ]
     # TODO? async mutex in case of clear-update during access
     return await _memcache_acquire_models(
@@ -176,7 +176,7 @@ async def memcache_acquire_models(
 
 _models_integrators_caches: __.AbstractDictionary[
     str, _core.ModelsIntegratorsByGenusMutable
-] = __.AccretiveDictionary( )
+] = __.accret.Dictionary( )
 async def memcache_acquire_models_integrators(
     auxdata: __.CoreGlobals,
     provider: _interfaces.Provider,

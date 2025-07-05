@@ -28,7 +28,7 @@ from . import interfaces as _interfaces
 
 
 # TODO: Use accretive validator dictionaries for registries.
-preparers_registry = __.AccretiveDictionary( )
+preparers_registry = __.accret.Dictionary( )
 
 
 def access_client_default(

@@ -137,9 +137,9 @@ class InvocationsProcessor(
     def requests_from_canister(
         self,
         auxdata: __.CoreGlobals, *,
-        supplements: __.AccretiveDictionary,
+        supplements: __.accret.Dictionary,
         canister: __.MessageCanister,
-        invocables: __.AccretiveNamespace,
+        invocables: __.accret.Namespace,
         ignore_invalid_canister: bool = False,
     ) -> __.InvocationsRequests:
         # TODO: Provide supplements based on specification from invocable.
@@ -194,7 +194,7 @@ class Model(
     def from_descriptor(
         selfclass, client: __.Client, name: str, descriptor: ModelDescriptor
     ) -> __.a.Self:
-        args = __.AccretiveDictionary( client = client, name = name )
+        args = __.accret.Dictionary( client = client, name = name )
         args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
         return selfclass( **args )
 
@@ -661,10 +661,10 @@ def _prepare_client_arguments(
 
 
 def _process_complete_response_v0( model, response, reactors ):
-    indices = __.AccretiveNamespace(
-        canisters = __.AccretiveDictionary( ),
-        records = __.AccretiveDictionary( ),
-        references = __.AccretiveDictionary( ) )
+    indices = __.accret.Namespace(
+        canisters = __.accret.Dictionary( ),
+        records = __.accret.Dictionary( ),
+        references = __.accret.Dictionary( ) )
     indices.canisters.update( {
         i: _canister_from_response_element( model, element )
         for i, element in enumerate( response.content ) } )
@@ -681,10 +681,10 @@ def _process_complete_response_v0( model, response, reactors ):
 
 
 async def _process_continuous_response_v0( model, response, reactors ):
-    indices = __.AccretiveNamespace(
-        canisters = __.AccretiveDictionary( ),
-        records = __.AccretiveDictionary( ),
-        references = __.AccretiveDictionary( ) )
+    indices = __.accret.Namespace(
+        canisters = __.accret.Dictionary( ),
+        records = __.accret.Dictionary( ),
+        references = __.accret.Dictionary( ) )
     async for event in response:
         #ic( event )
         try:

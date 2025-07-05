@@ -55,11 +55,11 @@ class Definition( _core.Definition ):
             # TODO: Cache result.
             # TODO: Immutable namespaces for fragments and variables.
             definition = self.definition
-            variables = __.AccretiveNamespace( **self.serialize( ) )
+            variables = __.accret.Namespace( **self.serialize( ) )
             templates = tuple(
                 acquire_template( auxdata, template_id )
                 for template_id in self.definition.templates )
-            fragments = __.AccretiveNamespace( **{
+            fragments = __.accret.Namespace( **{
                 name: acquire_fragment( auxdata, filename )
                 for name, filename in definition.fragments.items( ) } )
             # TODO: Additional context, such as current provider and model.

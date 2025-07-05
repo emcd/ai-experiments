@@ -54,7 +54,7 @@ class Information:
     ] = _execution_id
 
     def produce_platform_directories( self ) -> __.PlatformDirs:
-        arguments = __.AccretiveDictionary( dict(
+        arguments = __.accret.Dictionary( dict(
             appname = self.name, ensure_exists = True ) )
         if self.publisher: arguments[ 'appauthor' ] = self.publisher
         if self.version: arguments[ 'version' ] = self.version

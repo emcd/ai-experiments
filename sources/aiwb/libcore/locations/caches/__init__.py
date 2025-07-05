@@ -30,4 +30,3 @@ from . import simple
 # TODO? expiry
 
 
-__.reclassify_modules( globals( ) )

@@ -36,7 +36,7 @@ class Manager(
     components: __.SimpleNamespace
     deduplicator: _updaters.UpdatesDeduplicator
     server: _server.Accessor
-    transformers: __.AccretiveDictionary
+    transformers: __.accret.Dictionary
 
 
 async def prepare(
@@ -65,7 +65,7 @@ async def prepare(
         components = components,
         deduplicator = _updaters.UpdatesDeduplicator( ),
         server = server,
-        transformers = __.AccretiveDictionary( ),
+        transformers = __.accret.Dictionary( ),
     )
     auxdata = _state.Globals.from_base( auxdata_base, gui = manager )
     components.auxdata__ = auxdata # Hack for legacy.

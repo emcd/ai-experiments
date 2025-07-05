@@ -76,7 +76,7 @@ class Client(
         # TODO: Raise error on missing name.
         name = descriptor_.pop( 'name' )
         attributes = _core.ClientAttributes.from_descriptor( descriptor_ )
-        return __.AccretiveDictionary(
+        return __.accret.Dictionary(
             name = name, attributes = attributes, provider = provider )
 
     def __str__( self ) -> str:
@@ -271,9 +271,9 @@ class InvocationsProcessor(
     def requests_from_canister(
         self,
         auxdata: __.CoreGlobals, *,
-        supplements: __.AccretiveDictionary,
+        supplements: __.accret.Dictionary,
         canister: __.MessageCanister,
-        invocables: __.AccretiveNamespace,
+        invocables: __.accret.Namespace,
         ignore_invalid_canister: bool = False,
     ) -> _core.InvocationsRequests:
         ''' Converts invocation requests into invoker coroutines. '''
@@ -368,7 +368,7 @@ class ModelAttributes(
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = __.AccretiveDictionary( )
+        args = __.accret.Dictionary( )
         # TODO: Control descriptors to definitions.
         args[ 'controls' ] = descriptor.get( 'controls', ( ) )
         return args

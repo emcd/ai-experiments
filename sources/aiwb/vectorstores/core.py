@@ -44,7 +44,7 @@ class Factory(
 
 
 # TODO: Use accretive validator dictionary for preparers registry.
-preparers = __.AccretiveDictionary( )
+preparers = __.accret.Dictionary( )
 
 
 def derive_vectorstores_location( auxdata: __.Globals, url: str ) -> __.Path:
@@ -79,20 +79,20 @@ def descriptors_from_configuration(
     return tuple( descriptors )
 
 
-async def prepare( auxdata: __.Globals ) -> __.AccretiveDictionary:
+async def prepare( auxdata: __.Globals ) -> __.accret.Dictionary:
     ''' Prepares clients from configuration and returns futures to them. '''
     factories = await prepare_factories( auxdata )
     return await prepare_clients( auxdata, factories )
 
 
 async def prepare_clients(
-    auxdata: __.Globals, factories: __.AccretiveDictionary
+    auxdata: __.Globals, factories: __.accret.Dictionary
 ):
     ''' Prepares clients from configuration. '''
     # TODO: Return futures for background loading.
     #       https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
     scribe = __.acquire_scribe( __package__ )
-    clients = __.AccretiveDictionary( )
+    clients = __.accret.Dictionary( )
     descriptors = descriptors_from_configuration( auxdata )
     names = tuple( descriptor[ 'name' ] for descriptor in descriptors )
     factories_per_client = tuple(

@@ -32,7 +32,7 @@ class DirectoryManager(
 ):
     ''' Manages conversation and message content directories. '''
 
-    auxdata: __.AccretiveNamespace
+    auxdata: __.accret.Namespace
 
     _mkdir_nomargs_default = __.DictionaryProxy( dict(
         exist_ok = True, parents = True ) )
