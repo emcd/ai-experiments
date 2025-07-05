@@ -289,6 +289,14 @@ class Possessor( __.Enum ):
 class Url( _UrlParts, metaclass = __.ImmutableClass ):
     ''' Tracks URL components separately. Displays as original string. '''
     # TODO: Immutable instance attributes.
+    
+    # Add explicit type annotations for ParseResult fields to fix Tyro compatibility
+    scheme: str
+    netloc: str
+    path: str
+    params: str
+    query: str
+    fragment: str
 
     @classmethod
     def from_url( selfclass, url: PossibleUrl ) -> __.a.Self:
