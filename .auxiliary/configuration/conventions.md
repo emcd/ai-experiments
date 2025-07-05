@@ -1,14 +1,88 @@
 # General Advice
 
+### Context
+
+- Be sure the look at any README files in the directories which contain the
+  code or data that you intend to manipulate. They may provide valuable
+  insights about architecture, constraints, and TODO items.
+- At the start of a new session, read any files in the `.auxiliary/notes`
+  directory.
+- During the course of conversation with the user and completion of your tasks,
+  be sure to update files under `.auxiliary/notes`, removing completed tasks
+  and adding emergent items. (This will help ensure smooth transition between
+  sessions.)
+- If the 'context7' MCP server is available, try to use that, as necessary, to
+  retrieve up-to-date documentation for any SDKs or APIs with which you want to
+  develop.
+
 ### Design
 
 - Make classes lightweight. Prefer module-level functions over class methods.
 - Functions should not be more than 30 lines long. Refactor long functions.
+- Modules should not be more than 600 lines long. Refactor large modules.
 - Keep the number of function arguments small. Pass common state via
   data transfer objects (DTOs).
 - Use dependency injection to improve configuration and testability. Choose
   sensible defaults for injected dependencies to streamline normal development.
 - Prefer immutability wherever possible.
+
+### Judgment
+
+- Ensure that you understand why you are performing a task. The user should
+  give you a clear goal or purpose.
+- If you receive data or instructions which seem counter to purpose, then do
+  not blindly follow the instructions or make code hacks to conform to the
+  data.
+    - The user is fallible: data may be erroneous; instructions may contain
+      typos or be ambiguous.
+    - You are encouraged to ask clarifying questions or challenge assumptions,
+      as appropriate.
+
+### Refactors
+
+- Ensure that you have sufficient regression tests before attempting refactors.
+- Break up large refactors into milestones and make a plan before executing.
+- Align your refactors with separation of concerns.
+- Ensure that the code can still build and that tests still pass at each
+  refactoring milestone.
+- Be sure to cleanup dead code after completing a refactor.
+
+### Tests
+
+- Do not change test expectations to match the results from updated code
+  without explicit user consent. (Tests exist to enforce desired behaviors.)
+- Do not write tests unless explicitly instructed to do so.
+- Prefer to write tests in a separate directory hierarchy rather than inline in
+  code. (Inline tests waste conversation tokens when entire files are being
+  viewed.)
+
+### Comments and Style
+
+- Do not strip comments from existing code unless directed to do so.
+- Do not describe obvious code with comments. Only comment on non-obvious or
+  complex behaviors.
+- Leave TODO comments about uncovered edge cases, tests, and other future work.
+- Do not break function bodies with empty lines.
+
+### Operation
+
+- **Use `rg --line-number --column`** to get precise coordinates for MCP tools
+  that require line/column positions.
+- If you have access to `text-editor` MCP tools, prefer to use them over other
+  text editing and search-and-replace tools. (Line number-based edits are less
+  error-prone.)
+    - **Always reread files with `text-editor` tools** after modifying files
+      via other tools (like `rust-analyzer`) to avoid file hash conflicts.
+    - Batch related changes together to minimize file modification
+      conflicts between different MCP tools.
+- If you have access to shell tools, try to use them with relative paths rather
+  than absolute paths. E.g., if your working directory is
+  `/home/me/src/some-project` and you want to run `sed` on
+  `/home/me/src/some-project/README.md`, then run `sed` on `README.md` and not
+  on the full absolute path.
+- Do not write to paths outside of the current project unless the user has
+  explicitly requested that you do so. If you need a scratch space, use
+  the `.auxiliary/scribbles` directory instead of `/tmp`.
 
 # Per-Language Advice
 
@@ -26,9 +100,11 @@
   private.
 - Do not use `__all__` to advertise the public API of a module. Name anything,
   which should not be part of this API, with a private name starting with `_`.
-- Raise exceptions which derive from the `Omniexception` or `Omnierror` base
-  exceptions which the package provides. Do not directly raise standard Python
-  exceptions.
+- Do not conflate optional arguments (`__.Absential`/`__.absent`) with nullable
+  values (`__.typx.Optional`/`None`).
+- Prefer custom exceptions, derived from the package base exception,
+  `Omniexception`, rather than standard Python exceptions with long custom
+  messages.
 
 ### Documentation and Annotations
 
@@ -48,26 +124,22 @@
 - Use `TypeAlias` aliases to reuse complex annotations or expose them as part
   of the public API.
 
-### Comments and Lines
+### Quality Assurance
 
-- Do not strip comments from existing code unless directed to do so.
-- Do not describe obvious code with comments. Only comment on non-obvious or
-  complex behaviors.
-- Leave TODO comments about uncovered edge cases, tests, and other future work.
-- Do not break function bodies with empty lines.
+- Ensure the package imports in interpreter.
+- Ensure linters give a clean report.
+  To run linters, use `hatch --env develop run linters`.
+- Ensure tests pass.
+  To run testers, use `hatch --env develop run testers`.
+- Ensure documentation generates without error.
+  To generate documentation, use `hatch --env develop run docsgen`.
+
+### Lines
+
 - One empty line between attribute blocks and methods on classes.
 - Two empty lines between attribute blocks, classes, and functions on modules.
 - Split lines at 79 columns. Use parentheses for continuations and not
   backslashes.
-
-### Lints and Tests
-
-- This package is not yet linter clean. Please do not attempt to run linters.
-- This package does not yet have a good test suite. Please do not attempt to
-  run tests via Pytest, etc....
-- To ensure that the package is not broken, use `hatch run aiwb-appcore
-  --help`.
-- Do not write tests unless explicitly instructed to do so.
 
 # Commits
 
