@@ -27,8 +27,8 @@ from . import __
 
 
 class Factory(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Produces clients. '''

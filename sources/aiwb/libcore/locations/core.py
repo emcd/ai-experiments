@@ -46,13 +46,12 @@ class AdapterInode( metaclass = __.ABCFactory ):
 
 
 class AcquireContentResult(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Inode and arbitrary content from acquisition operation. '''
 
     content: __.a.Any
-    inode: Inode
+    inode: 'Inode'
 
 
 class AcquireContentBytesResult(
@@ -125,13 +124,12 @@ class ConflictResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class DirectoryEntry(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Location plus information about it. '''
 
-    inode: Inode
-    url: Url
+    inode: 'Inode'
+    url: 'Url'
 
     def is_directory( self ) -> bool:
         ''' Is entry a directory? '''
@@ -180,20 +178,19 @@ class ImpurityResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class Inode(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, )
+    __.immut.DataclassObject
 ):
     ''' Information about location. '''
 
-    species: LocationSpecies
-    permissions: Permissions
+    species: 'LocationSpecies'
+    permissions: 'Permissions'
     supplement: AdapterInode
-    bytes_count: __.Nullable[ int ] = None
-    content_id: __.Nullable[ str ] = None
-    mimetype: __.Nullable[ str ] = None
-    charset: __.Nullable[ str ] = None
-    mtime: __.Nullable[ __.DateTime ] = None # modification time
-    etime: __.Nullable[ __.DateTime ] = None # expiration time
+    bytes_count: __.a.Nullable[ int ] = None
+    content_id: __.a.Nullable[ str ] = None
+    mimetype: __.a.Nullable[ str ] = None
+    charset: __.a.Nullable[ str ] = None
+    mtime: __.a.Nullable[ __.DateTime ] = None # modification time
+    etime: __.a.Nullable[ __.DateTime ] = None # expiration time
 
     def is_directory( self ) -> bool:
         ''' Does inode represent a directory? '''
@@ -286,7 +283,7 @@ class Possessor( __.Enum ):
     Omnipopulation = 'everyone'
 
 
-class Url( _UrlParts, metaclass = __.ImmutableClass ):
+class Url( _UrlParts, __.immut.Object ):
     ''' Tracks URL components separately. Displays as original string. '''
     # TODO: Immutable instance attributes.
     
@@ -299,7 +296,7 @@ class Url( _UrlParts, metaclass = __.ImmutableClass ):
     fragment: str
 
     @classmethod
-    def from_url( selfclass, url: PossibleUrl ) -> __.a.Self:
+    def from_url( selfclass, url: 'PossibleUrl' ) -> __.a.Self:
         ''' Produces canonical URL instance from URL-like object. '''
         if isinstance( url, __.PathLike ): url = url.__fspath__( )
         if isinstance( url, ( str, bytes ) ): url = __.urlparse( url )

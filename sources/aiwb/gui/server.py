@@ -27,8 +27,7 @@ from . import __
 
 
 class Accessor(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, )
+    __.immut.DataclassObject
 ):
     ''' Accessor for server properties and thread. '''
 
@@ -44,8 +43,7 @@ class Accessor(
 
 
 class Control(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, )
+    __.immut.DataclassObject
 ):
     ''' Binding address and port, etc... for server. '''
 

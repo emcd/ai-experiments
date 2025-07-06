@@ -33,8 +33,7 @@ ProviderVariants = __.a.TypeVar( 'ProviderVariants', covariant = True )
 
 
 class ClientDefaults(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Collection of default values for AI provider. '''
 
@@ -57,8 +56,7 @@ class ClientDefaults(
 
 
 class ClientAttributes(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Common attributes for AI provider clients. '''
 
@@ -87,8 +85,7 @@ class ClientAttributes(
 
 
 class ConversationReactors(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Callbacks for AI provider to correspond with caller. '''
 
@@ -137,8 +134,7 @@ class ConverserModalities( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class ConverserFormatPreferences(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, )
+    __.immut.DataclassObject
 ):
     ''' Preferred formats for converser model requests and responses. '''
 
@@ -170,8 +166,7 @@ class ConverserFormatPreferences(
 
 
 class ConverserTokensLimits(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, )
+    __.immut.DataclassObject
 ):
     ''' Various limits on number of tokens in chat completion. '''
 
@@ -194,8 +189,7 @@ class ConverserTokensLimits(
 
 
 class InvocationRequest(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, )
+    __.immut.DataclassObject
 ):
     ''' Provider-neutral invocation (tool use) request. '''
 
@@ -240,8 +234,7 @@ class ModelIntegrationBehaviors( __.enum.IntFlag ):
 
 
 class ModelsIntegrator(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, )
+    __.immut.DataclassObject
 ):
     ''' Integrates attributes from configuration for matching models. '''
     # TODO: Immutable class attributes.

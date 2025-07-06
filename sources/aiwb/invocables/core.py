@@ -34,8 +34,8 @@ ArgumentsModel: __.a.TypeAlias = __.DictionaryProxy[ str, __.a.Any ]
 
 
 class Deduplicator(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Determines if tool invocations can be deduplicated. '''
@@ -58,19 +58,18 @@ class Deduplicator(
 
 
 class Context(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Context data transfer object. '''
 
     auxdata: __.Globals
-    invoker: Invoker
+    invoker: 'Invoker'
     supplements: __.accret.Namespace
 
 
 class Ensemble(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Ensemble of invokers for related tools. '''
@@ -80,12 +79,12 @@ class Ensemble(
     @__.abstract_member_function
     async def prepare_invokers(
         self, auxdata: __.Globals
-    ) -> __.AbstractDictionary[ str, Invoker ]:
+    ) -> __.AbstractDictionary[ str, 'Invoker' ]:
         raise NotImplementedError
 
     def produce_invokers_from_registry(
         self, auxdata: __.Globals, registry
-    ) -> __.AbstractDictionary[ str, Invoker ]:
+    ) -> __.AbstractDictionary[ str, 'Invoker' ]:
         # TODO: Handle pair-wise iterable or dictionary.
         # TODO: Use standard filter information.
         invokers = (
@@ -97,24 +96,23 @@ class Ensemble(
 
 
 class Invoker(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Calls tool registered to it. '''
 
     name: str
     ensemble: Ensemble
-    invocable: Invocable
+    invocable: 'Invocable'
     argschema: ArgumentsModel # TODO: Transform/validate on init.
-    deduplicator_class: __.Nullable[ type[ Deduplicator ] ] = None
+    deduplicator_class: __.a.Nullable[ type[ Deduplicator ] ] = None
 
     @classmethod
     def from_invocable(
         selfclass,
         ensemble: Ensemble,
-        invocable: Invocable,
+        invocable: 'Invocable',
         argschema: ArgumentsModel,
-        deduplicator_class: __.Nullable[ type[ Deduplicator ] ] = None,
+        deduplicator_class: __.a.Nullable[ type[ Deduplicator ] ] = None,
     ) -> __.a.Self:
         ''' Produces invoker from invocable and arguments model.
 
@@ -140,7 +138,7 @@ class Invoker(
 
 Invocable: __.a.TypeAlias = (
     __.a.Callable[
-        [ __.Globals, Invoker, Arguments, __.accret.Namespace ],
+        [ __.Globals, 'Invoker', Arguments, __.accret.Namespace ],
         #[ Context, Arguments ],
         __.AbstractCoroutine[ __.a.Any, __.a.Any, __.a.Any ] ] )
 
@@ -207,7 +205,7 @@ async def prepare_ensembles( auxdata ):
 async def prepare_invokers(
     auxdata: __.Globals,
     ensembles: __.AbstractDictionary[ str, Ensemble ],
-) -> __.AbstractDictionary[ str, Invoker ]:
+) -> __.AbstractDictionary[ str, 'Invoker' ]:
     ''' Prepares invokers from ensembles. '''
     scribe = __.acquire_scribe( __package__ )
     results = await __.gather_async(

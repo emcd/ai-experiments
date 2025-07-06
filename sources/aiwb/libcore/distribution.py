@@ -26,8 +26,7 @@ from . import locations as _locations
 
 
 class Information(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, )
+    __.immut.DataclassObject
 ):
     ''' Information about a package distribution. '''
 
@@ -71,6 +70,6 @@ class Information(
 
     def provide_data_location_accessor(
         self, *appendages: str
-    ) -> _locations.GeneralAccessor:
+    ) -> '_locations.GeneralAccessor':
         return _locations.adapter_from_url(
             self.provide_data_location( *appendages ) )

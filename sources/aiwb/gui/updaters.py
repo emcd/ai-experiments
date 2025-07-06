@@ -30,8 +30,7 @@ from . import state as _state
 
 
 class UpdateRequest(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Request for update which may be deduplicated. '''
 
@@ -55,8 +54,7 @@ class UpdateRequest(
 #       circumstances.
 
 class UpdatesDeduplicator(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Deduplicates and schedules update requests for performance. '''
 

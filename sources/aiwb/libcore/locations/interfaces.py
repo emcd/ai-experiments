@@ -37,8 +37,8 @@ from . import exceptions as _exceptions
 
 
 class _Common(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Common functionality across all accessors. '''
@@ -115,8 +115,8 @@ class Filter( __.a.Protocol ):
 
 
 class DirectoryOperations(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Standard operations on directories. '''
@@ -124,22 +124,22 @@ class DirectoryOperations(
     @__.abstract_member_function
     async def create_directory(
         self,
-        name: PossibleRelativeLocator,
+        name: 'PossibleRelativeLocator',
         permissions: _core.Permissions | _core.PermissionsTable,
         exist_ok: bool = True,
-        parents: CreateParentsArgument = True,
-    ) -> DirectoryAccessor:
+        parents: 'CreateParentsArgument' = True,
+    ) -> 'DirectoryAccessor':
         ''' Creates directory relative to URL of this accessor. '''
         raise NotImplementedError
 
     @__.abstract_member_function
     async def create_file(
         self,
-        name: PossibleRelativeLocator,
+        name: 'PossibleRelativeLocator',
         permissions: _core.Permissions | _core.PermissionsTable,
         exist_ok: bool = True,
-        parents: CreateParentsArgument = True,
-    ) -> FileAccessor:
+        parents: 'CreateParentsArgument' = True,
+    ) -> 'FileAccessor':
         ''' Creates file relative to URL of this accessor. '''
         raise NotImplementedError
 
@@ -148,7 +148,7 @@ class DirectoryOperations(
     @__.abstract_member_function
     async def delete_directory(
         self,
-        name: PossibleRelativeLocator,
+        name: 'PossibleRelativeLocator',
         absent_ok: bool = True,
         recurse: bool = True,
         safe: bool = True, # TODO? safeties enum
@@ -159,7 +159,7 @@ class DirectoryOperations(
     @__.abstract_member_function
     async def delete_file(
         self,
-        name: PossibleRelativeLocator,
+        name: 'PossibleRelativeLocator',
         absent_ok: bool = True,
         safe: bool = True, # TODO? safeties enum
     ):
@@ -169,8 +169,8 @@ class DirectoryOperations(
 
     @__.abstract_member_function
     def produce_entry_accessor(
-        self, name: PossibleRelativeLocator
-    ) -> GeneralAccessor:
+        self, name: 'PossibleRelativeLocator'
+    ) -> 'GeneralAccessor':
         ''' Derives new accessor relative to URL of this accessor. '''
         raise NotImplementedError
 
@@ -179,7 +179,7 @@ class DirectoryOperations(
         self,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
         filters: __.Optional[
-            __.AbstractIterable[ PossibleFilter ]
+            __.AbstractIterable[ 'PossibleFilter' ]
         ] = __.absent,
         recurse: bool = True,
     ) -> __.AbstractSequence[ _core.DirectoryEntry ]:
@@ -188,8 +188,8 @@ class DirectoryOperations(
 
 
 class FileOperations(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Standard operations on files. '''
@@ -224,14 +224,14 @@ class FileOperations(
 
 
 class GeneralOperations(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Standard operations on locations of indeterminate species. '''
 
     @__.abstract_member_function
-    def as_directory( self ) -> DirectoryAccessor:
+    def as_directory( self ) -> 'DirectoryAccessor':
         ''' Returns directory accessor without sanity checks.
 
             Only use this if you are certain that the entity is a directory.
@@ -239,7 +239,7 @@ class GeneralOperations(
         raise NotImplementedError
 
     @__.abstract_member_function
-    def as_file( self ) -> FileAccessor:
+    def as_file( self ) -> 'FileAccessor':
         ''' Returns file accessor without sanity checks.
 
             Only use this if you are certain that the entity is a file.
@@ -252,7 +252,7 @@ class GeneralOperations(
         force: bool = False,
         pursue_indirection: bool = True,
         species: __.Optional[ _core.LocationSpecies ] = __.absent,
-    ) -> SpecificAccessor:
+    ) -> 'SpecificAccessor':
         ''' Discovers appropriate specific accessor for location. '''
         raise NotImplementedError
 
@@ -295,8 +295,8 @@ class GeneralOperations(
 
 
 class ReconciliationOperations(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Standard operations for cache reconciliation. '''
@@ -385,7 +385,7 @@ class CacheManager(
 
     @classmethod
     @__.abstract_member_function
-    async def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
+    async def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
         ''' Produces cache manager from storage location URL. '''
         raise NotImplementedError
 
@@ -395,7 +395,7 @@ class CacheManager(
         raise NotImplementedError
 
     @__.abstract_member_function
-    def produce_cache( self, adapter: GeneralAdapter ) -> GeneralCache:
+    def produce_cache( self, adapter: 'GeneralAdapter' ) -> 'GeneralCache':
         ''' Produces cache from general location access adapter. '''
         raise NotImplementedError
 
@@ -428,13 +428,13 @@ class GeneralCache(
 
 
 class FilePresenter(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Presenter with standard operations on files. '''
 
-    accessor: FileAccessor
+    accessor: 'FileAccessor'
 
     @__.abstract_member_function
     async def acquire_content( self ) -> __.a.Any:
@@ -467,15 +467,15 @@ class FilePresenter(
 
 # TODO: Python 3.12: type statement for aliases
 
-DirectoryAccessor: __.a.TypeAlias = DirectoryAdapter | DirectoryCache
-FileAccessor: __.a.TypeAlias = FileAdapter | FileCache
-GeneralAccessor: __.a.TypeAlias = GeneralAdapter | GeneralCache
-PossibleFilter: __.a.TypeAlias = bytes | str | Filter
+DirectoryAccessor: __.a.TypeAlias = 'DirectoryAdapter | DirectoryCache'
+FileAccessor: __.a.TypeAlias = 'FileAdapter | FileCache'
+GeneralAccessor: __.a.TypeAlias = 'GeneralAdapter | GeneralCache'
+PossibleFilter: __.a.TypeAlias = 'bytes | str | Filter'
 PossibleRelativeLocator: __.a.TypeAlias = (
     __.PossiblePath | __.AbstractIterable[ __.PossiblePath ] )
-SpecificAccessor: __.a.TypeAlias = DirectoryAccessor | FileAccessor
-SpecificAdapter: __.a.TypeAlias = DirectoryAdapter | FileAdapter
-SpecificCache: __.a.TypeAlias = DirectoryCache | FileCache
+SpecificAccessor: __.a.TypeAlias = 'DirectoryAccessor | FileAccessor'
+SpecificAdapter: __.a.TypeAlias = 'DirectoryAdapter | FileAdapter'
+SpecificCache: __.a.TypeAlias = 'DirectoryCache | FileCache'
 
 CreateParentsArgument: __.a.TypeAlias = __.a.Annotation[
     bool, __.a.Doc( ''' Create parent directories if they do not exist. ''' )

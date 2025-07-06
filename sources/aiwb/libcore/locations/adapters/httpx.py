@@ -146,14 +146,14 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
     def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
         return selfclass( url = __.Url.from_url( url ) )
 
-    def as_directory( self ) -> __.DirectoryAdapter:
+    def as_directory( self ) -> '__.DirectoryAdapter':
         Error = __.partial_function(
             __.LocationAccessorDerivationFailure,
             entity_name = _entity_name, url = self.url )
         reason = "No derivative available for directory."
         raise Error( reason = reason )
 
-    def as_file( self ) -> __.FileAdapter:
+    def as_file( self ) -> '__.FileAdapter':
         return FileAdapter( url = self.url )
 
     async def as_specific(

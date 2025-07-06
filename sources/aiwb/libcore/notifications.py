@@ -25,8 +25,7 @@ from . import __
 
 
 class _NotificationBase(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Common base for notifications. '''
 
@@ -51,8 +50,7 @@ class ErrorNotification(
 
 
 class Queue(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, ),
+    __.immut.DataclassObject
 ):
     ''' Queue for notifications to be consumed by application. '''
 

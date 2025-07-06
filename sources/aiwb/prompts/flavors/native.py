@@ -39,7 +39,7 @@ class Definition( _core.Definition ):
 
         def __init__(
             self,
-            definition: Definition,
+            definition: 'Definition',
             values: __.AbstractDictionary[ str, __.a.Any ] = None
         ):
             super( ).__init__( definition )
@@ -94,7 +94,7 @@ class Store( _core.Store, class_decorators = ( __.standard_dataclass, ) ):
     async def acquire_definitions(
         self,
         auxdata: __.Globals,
-    ) -> __.AbstractDictionary[ str, Definition ]:
+    ) -> __.AbstractDictionary[ str, 'Definition' ]:
         scribe = __.acquire_scribe( __package__ )
         location = self.location
         match location:
@@ -159,7 +159,7 @@ def discover_file_from_stores( auxdata: __.Globals, name: str ) -> __.Path:
     raise FileNotFoundError( f"Could not find prompt {name!r}." )
 
 
-def _deserialize_definition_data( data: str, store: Store ) -> Definition:
+def _deserialize_definition_data( data: str, store: 'Store' ) -> 'Definition':
     ''' Converts definition data into definition. '''
     from tomli import loads
     return Definition.instantiate_descriptor( store, loads( data ) )

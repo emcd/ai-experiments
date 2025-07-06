@@ -162,8 +162,8 @@ class CacheManager( __.CacheManager ):
         pass
 
     def produce_cache(
-        self, source_adapter: __.GeneralAdapter
-    ) -> __.GeneralCache:
+        self, source_adapter: '__.GeneralAdapter'
+    ) -> '__.GeneralCache':
         cache_url = self._calculate_cache_url(
             source_adapter = source_adapter )
         return GeneralCache(
@@ -203,13 +203,13 @@ class GeneralCache( _Common, __.GeneralCache ):
     ''' Simple cache for general location. '''
     # TODO: Immutable instance attributes.
 
-    adapter: __.GeneralAdapter
+    adapter: '__.GeneralAdapter'
 
-    def as_directory( self ) -> __.DirectoryCache:
+    def as_directory( self ) -> '__.DirectoryCache':
         adapter = self.adapter.as_file( )
         return DirectoryCache( adapter = adapter, cache_url = self.cache_url )
 
-    def as_file( self ) -> __.FileCache:
+    def as_file( self ) -> '__.FileCache':
         adapter = self.adapter.as_file( )
         return FileCache( adapter = adapter, cache_url = self.cache_url )
 
@@ -218,7 +218,7 @@ class GeneralCache( _Common, __.GeneralCache ):
         force: bool = False,
         pursue_indirection: bool = True,
         species: __.Optional[ __.LocationSpecies ] = __.absent,
-    ) -> __.SpecificCache:
+    ) -> '__.SpecificCache':
         Error = __.partial_function(
             __.LocationAccessorDerivationFailure,
             entity_name = _entity_name, url = self.cache_url )
@@ -438,7 +438,7 @@ class FileCache( _Common, __.FileCache ):
             await cache_adapter.update_content( acquisition.content )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
 
-    async def _create_cache_file_if_absent( self ) -> __.FileAdapter:
+    async def _create_cache_file_if_absent( self ) -> '__.FileAdapter':
         path = __.Path( self.cache_url.path )
         parent_url = self.cache_url.with_path( path.parent )
         parent_adapter = __.adapter_from_url( parent_url )

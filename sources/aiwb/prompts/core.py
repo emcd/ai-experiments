@@ -27,21 +27,21 @@ from . import __
 
 
 class Definition(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Definition of prompt. Produces prompt instances. '''
     # TODO: Immutability of instances.
 
     name: str
-    store: Store
+    store: 'Store'
 
     __slots__ = ( 'name', 'store', )
 
     class Instance(
-        __.a.Protocol,
-        metaclass = __.ImmutableProtocolClass,
+        __.immut.Protocol,
+    __.a.Protocol,
         class_decorators = ( __.a.runtime_checkable, ),
     ):
         ''' Renderable instance of prompt. '''
@@ -49,9 +49,9 @@ class Definition(
 
         __slots__ = ( 'definition', )
 
-        definition: Definition
+        definition: 'Definition'
 
-        def __init__( self, definition: Definition ):
+        def __init__( self, definition: 'Definition' ):
             self.definition = definition
 
         def render( self, auxdata: __.Globals ) -> str:
@@ -65,12 +65,12 @@ class Definition(
     @classmethod
     def instantiate_descriptor(
         selfclass,
-        store: Store,
+        store: 'Store',
         descriptor: __.AbstractDictionary[ str, __.a.Any ]
     ):
         return selfclass( store, **descriptor )
 
-    def __init__( self, store: Store, name: str ):
+    def __init__( self, store: 'Store', name: str ):
         self.name = name
         self.store = store
 
@@ -84,8 +84,8 @@ class Definition(
 
 
 class Store(
+    __.immut.Protocol,
     __.a.Protocol,
-    metaclass = __.ImmutableProtocolClass,
     class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Record for prompt store. '''
@@ -123,7 +123,7 @@ class Store(
     async def acquire_definitions(
         self,
         auxdata: __.Globals,
-    ) -> __.AbstractDictionary[ str, Definition ]:
+    ) -> __.AbstractDictionary[ str, 'Definition' ]:
         raise NotImplementedError
 
 
@@ -133,7 +133,7 @@ flavors = __.accret.Dictionary( )
 
 async def acquire_definitions(
     auxdata: __.Globals,
-    stores: __.AbstractDictionary[ str, Store ],
+    stores: __.AbstractDictionary[ str, 'Store' ],
 ) -> __.AbstractDictionary[ str, Definition ]:
     ''' Loads prompt definitions from stores. '''
     scribe = __.acquire_scribe( __package__ )
@@ -155,7 +155,7 @@ async def acquire_definitions(
 
 async def acquire_stores(
     auxdata: __.Globals,
-) -> __.AbstractDictionary[ str, Store ]:
+) -> __.AbstractDictionary[ str, 'Store' ]:
     ''' Loads configured promptstores. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = descriptors_from_configuration( auxdata )

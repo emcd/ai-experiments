@@ -570,7 +570,7 @@ class CompactSelector( ReactiveHTML ):
 
 
 class ConversationDescriptor(
-    metaclass = __.ImmutableClass, class_decorators = ( __.dataclass, )
+    __.immut.DataclassObjectMutable
 ):
 
     identity: str = (

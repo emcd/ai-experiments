@@ -33,14 +33,14 @@ from . import interfaces as _interfaces
 
 # TODO: Python 3.12: type statement for aliases
 AdaptersRegistry: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, type[ _interfaces.GeneralAdapter ] ] )
+    __.AbstractDictionary[ str, type[ '_interfaces.GeneralAdapter' ] ] )
 CachesRegistry: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, type[ _interfaces.CacheManager ] ] )
+    __.AbstractDictionary[ str, type[ '_interfaces.CacheManager' ] ] )
 FilePresentersRegistry: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, type[ _interfaces.FilePresenter ] ] )
+    __.AbstractDictionary[ str, type[ '_interfaces.FilePresenter' ] ] )
 # TODO: Content filters versus dirent filters.
 FiltersRegistry: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, type[ _interfaces.Filter ] ] )
+    __.AbstractDictionary[ str, type[ '_interfaces.Filter' ] ] )
 
 
 # TODO: Use accretive validator dictionaries for registries.
@@ -50,7 +50,7 @@ file_presenters_registry: FilePresentersRegistry = __.accret.Dictionary( )
 filters_registry: FiltersRegistry = __.accret.Dictionary( )
 
 
-def adapter_from_url( url: _core.PossibleUrl ) -> _interfaces.GeneralAdapter:
+def adapter_from_url( url: _core.PossibleUrl ) -> '_interfaces.GeneralAdapter':
     ''' Produces location access adapter from URL. '''
     url = _core.Url.from_url( url )
     scheme = url.scheme
@@ -62,7 +62,7 @@ def adapter_from_url( url: _core.PossibleUrl ) -> _interfaces.GeneralAdapter:
 
 async def apply_filters(
     dirent: _core.DirectoryEntry,
-    filters: __.AbstractIterable[ _interfaces.Filter ],
+    filters: __.AbstractIterable[ '_interfaces.Filter' ],
 ) -> bool:
     ''' Applies iterable of filters to directory entry. '''
     for filter_ in filters:
@@ -72,8 +72,8 @@ async def apply_filters(
 
 def cache_from_url(
     url: _core.PossibleUrl,
-    manager: __.Optional[ _interfaces.CacheManager ] = __.absent,
-) -> _interfaces.GeneralCache:
+    manager: __.Optional[ '_interfaces.CacheManager' ] = __.absent,
+) -> '_interfaces.GeneralCache':
     ''' Produces cache from URL and cache manager. '''
     adapter = adapter_from_url( url = url )
     if adapter.is_cache_manager( ):
@@ -90,22 +90,22 @@ def cache_from_url(
 
 def directory_adapter_from_url(
     url: _core.PossibleUrl
-) -> _interfaces.DirectoryAdapter:
+) -> '_interfaces.DirectoryAdapter':
     ''' Produces directory access adapter from URL. '''
     return adapter_from_url( url ).as_directory( )
 
 
 def file_adapter_from_url(
     url: _core.PossibleUrl
-) -> _interfaces.FileAdapter:
+) -> '_interfaces.FileAdapter':
     ''' Produces file access adapter from URL. '''
     return adapter_from_url( url ).as_file( )
 
 
 async def file_presenter_from_accessor(
-    accessor: _interfaces.FileAccessor,
+    accessor: '_interfaces.FileAccessor',
     mimetype: __.Optional[ str ] = __.absent,
-) -> _interfaces.FileAccessor | _interfaces.FilePresenter:
+) -> '_interfaces.FileAccessor' | '_interfaces.FilePresenter':
     ''' Produces file content presenter from accessor, if possible.
 
         If no registered MIME type, then returns bare file accessor.
@@ -125,7 +125,7 @@ async def file_presenter_from_accessor(
 async def file_presenter_from_url(
     url: _core.PossibleUrl,
     mimetype: __.Optional[ str ] = __.absent,
-) -> _interfaces.FileAccessor | _interfaces.FilePresenter:
+) -> '_interfaces.FileAccessor' | '_interfaces.FilePresenter':
     ''' Produces file content presenter from URL, if possible.
 
         If no registered MIME type, then returns bare file accessor.
@@ -135,11 +135,11 @@ async def file_presenter_from_url(
 
 
 def text_file_presenter_from_accessor(
-    accessor: _interfaces.FileAccessor,
+    accessor: '_interfaces.FileAccessor',
     charset: __.Optional[ str ] = __.absent,
     charset_errors: str = 'strict',
     newline: __.Optional[ str ] = __.absent,
-) -> _interfaces.FilePresenter:
+) -> '_interfaces.FilePresenter':
     ''' Produces text file content presenter from accessor. '''
     charset_ = None if __.absent is charset else charset
     newline_ = None if __.absent is newline else newline
@@ -155,7 +155,7 @@ def text_file_presenter_from_url(
     charset: __.Optional[ str ] = __.absent,
     charset_errors: str = 'strict',
     newline: __.Optional[ str ] = __.absent,
-) -> _interfaces.FilePresenter:
+) -> '_interfaces.FilePresenter':
     ''' Produces text file content presenter from URL. '''
     adapter = adapter_from_url( url ).as_file( )
     return text_file_presenter_from_accessor(
@@ -166,8 +166,8 @@ def text_file_presenter_from_url(
 
 
 def filters_from_specifiers(
-    filters: __.AbstractIterable[ _interfaces.PossibleFilter ]
-) -> __.AbstractSequence[ _interfaces.Filter ]:
+    filters: __.AbstractIterable[ '_interfaces.PossibleFilter' ]
+) -> __.AbstractSequence[ '_interfaces.Filter' ]:
     ''' Converts iterable of possible filters into filters. '''
     filters_ = [ ]
     for filter_ in filters:

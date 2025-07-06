@@ -28,8 +28,7 @@ from . import updaters as _updaters
 
 
 class Manager(
-    metaclass = __.ImmutableClass,
-    class_decorators = ( __.standard_dataclass, )
+    __.immut.DataclassObject
 ):
     ''' Manager for GUI components and server. '''
 
