@@ -283,11 +283,9 @@ class Possessor( __.Enum ):
     Omnipopulation = 'everyone'
 
 
-class Url( _UrlParts, __.immut.Object ):
+class Url( _UrlParts, metaclass = __.immut.Class ):
     ''' Tracks URL components separately. Displays as original string. '''
-    # TODO: Immutable instance attributes.
-    
-    # Add explicit type annotations for ParseResult fields to fix Tyro compatibility
+
     scheme: str
     netloc: str
     path: str

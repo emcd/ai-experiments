@@ -41,7 +41,7 @@ class Cli( __.ApplicationCli ):
             __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
         ],
         __.a.Annotation[
-            ExecuteServerCommand,
+            'ExecuteServerCommand',
             __.tyro.conf.subcommand( 'execute', prefix_name = False ),
         ],
     ]

@@ -32,7 +32,7 @@ class Accessor(
     ''' Accessor for server properties and thread. '''
 
     components: __.SimpleNamespace
-    control: Control
+    control: 'Control'
 
     async def execute( self, auxdata: __.ApiServerGlobals ):
         ''' Runs server in thread. '''

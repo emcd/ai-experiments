@@ -32,7 +32,7 @@ class Accessor(
     ''' Accessor for server properties and thread. '''
 
     application: __.FastAPI
-    control: Control
+    control: 'Control'
     server: __.UvicornServer
     thread: __.Thread
 
