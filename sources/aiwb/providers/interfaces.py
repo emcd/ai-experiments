@@ -31,8 +31,8 @@ ModelDescriptor = __.a.TypeVar( 'ModelDescriptor' ) # TODO? Typed dictionary.
 
 
 class Client(
-    __.a.Protocol[ _core.ClientImplement, _core.ProviderVariants ],
     __.immut.Protocol,
+    __.a.Protocol[ _core.ClientImplement, _core.ProviderVariants ],
     class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Interacts with AI provider. '''
@@ -42,7 +42,7 @@ class Client(
 
     name: str
     attributes: _core.ClientAttributes
-    provider: Provider
+    provider: 'Provider'
 
     @classmethod
     @__.abstract_member_function
@@ -58,7 +58,7 @@ class Client(
     async def from_descriptor(
         selfclass,
         auxdata: __.CoreGlobals,
-        provider: Provider,
+        provider: 'Provider',
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
         ''' Produces client from descriptor dictionary. '''
@@ -68,7 +68,7 @@ class Client(
     def init_args_from_descriptor(
         selfclass,
         auxdata: __.CoreGlobals,
-        provider: Provider,
+        provider: 'Provider',
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
@@ -87,7 +87,7 @@ class Client(
         auxdata: __.CoreGlobals,
         genus: _core.ModelGenera,
         name: str,
-    ) -> Model:
+    ) -> 'Model':
         ''' Returns named model available from provider, if it exists. '''
         try:
             return next(
@@ -104,7 +104,7 @@ class Client(
         self,
         auxdata: __.CoreGlobals,
         genus: _core.ModelGenera,
-    ) -> Model:
+    ) -> 'Model':
         ''' Returns default model available from provider, if it exists. '''
         defaults = getattr( self.attributes.defaults, f"{genus.value}_model" )
         models = await self.survey_models( auxdata = auxdata, genus = genus )
@@ -133,7 +133,7 @@ class Client(
         genus: _core.ModelGenera,
         name: str,
         descriptor: ModelDescriptor,
-    ) -> Model:
+    ) -> 'Model':
         ''' Produces model from descriptor. '''
         raise NotImplementedError
 
@@ -142,7 +142,7 @@ class Client(
         self,
         auxdata: __.CoreGlobals,
         genus: __.Optional[ _core.ModelGenera ] = __.absent,
-    ) -> __.AbstractSequence[ Model ]:
+    ) -> __.AbstractSequence[ 'Model' ]:
         ''' Returns models available from provider.
 
             Accepts optional model genus as filter. If not supplied, then
@@ -158,13 +158,13 @@ class Client(
 
 
 class ControlsProcessor(
-    __.a.Protocol[ _core.NativeControls ],
     __.immut.Protocol,
+    __.a.Protocol[ _core.NativeControls ],
     class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Handles model controls. '''
 
-    model: Model
+    model: 'Model'
 
     @property
     def controls( self ) -> __.AbstractSequence[ __.Control ]:
@@ -195,7 +195,7 @@ class ConversationTokenizer(
 ):
     ''' Tokenizes conversation or piece of text for counting. '''
 
-    model: ConverserModel
+    model: 'ConverserModel'
 
     # TODO: count_conversation_tokens
 
@@ -245,7 +245,7 @@ class InvocationsProcessor(
 ):
     ''' Handles everything related to invocations. '''
 
-    model: Model
+    model: 'Model'
 
     @__.abstract_member_function
     async def __call__(
@@ -282,13 +282,13 @@ class InvocationsProcessor(
 
 
 class MessagesProcessor(
-    __.a.Protocol[ _core.NativeMessages ],
     __.immut.Protocol,
+    __.a.Protocol[ _core.NativeMessages ],
     class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
 ):
     ''' Handles everything related to messages. '''
 
-    model: Model
+    model: 'Model'
 
     # TODO: nativize_messages
 
@@ -314,9 +314,9 @@ class Model(
 
     # TODO? Move client and name to ModelAddress class.
     #       Subclass from ModelAddress class.
-    client: Client
+    client: 'Client'
     name: str
-    attributes: ModelAttributes
+    attributes: 'ModelAttributes'
 
     def __str__( self ) -> str:
         return f"{self.client} model {self.name!r}"
@@ -325,7 +325,7 @@ class Model(
     @__.abstract_member_function
     def from_descriptor(
         selfclass,
-        client: Client,
+        client: 'Client',
         name: str,
         descriptor: __.AbstractDictionary[ str, __.a.Any ],
     ) -> __.a.Self:
@@ -334,12 +334,12 @@ class Model(
 
     @property
     @__.abstract_member_function
-    def controls_processor( self ) -> ControlsProcessor:
+    def controls_processor( self ) -> 'ControlsProcessor':
         ''' Controls processor for model. '''
         raise NotImplementedError
 
     @property
-    def provider( self ) -> Provider:
+    def provider( self ) -> 'Provider':
         ''' Provider for model. '''
         return self.client.provider
 
@@ -382,25 +382,25 @@ class ConverserModel(
 
     @property
     @__.abstract_member_function
-    def invocations_processor( self ) -> InvocationsProcessor:
+    def invocations_processor( self ) -> 'InvocationsProcessor':
         ''' Invocations processor for model. '''
         raise NotImplementedError
 
     @property
     @__.abstract_member_function
-    def messages_processor( self ) -> MessagesProcessor:
+    def messages_processor( self ) -> 'MessagesProcessor':
         ''' Conversation messages processor for model. '''
         raise NotImplementedError
 
     @property
     @__.abstract_member_function
-    def serde_processor( self ) -> ConverserSerdeProcessor:
+    def serde_processor( self ) -> 'ConverserSerdeProcessor':
         ''' (De)serialization processor for model. '''
         raise NotImplementedError
 
     @property
     @__.abstract_member_function
-    def tokenizer( self ) -> ConversationTokenizer:
+    def tokenizer( self ) -> 'ConversationTokenizer':
         ''' Appropriate tokenizer for conversations. '''
         raise NotImplementedError
 
@@ -469,7 +469,7 @@ class ConverserSerdeProcessor(
 ):
     ''' (De)serialization in preferred formats for converser model. '''
 
-    model: ConverserModel
+    model: 'ConverserModel'
 
     @__.abstract_member_function
     def deserialize_data( self, data: str ) -> __.a.Any:

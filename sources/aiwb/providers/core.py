@@ -202,7 +202,7 @@ class InvocationRequest(
     @classmethod
     def from_descriptor(
         selfclass,
-        descriptor: InvocationDescriptor,
+        descriptor: 'InvocationDescriptor',
         context, # TODO: Signature.
     ) -> __.a.Self:
         ''' Produces instance from descriptor dictionary. '''

@@ -285,11 +285,11 @@ class Model(
         return selfclass( **args )
 
     @property
-    def controls_processor( self ) -> ControlsProcessor:
+    def controls_processor( self ) -> 'ControlsProcessor':
         return ControlsProcessor( model = self )
 
     @property
-    def invocations_processor( self ) -> InvocationsProcessor:
+    def invocations_processor( self ) -> 'InvocationsProcessor':
         return InvocationsProcessor( model = self )
 
     @property
@@ -297,11 +297,11 @@ class Model(
         return MessagesProcessor( model = self )
 
     @property
-    def serde_processor( self ) -> SerdeProcessor:
+    def serde_processor( self ) -> 'SerdeProcessor':
         return SerdeProcessor( model = self )
 
     @property
-    def tokenizer( self ) -> Tokenizer:
+    def tokenizer( self ) -> 'Tokenizer':
         return Tokenizer( model = self )
 
     async def converse_v0(
@@ -470,7 +470,7 @@ def _collect_response_as_legacy_invocation_v0(
 
 
 def _decide_exclude_message(
-    model: Model, canister: __.MessageCanister
+    model: 'Model', canister: __.MessageCanister
 ) -> bool:
     role = canister.role
     if not model.attributes.accepts_supervisor_instructions:
@@ -479,7 +479,7 @@ def _decide_exclude_message(
 
 
 def _merge_native_message(
-    model: Model,
+    model: 'Model',
     anchor: OpenAiMessage,
     cursor: OpenAiMessage,
     indicate_elision: bool = False,
@@ -512,7 +512,7 @@ def _merge_native_message(
 
 
 def _nativize_assistant_message(
-    model: Model, canister: __.MessageCanister
+    model: 'Model', canister: __.MessageCanister
 ) -> OpenAiMessage:
     content: OpenAiMessageContent
     context = { 'role': 'assistant' }
@@ -528,7 +528,7 @@ def _nativize_assistant_message(
 
 
 def _nativize_document_message(
-    model: Model, canister: __.MessageCanister
+    model: 'Model', canister: __.MessageCanister
 ) -> OpenAiMessage:
     context = { 'role': 'user' }
     content = '\n\n'.join( (
@@ -537,7 +537,7 @@ def _nativize_document_message(
 
 
 def _nativize_invocation_message(
-    model: Model, canister: __.MessageCanister
+    model: 'Model', canister: __.MessageCanister
 ) -> OpenAiMessage:
     attributes = canister.attributes
     content: OpenAiMessageContent
@@ -565,7 +565,7 @@ def _nativize_invocation_message(
 
 
 def _nativize_message(
-    model: Model, canister: __.MessageCanister
+    model: 'Model', canister: __.MessageCanister
 ) -> OpenAiMessage:
     role = canister.role
     match role:
@@ -586,7 +586,7 @@ def _nativize_message(
 
 
 def _nativize_message_content(
-    model: Model, canister: __.MessageCanister
+    model: 'Model', canister: __.MessageCanister
 ) -> OpenAiMessageContent:
     # TODO: Handle audio and image contents.
     match len( canister ):
@@ -600,7 +600,7 @@ def _nativize_message_content(
 
 
 def _nativize_result_message(
-    model: Model, canister: __.MessageCanister
+    model: 'Model', canister: __.MessageCanister
 ) -> OpenAiMessage:
     attributes = canister.attributes
     content: OpenAiMessageContent
@@ -632,7 +632,7 @@ def _nativize_result_message(
 
 
 def _nativize_supervisor_message(
-    model: Model, canister: __.MessageCanister
+    model: 'Model', canister: __.MessageCanister
 ) -> OpenAiMessage:
     content: OpenAiMessageContent
     if model.attributes.honors_supervisor_instructions:
@@ -643,7 +643,7 @@ def _nativize_supervisor_message(
     return dict( content = content, **context )
 
 
-def _nativize_supplements_v0( model: Model, supplements ):
+def _nativize_supplements_v0( model: 'Model', supplements ):
     nomargs = { }
     if 'invokers' in supplements:
         nomargs.update(
@@ -653,7 +653,7 @@ def _nativize_supplements_v0( model: Model, supplements ):
 
 
 def _nativize_user_message(
-    model: Model, canister: __.MessageCanister
+    model: 'Model', canister: __.MessageCanister
 ) -> OpenAiMessage:
     content: OpenAiMessageContent
     context = { 'role': 'user' }
@@ -662,7 +662,7 @@ def _nativize_user_message(
 
 
 def _prepare_client_arguments(
-    model: Model,
+    model: 'Model',
     messages: __.MessagesCanisters,
     supplements,
     controls: __.ControlsInstancesByName,
@@ -782,7 +782,7 @@ def _reconstitute_invocations( record ):
 
 
 def _refine_native_assistant_message(
-    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
+    model: 'Model', anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     anchor_role = anchor[ 'role' ]
     cursor_role = cursor[ 'role' ]
@@ -796,7 +796,7 @@ def _refine_native_assistant_message(
 
 
 def _refine_native_function_message(
-    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
+    model: 'Model', anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     cursor_role = cursor[ 'role' ]
@@ -811,7 +811,7 @@ def _refine_native_function_message(
 
 
 def _refine_native_message(
-    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
+    model: 'Model', anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     # TODO? Consider models which allow some adjaceny. (gpt-3.5-turbo)
@@ -831,7 +831,7 @@ def _refine_native_message(
 
 
 def _refine_native_messages(
-    model: Model, messages_pre: list[ OpenAiMessage ]
+    model: 'Model', messages_pre: list[ OpenAiMessage ]
 ) -> list[ OpenAiMessage ]:
     anchor = None
     messages: list[ OpenAiMessage ] = [ ]
@@ -850,7 +850,7 @@ def _refine_native_messages(
 
 
 def _refine_native_tool_message(
-    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
+    model: 'Model', anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     cursor_role = cursor[ 'role' ]
@@ -861,7 +861,7 @@ def _refine_native_tool_message(
 
 
 def _refine_native_user_message(
-    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
+    model: 'Model', anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     anchor_role = anchor[ 'role' ]
