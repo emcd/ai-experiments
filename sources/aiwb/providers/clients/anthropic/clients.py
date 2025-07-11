@@ -65,7 +65,7 @@ class ProviderVariants( __.Enum ):
             auxdata = auxdata, provider = provider, descriptor = descriptor )
 
 
-class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
+class Client( __.Client ):
 
     def produce_model(
         self,
@@ -103,7 +103,7 @@ class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
         raise NotImplementedError
 
 
-class AnthropicClient( Client, class_decorators = ( __.standard_dataclass, ) ):
+class AnthropicClient( Client ):
     ''' Client which talks to native Anthropic service. '''
 
     @classmethod
@@ -159,7 +159,7 @@ class AnthropicClient( Client, class_decorators = ( __.standard_dataclass, ) ):
 # TODO: GoogleVertexClient
 
 
-class Provider( __.Provider, class_decorators = ( __.standard_dataclass, ) ):
+class Provider( __.Provider ):
 
     async def produce_client(
         self, auxdata: __.CoreGlobals, descriptor: ClientDescriptor

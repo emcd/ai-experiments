@@ -55,16 +55,14 @@ class AcquireContentResult(
 
 
 class AcquireContentBytesResult(
-    AcquireContentResult, class_decorators = ( __.standard_dataclass, )
-):
+    AcquireContentResult):
     ''' Inode and content, as raw bytes, from acquisition operation. '''
 
     content: bytes
 
 
 class AcquireContentTextResult(
-    AcquireContentResult, class_decorators = ( __.standard_dataclass, )
-):
+    AcquireContentResult):
     ''' Inode and content, as Unicode string, from acquisition operation. '''
 
     content: str

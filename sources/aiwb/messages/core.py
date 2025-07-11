@@ -147,9 +147,9 @@ class Role( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class Canister(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Message canister which can have multiple contents. '''
 
@@ -187,7 +187,7 @@ class Canister(
 
 
 class AssistantCanister(
-    Canister, class_decorators = ( __.standard_dataclass, )
+    Canister
 ):
     ''' Message canister for assistant role. '''
 
@@ -195,7 +195,7 @@ class AssistantCanister(
     def role( self ) -> Role: return Role.Assistant
 
 class DocumentCanister(
-    Canister, class_decorators = ( __.standard_dataclass, )
+    Canister
 ):
     ''' Message canister for document role. '''
 
@@ -203,7 +203,7 @@ class DocumentCanister(
     def role( self ) -> Role: return Role.Document
 
 class InvocationCanister(
-    Canister, class_decorators = ( __.standard_dataclass, )
+    Canister
 ):
     ''' Message canister for invocation role. '''
 
@@ -211,7 +211,7 @@ class InvocationCanister(
     def role( self ) -> Role: return Role.Invocation
 
 class ResultCanister(
-    Canister, class_decorators = ( __.standard_dataclass, )
+    Canister
 ):
     ''' Message canister for result role. '''
 
@@ -219,7 +219,7 @@ class ResultCanister(
     def role( self ) -> Role: return Role.Result
 
 class SupervisorCanister(
-    Canister, class_decorators = ( __.standard_dataclass, )
+    Canister
 ):
     ''' Message canister for supervisor role. '''
 
@@ -227,7 +227,7 @@ class SupervisorCanister(
     def role( self ) -> Role: return Role.Supervisor
 
 class UserCanister(
-    Canister, class_decorators = ( __.standard_dataclass, )
+    Canister
 ):
     ''' Message canister for user role. '''
 

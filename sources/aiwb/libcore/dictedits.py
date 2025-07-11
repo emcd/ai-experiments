@@ -27,9 +27,9 @@ from . import __
 
 
 class Edit(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Base representation of an edit to configuration. '''
 
@@ -64,7 +64,7 @@ class Edit(
         configuration_[ self.address[ -1 ] ] = value
 
 
-class ElementsEntryEdit( Edit, class_decorators = ( __.standard_dataclass, ) ):
+class ElementsEntryEdit( Edit ):
     ''' Applies entry edit to every matching dictionary in array. '''
 
     editee: tuple[ str, __.a.Any ]
@@ -82,7 +82,7 @@ class ElementsEntryEdit( Edit, class_decorators = ( __.standard_dataclass, ) ):
             element[ ename ] = evalue
 
 
-class SimpleEdit( Edit, class_decorators = ( __.standard_dataclass, ) ):
+class SimpleEdit( Edit ):
     ''' Applies edit to single entity. '''
 
     value: __.a.Any

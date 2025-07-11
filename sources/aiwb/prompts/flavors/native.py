@@ -89,7 +89,7 @@ class Definition( _core.Definition ):
             for variable in variables } )
 
 
-class Store( _core.Store, class_decorators = ( __.standard_dataclass, ) ):
+class Store( _core.Store ):
 
     async def acquire_definitions(
         self,

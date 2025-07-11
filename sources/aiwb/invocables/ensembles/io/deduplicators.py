@@ -47,9 +47,7 @@ from . import __
 
 
 class IoContentDeduplicator(
-    __.Deduplicator,
-    class_decorators = ( __.standard_dataclass, ),
-):
+    __.Deduplicator):
     ''' Deduplicates I/O content operations. '''
 
     @classmethod
@@ -73,9 +71,7 @@ class IoContentDeduplicator(
 
 
 class SurveyDirectoryDeduplicator(
-    __.Deduplicator,
-    class_decorators = ( __.standard_dataclass, ),
-):
+    __.Deduplicator):
     ''' Deduplicates directory survey operations. '''
 
     @classmethod

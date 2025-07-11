@@ -54,9 +54,7 @@ __.preparers[ _name ] = prepare
 
 
 class Ensemble(
-    __.Ensemble,
-    class_decorators = ( __.standard_dataclass, ),
-):
+    __.Ensemble):
 
     async def prepare_invokers(
         self, auxdata: __.Globals

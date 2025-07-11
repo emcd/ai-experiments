@@ -64,7 +64,7 @@ class ProviderVariants( __.Enum ):
             auxdata = auxdata, provider = provider, descriptor = descriptor )
 
 
-class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
+class Client( __.Client ):
 
     def produce_model(
         self,
@@ -105,7 +105,7 @@ class Client( __.Client, class_decorators = ( __.standard_dataclass, ) ):
 # TODO: MicrosoftAzureClient
 
 
-class OpenAiClient( Client, class_decorators = ( __.standard_dataclass, ) ):
+class OpenAiClient( Client ):
     ''' Client which talks to native OpenAI service. '''
 
     @classmethod
@@ -146,7 +146,7 @@ class OpenAiClient( Client, class_decorators = ( __.standard_dataclass, ) ):
             ( await self.produce_implement( ).models.list( ) ).data ) )
 
 
-class Provider( __.Provider, class_decorators = ( __.standard_dataclass, ) ):
+class Provider( __.Provider ):
 
     async def produce_client(
         self, auxdata: __.CoreGlobals, descriptor: ClientDescriptor

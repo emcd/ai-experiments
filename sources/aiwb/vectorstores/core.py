@@ -27,9 +27,9 @@ from . import __
 
 
 class Factory(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Produces clients. '''
 

@@ -34,16 +34,14 @@ class _NotificationBase(
 
 
 class ApprisalNotification(
-    _NotificationBase, class_decorators = ( __.standard_dataclass, )
-):
+    _NotificationBase):
     ''' Notification for recoverable error or similar condition. '''
 
     exception: BaseException = None
 
 
 class ErrorNotification(
-    _NotificationBase, class_decorators = ( __.standard_dataclass, )
-):
+    _NotificationBase):
     ''' Notification for non-recoverable error. '''
 
     error: Exception

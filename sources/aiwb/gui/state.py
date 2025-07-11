@@ -26,9 +26,7 @@ from . import server as _server
 
 
 class Globals(
-    __.ApiServerGlobals,
-    class_decorators = ( __.standard_dataclass, ),
-):
+    __.ApiServerGlobals):
     ''' Immutable global data for GUI. '''
 
     gui: _server.Accessor

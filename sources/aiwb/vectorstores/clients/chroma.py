@@ -33,7 +33,7 @@ async def prepare( auxdata: __.Globals ):
 _core.preparers[ 'chroma' ] = prepare
 
 
-class Factory( _core.Factory, class_decorators = ( __.standard_dataclass, ) ):
+class Factory( _core.Factory ):
     # https://python.langchain.com/v0.2/docs/integrations/text_embedding/openai/
     # https://python.langchain.com/v0.2/docs/integrations/vectorstores/chroma/
     # https://docs.trychroma.com/reference/py-client

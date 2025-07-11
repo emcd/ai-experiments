@@ -45,8 +45,7 @@ class NativeMessageRefinementActions( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class Attributes(
-    __.ConverserAttributes, class_decorators = ( __.standard_dataclass, )
-):
+    __.ConverserAttributes):
     ''' Common attributes for Anthropic chat models. '''
 
     supports_computer_use: bool = False
@@ -68,8 +67,7 @@ class Attributes(
 
 
 class ControlsProcessor(
-    __.ControlsProcessor, class_decorators = ( __.standard_dataclass, )
- ):
+    __.ControlsProcessor ):
     ''' Controls nativization for Anthropic chat models. '''
 
     def nativize_controls(
@@ -92,8 +90,7 @@ class ControlsProcessor(
 
 
 class InvocationsProcessor(
-    __.InvocationsProcessor, class_decorators = ( __.standard_dataclass, )
-):
+    __.InvocationsProcessor):
     ''' Handles tool calls for Anthropic chat models. '''
 
     async def __call__(
@@ -168,8 +165,7 @@ class InvocationsProcessor(
 
 
 class MessagesProcessor(
-    __.MessagesProcessor, class_decorators = ( __.standard_dataclass, )
-):
+    __.MessagesProcessor):
     ''' Handles conversation messages in Anthropic format. '''
 
     def nativize_messages_v0(
@@ -186,8 +182,7 @@ class MessagesProcessor(
 
 
 class Model(
-    __.ConverserModel, class_decorators = ( __.standard_dataclass, )
-):
+    __.ConverserModel):
     ''' Anthropic chat model. '''
 
     @classmethod
@@ -239,8 +234,7 @@ class Model(
 
 
 class SerdeProcessor(
-    __.ConverserSerdeProcessor, class_decorators = ( __.standard_dataclass, )
-):
+    __.ConverserSerdeProcessor):
     ''' (De)serialization for Anthropic chat models. '''
 
     def deserialize_data( self, data: str ) -> __.a.Any:
@@ -263,8 +257,7 @@ class SerdeProcessor(
 
 
 class Tokenizer(
-    __.ConversationTokenizer, class_decorators = ( __.standard_dataclass, )
-):
+    __.ConversationTokenizer):
     ''' Tokenizes conversations and text with Anthropic tokenizers. '''
 
     async def count_text_tokens( self, text: str ) -> int:

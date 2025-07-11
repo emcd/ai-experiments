@@ -31,9 +31,9 @@ ModelDescriptor = __.a.TypeVar( 'ModelDescriptor' ) # TODO? Typed dictionary.
 
 
 class Client(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol[ _core.ClientImplement, _core.ProviderVariants ],
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Interacts with AI provider. '''
 
@@ -158,9 +158,9 @@ class Client(
 
 
 class ControlsProcessor(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol[ _core.NativeControls ],
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Handles model controls. '''
 
@@ -189,9 +189,9 @@ class ControlsProcessor(
 
 
 class ConversationTokenizer(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Tokenizes conversation or piece of text for counting. '''
 
@@ -216,9 +216,9 @@ class ConversationTokenizer(
 
 
 class Provider(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Produces clients. '''
 
@@ -239,9 +239,9 @@ class Provider(
 
 
 class InvocationsProcessor(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Handles everything related to invocations. '''
 
@@ -282,9 +282,9 @@ class InvocationsProcessor(
 
 
 class MessagesProcessor(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol[ _core.NativeMessages ],
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Handles everything related to messages. '''
 
@@ -306,9 +306,9 @@ class MessagesProcessor(
 
 
 class Model(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Represents an AI model. '''
 
@@ -345,9 +345,9 @@ class Model(
 
 
 class ModelAttributes(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Attributes for all genera of AI models. '''
 
@@ -376,7 +376,7 @@ class ModelAttributes(
 
 class ConverserModel(
     Model, __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Represents AI chat model. '''
 
@@ -420,7 +420,7 @@ class ConverserModel(
 
 
 class ConverserAttributes(
-    ModelAttributes, class_decorators = ( __.standard_dataclass, )
+    ModelAttributes
 ):
     ''' Common attributes for AI chat models. '''
 
@@ -463,9 +463,9 @@ class ConverserAttributes(
 
 
 class ConverserSerdeProcessor(
-    __.immut.Protocol,
+    __.immut.DataclassProtocol,
     __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' (De)serialization in preferred formats for converser model. '''
 

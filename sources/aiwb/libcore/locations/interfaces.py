@@ -428,9 +428,8 @@ class GeneralCache(
 
 
 class FilePresenter(
-    __.immut.Protocol,
-    __.a.Protocol,
-    class_decorators = ( __.standard_dataclass, __.a.runtime_checkable ),
+    __.immut.DataclassProtocol, __.a.Protocol,
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Presenter with standard operations on files. '''
 

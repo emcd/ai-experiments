@@ -25,9 +25,7 @@ from . import __
 
 
 class Globals(
-    __.CoreGlobals,
-    class_decorators = ( __.standard_dataclass, ),
-):
+    __.CoreGlobals):
     ''' Immutable global data. Required by many application functions. '''
 
     # TODO: Use proper types.

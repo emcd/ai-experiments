@@ -30,9 +30,7 @@ _module_name = __name__.replace( f"{__package__}.", '' )
 _entity_name = f"location content presenter '{_module_name}'"
 
 
-class FilePresenter(
-    __.FilePresenter, class_decorators = ( __.standard_dataclass, )
-):
+class FilePresenter( __.FilePresenter ):
     ''' Presenter with standard operations on text files. '''
 
     charset: __.a.Nullable[ str ] = None
