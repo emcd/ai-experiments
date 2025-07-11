@@ -211,11 +211,11 @@ class Model(
         return MessagesProcessor( model = self )
 
     @property
-    def serde_processor( self ) -> SerdeProcessor:
+    def serde_processor( self ) -> 'SerdeProcessor':
         return SerdeProcessor( model = self )
 
     @property
-    def tokenizer( self ) -> Tokenizer:
+    def tokenizer( self ) -> 'Tokenizer':
         return Tokenizer( model = self )
 
     async def converse_v0(

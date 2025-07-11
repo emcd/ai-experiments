@@ -36,7 +36,7 @@ _name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
 async def prepare(
     auxdata: __.Globals,
     descriptor: __.AbstractDictionary[ str, __.a.Any ],
-) -> Ensemble:
+) -> 'Ensemble':
     ''' Returns ensemble. '''
     return Ensemble( name = _name )
 

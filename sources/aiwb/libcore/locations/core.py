@@ -283,15 +283,10 @@ class Possessor( __.Enum ):
     Omnipopulation = 'everyone'
 
 
-class Url( _UrlParts, metaclass = __.immut.Class ):
+class Url(
+    __.immut.Object, _UrlParts, instances_ignore_init_arguments = True
+):
     ''' Tracks URL components separately. Displays as original string. '''
-
-    scheme: str
-    netloc: str
-    path: str
-    params: str
-    query: str
-    fragment: str
 
     @classmethod
     def from_url( selfclass, url: 'PossibleUrl' ) -> __.a.Self:

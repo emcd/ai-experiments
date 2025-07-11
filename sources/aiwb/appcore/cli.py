@@ -34,7 +34,7 @@ class Cli( __.CoreCli ):
     #       Accretive, because Tyro adds class attributes.
 
     # TODO: Add commands for prompts, providers, and vectorstores.
-    configuration: ConfigurationModifiers
+    configuration: 'ConfigurationModifiers'
 
     async def __call__( self ):
         ''' Invokes command after application preparation. '''

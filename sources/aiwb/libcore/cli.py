@@ -44,15 +44,15 @@ class Cli:
 
     application: _application.Information
     configfile: __.a.Nullable[ str ] = None
-    display: ConsoleDisplay
+    display: 'ConsoleDisplay'
     inscription: _inscription.Control
     command: __.a.Union[
         __.a.Annotation[
-            InspectCommand,
+            'InspectCommand',
             __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
         ],
         __.a.Annotation[
-            LocationCommand,
+            'LocationCommand',
             __.tyro.conf.subcommand( 'location', prefix_name = False ),
         ],
     ]
@@ -217,11 +217,11 @@ class LocationCommand:
 
     command: __.a.Union[
         __.a.Annotation[
-            LocationSurveyDirectoryCommand,
+            'LocationSurveyDirectoryCommand',
             __.tyro.conf.subcommand( 'list-folder', prefix_name = False ),
         ],
         __.a.Annotation[
-            LocationAcquireContentCommand,
+            'LocationAcquireContentCommand',
             __.tyro.conf.subcommand( 'read', prefix_name = False ),
         ],
         # TODO: LocationUpdateContentCommand (write)

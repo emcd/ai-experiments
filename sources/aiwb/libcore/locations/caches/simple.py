@@ -43,7 +43,7 @@ def _ensures_cache( function: __.a.Callable ):
     from functools import wraps
 
     @wraps( function )
-    async def invoker( cache: _Common, *posargs, **nomargs ):
+    async def invoker( cache: '_Common', *posargs, **nomargs ):
         await cache._ingest_if_absent( )
         return await function( cache, *posargs, **nomargs )
 

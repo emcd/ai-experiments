@@ -130,12 +130,12 @@ class Role( __.Enum ): # TODO: Python 3.11: StrEnum
     User =          'user'
 
     @classmethod
-    def from_canister( selfclass, canister: Canister ) -> __.a.Self:
+    def from_canister( selfclass, canister: 'Canister' ) -> __.a.Self:
         ''' Provides role associated with canister. '''
         # TODO: Use 'role' property on canister instead.
         return canister.role
 
-    def produce_canister( self, **nomargs ) -> Canister:
+    def produce_canister( self, **nomargs ) -> 'Canister':
         ''' Produces canister from role. '''
         match self:
             case self.Assistant: return AssistantCanister( **nomargs )

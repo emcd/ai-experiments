@@ -53,9 +53,9 @@ class ProviderVariants( __.Enum ):
     async def produce_client(
         self,
         auxdata: __.CoreGlobals,
-        provider: Provider,
+        provider: 'Provider',
         descriptor: ClientDescriptor,
-    ) -> Client:
+    ) -> 'Client':
         match self:
             case ProviderVariants.Anthropic:
                 client_class = AnthropicClient
