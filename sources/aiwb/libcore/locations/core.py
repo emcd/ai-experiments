@@ -285,6 +285,14 @@ class Url(
     __.immut.Object, _UrlParts, instances_ignore_init_arguments = True
 ):
     ''' Tracks URL components separately. Displays as original string. '''
+    
+    # Add explicit type annotations for ParseResult fields to fix Tyro compatibility
+    scheme: str
+    netloc: str
+    path: str
+    params: str
+    query: str
+    fragment: str
 
     @classmethod
     def from_url( selfclass, url: 'PossibleUrl' ) -> __.a.Self:

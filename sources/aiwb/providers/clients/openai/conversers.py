@@ -24,6 +24,10 @@ from __future__ import annotations
 
 from . import __
 
+# Import core types for dynadoc introspection of Protocol classes
+# These are needed because Protocol classes use forward references
+from ...core import ConverserFormatPreferences, ConverserModalities, ConverserTokensLimits
+
 
 # TODO: Python 3.12: Use type statement for aliases.
 # TODO? Use typing.TypedDictionary.

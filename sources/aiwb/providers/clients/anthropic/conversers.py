@@ -24,6 +24,10 @@ from __future__ import annotations
 
 from . import __
 
+# Import core types for dynadoc introspection of Protocol classes
+# These are needed because Protocol classes use forward references
+from ...core import ConverserFormatPreferences, ConverserModalities, ConverserTokensLimits
+
 # TODO: Revisit caching. May need notion of keepalive chat completions
 #       to maintain cache warmth when user is formulating a long response.
 

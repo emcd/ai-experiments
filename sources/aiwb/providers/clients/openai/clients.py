@@ -25,6 +25,10 @@ from __future__ import annotations
 
 from . import __
 
+# Import core types for dynadoc introspection of Protocol classes
+# These are needed because Protocol classes use forward references
+from ...core import ProviderVariants
+
 
 # We do not want to import 'openai' package on module initialization,
 # as it is not guaranteed to be available then. However, we can appease

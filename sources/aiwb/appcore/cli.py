@@ -176,7 +176,6 @@ class ConfigurationModifiers:
         return tuple( edits )
 
 
-@__.standard_dataclass
 class ExecuteServerCommand( metaclass = __.ABCFactory ):
     ''' Runs API server until signal. '''
     # Note: Cannot use protocol class becaue Tyro chokes on that.
