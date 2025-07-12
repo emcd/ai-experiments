@@ -52,7 +52,8 @@ class Globals(
         from dataclasses import fields
         return {
             field.name: getattr( self, field.name )
-            for field in fields( self ) }
+            for field in fields( self )
+            if not field.name.startswith( '_' ) }
 
     def provide_cache_location( self, *appendages: str ) -> __.Path:
         ''' Provides cache location from configuration. '''

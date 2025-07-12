@@ -21,13 +21,7 @@
 ''' Core implementations for Anthropic AI provider. '''
 
 
-from __future__ import annotations
-
 from . import __
-
-# Import core types for dynadoc introspection of Protocol classes
-# These are needed because Protocol classes use forward references
-from ...core import ProviderVariants
 
 
 # We do not want to import 'anthropic' package on module initialization,

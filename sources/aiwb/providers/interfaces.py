@@ -21,32 +21,47 @@
 ''' Abstract base classes and interfaces. '''
 
 
-from __future__ import annotations
-
 from . import __
-from .core import (
-    ClientImplement, ProviderVariants, NativeControls, NativeMessages,
-    ModelGenera, ConverserFormatPreferences, ConverserModalities,
-    ConverserTokensLimits, ClientAttributes, InvocationRequest,
-    InvocationsRequests
-)
+from . import core as _core
 
 
 ModelDescriptor = __.a.TypeVar( 'ModelDescriptor' ) # TODO? Typed dictionary.
 
 
+class Provider(
+    __.immut.DataclassProtocol, __.a.Protocol,
+    decorators = ( __.a.runtime_checkable, ),
+):
+    ''' Produces clients. '''
+
+    name: str
+    # TODO: Reingester dictionary for configuration.
+    configuration: __.AbstractDictionary[ str, __.a.Any ]
+
+    def __str__( self ) -> str: return f"AI provider {self.name!r}"
+
+    @__.abstract_member_function
+    async def produce_client(
+        self,
+        auxdata: __.CoreGlobals,
+        descriptor: __.AbstractDictionary[ str, __.a.Any ]
+    ) -> 'Client':
+        ''' Produces client from descriptor dictionary. '''
+        raise NotImplementedError
+
+
 class Client(
     __.immut.DataclassProtocol,
-    __.a.Protocol[ ClientImplement, ProviderVariants ],
+    __.a.Protocol[ _core.ClientImplement, _core.ProviderVariants ],
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Interacts with AI provider. '''
 
-    ModelGenera: __.a.ClassVar[ type[ ModelGenera ] ] = (
-        ModelGenera )
+    ModelGenera: __.a.ClassVar[ type[ _core.ModelGenera ] ] = (
+        _core.ModelGenera )
 
     name: str
-    attributes: ClientAttributes
+    attributes: _core.ClientAttributes
     provider: 'Provider'
 
     @classmethod
@@ -80,7 +95,7 @@ class Client(
         descriptor_ = dict( descriptor )
         # TODO: Raise error on missing name.
         name = descriptor_.pop( 'name' )
-        attributes = ClientAttributes.from_descriptor( descriptor_ )
+        attributes = _core.ClientAttributes.from_descriptor( descriptor_ )
         return __.accret.Dictionary(
             name = name, attributes = attributes, provider = provider )
 
@@ -90,7 +105,7 @@ class Client(
     async def access_model(
         self,
         auxdata: __.CoreGlobals,
-        genus: ModelGenera,
+        genus: _core.ModelGenera,
         name: str,
     ) -> 'Model':
         ''' Returns named model available from provider, if it exists. '''
@@ -108,7 +123,7 @@ class Client(
     async def access_model_default(
         self,
         auxdata: __.CoreGlobals,
-        genus: ModelGenera,
+        genus: _core.ModelGenera,
     ) -> 'Model':
         ''' Returns default model available from provider, if it exists. '''
         defaults = getattr( self.attributes.defaults, f"{genus.value}_model" )
@@ -128,14 +143,14 @@ class Client(
                 f"on provider {self.name!r}." ) from None
 
     @__.abstract_member_function
-    def produce_implement( self ) -> ClientImplement:
+    def produce_implement( self ) -> _core.ClientImplement:
         ''' Produces client implement to interact with provider. '''
         raise NotImplementedError
 
     @__.abstract_member_function
     def produce_model(
         self,
-        genus: ModelGenera,
+        genus: _core.ModelGenera,
         name: str,
         descriptor: ModelDescriptor,
     ) -> 'Model':
@@ -146,7 +161,7 @@ class Client(
     async def survey_models(
         self,
         auxdata: __.CoreGlobals,
-        genus: __.Optional[ ModelGenera ] = __.absent,
+        genus: __.Optional[ _core.ModelGenera ] = __.absent,
     ) -> __.AbstractSequence[ 'Model' ]:
         ''' Returns models available from provider.
 
@@ -157,14 +172,13 @@ class Client(
 
     @property
     @__.abstract_member_function
-    def variant( self ) -> ProviderVariants:
+    def variant( self ) -> _core.ProviderVariants:
         ''' Provider variant. '''
         raise NotImplementedError
 
 
 class ControlsProcessor(
-    __.immut.DataclassProtocol,
-    __.a.Protocol[ NativeControls ],
+    __.immut.DataclassProtocol, __.a.Protocol[ _core.NativeControls ],
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Handles model controls. '''
@@ -188,14 +202,13 @@ class ControlsProcessor(
     def nativize_controls(
         self,
         controls: __.AbstractDictionary[ str, __.Control.Instance ],
-    ) -> NativeControls:
+    ) -> _core.NativeControls:
         ''' Converts normalized controls into native arguments. '''
         raise NotImplementedError
 
 
 class ConversationTokenizer(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
+    __.immut.DataclassProtocol, __.a.Protocol,
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Tokenizes conversation or piece of text for counting. '''
@@ -220,32 +233,8 @@ class ConversationTokenizer(
         raise NotImplementedError
 
 
-class Provider(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
-):
-    ''' Produces clients. '''
-
-    name: str
-    # TODO: Reingester dictionary for configuration.
-    configuration: __.AbstractDictionary[ str, __.a.Any ]
-
-    def __str__( self ) -> str: return f"AI provider {self.name!r}"
-
-    @__.abstract_member_function
-    async def produce_client(
-        self,
-        auxdata: __.CoreGlobals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ]
-    ) -> Client:
-        ''' Produces client from descriptor dictionary. '''
-        raise NotImplementedError
-
-
 class InvocationsProcessor(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
+    __.immut.DataclassProtocol, __.a.Protocol,
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Handles everything related to invocations. '''
@@ -254,7 +243,7 @@ class InvocationsProcessor(
 
     @__.abstract_member_function
     async def __call__(
-        self, request: InvocationRequest
+        self, request: _core.InvocationRequest
     ) -> __.MessageCanister: # TODO? Return InvocationResult.
         ''' Uses invocable to produce result for conversation. '''
         raise NotImplementedError
@@ -280,15 +269,14 @@ class InvocationsProcessor(
         canister: __.MessageCanister,
         invocables: __.accret.Namespace,
         ignore_invalid_canister: bool = False,
-    ) -> InvocationsRequests:
+    ) -> _core.InvocationsRequests:
         ''' Converts invocation requests into invoker coroutines. '''
         # TODO: Return InvocationRequest instance.
         raise NotImplementedError
 
 
 class MessagesProcessor(
-    __.immut.DataclassProtocol,
-    __.a.Protocol[ NativeMessages ],
+    __.immut.DataclassProtocol, __.a.Protocol[ NativeMessages ],
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Handles everything related to messages. '''
@@ -305,14 +293,13 @@ class MessagesProcessor(
         self,
         canisters: __.MessagesCanisters,
         supplements,
-    ) -> NativeMessages:
+    ) -> _core.NativeMessages:
         ''' Converts normalized message canisters into native messages. '''
         raise NotImplementedError
 
 
 class Model(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
+    __.immut.DataclassProtocol, __.a.Protocol,
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Represents an AI model. '''
@@ -350,8 +337,7 @@ class Model(
 
 
 class ModelAttributes(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
+    __.immut.DataclassProtocol, __.a.Protocol,
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Attributes for all genera of AI models. '''
@@ -424,20 +410,18 @@ class ConverserModel(
         raise NotImplementedError
 
 
-class ConverserAttributes(
-    ModelAttributes
-):
+class ConverserAttributes( ModelAttributes ):
     ''' Common attributes for AI chat models. '''
 
     accepts_supervisor_instructions: bool = False
-    format_preferences: ConverserFormatPreferences = (
-        ConverserFormatPreferences( ) )
-    modalities: __.AbstractSequence[ ConverserModalities ] = (
-        ConverserModalities.Text, )
+    format_preferences: _core.ConverserFormatPreferences = (
+        _core.ConverserFormatPreferences( ) )
+    modalities: __.AbstractSequence[ _core.ConverserModalities ] = (
+        _core.ConverserModalities.Text, )
     supports_continuous_response: bool = False
     supports_invocations: bool = False
-    tokens_limits: ConverserTokensLimits = (
-        ConverserTokensLimits( ) )
+    tokens_limits: _core.ConverserTokensLimits = (
+        _core.ConverserTokensLimits( ) )
 
     @classmethod
     def init_args_from_descriptor(
@@ -456,20 +440,19 @@ class ConverserAttributes(
             arg_name_ = arg_name.replace( '-', '_' )
             args[ arg_name_ ] = arg
         args[ 'format_preferences' ] = (
-            ConverserFormatPreferences.from_descriptor(
+            _core.ConverserFormatPreferences.from_descriptor(
                 descriptor.get( 'format-preferences', { } ) ) )
         args[ 'modalities' ] = tuple(
-            ConverserModalities( modality )
+            _core.ConverserModalities( modality )
             for modality in descriptor.get( 'modalities', ( ) ) )
         args[ 'tokens_limits' ] = (
-            ConverserTokensLimits.from_descriptor(
+            _core.ConverserTokensLimits.from_descriptor(
                 descriptor.get( 'tokens-limits', { } ) ) )
         return args
 
 
 class ConverserSerdeProcessor(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
+    __.immut.DataclassProtocol, __.a.Protocol,
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' (De)serialization in preferred formats for converser model. '''

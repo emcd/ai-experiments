@@ -21,8 +21,6 @@
 ''' Core classes and functions for AI providers. '''
 
 
-from __future__ import annotations
-
 from . import __
 
 
@@ -31,10 +29,11 @@ NativeControls = __.a.TypeVar( 'NativeControls', covariant = True )
 NativeMessages = __.a.TypeVar( 'NativeMessages', covariant = True )
 ProviderVariants = __.a.TypeVar( 'ProviderVariants', covariant = True )
 
+InvocationDescriptor: __.a.TypeAlias = (
+    __.AbstractDictionary[ str, __.a.Any ] )
 
-class ClientDefaults(
-    __.immut.DataclassObject
-):
+
+class ClientDefaults( __.immut.DataclassObject ):
     ''' Collection of default values for AI provider. '''
 
     converser_model: __.AbstractSequence[ str ] = ( )
@@ -55,9 +54,7 @@ class ClientDefaults(
         return selfclass( **args )
 
 
-class ClientAttributes(
-    __.immut.DataclassObject
-):
+class ClientAttributes( __.immut.DataclassObject ):
     ''' Common attributes for AI provider clients. '''
 
     defaults: ClientDefaults = ClientDefaults( )
@@ -84,9 +81,7 @@ class ClientAttributes(
         return args
 
 
-class ConversationReactors(
-    __.immut.DataclassObject
-):
+class ConversationReactors( __.immut.DataclassObject ):
     ''' Callbacks for AI provider to correspond with caller. '''
 
     allocator: __.a.Callable[ [ __.MessageCanister ], __.a.Any ] = (
@@ -202,7 +197,7 @@ class InvocationRequest(
     @classmethod
     def from_descriptor(
         selfclass,
-        descriptor: 'InvocationDescriptor',
+        descriptor: InvocationDescriptor,
         context, # TODO: Signature.
     ) -> __.a.Self:
         ''' Produces instance from descriptor dictionary. '''
@@ -288,8 +283,6 @@ class ModelGenera( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-InvocationDescriptor: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, __.a.Any ] )
 InvocationsRequests: __.a.TypeAlias = (
     __.AbstractSequence[ InvocationRequest ] )
 ModelsIntegrators: __.a.TypeAlias = __.AbstractSequence[ ModelsIntegrator ]
