@@ -27,11 +27,8 @@ from . import __
 from . import state as _state
 
 
-@__.standard_dataclass
 class Cli( __.CoreCli ):
     ''' Utility for configuration, inspection, and tests of application. '''
-    # TODO: metaclass = AccretiveDataclass
-    #       Accretive, because Tyro adds class attributes.
 
     # TODO: Add commands for prompts, providers, and vectorstores.
     configuration: 'ConfigurationModifiers'
@@ -70,8 +67,7 @@ class EnablementTristate( __.Enum ): # TODO: Python 3.11: StrEnum
         return self.Retain is self
 
 
-@__.standard_dataclass
-class ConfigurationModifiers:
+class ConfigurationModifiers( __.immut.DataclassObject ):
     ''' Configuration injectors/modifiers. '''
 
     maintenance: __.a.Annotation[
@@ -176,12 +172,8 @@ class ConfigurationModifiers:
         return tuple( edits )
 
 
-class ExecuteServerCommand( metaclass = __.ABCFactory ):
+class ExecuteServerCommand( metaclass = __.immut.ProtocolClass ):
     ''' Runs API server until signal. '''
-    # Note: Cannot use protocol class becaue Tyro chokes on that.
-    #
-    #       tyro._instantiators.UnsupportedTypeAnnotationError:
-    #           Default values for generic subparsers are not supported.
 
     @__.abstract_member_function
     async def __call__(

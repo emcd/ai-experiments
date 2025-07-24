@@ -26,9 +26,7 @@ from __future__ import annotations
 from . import __
 
 
-class DirectoryManager(
-    __.immut.DataclassObject
-):
+class DirectoryManager( __.immut.DataclassObject ):
     ''' Manages conversation and message content directories. '''
 
     auxdata: __.accret.Namespace
@@ -70,9 +68,8 @@ class DirectoryManager(
 
 
 class Content(
-    __.immut.Protocol,
-    __.a.Protocol,
-    class_decorators = ( __.dataclass, __.a.runtime_checkable ),
+    __.immut.DataclassProtocolMutable, __.a.Protocol,
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Base for various content types. '''
 
@@ -82,7 +79,7 @@ class Content(
         raise NotImplementedError
 
 
-class TextualContent( Content, class_decorators = ( __.dataclass, ) ):
+class TextualContent( Content ):
     ''' Descriptor and data for textual content. '''
 
     data: str
@@ -147,8 +144,7 @@ class Role( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class Canister(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
+    __.immut.DataclassProtocol, __.a.Protocol,
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Message canister which can have multiple contents. '''
@@ -186,49 +182,37 @@ class Canister(
         ''' Corresponding message role for canister. '''
 
 
-class AssistantCanister(
-    Canister
-):
+class AssistantCanister( Canister ):
     ''' Message canister for assistant role. '''
 
     @property
     def role( self ) -> Role: return Role.Assistant
 
-class DocumentCanister(
-    Canister
-):
+class DocumentCanister( Canister ):
     ''' Message canister for document role. '''
 
     @property
     def role( self ) -> Role: return Role.Document
 
-class InvocationCanister(
-    Canister
-):
+class InvocationCanister( Canister ):
     ''' Message canister for invocation role. '''
 
     @property
     def role( self ) -> Role: return Role.Invocation
 
-class ResultCanister(
-    Canister
-):
+class ResultCanister( Canister ):
     ''' Message canister for result role. '''
 
     @property
     def role( self ) -> Role: return Role.Result
 
-class SupervisorCanister(
-    Canister
-):
+class SupervisorCanister( Canister ):
     ''' Message canister for supervisor role. '''
 
     @property
     def role( self ) -> Role: return Role.Supervisor
 
-class UserCanister(
-    Canister
-):
+class UserCanister( Canister ):
     ''' Message canister for user role. '''
 
     @property
@@ -269,8 +253,9 @@ def create_content( data, /, **descriptor ):
             mimetype = from_buffer( data, mime = True )
     mimetype_class = classify_mimetype( mimetype )
     if 'textual' == mimetype_class:
-        if isinstance( data, str ): return TextualContent( data, **descriptor )
-        return TextualContent( data.decode( ), **descriptor )
+        if isinstance( data, str ):
+            return TextualContent( data = data, **descriptor )
+        return TextualContent( data = data.decode( ), **descriptor )
     # TODO: aural, motion-av, pictorial
     raise NotImplementedError( f"MIME type not implemented: {mimetype}" )
 

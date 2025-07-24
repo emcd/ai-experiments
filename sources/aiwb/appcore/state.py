@@ -24,8 +24,7 @@
 from . import __
 
 
-class Globals(
-    __.CoreGlobals):
+class Globals( __.CoreGlobals ):
     ''' Immutable global data. Required by many application functions. '''
 
     # TODO: Use proper types.

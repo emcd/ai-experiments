@@ -45,24 +45,20 @@ class AdapterInode( metaclass = __.ABCFactory ):
     # git/hg: relevant branches and tags?
 
 
-class AcquireContentResult(
-    __.immut.DataclassObject
-):
+class AcquireContentResult( __.immut.DataclassObject ):
     ''' Inode and arbitrary content from acquisition operation. '''
 
     content: __.a.Any
     inode: 'Inode'
 
 
-class AcquireContentBytesResult(
-    AcquireContentResult):
+class AcquireContentBytesResult( AcquireContentResult ):
     ''' Inode and content, as raw bytes, from acquisition operation. '''
 
     content: bytes
 
 
-class AcquireContentTextResult(
-    AcquireContentResult):
+class AcquireContentTextResult( AcquireContentResult ):
     ''' Inode and content, as Unicode string, from acquisition operation. '''
 
     content: str
@@ -285,7 +281,7 @@ class Url(
     __.immut.Object, _UrlParts, instances_ignore_init_arguments = True
 ):
     ''' Tracks URL components separately. Displays as original string. '''
-    
+
     # Add explicit type annotations for ParseResult fields to fix Tyro compatibility
     scheme: str
     netloc: str

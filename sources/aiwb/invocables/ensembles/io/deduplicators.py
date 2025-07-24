@@ -46,8 +46,7 @@ from __future__ import annotations
 from . import __
 
 
-class IoContentDeduplicator(
-    __.Deduplicator):
+class IoContentDeduplicator( __.Deduplicator ):
     ''' Deduplicates I/O content operations. '''
 
     @classmethod
@@ -70,8 +69,7 @@ class IoContentDeduplicator(
         return False
 
 
-class SurveyDirectoryDeduplicator(
-    __.Deduplicator):
+class SurveyDirectoryDeduplicator( __.Deduplicator ):
     ''' Deduplicates directory survey operations. '''
 
     @classmethod

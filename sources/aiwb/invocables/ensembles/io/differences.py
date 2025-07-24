@@ -31,8 +31,7 @@ class DeltaType( str, __.Enum ):
     REPLACE = 'replace'
 
 
-@__.dataclass
-class Operation:
+class Operation( __.immut.DataclassObject ):
     ''' A single delta operation. '''
     opcode: DeltaType
     start: int

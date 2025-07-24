@@ -27,9 +27,8 @@ from . import __
 
 
 class Definition(
-    __.immut.Protocol,
-    __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    __.immut.Protocol, __.a.Protocol,
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Definition of prompt. Produces prompt instances. '''
     # TODO: Immutability of instances.
@@ -40,9 +39,8 @@ class Definition(
     __slots__ = ( 'name', 'store', )
 
     class Instance(
-        __.immut.Protocol,
-    __.a.Protocol,
-        class_decorators = ( __.a.runtime_checkable, ),
+        __.immut.Protocol, __.a.Protocol,
+        decorators = ( __.a.runtime_checkable, ),
     ):
         ''' Renderable instance of prompt. '''
         # TODO: Immutability of instances.
@@ -84,8 +82,7 @@ class Definition(
 
 
 class Store(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
+    __.immut.DataclassProtocol, __.a.Protocol,
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Record for prompt store. '''

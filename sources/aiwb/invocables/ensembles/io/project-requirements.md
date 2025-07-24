@@ -111,7 +111,7 @@ Add support for named projects that contain selected files from the file system.
        description="Implementation of Feature X",
        roots=["/path/to/source", "/path/to/tests"]
    )
-   
+
    # Adding files to project
    add_to_project(
        project="feature-x",
@@ -154,17 +154,15 @@ Add support for named projects that contain selected files from the file system.
 
 1. **Project Record**:
    ```python
-   @dataclass
-   class Project:
+   class Project( __.immut.DataclassObject ):
        name: str
        description: str
        created_at: datetime
        modified_at: datetime
        roots: list[Path]
        files: dict[Path, FileRecord]
-   
-   @dataclass
-   class FileRecord:
+
+   class FileRecord( __.immut.DataclassObject ):
        path: Path
        last_modified: datetime
        last_conversation: int  # Conversation ID
@@ -201,8 +199,7 @@ Add support for named projects that contain selected files from the file system.
 
 2. **Display Preferences**:
    ```python
-   @dataclass
-   class FilePreferences:
+   class FilePreferences( __.immut.DataclassObject ):
        show_line_numbers: bool = True  # Display as line/content dict
        default_expanded: bool = True   # Show content by default
        sync_to_git: bool = True       # For Git-backed projects
@@ -210,8 +207,7 @@ Add support for named projects that contain selected files from the file system.
 
 3. **Git Integration**:
    ```python
-   @dataclass
-   class GitConfig:
+   class GitConfig( __.immut.DataclassObject ):
        repo_url: str
        branch: str
        local_path: Path

@@ -24,32 +24,26 @@
 from . import __
 
 
-class _NotificationBase(
-    __.immut.DataclassObject
-):
+class _NotificationBase( __.immut.DataclassObject ):
     ''' Common base for notifications. '''
 
     summary: str
     details: __.a.Any
 
 
-class ApprisalNotification(
-    _NotificationBase):
+class ApprisalNotification( _NotificationBase ):
     ''' Notification for recoverable error or similar condition. '''
 
     exception: BaseException = None
 
 
-class ErrorNotification(
-    _NotificationBase):
+class ErrorNotification( _NotificationBase ):
     ''' Notification for non-recoverable error. '''
 
     error: Exception
 
 
-class Queue(
-    __.immut.DataclassObject
-):
+class Queue( __.immut.DataclassObject ):
     ''' Queue for notifications to be consumed by application. '''
 
     # TODO: Hide queue attribute.

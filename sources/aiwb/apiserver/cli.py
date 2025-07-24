@@ -28,11 +28,8 @@ from . import server as _server
 from . import state as _state
 
 
-@__.standard_dataclass
 class Cli( __.ApplicationCli ):
     ''' CLI for execution, inspection, and tests of API server. '''
-    # TODO: metaclass = AccretiveDataclass
-    #       Accretive, because Tyro adds class attributes.
 
     apiserver: _server.Control = _server.Control( )
     command: __.a.Union[
@@ -62,7 +59,6 @@ class Cli( __.ApplicationCli ):
         return args
 
 
-@__.standard_dataclass
 class ExecuteServerCommand( __.ApplicationCliExecuteServerCommand ):
     ''' Runs API server until signal. '''
 

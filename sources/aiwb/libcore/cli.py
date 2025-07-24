@@ -36,11 +36,11 @@ __.tyro.conf.configure( __.tyro.conf.OmitArgPrefixes )(
         _application.Information )
 
 
-@__.standard_dataclass
-class Cli:
+class Cli(
+    metaclass = __.accret.Dataclass,
+    class_mutables = ( '__dataclass_params__', ),
+):
     ''' Utility for inspection and tests of library core. '''
-    # TODO: metaclass = AccretiveDataclass
-    #       Accretive, because Tyro adds class attributes.
 
     application: _application.Information
     configfile: __.a.Nullable[ str ] = None
@@ -103,8 +103,7 @@ class Inspectees( __.Enum ): # TODO: Python 3.11: StrEnum
     ''' Displays application-relevant process environment. '''
 
 
-@__.standard_dataclass
-class ConsoleDisplay:
+class ConsoleDisplay( __.immut.DataclassObject ):
     ''' Display of command results. '''
 
     silence: __.a.Annotation[
@@ -186,8 +185,7 @@ class ConsoleDisplay:
         ( await self.provide_printer( ) )( obj )
 
 
-@__.standard_dataclass
-class InspectCommand:
+class InspectCommand( metaclass = __.accret.Dataclass ):
     ''' Displays some facet of the application. '''
 
     inspectee: __.a.Annotation[
@@ -211,8 +209,7 @@ class InspectCommand:
                     if name.startswith( prefix ) } )
 
 
-@__.standard_dataclass
-class LocationCommand:
+class LocationCommand( metaclass = __.accret.Dataclass ):
     ''' Accesses a location via URL or local filesystem path. '''
 
     command: __.a.Union[
@@ -234,8 +231,7 @@ class LocationCommand:
     ): await self.command( auxdata = auxdata, display = display )
 
 
-@__.standard_dataclass
-class LocationSurveyDirectoryCommand:
+class LocationSurveyDirectoryCommand( metaclass = __.accret.Dataclass ):
     ''' Lists directory given by URL or filesystem path. '''
 
     # TODO: Cache options.
@@ -265,8 +261,7 @@ class LocationSurveyDirectoryCommand:
         await display.render( dirents )
 
 
-@__.standard_dataclass
-class LocationAcquireContentCommand:
+class LocationAcquireContentCommand( metaclass = __.accret.Dataclass ):
     ''' Reads content from file at given URL or filesystem path. '''
 
     # TODO: Options

@@ -32,8 +32,7 @@ from . import __
 _execution_id = __.uuid4( ).urn
 
 
-@__.standard_dataclass
-class Information:
+class Information( metaclass = __.accret.Dataclass ):
     ''' Information about an application. '''
 
     name: __.a.Annotation[

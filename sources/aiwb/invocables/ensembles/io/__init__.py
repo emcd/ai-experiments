@@ -53,8 +53,7 @@ async def prepare(
 __.preparers[ _name ] = prepare
 
 
-class Ensemble(
-    __.Ensemble):
+class Ensemble( __.Ensemble ):
 
     async def prepare_invokers(
         self, auxdata: __.Globals

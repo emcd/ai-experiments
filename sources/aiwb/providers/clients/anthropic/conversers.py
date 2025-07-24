@@ -24,10 +24,6 @@ from __future__ import annotations
 
 from . import __
 
-# Import core types for dynadoc introspection of Protocol classes
-# These are needed because Protocol classes use forward references
-from ...core import ConverserFormatPreferences, ConverserModalities, ConverserTokensLimits
-
 # TODO: Revisit caching. May need notion of keepalive chat completions
 #       to maintain cache warmth when user is formulating a long response.
 
@@ -48,8 +44,7 @@ class NativeMessageRefinementActions( __.Enum ): # TODO: Python 3.11: StrEnum
     Merge       = 'merge'
 
 
-class Attributes(
-    __.ConverserAttributes):
+class Attributes( __.ConverserAttributes ):
     ''' Common attributes for Anthropic chat models. '''
 
     supports_computer_use: bool = False
@@ -70,8 +65,7 @@ class Attributes(
         return selfclass( **args )
 
 
-class ControlsProcessor(
-    __.ControlsProcessor ):
+class ControlsProcessor( __.ControlsProcessor ):
     ''' Controls nativization for Anthropic chat models. '''
 
     def nativize_controls(
@@ -93,8 +87,7 @@ class ControlsProcessor(
         return args
 
 
-class InvocationsProcessor(
-    __.InvocationsProcessor):
+class InvocationsProcessor( __.InvocationsProcessor ):
     ''' Handles tool calls for Anthropic chat models. '''
 
     async def __call__(
@@ -168,8 +161,7 @@ class InvocationsProcessor(
         return requests
 
 
-class MessagesProcessor(
-    __.MessagesProcessor):
+class MessagesProcessor( __.MessagesProcessor ):
     ''' Handles conversation messages in Anthropic format. '''
 
     def nativize_messages_v0(
@@ -185,8 +177,7 @@ class MessagesProcessor(
         return _refine_native_messages( self.model, messages_pre )
 
 
-class Model(
-    __.ConverserModel):
+class Model( __.ConverserModel ):
     ''' Anthropic chat model. '''
 
     @classmethod
@@ -237,8 +228,7 @@ class Model(
         return await _converse_complete_v0( self, args, reactors )
 
 
-class SerdeProcessor(
-    __.ConverserSerdeProcessor):
+class SerdeProcessor( __.ConverserSerdeProcessor ):
     ''' (De)serialization for Anthropic chat models. '''
 
     def deserialize_data( self, data: str ) -> __.a.Any:
@@ -260,8 +250,7 @@ class SerdeProcessor(
             f"Cannot serialize data to {data_format.value} format." )
 
 
-class Tokenizer(
-    __.ConversationTokenizer):
+class Tokenizer( __.ConversationTokenizer ):
     ''' Tokenizes conversations and text with Anthropic tokenizers. '''
 
     async def count_text_tokens( self, text: str ) -> int:

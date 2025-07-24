@@ -37,9 +37,8 @@ from . import exceptions as _exceptions
 
 
 class _Common(
-    __.immut.Protocol,
-    __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    __.immut.Protocol, __.a.Protocol,
+    decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Common functionality across all accessors. '''
 

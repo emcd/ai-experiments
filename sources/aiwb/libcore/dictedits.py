@@ -27,8 +27,7 @@ from . import __
 
 
 class Edit(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
+    __.immut.DataclassProtocol, __.a.Protocol,
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Base representation of an edit to configuration. '''

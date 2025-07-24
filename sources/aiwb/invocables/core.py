@@ -34,8 +34,7 @@ ArgumentsModel: __.a.TypeAlias = __.DictionaryProxy[ str, __.a.Any ]
 
 
 class Deduplicator(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
+    __.immut.DataclassProtocol, __.a.Protocol,
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Determines if tool invocations can be deduplicated. '''
@@ -68,8 +67,7 @@ class Context(
 
 
 class Ensemble(
-    __.immut.DataclassProtocol,
-    __.a.Protocol,
+    __.immut.DataclassProtocol, __.a.Protocol,
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Ensemble of invokers for related tools. '''

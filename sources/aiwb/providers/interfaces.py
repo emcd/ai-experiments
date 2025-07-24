@@ -276,7 +276,7 @@ class InvocationsProcessor(
 
 
 class MessagesProcessor(
-    __.immut.DataclassProtocol, __.a.Protocol[ NativeMessages ],
+    __.immut.DataclassProtocol, __.a.Protocol[ _core.NativeMessages ],
     decorators = ( __.a.runtime_checkable, ),
 ):
     ''' Handles everything related to messages. '''

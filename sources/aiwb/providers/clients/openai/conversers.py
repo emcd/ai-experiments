@@ -24,10 +24,6 @@ from __future__ import annotations
 
 from . import __
 
-# Import core types for dynadoc introspection of Protocol classes
-# These are needed because Protocol classes use forward references
-from ...core import ConverserFormatPreferences, ConverserModalities, ConverserTokensLimits
-
 
 # TODO: Python 3.12: Use type statement for aliases.
 # TODO? Use typing.TypedDictionary.
@@ -59,8 +55,7 @@ class NativeSupervisorRoles( __.Enum ):
     Developer   = 'developer'   # Reasoning models. Late 2024 and beyond.
 
 
-class Attributes(
-    __.ConverserAttributes):
+class Attributes( __.ConverserAttributes ):
     ''' Common attributes for OpenAI chat models. '''
 
     extra_tokens_for_actor_name: int = 0
@@ -99,8 +94,7 @@ class Attributes(
         return selfclass( **args )
 
 
-class ControlsProcessor(
-    __.ControlsProcessor ):
+class ControlsProcessor( __.ControlsProcessor ):
     ''' Controls nativization for OpenAI chat models. '''
 
     def nativize_controls(
@@ -117,8 +111,7 @@ class ControlsProcessor(
         return args
 
 
-class InvocationsProcessor(
-    __.InvocationsProcessor):
+class InvocationsProcessor( __.InvocationsProcessor ):
     ''' Handles functions and tool calls for OpenAI chat models. '''
 
     async def __call__(
@@ -252,8 +245,7 @@ def _filter_stray_tool_results(
     return filtered
 
 
-class MessagesProcessor(
-    __.MessagesProcessor):
+class MessagesProcessor( __.MessagesProcessor ):
     ''' Handles conversation messages in OpenAI format. '''
 
     def nativize_messages_v0(
@@ -271,8 +263,7 @@ class MessagesProcessor(
         return _refine_native_messages( self.model, messages_pre )
 
 
-class Model(
-    __.ConverserModel):
+class Model( __.ConverserModel ):
     ''' OpenAI chat model. '''
 
     @classmethod
@@ -332,8 +323,7 @@ class Model(
         return _process_complete_response_v0( self, response, reactors )
 
 
-class SerdeProcessor(
-    __.ConverserSerdeProcessor):
+class SerdeProcessor( __.ConverserSerdeProcessor ):
     ''' (De)serialization for OpenAI chat models. '''
 
     def deserialize_data( self, data: str ) -> __.a.Any:
@@ -355,8 +345,7 @@ class SerdeProcessor(
             f"Cannot serialize data to {data_format.value} format." )
 
 
-class Tokenizer(
-    __.ConversationTokenizer):
+class Tokenizer( __.ConversationTokenizer ):
     ''' Tokenizes conversations and text with OpenAI tokenizers. '''
 
     async def count_text_tokens( self, text: str ) -> int:

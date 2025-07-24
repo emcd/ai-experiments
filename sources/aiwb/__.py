@@ -22,12 +22,10 @@
 
 # ruff: noqa: F401
 
-# TODO: Move immutability machinery to separate package.
-
-
-import enum
-import io
-import re
+import dataclasses as           dcls
+import                          enum
+import                          io
+import                          re
 
 from abc import (
     ABCMeta as ABCFactory,
@@ -95,7 +93,6 @@ import                      tyro
 from . import _annotations as a
 from . import _generics as g
 
-# TODO: Python 3.12: Use type statement for aliases.
 ClassDecorators: a.TypeAlias = AbstractIterable[ a.Callable[ [ type ], type ] ]
 NominativeArgumentsDictionary: a.TypeAlias = AbstractDictionary[ str, a.Any ]
 TextComparand: a.TypeAlias = str | re.Pattern
@@ -293,8 +290,7 @@ PossiblePath: a.TypeAlias = bytes | str | PathLike
 absent: a.Annotation[
     Absent, a.Doc( ''' Sentinel for option with no default value. ''' )
 ] = Absent( )
-package_name = __package__.split( '.', maxsplit = 1 )[ 0 ]
-standard_dataclass = dataclass( frozen = True, kw_only = True, slots = True )
+package_name = __name__.split( '.', maxsplit = 1 )[ 0 ]
 
 
 def calculate_class_fqname( class_: type ) -> str:
