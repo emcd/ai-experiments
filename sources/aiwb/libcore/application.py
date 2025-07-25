@@ -40,15 +40,15 @@ class Information( metaclass = __.accret.Dataclass ):
         __.a.Doc( "For derivation of platform directories." ),
     ] = __.package_name
     publisher: __.a.Annotation[
-        __.a.Nullable[ str ],
+        __.typx.Optional[ str ],
         __.a.Doc( "For derivation of platform directories." ),
     ] = None
     version: __.a.Annotation[
-        __.a.Nullable[ str ],
+        __.typx.Optional[ str ],
         __.a.Doc( "For derivation of platform directories." ),
     ] = None
     execution_id: __.a.Annotation[
-        __.a.Nullable[ str ],
+        __.typx.Optional[ str ],
         __.a.Doc( "For telemetry, etc..." ),
     ] = _execution_id
 

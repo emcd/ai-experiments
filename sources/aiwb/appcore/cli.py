@@ -71,7 +71,7 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
     ''' Configuration injectors/modifiers. '''
 
     maintenance: __.a.Annotation[
-        __.a.Nullable[ bool ],
+        __.typx.Optional[ bool ],
         __.tyro.conf.arg( name = 'maintenance-mode', prefix_name = False ),
     ] = None
     all_promptstores: __.a.Annotation[

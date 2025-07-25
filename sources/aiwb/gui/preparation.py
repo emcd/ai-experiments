@@ -43,7 +43,7 @@ async def prepare(
     apiserver: __.ApiServerControl = __.ApiServerControl( ),
     application: __.ApplicationInformation = __.ApplicationInformation( ),
     configedits: __.DictionaryEdits = ( ),
-    configfile: __.Optional[ __.Url ] = __.absent,
+    configfile: __.Absential[ __.Url ] = __.absent,
     environment: bool = True,
     guiserver: _server.Control = _server.Control,
     inscription: __.InscriptionControl = (

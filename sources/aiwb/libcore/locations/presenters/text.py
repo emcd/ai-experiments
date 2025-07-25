@@ -33,9 +33,9 @@ _entity_name = f"location content presenter '{_module_name}'"
 class FilePresenter( __.FilePresenter ):
     ''' Presenter with standard operations on text files. '''
 
-    charset: __.a.Nullable[ str ] = None
+    charset: __.typx.Optional[ str ] = None
     charset_errors: str = 'strict'
-    newline: __.a.Nullable[ str ] = None
+    newline: __.typx.Optional[ str ] = None
 
     async def acquire_content( self ) -> str:
         return ( await self.acquire_content_result( ) ).content

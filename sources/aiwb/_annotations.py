@@ -33,7 +33,6 @@ from typing_extensions import (
     Generic,
     Literal,
     Never,
-    Optional as Nullable, # Prefer to <type> | None.
     Protocol,
     Self,
     TypeAlias,

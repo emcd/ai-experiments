@@ -67,7 +67,7 @@ class ElementsEntryEdit( Edit ):
     ''' Applies entry edit to every matching dictionary in array. '''
 
     editee: tuple[ str, __.a.Any ]
-    identifier: __.a.Nullable[ tuple[ str, __.a.Any ] ] = None
+    identifier: __.typx.Optional[ tuple[ str, __.a.Any ] ] = None
 
     def __call__( self, configuration: __.AbstractMutableDictionary ):
         array = self.dereference( configuration )

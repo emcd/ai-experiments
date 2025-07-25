@@ -177,7 +177,7 @@ class DirectoryOperations(
     async def survey_entries(
         self,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
-        filters: __.Optional[
+        filters: __.Absential[
             __.AbstractIterable[ 'PossibleFilter' ]
         ] = __.absent,
         recurse: bool = True,
@@ -250,7 +250,7 @@ class GeneralOperations(
         self,
         force: bool = False,
         pursue_indirection: bool = True,
-        species: __.Optional[ _core.LocationSpecies ] = __.absent,
+        species: __.Absential[ _core.LocationSpecies ] = __.absent,
     ) -> 'SpecificAccessor':
         ''' Discovers appropriate specific accessor for location. '''
         raise NotImplementedError
@@ -258,7 +258,7 @@ class GeneralOperations(
     async def discover_species(
         self,
         pursue_indirection: bool = True,
-        species: __.Optional[ _core.LocationSpecies ] = __.absent,
+        species: __.Absential[ _core.LocationSpecies ] = __.absent,
     ) -> _core.LocationSpecies:
         ''' Discovers or asserts species of location. '''
         Error = __.partial_function(

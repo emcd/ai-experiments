@@ -37,9 +37,9 @@ async def prepare(
     exits: __.ExitsAsync,
     application: _application.Information = _application.Information( ),
     configedits: _dictedits.Edits = ( ),
-    configfile: __.Optional[ _locations.Url ] = __.absent,
+    configfile: __.Absential[ _locations.Url ] = __.absent,
     environment: bool = False,
-    inscription: __.Optional[ _inscription.Control ] = __.absent,
+    inscription: __.Absential[ _inscription.Control ] = __.absent,
 ) -> _state.Globals:
     ''' Prepares globals DTO for use with library functions.
 

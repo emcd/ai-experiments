@@ -31,7 +31,7 @@ def honor_inode_attributes(
     inode: _core.Inode,
     attributes: _core.InodeAttributes,
     error_to_raise: _exceptions.LocationOperateFailure,
-    content: __.Optional[ bytes ] = __.absent,
+    content: __.Absential[ bytes ] = __.absent,
 ) -> _core.Inode:
     ''' Honor requests for specific inode attributes. '''
     # Note: This function is too long. Not seeing a good way to break it up.

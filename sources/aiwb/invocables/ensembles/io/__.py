@@ -29,7 +29,7 @@ from ..__ import *
 
 async def accessor_from_arguments(
     arguments: Arguments,
-    species: Optional[ LocationSpecies ] = absent,
+    species: Absential[ LocationSpecies ] = absent,
 ) -> SpecificLocationAccessor:
     url = Url.from_url( arguments.pop( 'location' ) )
     adapter = location_adapter_from_url( url )

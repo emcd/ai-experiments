@@ -43,7 +43,7 @@ class Cli(
     ''' Utility for inspection and tests of library core. '''
 
     application: _application.Information
-    configfile: __.a.Nullable[ str ] = None
+    configfile: __.typx.Optional[ str ] = None
     display: 'ConsoleDisplay'
     inscription: _inscription.Control
     command: __.a.Union[
@@ -112,14 +112,14 @@ class ConsoleDisplay( __.immut.DataclassObject ):
             aliases = ( '--quiet', '--silent', ), prefix_name = False ),
     ] = False
     colorize: __.a.Annotation[
-        __.a.Nullable[ bool ],
+        __.typx.Optional[ bool ],
         __.tyro.conf.arg(
             name = 'console-colorization',
             aliases = ( '--colorize-console', ),
             prefix_name = False ),
     ] = None
     file: __.a.Annotation[
-        __.a.Nullable[ __.Path ],
+        __.typx.Optional[ __.Path ],
         __.tyro.conf.arg(
             name = 'console-capture-file', prefix_name = False ),
     ] = None

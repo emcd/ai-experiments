@@ -217,7 +217,7 @@ class GeneralCache( _Common, __.GeneralCache ):
         self,
         force: bool = False,
         pursue_indirection: bool = True,
-        species: __.Optional[ __.LocationSpecies ] = __.absent,
+        species: __.Absential[ __.LocationSpecies ] = __.absent,
     ) -> '__.SpecificCache':
         Error = __.partial_function(
             __.LocationAccessorDerivationFailure,
@@ -362,7 +362,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
     async def survey_entries(
         self,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
-        filters: __.Optional[
+        filters: __.Absential[
             __.AbstractIterable[ __.PossibleFilter ]
         ] = __.absent,
         recurse: bool = True

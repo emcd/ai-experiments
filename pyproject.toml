@@ -10,6 +10,7 @@ license = 'Apache-2.0'
 readme = { 'file' = 'README.md', 'content-type' = 'text/markdown' }
 requires-python = '>= 3.10'
 dependencies = [
+  'absence~=1.1',
   'accretive~=4.1',
   'aiofiles',
   'chardet',

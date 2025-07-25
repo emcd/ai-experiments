@@ -72,7 +72,7 @@ async def apply_filters(
 
 def cache_from_url(
     url: _core.PossibleUrl,
-    manager: __.Optional[ '_interfaces.CacheManager' ] = __.absent,
+    manager: __.Absential[ '_interfaces.CacheManager' ] = __.absent,
 ) -> '_interfaces.GeneralCache':
     ''' Produces cache from URL and cache manager. '''
     adapter = adapter_from_url( url = url )
@@ -104,7 +104,7 @@ def file_adapter_from_url(
 
 async def file_presenter_from_accessor(
     accessor: '_interfaces.FileAccessor',
-    mimetype: __.Optional[ str ] = __.absent,
+    mimetype: __.Absential[ str ] = __.absent,
 ) -> '_interfaces.FileAccessor' | '_interfaces.FilePresenter':
     ''' Produces file content presenter from accessor, if possible.
 
@@ -124,7 +124,7 @@ async def file_presenter_from_accessor(
 
 async def file_presenter_from_url(
     url: _core.PossibleUrl,
-    mimetype: __.Optional[ str ] = __.absent,
+    mimetype: __.Absential[ str ] = __.absent,
 ) -> '_interfaces.FileAccessor' | '_interfaces.FilePresenter':
     ''' Produces file content presenter from URL, if possible.
 
@@ -136,9 +136,9 @@ async def file_presenter_from_url(
 
 def text_file_presenter_from_accessor(
     accessor: '_interfaces.FileAccessor',
-    charset: __.Optional[ str ] = __.absent,
+    charset: __.Absential[ str ] = __.absent,
     charset_errors: str = 'strict',
-    newline: __.Optional[ str ] = __.absent,
+    newline: __.Absential[ str ] = __.absent,
 ) -> '_interfaces.FilePresenter':
     ''' Produces text file content presenter from accessor. '''
     charset_ = None if __.absent is charset else charset
@@ -152,9 +152,9 @@ def text_file_presenter_from_accessor(
 
 def text_file_presenter_from_url(
     url: _core.PossibleUrl,
-    charset: __.Optional[ str ] = __.absent,
+    charset: __.Absential[ str ] = __.absent,
     charset_errors: str = 'strict',
-    newline: __.Optional[ str ] = __.absent,
+    newline: __.Absential[ str ] = __.absent,
 ) -> '_interfaces.FilePresenter':
     ''' Produces text file content presenter from URL. '''
     adapter = adapter_from_url( url ).as_file( )

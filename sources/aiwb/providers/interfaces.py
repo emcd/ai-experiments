@@ -161,7 +161,7 @@ class Client(
     async def survey_models(
         self,
         auxdata: __.CoreGlobals,
-        genus: __.Optional[ _core.ModelGenera ] = __.absent,
+        genus: __.Absential[ _core.ModelGenera ] = __.absent,
     ) -> __.AbstractSequence[ 'Model' ]:
         ''' Returns models available from provider.
 

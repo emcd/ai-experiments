@@ -577,11 +577,11 @@ class ConversationDescriptor(
         __.dataclass_declare( default_factory = lambda: __.uuid4( ).hex ) )
     timestamp: int = (
         __.dataclass_declare( default_factory = __.time_ns ) )
-    title: __.a.Nullable[ str ] = None
+    title: __.typx.Optional[ str ] = None
     labels: __.AbstractMutableSequence[ str ] = (
         __.dataclass_declare( default_factory = list ) )
-    gui: __.a.Nullable[ __.SimpleNamespace ] = None
-    indicator: __.a.Nullable[ Row ] = None
+    gui: __.typx.Optional[ __.SimpleNamespace ] = None
+    indicator: __.typx.Optional[ Row ] = None
 
 
 class ConversationIndicator( ReactiveHTML ):

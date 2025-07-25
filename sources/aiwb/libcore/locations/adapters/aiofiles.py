@@ -138,7 +138,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         self,
         force: bool = False,
         pursue_indirection: bool = True,
-        species: __.Optional[ __.LocationSpecies ] = __.absent,
+        species: __.Absential[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificAdapter:
         Error = __.partial_function(
             __.LocationAccessorDerivationFailure,
@@ -294,7 +294,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
     async def survey_entries(
         self,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
-        filters: __.Optional[
+        filters: __.Absential[
             __.AbstractIterable[ __.PossibleFilter ]
         ] = __.absent,
         recurse: bool = True
@@ -429,17 +429,17 @@ async def _create_parent_directories(
         raise error_to_raise( reason = str( exc ) ) from exc
 
 
-def _derive_mimetype( species: __.LocationSpecies ) -> __.Nullable[ str ]:
+def _derive_mimetype( species: __.LocationSpecies ) -> __.typx.Optional[ str ]:
     match species:
         case __.LocationSpecies.Blocks:     return 'inode/blockdevice'
         case __.LocationSpecies.Directory:  return 'inode/directory'
-        case __.LocationSpecies.File:       return
+        case __.LocationSpecies.File:       return None
         case __.LocationSpecies.Pipe:       return 'inode/fifo'
         case __.LocationSpecies.Socket:     return 'inode/socket'
         case __.LocationSpecies.Stream:     return 'inode/chardevice'
         case __.LocationSpecies.Symlink:    return 'inode/symlink'
-        case __.LocationSpecies.Void:       return
-    return
+        case __.LocationSpecies.Void:       return None
+    return None
 
 
 def _flags_from_file_update_options( options: __.FileUpdateOptions ) -> str:

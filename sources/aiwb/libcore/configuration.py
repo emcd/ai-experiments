@@ -32,7 +32,7 @@ async def acquire(
     directories: __.PlatformDirs,
     distribution: _distribution.Information,
     edits: _dictedits.Edits = ( ),
-    file: __.Optional[ _locations.Url ] = __.absent,
+    file: __.Absential[ _locations.Url ] = __.absent,
 ) -> __.accret.Dictionary:
     ''' Loads configuration as dictionary. '''
     if __.absent is file:

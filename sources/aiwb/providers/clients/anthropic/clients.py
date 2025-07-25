@@ -81,7 +81,7 @@ class Client( __.Client ):
     async def survey_models(
         self,
         auxdata: __.CoreGlobals,
-        genus: __.Optional[ __.ModelGenera ] = __.absent,
+        genus: __.Absential[ __.ModelGenera ] = __.absent,
     ) -> __.AbstractSequence[ __.Model ]:
         if __.absent is genus: genera = _model_genera
         else:

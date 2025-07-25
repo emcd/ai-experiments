@@ -37,7 +37,7 @@ class ModelOperateFailure( __.Omnierror ):
         self,
         model,
         operation: str,
-        cause: __.Optional[ str | Exception ] = __.absent,
+        cause: __.Absential[ str | Exception ] = __.absent,
     ):
         if isinstance( cause, Exception ):
             cause_message = "Cause: {}".format( __.exception_to_str( cause ) )

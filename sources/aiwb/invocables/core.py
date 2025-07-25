@@ -102,7 +102,7 @@ class Invoker(
     ensemble: Ensemble
     invocable: 'Invocable'
     argschema: ArgumentsModel # TODO: Transform/validate on init.
-    deduplicator_class: __.a.Nullable[ type[ Deduplicator ] ] = None
+    deduplicator_class: __.typx.Optional[ type[ Deduplicator ] ] = None
 
     @classmethod
     def from_invocable(
@@ -110,7 +110,7 @@ class Invoker(
         ensemble: Ensemble,
         invocable: 'Invocable',
         argschema: ArgumentsModel,
-        deduplicator_class: __.a.Nullable[ type[ Deduplicator ] ] = None,
+        deduplicator_class: __.typx.Optional[ type[ Deduplicator ] ] = None,
     ) -> __.a.Self:
         ''' Produces invoker from invocable and arguments model.
 

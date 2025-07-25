@@ -160,7 +160,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         self,
         force: bool = False,
         pursue_indirection: bool = True,
-        species: __.Optional[ __.LocationSpecies ] = __.absent,
+        species: __.Absential[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificAdapter:
         Error = __.partial_function(
             __.LocationAccessorDerivationFailure,
@@ -259,7 +259,7 @@ async def register_defaults( ):
 
 def _expiration_from_headers(
     headers: __.AbstractDictionary[ str, str ]
-) -> __.a.Nullable[ __.DateTime ]:
+) -> __.typx.Optional[ __.DateTime ]:
     from email.utils import parsedate_to_datetime
     cache_control = headers.get( 'Cache-Control' )
     expires = headers.get( 'Expires' )

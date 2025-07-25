@@ -179,12 +179,12 @@ class Inode(
     species: 'LocationSpecies'
     permissions: 'Permissions'
     supplement: AdapterInode
-    bytes_count: __.a.Nullable[ int ] = None
-    content_id: __.a.Nullable[ str ] = None
-    mimetype: __.a.Nullable[ str ] = None
-    charset: __.a.Nullable[ str ] = None
-    mtime: __.a.Nullable[ __.DateTime ] = None # modification time
-    etime: __.a.Nullable[ __.DateTime ] = None # expiration time
+    bytes_count: __.typx.Optional[ int ] = None
+    content_id: __.typx.Optional[ str ] = None
+    mimetype: __.typx.Optional[ str ] = None
+    charset: __.typx.Optional[ str ] = None
+    mtime: __.typx.Optional[ __.DateTime ] = None # modification time
+    etime: __.typx.Optional[ __.DateTime ] = None # expiration time
 
     def is_directory( self ) -> bool:
         ''' Does inode represent a directory? '''
@@ -204,12 +204,12 @@ class Inode(
 
     def with_attributes(
         self,
-        bytes_count: __.Optional[ __.a.Nullable[ int ] ] = __.absent,
-        content_id: __.Optional[ __.a.Nullable[ str ] ] = __.absent,
-        mimetype: __.Optional[ __.a.Nullable[ str ] ] = __.absent,
-        charset: __.Optional[ __.a.Nullable[ str ] ] = __.absent,
-        mtime: __.Optional[ __.a.Nullable[ __.DateTime ] ] = __.absent,
-        etime: __.Optional[ __.a.Nullable[ __.DateTime ] ] = __.absent,
+        bytes_count: __.Absential[ __.typx.Optional[ int ] ] = __.absent,
+        content_id: __.Absential[ __.typx.Optional[ str ] ] = __.absent,
+        mimetype: __.Absential[ __.typx.Optional[ str ] ] = __.absent,
+        charset: __.Absential[ __.typx.Optional[ str ] ] = __.absent,
+        mtime: __.Absential[ __.typx.Optional[ __.DateTime ] ] = __.absent,
+        etime: __.Absential[ __.typx.Optional[ __.DateTime ] ] = __.absent,
     ) -> __.a.Self:
         ''' Returns copy with updated attributes. '''
         return type( self )(
