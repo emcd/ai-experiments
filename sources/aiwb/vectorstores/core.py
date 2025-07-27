@@ -21,8 +21,6 @@
 ''' Core classes and functions for vectorstores. '''
 
 
-from __future__ import annotations
-
 from . import __
 
 

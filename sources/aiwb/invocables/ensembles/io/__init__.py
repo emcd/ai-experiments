@@ -20,10 +20,6 @@
 
 ''' Standard ensemble for I/O. '''
 
-# ruff: noqa: F401,F403
-
-
-from __future__ import annotations
 
 from . import __
 from .deduplicators import IoContentDeduplicator, SurveyDirectoryDeduplicator

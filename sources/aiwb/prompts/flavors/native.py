@@ -21,9 +21,6 @@
 ''' Native prompt definitions, instances, and stores. '''
 
 
-from __future__ import annotations
-
-
 from .. import core as _core
 from . import __
 

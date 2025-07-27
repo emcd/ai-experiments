@@ -20,7 +20,6 @@
 
 ''' Converser models for Anthropic AI provider. '''
 
-from __future__ import annotations
 
 from . import __
 

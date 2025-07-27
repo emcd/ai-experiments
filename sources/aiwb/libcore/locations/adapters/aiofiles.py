@@ -21,8 +21,6 @@
 ''' Location access adapter with aiofiles and pathlib. '''
 
 
-from __future__ import annotations
-
 from os import stat_result as _StatResult
 
 from . import __
@@ -391,7 +389,7 @@ async def register_defaults( ):
 
 
 def _access_mode_from_permissions(
-    permissions: __.Permisisons | __.PermissionsTable
+    permissions: '__.Permisisons | __.PermissionsTable'
 ) -> int:
     from os import R_OK, W_OK, X_OK
     table = _tabulate_permissions( permissions )

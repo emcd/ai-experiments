@@ -21,14 +21,10 @@
 ''' Data structures and utilities for API server. '''
 
 
-from __future__ import annotations
-
 from . import __
 
 
-class Accessor(
-    __.immut.DataclassObject
-):
+class Accessor( __.immut.DataclassObject ):
     ''' Accessor for server properties and thread. '''
 
     application: __.FastAPI
@@ -37,9 +33,7 @@ class Accessor(
     thread: __.Thread
 
 
-class Control(
-    __.immut.DataclassObject
-):
+class Control( __.immut.DataclassObject ):
     ''' Binding address and port, etc... for server. '''
 
     address: str = '127.0.0.1'
@@ -80,7 +74,7 @@ async def prepare(
 @__.exit_manager_async
 async def _execute_server_thread(
     server: __.UvicornServer, nomargs: __.AbstractDictionary[ str, __.a.Any ]
-) -> __.AbstractGenerator:
+) -> __.cabc.AsyncGenerator:
     scribe = __.acquire_scribe( __package__ )
     from asyncio import sleep
     from threading import Thread

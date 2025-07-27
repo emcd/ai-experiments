@@ -20,10 +20,6 @@
 
 ''' Factories, mass applicators, and registries. '''
 
-# ruff: noqa: F401
-
-
-from __future__ import annotations
 
 from . import __
 from . import core as _core
@@ -105,7 +101,7 @@ def file_adapter_from_url(
 async def file_presenter_from_accessor(
     accessor: '_interfaces.FileAccessor',
     mimetype: __.Absential[ str ] = __.absent,
-) -> '_interfaces.FileAccessor' | '_interfaces.FilePresenter':
+) -> '_interfaces.FileAccessor | _interfaces.FilePresenter':
     ''' Produces file content presenter from accessor, if possible.
 
         If no registered MIME type, then returns bare file accessor.
@@ -125,7 +121,7 @@ async def file_presenter_from_accessor(
 async def file_presenter_from_url(
     url: _core.PossibleUrl,
     mimetype: __.Absential[ str ] = __.absent,
-) -> '_interfaces.FileAccessor' | '_interfaces.FilePresenter':
+) -> '_interfaces.FileAccessor | _interfaces.FilePresenter':
     ''' Produces file content presenter from URL, if possible.
 
         If no registered MIME type, then returns bare file accessor.

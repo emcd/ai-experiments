@@ -21,8 +21,6 @@
 ''' Generic types. '''
 
 
-from __future__ import annotations
-
 from . import _annotations as _a
 
 
@@ -51,7 +49,7 @@ class Result( _a.Generic[ T ] ):
 
     def transform(
         self, function: _a.Callable[ [ T ], U ]
-    ) -> _a.Self | Result[ U ]:
+    ) -> _a.Self | "Result[ U ]":
         ''' Transforms value in value result. Ignores error result. '''
         # Like Result.map in Rust.
         if isinstance( self, Value ): return Value( function( self.value ) )

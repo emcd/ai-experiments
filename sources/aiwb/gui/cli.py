@@ -21,8 +21,6 @@
 ''' CLI for configuring and executing GUI application. '''
 
 
-from __future__ import annotations
-
 from . import __
 from . import server as _server
 from . import state as _state

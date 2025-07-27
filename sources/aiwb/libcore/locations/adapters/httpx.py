@@ -20,8 +20,6 @@
 ''' Location access adapter with httpx. '''
 
 
-from __future__ import annotations
-
 import httpx as _httpx
 
 from . import __

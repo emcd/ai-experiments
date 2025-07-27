@@ -21,8 +21,6 @@
 ''' Core classes for messages. '''
 
 
-from __future__ import annotations
-
 from . import __
 
 

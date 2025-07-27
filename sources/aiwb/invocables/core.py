@@ -21,8 +21,6 @@
 ''' Core classes and functions for invocables. '''
 
 
-from __future__ import annotations
-
 from . import __
 
 

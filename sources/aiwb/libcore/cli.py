@@ -21,8 +21,6 @@
 ''' Utility CLI for inspecting and testing library core. '''
 
 
-from __future__ import annotations
-
 from . import __
 from . import application as _application
 from . import inscription as _inscription

@@ -21,8 +21,6 @@
 ''' Location access adapter with aiofiles and pathlib. '''
 
 
-from __future__ import annotations
-
 from . import __
 
 

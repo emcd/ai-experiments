@@ -21,8 +21,6 @@
 ''' Factories, mass applicators, and registries. '''
 
 
-from __future__ import annotations
-
 from . import __
 from . import interfaces as _interfaces
 

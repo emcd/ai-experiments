@@ -21,8 +21,6 @@
 ''' Exception classes for AI providers. '''
 
 
-from __future__ import annotations
-
 from . import __
 
 

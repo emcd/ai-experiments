@@ -21,8 +21,6 @@
 ''' CLI for configuring, inspecting, and testing application. '''
 
 
-from __future__ import annotations
-
 from . import __
 from . import state as _state
 

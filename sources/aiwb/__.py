@@ -22,6 +22,7 @@
 
 # ruff: noqa: F401
 
+import collections.abc as       cabc
 import dataclasses as           dcls
 import                          enum
 import                          io

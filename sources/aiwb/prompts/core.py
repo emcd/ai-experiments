@@ -21,8 +21,6 @@
 ''' Core classes and functions for prompts. '''
 
 
-from __future__ import annotations
-
 from . import __
 
 

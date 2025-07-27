@@ -29,8 +29,6 @@
 #       etc...).
 
 
-from __future__ import annotations
-
 from . import __
 from . import core as _core
 from . import exceptions as _exceptions

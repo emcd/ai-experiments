@@ -20,10 +20,6 @@
 
 ''' Standard ensemble for probability. '''
 
-# ruff: noqa: F401,F403
-
-
-from __future__ import annotations
 
 from . import __
 from .argschemata import named_dice_specs_argschema
