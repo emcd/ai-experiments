@@ -24,21 +24,21 @@
 from . import __
 
 
-Arguments: __.a.TypeAlias = __.DictionaryProxy[ str, __.a.Any ]
-#Arguments = __.a.TypeVar( 'Arguments', bound = __.pydantic.BaseModel )
-ArgumentsModel: __.a.TypeAlias = __.DictionaryProxy[ str, __.a.Any ]
-#ArgumentsModel: __.a.TypeAlias = type[ __.pydantic.BaseModel ]
+Arguments: __.typx.TypeAlias = __.DictionaryProxy[ str, __.typx.Any ]
+#Arguments = __.typx.TypeVar( 'Arguments', bound = __.pydantic.BaseModel )
+ArgumentsModel: __.typx.TypeAlias = __.DictionaryProxy[ str, __.typx.Any ]
+#ArgumentsModel: __.typx.TypeAlias = type[ __.pydantic.BaseModel ]
 
 
 
 class Deduplicator(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Determines if tool invocations can be deduplicated. '''
 
     invocable_name: str
-    arguments: __.AbstractDictionary[ str, __.a.Any ]
+    arguments: __.AbstractDictionary[ str, __.typx.Any ]
 
     @classmethod
     @__.abstract_member_function
@@ -49,7 +49,7 @@ class Deduplicator(
     def is_duplicate(
         self,
         invocable_name: str,
-        arguments: __.AbstractDictionary[ str, __.a.Any ],
+        arguments: __.AbstractDictionary[ str, __.typx.Any ],
     ) -> bool:
         raise NotImplementedError
 
@@ -65,8 +65,8 @@ class Context(
 
 
 class Ensemble(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Ensemble of invokers for related tools. '''
 
@@ -109,7 +109,7 @@ class Invoker(
         invocable: 'Invocable',
         argschema: ArgumentsModel,
         deduplicator_class: __.typx.Optional[ type[ Deduplicator ] ] = None,
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         ''' Produces invoker from invocable and arguments model.
 
             The name of the invocable is used as the name of the invoker
@@ -126,17 +126,17 @@ class Invoker(
         auxdata: __.Globals,
         arguments: Arguments, *,
         supplements: __.accret.Dictionary = None,
-    ) -> __.a.Any:
+    ) -> __.typx.Any:
         context = Context(
             auxdata = auxdata, invoker = self, supplements = supplements )
         return await self.invocable( context, arguments )
 
 
-Invocable: __.a.TypeAlias = (
-    __.a.Callable[
+Invocable: __.typx.TypeAlias = (
+    __.typx.Callable[
         [ __.Globals, 'Invoker', Arguments, __.accret.Namespace ],
         #[ Context, Arguments ],
-        __.AbstractCoroutine[ __.a.Any, __.a.Any, __.a.Any ] ] )
+        __.AbstractCoroutine[ __.typx.Any, __.typx.Any, __.typx.Any ] ] )
 
 
 # TODO: Use accretive validator dictionary for preparers registry.
@@ -145,8 +145,8 @@ preparers = __.accret.Dictionary( )
 
 def descriptors_from_configuration(
     auxdata: __.Globals,
-    defaults: __.AbstractDictionary[ str, __.a.Any ] = None,
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+    defaults: __.AbstractDictionary[ str, __.typx.Any ] = None,
+) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.typx.Any ] ]:
     ''' Validates and returns descriptors from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     defaults_ = dict( defaults or { } )

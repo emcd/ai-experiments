@@ -34,9 +34,9 @@ class UpdateRequest(
 ):
     ''' Request for update which may be deduplicated. '''
 
-    updater: __.a.Callable[ ..., __.a.Any ]
-    posargs: __.AbstractSequence[ __.a.Any ] = ( )
-    nomargs: __.AbstractDictionary[ str, __.a.Any ] = __.DictionaryProxy( { } )
+    updater: __.typx.Callable[ ..., __.typx.Any ]
+    posargs: __.AbstractSequence[ __.typx.Any ] = ( )
+    nomargs: __.AbstractDictionary[ str, __.typx.Any ] = __.DictionaryProxy( { } )
 
     def __hash__( self ) -> int:
         return hash( (
@@ -109,9 +109,9 @@ class UpdatesDeduplicator(
 
     async def execute(
         self,
-        updater: __.a.Callable[ ..., __.a.Any ],
-        posargs: __.AbstractSequence[ __.a.Any ] = ( ),
-        nomargs: __.AbstractDictionary[ str, __.a.Any ] = (
+        updater: __.typx.Callable[ ..., __.typx.Any ],
+        posargs: __.AbstractSequence[ __.typx.Any ] = ( ),
+        nomargs: __.AbstractDictionary[ str, __.typx.Any ] = (
             __.DictionaryProxy( { } ) ),
     ) -> None:
         ''' Executes update if not already in progress. '''
@@ -140,9 +140,9 @@ class UpdatesDeduplicator(
 
     async def schedule(
         self,
-        updater: __.a.Callable[ ..., __.a.Any ],
-        posargs: __.AbstractSequence[ __.a.Any ] = ( ),
-        nomargs: __.AbstractDictionary[ str, __.a.Any ] = (
+        updater: __.typx.Callable[ ..., __.typx.Any ],
+        posargs: __.AbstractSequence[ __.typx.Any ] = ( ),
+        nomargs: __.AbstractDictionary[ str, __.typx.Any ] = (
             __.DictionaryProxy( { } ) ),
         delay: float = 0.1,  # seconds
     ) -> None:

@@ -28,7 +28,7 @@ class _NotificationBase( __.immut.DataclassObject ):
     ''' Common base for notifications. '''
 
     summary: str
-    details: __.a.Any
+    details: __.typx.Any
 
 
 class ApprisalNotification( _NotificationBase ):
@@ -55,11 +55,11 @@ class Queue( __.immut.DataclassObject ):
     def enqueue_apprisal(
         self,
         summary: str, *,
-        details: __.a.Any = None,
+        details: __.typx.Any = None,
         exception: BaseException = None,
         inscribe_trace: bool = False,
         scribe: __.Scribe = None,
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         ''' Enqueues apprisal notification, optionally logging it. '''
         if scribe:
             scribe_args = { }
@@ -75,10 +75,10 @@ class Queue( __.immut.DataclassObject ):
         error: Exception,
         summary: str, *,
         append_reason: bool = True,
-        details: __.a.Any = None,
+        details: __.typx.Any = None,
         inscribe_trace: bool = False,
         scribe: __.Scribe = None,
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         ''' Enqueues error notification, optionally logging it. '''
         if append_reason: summary = f"{summary} Reason: {error}"
         if scribe:
@@ -96,7 +96,7 @@ class Queue( __.immut.DataclassObject ):
         self,
         summary: str, *,
         append_reason: bool = True,
-        details: __.a.Any = None,
+        details: __.typx.Any = None,
         inscribe_trace: bool = False,
         scribe: __.Scribe = None
     ):
@@ -110,6 +110,6 @@ class Queue( __.immut.DataclassObject ):
                 inscribe_trace = inscribe_trace,
                 scribe = scribe )
 
-    def _enqueue( self, notification: _NotificationBase ) -> __.a.Self:
+    def _enqueue( self, notification: _NotificationBase ) -> __.typx.Self:
         self.queue.put( notification )
         return self

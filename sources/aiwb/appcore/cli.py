@@ -41,7 +41,7 @@ class Cli( __.CoreCli ):
 
     def prepare_invocation_args(
         self,
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
         args = __.CoreCli.prepare_invocation_args( self )
         args[ 'configedits' ] = self.configuration.as_edits( )
         return args
@@ -68,69 +68,69 @@ class EnablementTristate( __.Enum ): # TODO: Python 3.11: StrEnum
 class ConfigurationModifiers( __.immut.DataclassObject ):
     ''' Configuration injectors/modifiers. '''
 
-    maintenance: __.a.Annotation[
+    maintenance: __.typx.Annotated[
         __.typx.Optional[ bool ],
         __.tyro.conf.arg( name = 'maintenance-mode', prefix_name = False ),
     ] = None
-    all_promptstores: __.a.Annotation[
+    all_promptstores: __.typx.Annotated[
         EnablementTristate,
         __.tyro.conf.arg( prefix_name = False ),
     ] = EnablementTristate.Retain
-    all_providers: __.a.Annotation[
+    all_providers: __.typx.Annotated[
         EnablementTristate,
         __.tyro.conf.arg( prefix_name = False ),
     ] = EnablementTristate.Retain
-    all_vectorizers: __.a.Annotation[
+    all_vectorizers: __.typx.Annotated[
         EnablementTristate,
         __.tyro.conf.arg( prefix_name = False ),
     ] = EnablementTristate.Retain
-    all_vectorstores: __.a.Annotation[
+    all_vectorstores: __.typx.Annotated[
         EnablementTristate,
         __.tyro.conf.arg( prefix_name = False ),
     ] = EnablementTristate.Retain
-    disable_promptstores: __.a.Annotation[
+    disable_promptstores: __.typx.Annotated[
         __.AbstractSequence[ str ],
         __.tyro.conf.arg(
             name = 'disable-promptstore', prefix_name = False ),
         __.tyro.conf.UseAppendAction,
     ] = ( )
-    enable_promptstores: __.a.Annotation[
+    enable_promptstores: __.typx.Annotated[
         __.AbstractSequence[ str ],
         __.tyro.conf.arg(
             name = 'enable-promptstore', prefix_name = False ),
         __.tyro.conf.UseAppendAction,
     ] = ( )
-    disable_providers: __.a.Annotation[
+    disable_providers: __.typx.Annotated[
         __.AbstractSequence[ str ],
         __.tyro.conf.arg(
             name = 'disable-provider', prefix_name = False ),
         __.tyro.conf.UseAppendAction,
     ] = ( )
-    enable_providers: __.a.Annotation[
+    enable_providers: __.typx.Annotated[
         __.AbstractSequence[ str ],
         __.tyro.conf.arg(
             name = 'enable-provider', prefix_name = False ),
         __.tyro.conf.UseAppendAction,
     ] = ( )
-    disable_vectorizers: __.a.Annotation[
+    disable_vectorizers: __.typx.Annotated[
         __.AbstractSequence[ str ],
         __.tyro.conf.arg(
             name = 'disable-vectorizer', prefix_name = False ),
         __.tyro.conf.UseAppendAction,
     ] = ( )
-    enable_vectorizers: __.a.Annotation[
+    enable_vectorizers: __.typx.Annotated[
         __.AbstractSequence[ str ],
         __.tyro.conf.arg(
             name = 'enable-vectorizer', prefix_name = False ),
         __.tyro.conf.UseAppendAction,
     ] = ( )
-    disable_vectorstores: __.a.Annotation[
+    disable_vectorstores: __.typx.Annotated[
         __.AbstractSequence[ str ],
         __.tyro.conf.arg(
             name = 'disable-vectorstore', prefix_name = False ),
         __.tyro.conf.UseAppendAction,
     ] = ( )
-    enable_vectorstores: __.a.Annotation[
+    enable_vectorstores: __.typx.Annotated[
         __.AbstractSequence[ str ],
         __.tyro.conf.arg(
             name = 'enable-vectorstore', prefix_name = False ),

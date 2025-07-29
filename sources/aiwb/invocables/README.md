@@ -54,10 +54,10 @@ class NamedDiceSpec( __.pydantic.BaseModel ):
 
     model_config = __.pydantic.ConfigDict( frozen = True )
 
-    name: __.a.Annotation[
+    name: __.typx.Annotated[
         str, __.pydantic.Field( description = _dice_name_description ) ]
     # TODO? Split dice field into number, sides, and offset fields.
-    dice: __.a.Annotation[
+    dice: __.typx.Annotated[
         str, __.pydantic.Field( description = _dice_spec_description ) ]
 
 
@@ -65,7 +65,7 @@ class NamedDiceSpecs( __.pydantic.BaseModel ):
 
     model_config = __.pydantic.ConfigDict( frozen = True )
 
-    specs: __.a.Annotation[
+    specs: __.typx.Annotated[
         tuple[ NamedDiceSpec, ... ], __.pydantic.Field( min_length = 1 ) ]
 ```
 

@@ -29,11 +29,11 @@ from . import __
 
 # TODO: Python 3.12: Use type statement for aliases.
 # TODO? Use typing.TypedDictionary.
-AnthropicControls: __.a.TypeAlias = dict[ str, __.a.Any ]
-AnthropicMessage: __.a.TypeAlias = dict[ str, __.a.Any ]
-AnthropicMessageContent: __.a.TypeAlias = str | list[ dict[ str, __.a.Any ] ]
-AttributesDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
-ModelDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
+AnthropicControls: __.typx.TypeAlias = dict[ str, __.typx.Any ]
+AnthropicMessage: __.typx.TypeAlias = dict[ str, __.typx.Any ]
+AnthropicMessageContent: __.typx.TypeAlias = str | list[ dict[ str, __.typx.Any ] ]
+AttributesDescriptor: __.typx.TypeAlias = __.AbstractDictionary[ str, __.typx.Any ]
+ModelDescriptor: __.typx.TypeAlias = __.AbstractDictionary[ str, __.typx.Any ]
 
 
 class NativeMessageRefinementActions( __.Enum ): # TODO: Python 3.11: StrEnum
@@ -51,7 +51,7 @@ class Attributes( __.ConverserAttributes ):
     @classmethod
     def from_descriptor(
         selfclass, descriptor: AttributesDescriptor
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         args = super( ).init_args_from_descriptor( descriptor )
         sdescriptor = descriptor.get( 'special', { } )
         for arg_name in (
@@ -108,7 +108,7 @@ class InvocationsProcessor( __.InvocationsProcessor ):
         } # TODO? Immutable
         return canister
 
-    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
+    def nativize_invocable( self, invoker: __.Invoker ) -> __.typx.Any:
         # TODO: return type: anthropic.types.ToolParam
         return dict(
             name = invoker.name,
@@ -118,7 +118,7 @@ class InvocationsProcessor( __.InvocationsProcessor ):
     def nativize_invocables(
         self,
         invokers: __.AbstractIterable[ __.Invoker ],
-    ) -> __.a.Any:
+    ) -> __.typx.Any:
         # TODO: return type: list[ anthropic.types.ToolParam ]
         tools = [ self.nativize_invocable( invoker ) for invoker in invokers ]
         # Note: Caching of invocables is not worth it in sporadic
@@ -182,7 +182,7 @@ class Model( __.ConverserModel ):
     @classmethod
     def from_descriptor(
         selfclass, client: __.Client, name: str, descriptor: ModelDescriptor
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         args = __.accret.Dictionary( client = client, name = name )
         args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
         return selfclass( **args )
@@ -230,7 +230,7 @@ class Model( __.ConverserModel ):
 class SerdeProcessor( __.ConverserSerdeProcessor ):
     ''' (De)serialization for Anthropic chat models. '''
 
-    def deserialize_data( self, data: str ) -> __.a.Any:
+    def deserialize_data( self, data: str ) -> __.typx.Any:
         data_format = self.model.attributes.format_preferences.response_data
         match data_format:
             case __.DataFormatPreferences.JSON:
@@ -239,7 +239,7 @@ class SerdeProcessor( __.ConverserSerdeProcessor ):
         raise __.SupportError(
             f"Cannot deserialize data from {data_format.value} format." )
 
-    def serialize_data( self, data: __.a.Any ) -> str:
+    def serialize_data( self, data: __.typx.Any ) -> str:
         data_format = self.model.attributes.format_preferences.request_data
         match data_format:
             case __.DataFormatPreferences.JSON:
@@ -295,7 +295,7 @@ class Tokenizer( __.ConversationTokenizer ):
 
 
 def _sanitize_messages_for_tokenization(
-    arguments: __.AbstractDictionary[ str, __.a.Any ]
+    arguments: __.AbstractDictionary[ str, __.typx.Any ]
 ) -> tuple[ list[ AnthropicMessage ], int ]:
     messages = list( arguments[ 'messages' ] )
     # [anthropic.BadRequestError] Error code: 400
@@ -400,7 +400,7 @@ def _collect_supervisor_instructions(
 
 
 async def _converse_complete_v0(
-    model: Model, arguments: dict[ str, __.a.Any ], reactors
+    model: Model, arguments: dict[ str, __.typx.Any ], reactors
 ): # TODO: return signature
     error = __.partial_function(
         __.ModelOperateFailure, model = model, operation = 'chat completion' )
@@ -412,7 +412,7 @@ async def _converse_complete_v0(
 
 
 async def _converse_continuous_v0(
-    model: Model, arguments: dict[ str, __.a.Any ], reactors
+    model: Model, arguments: dict[ str, __.typx.Any ], reactors
 ): # TODO: return signature
     error = __.partial_function(
         __.ModelOperateFailure, model = model, operation = 'chat completion' )
@@ -632,7 +632,7 @@ def _prepare_client_arguments(
     messages: __.MessagesCanisters,
     supplements,
     controls: __.ControlsInstancesByName,
-) -> dict[ str, __.a.Any ]:
+) -> dict[ str, __.typx.Any ]:
     controls_native = model.controls_processor.nativize_controls( controls )
     supervisor_instructions = (
         _collect_supervisor_instructions( model, messages ) )

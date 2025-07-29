@@ -37,7 +37,7 @@ class Control( __.immut.DataclassObject ):
     ''' Logging and debug printing behavior. '''
 
     mode: Modes = Modes.Null
-    level: __.typx.Optional[ __.a.Literal[
+    level: __.typx.Optional[ __.typx.Literal[
         'debug', 'info', 'warn', 'error', 'critical' # noqa: F821
     ] ] = None
 

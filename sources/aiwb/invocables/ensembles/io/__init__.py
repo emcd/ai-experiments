@@ -39,7 +39,7 @@ _name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
 
 async def prepare(
     auxdata: __.Globals,
-    descriptor: __.AbstractDictionary[ str, __.a.Any ],
+    descriptor: __.AbstractDictionary[ str, __.typx.Any ],
 ) -> 'Ensemble':
     ''' Installs dependencies and returns ensemble. '''
     # TODO: Install dependencies: github, etc....

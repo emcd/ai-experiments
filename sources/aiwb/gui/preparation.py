@@ -99,7 +99,7 @@ async def _prepare_components_complete( auxdata: _state.Globals ):
 
 async def _prepare_favicon(
     auxdata: __.ApiServerGlobals,
-    template: __.a.Any, # TODO: Proper type.
+    template: __.typx.Any, # TODO: Proper type.
 ):
     ''' Loads favicon for browser tab. '''
     # https://github.com/holoviz/panel/blob/2bacc0ee8162b962537ca8ba71fa302ba01a57f5/panel/template/base.py#L789-L792

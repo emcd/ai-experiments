@@ -25,8 +25,8 @@ from . import __
 
 
 class Definition(
-    __.immut.Protocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.Protocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Definition of prompt. Produces prompt instances. '''
     # TODO: Immutability of instances.
@@ -37,8 +37,8 @@ class Definition(
     __slots__ = ( 'name', 'store', )
 
     class Instance(
-        __.immut.Protocol, __.a.Protocol,
-        decorators = ( __.a.runtime_checkable, ),
+        __.immut.Protocol, __.typx.Protocol,
+        decorators = ( __.typx.runtime_checkable, ),
     ):
         ''' Renderable instance of prompt. '''
         # TODO: Immutability of instances.
@@ -62,7 +62,7 @@ class Definition(
     def instantiate_descriptor(
         selfclass,
         store: 'Store',
-        descriptor: __.AbstractDictionary[ str, __.a.Any ]
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ]
     ):
         return selfclass( store, **descriptor )
 
@@ -80,8 +80,8 @@ class Definition(
 
 
 class Store(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Record for prompt store. '''
 
@@ -92,8 +92,8 @@ class Store(
     async def prepare(
         selfclass,
         auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.typx.Self:
         args = selfclass.init_args_from_descriptor( auxdata, descriptor )
         return selfclass( **args )
 
@@ -101,8 +101,8 @@ class Store(
     def init_args_from_descriptor(
         selfclass,
         auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
         distribution = auxdata.distribution
         name = descriptor[ 'name' ]
         location = __.location_adapter_from_url(
@@ -174,7 +174,7 @@ async def acquire_stores(
 
 def descriptors_from_configuration(
     auxdata: __.Globals
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.typx.Any ] ]:
     ''' Validates and returns descriptors from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = [ ]

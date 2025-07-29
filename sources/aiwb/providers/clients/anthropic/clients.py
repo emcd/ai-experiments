@@ -27,13 +27,13 @@ from . import __
 # We do not want to import 'anthropic' package on module initialization,
 # as it is not guaranteed to be available then. However, we can appease
 # typecheckers by pretending as though it is available.
-if __.a.TYPE_CHECKING:
+if __.typx.TYPE_CHECKING:
     from anthropic import AsyncAnthropic as _AsyncAnthropic  # type: ignore
 else:
-    _AsyncAnthropic: __.a.TypeAlias = __.a.Any
+    _AsyncAnthropic: __.typx.TypeAlias = __.typx.Any
 
 
-ClientDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
+ClientDescriptor: __.typx.TypeAlias = __.AbstractDictionary[ str, __.typx.Any ]
 
 
 _model_genera = frozenset( (
@@ -85,7 +85,7 @@ class Client( __.Client ):
     ) -> __.AbstractSequence[ __.Model ]:
         if __.absent is genus: genera = _model_genera
         else:
-            genus = __.a.cast( __.ModelGenera, genus )
+            genus = __.typx.cast( __.ModelGenera, genus )
             genera = frozenset( { genus } ) & _model_genera
         return await __.memcache_acquire_models(
             auxdata,
@@ -117,8 +117,8 @@ class AnthropicClient( Client ):
         selfclass,
         auxdata: __.CoreGlobals,
         provider: __.Provider,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.typx.Self:
         await selfclass.assert_environment( auxdata )
         # TODO: Return future which acquires models in background.
         return selfclass( **(

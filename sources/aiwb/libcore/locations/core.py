@@ -46,7 +46,7 @@ class AdapterInode( metaclass = __.ABCFactory ):
 class AcquireContentResult( __.immut.DataclassObject ):
     ''' Inode and arbitrary content from acquisition operation. '''
 
-    content: __.a.Any
+    content: __.typx.Any
     inode: 'Inode'
 
 
@@ -208,7 +208,7 @@ class Inode(
         charset: __.Absential[ __.typx.Optional[ str ] ] = __.absent,
         mtime: __.Absential[ __.typx.Optional[ __.DateTime ] ] = __.absent,
         etime: __.Absential[ __.typx.Optional[ __.DateTime ] ] = __.absent,
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         ''' Returns copy with updated attributes. '''
         return type( self )(
             species = self.species,
@@ -289,7 +289,7 @@ class Url(
     fragment: str
 
     @classmethod
-    def from_url( selfclass, url: 'PossibleUrl' ) -> __.a.Self:
+    def from_url( selfclass, url: 'PossibleUrl' ) -> __.typx.Self:
         ''' Produces canonical URL instance from URL-like object. '''
         if isinstance( url, __.PathLike ): url = url.__fspath__( )
         if isinstance( url, ( str, bytes ) ): url = __.urlparse( url )
@@ -308,7 +308,7 @@ class Url(
 
     def __str__( self ) -> str: return self.geturl( )
 
-    def with_path( self, path: __.PossiblePath ) -> __.a.Self:
+    def with_path( self, path: __.PossiblePath ) -> __.typx.Self:
         ''' Returns copy of URL with path part altered. '''
         if isinstance( path, bytes ):
             # Cannot use os.fsdecode because that is not platform-neutral,
@@ -324,18 +324,18 @@ class Url(
 
 
 # TODO: Python 3.12: type statement for aliases
-AlienResolutionActionsTable: __.a.TypeAlias = (
+AlienResolutionActionsTable: __.typx.TypeAlias = (
     __.AbstractDictionary[ Url, AlienResolutionActions ] )
-ConflictResolutionActionsTable: __.a.TypeAlias = (
+ConflictResolutionActionsTable: __.typx.TypeAlias = (
     __.AbstractDictionary[ Url, ConflictResolutionActions ] )
-ImpurityResolutionActionsTable: __.a.TypeAlias = (
+ImpurityResolutionActionsTable: __.typx.TypeAlias = (
     __.AbstractDictionary[ Url, ImpurityResolutionActions ] )
-PermissionsTable: __.a.TypeAlias = (
+PermissionsTable: __.typx.TypeAlias = (
     __.AbstractDictionary[ Possessor, Permissions ] )
-PossibleUrl: __.a.TypeAlias = bytes | str | __.PathLike | _UrlParts
+PossibleUrl: __.typx.TypeAlias = bytes | str | __.PathLike | _UrlParts
 
 
-def is_permissions_table( table: __.a.Any ) -> bool:
+def is_permissions_table( table: __.typx.Any ) -> bool:
     ''' Validates table is mapping from possessors to permissions. '''
     if not isinstance( table, __.AbstractDictionary ): return False
     return all(

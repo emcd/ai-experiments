@@ -40,7 +40,7 @@ class Control( __.immut.DataclassObject ):
     port: int = 0
     reload: bool = True
 
-    def with_address_and_port( self, address: str, port: int ) -> __.a.Self:
+    def with_address_and_port( self, address: str, port: int ) -> __.typx.Self:
         ''' Returns new instance with mutated address and port. '''
         # TODO: Generic 'with_attributes' method.
         return type( self )(
@@ -73,7 +73,8 @@ async def prepare(
 
 @__.exit_manager_async
 async def _execute_server_thread(
-    server: __.UvicornServer, nomargs: __.AbstractDictionary[ str, __.a.Any ]
+    server: __.UvicornServer,
+    nomargs: __.AbstractDictionary[ str, __.typx.Any ],
 ) -> __.cabc.AsyncGenerator:
     scribe = __.acquire_scribe( __package__ )
     from asyncio import sleep

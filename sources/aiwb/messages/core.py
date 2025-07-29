@@ -66,8 +66,8 @@ class DirectoryManager( __.immut.DataclassObject ):
 
 
 class Content(
-    __.immut.DataclassProtocolMutable, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocolMutable, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Base for various content types. '''
 
@@ -125,7 +125,7 @@ class Role( __.Enum ): # TODO: Python 3.11: StrEnum
     User =          'user'
 
     @classmethod
-    def from_canister( selfclass, canister: 'Canister' ) -> __.a.Self:
+    def from_canister( selfclass, canister: 'Canister' ) -> __.typx.Self:
         ''' Provides role associated with canister. '''
         # TODO: Use 'role' property on canister instead.
         return canister.role
@@ -142,8 +142,8 @@ class Role( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 class Canister(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Message canister which can have multiple contents. '''
 
@@ -159,7 +159,7 @@ class Canister(
 
     async def save( self, manager: DirectoryManager ):
         ''' Persists canister to durable storage. '''
-        state: dict[ str, __.a.Any ] = (
+        state: dict[ str, __.typx.Any ] = (
             dict( role = Role.from_canister( self ).value ) )
         savers = tuple( content.save( manager ) for content in self )
         contents_identifiers = await __.gather_async( *savers )
@@ -218,7 +218,7 @@ class UserCanister( Canister ):
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-Canisters: __.a.TypeAlias = __.AbstractIterable[ Canister ]
+Canisters: __.typx.TypeAlias = __.AbstractIterable[ Canister ]
 
 
 # TODO: Cluster: Bundle of related canisters.

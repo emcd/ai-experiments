@@ -44,12 +44,12 @@ class Cli(
     configfile: __.typx.Optional[ str ] = None
     display: 'ConsoleDisplay'
     inscription: _inscription.Control
-    command: __.a.Union[
-        __.a.Annotation[
+    command: __.typx.Union[
+        __.typx.Annotated[
             'InspectCommand',
             __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
         ],
-        __.a.Annotation[
+        __.typx.Annotated[
             'LocationCommand',
             __.tyro.conf.subcommand( 'location', prefix_name = False ),
         ],
@@ -65,7 +65,7 @@ class Cli(
 
     def prepare_invocation_args(
         self,
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
         args = dict(
             application = self.application,
             environment = True,
@@ -104,35 +104,35 @@ class Inspectees( __.Enum ): # TODO: Python 3.11: StrEnum
 class ConsoleDisplay( __.immut.DataclassObject ):
     ''' Display of command results. '''
 
-    silence: __.a.Annotation[
+    silence: __.typx.Annotated[
         bool,
         __.tyro.conf.arg(
             aliases = ( '--quiet', '--silent', ), prefix_name = False ),
     ] = False
-    colorize: __.a.Annotation[
+    colorize: __.typx.Annotated[
         __.typx.Optional[ bool ],
         __.tyro.conf.arg(
             name = 'console-colorization',
             aliases = ( '--colorize-console', ),
             prefix_name = False ),
     ] = None
-    file: __.a.Annotation[
+    file: __.typx.Annotated[
         __.typx.Optional[ __.Path ],
         __.tyro.conf.arg(
             name = 'console-capture-file', prefix_name = False ),
     ] = None
-    format: __.a.Annotation[
+    format: __.typx.Annotated[
         DisplayFormats,
         __.tyro.conf.arg( name = 'console-format', prefix_name = False ),
     ] = DisplayFormats.Rich
-    stream: __.a.Annotation[
+    stream: __.typx.Annotated[
         DisplayStreams,
         __.tyro.conf.arg( name = 'console-stream', prefix_name = False ),
     ] = DisplayStreams.Stderr
 
     def provide_format_serializer(
         self,
-    ) -> __.a.Callable[ [ __.a.Any ], str ]:
+    ) -> __.typx.Callable[ [ __.typx.Any ], str ]:
         ''' Provides serializer function for display format. '''
         match self.format:
             case DisplayFormats.Json:
@@ -146,7 +146,7 @@ class ConsoleDisplay( __.immut.DataclassObject ):
 
     async def provide_printer(
         self,
-    ) -> __.a.Callable[ [ __.a.Any ], None ]:
+    ) -> __.typx.Callable[ [ __.typx.Any ], None ]:
         ''' Providers printer for display format and stream.
 
             If silence, then returns null printer.
@@ -178,7 +178,7 @@ class ConsoleDisplay( __.immut.DataclassObject ):
             case DisplayStreams.Stdout: return stdout
             case DisplayStreams.Stderr: return stderr
 
-    async def render( self, obj: __.a.Any ):
+    async def render( self, obj: __.typx.Any ):
         ''' Renders object according to options. '''
         ( await self.provide_printer( ) )( obj )
 
@@ -186,7 +186,7 @@ class ConsoleDisplay( __.immut.DataclassObject ):
 class InspectCommand( metaclass = __.accret.Dataclass ):
     ''' Displays some facet of the application. '''
 
-    inspectee: __.a.Annotation[
+    inspectee: __.typx.Annotated[
         __.tyro.conf.Positional[ Inspectees ],
         __.tyro.conf.arg( prefix_name = False ),
     ] = Inspectees.Configuration
@@ -210,12 +210,12 @@ class InspectCommand( metaclass = __.accret.Dataclass ):
 class LocationCommand( metaclass = __.accret.Dataclass ):
     ''' Accesses a location via URL or local filesystem path. '''
 
-    command: __.a.Union[
-        __.a.Annotation[
+    command: __.typx.Union[
+        __.typx.Annotated[
             'LocationSurveyDirectoryCommand',
             __.tyro.conf.subcommand( 'list-folder', prefix_name = False ),
         ],
-        __.a.Annotation[
+        __.typx.Annotated[
             'LocationAcquireContentCommand',
             __.tyro.conf.subcommand( 'read', prefix_name = False ),
         ],
@@ -234,15 +234,15 @@ class LocationSurveyDirectoryCommand( metaclass = __.accret.Dataclass ):
 
     # TODO: Cache options.
 
-    filters: __.a.Annotation[
+    filters: __.typx.Annotated[
         __.AbstractSequence[ str ],
         __.tyro.conf.arg( prefix_name = False ),
     ] = ( '@gitignore', '+vcs' )
-    recurse: __.a.Annotation[
+    recurse: __.typx.Annotated[
         bool,
         __.tyro.conf.arg( prefix_name = False ),
     ] = False
-    url: __.a.Annotation[
+    url: __.typx.Annotated[
         __.tyro.conf.Positional[ str ],
         __.tyro.conf.arg( prefix_name = False ),
     ]

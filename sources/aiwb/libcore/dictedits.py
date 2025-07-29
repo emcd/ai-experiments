@@ -27,8 +27,8 @@ from . import __
 
 
 class Edit(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Base representation of an edit to configuration. '''
 
@@ -42,7 +42,7 @@ class Edit(
     def dereference(
         self,
         configuration: __.AbstractMutableDictionary
-    ) -> __.a.Any:
+    ) -> __.typx.Any:
         ''' Dereferences value at address in configuration. '''
         configuration_ = configuration
         for part in self.address:
@@ -53,7 +53,7 @@ class Edit(
     def inject(
         self,
         configuration: __.AbstractMutableDictionary,
-        value: __.a.Any
+        value: __.typx.Any
     ):
         ''' Injects value at address in configuration. '''
         configuration_ = configuration
@@ -66,8 +66,8 @@ class Edit(
 class ElementsEntryEdit( Edit ):
     ''' Applies entry edit to every matching dictionary in array. '''
 
-    editee: tuple[ str, __.a.Any ]
-    identifier: __.typx.Optional[ tuple[ str, __.a.Any ] ] = None
+    editee: tuple[ str, __.typx.Any ]
+    identifier: __.typx.Optional[ tuple[ str, __.typx.Any ] ] = None
 
     def __call__( self, configuration: __.AbstractMutableDictionary ):
         array = self.dereference( configuration )
@@ -84,11 +84,11 @@ class ElementsEntryEdit( Edit ):
 class SimpleEdit( Edit ):
     ''' Applies edit to single entity. '''
 
-    value: __.a.Any
+    value: __.typx.Any
 
     def __call__( self, configuration: __.AbstractMutableDictionary ):
         self.inject( configuration, self.value )
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-Edits: __.a.TypeAlias = __.AbstractIterable[ Edit ]
+Edits: __.typx.TypeAlias = __.AbstractIterable[ Edit ]

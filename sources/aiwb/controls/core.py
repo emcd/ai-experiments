@@ -242,7 +242,7 @@ class Text( DefinitionBase ):
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-ControlsInstancesByName: __.a.TypeAlias = (
+ControlsInstancesByName: __.typx.TypeAlias = (
     __.AbstractDictionary[ str, DefinitionBase.Instance ] )
 
 

@@ -45,7 +45,7 @@ class Control( __.immut.DataclassObject ):
     port: int = 0
     reload: bool = False
 
-    def with_address_and_port( self, address: str, port: int ) -> __.a.Self:
+    def with_address_and_port( self, address: str, port: int ) -> __.typx.Self:
         ''' Returns new instance with mutated address and port. '''
         # TODO: Generic 'with_attributes' method.
         return type( self )(
@@ -71,7 +71,7 @@ async def _execute_server_thread(
 
 def _start_gui(
     components: __.SimpleNamespace, control: Control
-) -> __.a.Any: # TODO: Proper type.
+) -> __.typx.Any: # TODO: Proper type.
     # TODO: Honor address and port for listener socket binding.
     return components.template__.show(
         autoreload = control.reload,

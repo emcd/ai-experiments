@@ -41,7 +41,7 @@ class Globals( __.CoreGlobals ):
         prompts: __.DictionaryProxy,
         providers: __.accret.Dictionary,
         vectorstores: dict,
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         ''' Produces DTO from base DTO plus attribute injections. '''
         injections = __.DictionaryProxy( dict(
             invocables = invocables,

@@ -54,7 +54,7 @@ class IoContentDeduplicator( __.Deduplicator ):
     def is_duplicate(
         self,
         invocable_name: str,
-        arguments: __.AbstractDictionary[ str, __.a.Any ],
+        arguments: __.AbstractDictionary[ str, __.typx.Any ],
     ) -> bool:
         our_location = self.arguments.get( 'location' )
         their_location = arguments.get( 'location' )
@@ -77,7 +77,7 @@ class SurveyDirectoryDeduplicator( __.Deduplicator ):
     def is_duplicate(
         self,
         invocable_name: str,
-        arguments: __.AbstractDictionary[ str, __.a.Any ],
+        arguments: __.AbstractDictionary[ str, __.typx.Any ],
     ) -> bool:
         our_location = self.arguments.get( 'location' )
         their_location = arguments.get( 'location' )

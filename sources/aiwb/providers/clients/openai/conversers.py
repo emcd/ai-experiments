@@ -25,11 +25,11 @@ from . import __
 
 # TODO: Python 3.12: Use type statement for aliases.
 # TODO? Use typing.TypedDictionary.
-AttributesDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
-ModelDescriptor: __.a.TypeAlias = __.AbstractDictionary[ str, __.a.Any ]
-OpenAiControls: __.a.TypeAlias = dict[ str, __.a.Any ]
-OpenAiMessage: __.a.TypeAlias = dict[ str, __.a.Any ]
-OpenAiMessageContent: __.a.TypeAlias = str | list[ dict[ str, __.a.Any ] ]
+AttributesDescriptor: __.typx.TypeAlias = __.AbstractDictionary[ str, __.typx.Any ]
+ModelDescriptor: __.typx.TypeAlias = __.AbstractDictionary[ str, __.typx.Any ]
+OpenAiControls: __.typx.TypeAlias = dict[ str, __.typx.Any ]
+OpenAiMessage: __.typx.TypeAlias = dict[ str, __.typx.Any ]
+OpenAiMessageContent: __.typx.TypeAlias = str | list[ dict[ str, __.typx.Any ] ]
 
 
 class InvocationsSupportLevels( __.Enum ): # TODO: Python 3.11: StrEnum
@@ -68,7 +68,7 @@ class Attributes( __.ConverserAttributes ):
     @classmethod
     def from_descriptor(
         selfclass, descriptor: AttributesDescriptor
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         args = super( ).init_args_from_descriptor( descriptor )
         sdescriptor = descriptor.get( 'special', { } )
         for arg_name in (
@@ -136,7 +136,7 @@ class InvocationsProcessor( __.InvocationsProcessor ):
         } # TODO? Immutable
         return canister
 
-    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
+    def nativize_invocable( self, invoker: __.Invoker ) -> __.typx.Any:
         return dict(
             name = invoker.name,
             description = invoker.invocable.__doc__,
@@ -145,7 +145,7 @@ class InvocationsProcessor( __.InvocationsProcessor ):
     def nativize_invocables(
         self,
         invokers: __.AbstractIterable[ __.Invoker ],
-    ) -> __.a.Any:
+    ) -> __.typx.Any:
         if not self.model.attributes.supports_invocations: return { }
         args = { }
         match self.model.attributes.invocations_support_level:
@@ -267,7 +267,7 @@ class Model( __.ConverserModel ):
     @classmethod
     def from_descriptor(
         selfclass, client: __.Client, name: str, descriptor: ModelDescriptor
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         args = __.accret.Dictionary( client = client, name = name )
         args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
         return selfclass( **args )
@@ -324,7 +324,7 @@ class Model( __.ConverserModel ):
 class SerdeProcessor( __.ConverserSerdeProcessor ):
     ''' (De)serialization for OpenAI chat models. '''
 
-    def deserialize_data( self, data: str ) -> __.a.Any:
+    def deserialize_data( self, data: str ) -> __.typx.Any:
         data_format = self.model.attributes.format_preferences.response_data
         match data_format:
             case __.DataFormatPreferences.JSON:
@@ -333,7 +333,7 @@ class SerdeProcessor( __.ConverserSerdeProcessor ):
         raise __.SupportError(
             f"Cannot deserialize data from {data_format.value} format." )
 
-    def serialize_data( self, data: __.a.Any ) -> str:
+    def serialize_data( self, data: __.typx.Any ) -> str:
         data_format = self.model.attributes.format_preferences.request_data
         match data_format:
             case __.DataFormatPreferences.JSON:
@@ -650,7 +650,7 @@ def _prepare_client_arguments(
     messages: __.MessagesCanisters,
     supplements,
     controls: __.ControlsInstancesByName,
-) -> dict[ str, __.a.Any ]:
+) -> dict[ str, __.typx.Any ]:
     controls_native = model.controls_processor.nativize_controls( controls )
     supplements_native = _nativize_supplements_v0( model, supplements )
     messages_native = (

@@ -96,16 +96,16 @@ from absence import Absential, absent, is_absent
 from . import _annotations as a
 from . import _generics as g
 
-ClassDecorators: a.TypeAlias = AbstractIterable[ a.Callable[ [ type ], type ] ]
-NominativeArgumentsDictionary: a.TypeAlias = AbstractDictionary[ str, a.Any ]
-TextComparand: a.TypeAlias = str | re.Pattern
-TextComparands: a.TypeAlias = AbstractIterable[ TextComparand ]
+ClassDecorators: typx.TypeAlias = AbstractIterable[ typx.Callable[ [ type ], type ] ]
+NominativeArgumentsDictionary: typx.TypeAlias = AbstractDictionary[ str, typx.Any ]
+TextComparand: typx.TypeAlias = str | re.Pattern
+TextComparands: typx.TypeAlias = AbstractIterable[ TextComparand ]
 
 
 _immutability_label = 'immutability'
 
 
-PossiblePath: a.TypeAlias = bytes | str | PathLike
+PossiblePath: typx.TypeAlias = bytes | str | PathLike
 
 
 package_name = __name__.split( '.', maxsplit = 1 )[ 0 ]
@@ -133,15 +133,15 @@ def exception_to_str( exception: BaseException ) -> str:
 
 
 async def gather_async(
-    *operands: a.Any,
-    return_exceptions: a.Annotation[
+    *operands: typx.Any,
+    return_exceptions: typx.Annotated[
         bool,
-        a.Doc( ''' Raw or wrapped results. Wrapped, if true. ''' )
+        typx.Doc( ''' Raw or wrapped results. Wrapped, if true. ''' )
     ] = False,
     error_message: str = 'Failure of async operations.',
-    ignore_nonawaitables: a.Annotation[
+    ignore_nonawaitables: typx.Annotated[
         bool,
-        a.Doc( ''' Ignore or error on non-awaitables. Ignore, if true. ''' )
+        typx.Doc( ''' Ignore or error on non-awaitables. Ignore, if true. ''' )
     ] = False,
 ) -> AbstractSequence:
     ''' Gathers results from invocables concurrently and asynchronously. '''
@@ -179,7 +179,7 @@ async def intercept_error_async( awaitable: AbstractAwaitable ) -> g.Result:
 
 async def read_files_async(
     *files: PathLike,
-    deserializer: a.Callable[ [ str ], a.Any ] = None,
+    deserializer: typx.Callable[ [ str ], typx.Any ] = None,
     return_exceptions: bool = False
 ) -> AbstractSequence:
     ''' Reads files asynchronously. '''
@@ -207,7 +207,7 @@ async def read_files_async(
 
 
 async def _gather_async_permissive(
-    operands: a.Any
+    operands: typx.Any
 ) -> AbstractSequence:
     from asyncio import gather # TODO? Python 3.11: TaskGroup
     awaitables = { }
@@ -222,7 +222,7 @@ async def _gather_async_permissive(
 
 
 async def _gather_async_strict(
-    operands: a.Any
+    operands: typx.Any
 ) -> AbstractSequence:
     from asyncio import gather # TODO? Python 3.11: TaskGroup
     awaitables = [ ]

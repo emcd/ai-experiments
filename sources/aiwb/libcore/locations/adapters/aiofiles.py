@@ -115,7 +115,7 @@ class _Common( __.AdapterBase ):
 
     def expose_implement( self ) -> __.AccessImplement:
         # Cast because we do not have a common protocol.
-        return __.a.cast( __.AccessImplement, self.implement )
+        return __.typx.cast( __.AccessImplement, self.implement )
 
 
 class GeneralAdapter( _Common, __.GeneralAdapter ):
@@ -123,7 +123,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
     # TODO: Immutable instance attributes.
 
     @classmethod
-    def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
+    def from_url( selfclass, url: __.PossibleUrl ) -> __.typx.Self:
         return selfclass( url = __.Url.from_url( url ) )
 
     def as_directory( self ) -> '__.DirectoryAdapter':

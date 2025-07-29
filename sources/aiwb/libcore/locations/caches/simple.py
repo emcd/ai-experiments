@@ -36,7 +36,7 @@ _module_name = __name__.replace( f"{__package__}.", '' )
 _entity_name = f"cache '{_module_name}'"
 
 
-def _ensures_cache( function: __.a.Callable ):
+def _ensures_cache( function: __.typx.Callable ):
     ''' Decorator which ensures cache is filled before operation. '''
     from functools import wraps
 
@@ -48,7 +48,7 @@ def _ensures_cache( function: __.a.Callable ):
     return invoker
 
 
-class _Common( __.CacheBase, __.a.Protocol ):
+class _Common( __.CacheBase, __.typx.Protocol ):
 
     adapter: __.AdapterBase
     cache_url: __.Url
@@ -119,7 +119,7 @@ class CacheManager( __.CacheManager ):
     adapter: __.DirectoryAdapter # for storage not source
 
     @classmethod
-    async def from_url( selfclass, url: __.PossibleUrl ) -> __.a.Self:
+    async def from_url( selfclass, url: __.PossibleUrl ) -> __.typx.Self:
         adapter = (
             await __.adapter_from_url( url )
             .as_specific( species = __.LocationSpecies.Directory ) )
@@ -139,7 +139,7 @@ class CacheManager( __.CacheManager ):
             = __.ConflictResolutionActions.Error,
         impurities: __.ImpurityResolutionActions
             = __.ImpurityResolutionActions.Ignore,
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         # No concept of aliens or impurities. Everything is considered.
         # TODO: Implement.
         pass
@@ -175,7 +175,7 @@ class CacheManager( __.CacheManager ):
             = __.ConflictResolutionActions.Error,
         impurities: __.ImpurityResolutionActions
             = __.ImpurityResolutionActions.Ignore,
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         # No concept of aliens or impurities. Everything is considered.
         # TODO: Implement.
         pass

@@ -25,8 +25,8 @@ from . import __
 
 
 class Factory(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Produces clients. '''
 
@@ -34,7 +34,7 @@ class Factory(
     async def client_from_descriptor(
         self,
         auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
     ):
         ''' Produces client from descriptor dictionary. '''
         raise NotImplementedError
@@ -59,7 +59,7 @@ def derive_vectorstores_location( auxdata: __.Globals, url: str ) -> __.Path:
 
 def descriptors_from_configuration(
     auxdata: __.Globals
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.typx.Any ] ]:
     ''' Validates and returns descriptors from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = [ ]

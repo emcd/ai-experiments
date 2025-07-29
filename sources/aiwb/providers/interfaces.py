@@ -25,18 +25,18 @@ from . import __
 from . import core as _core
 
 
-ModelDescriptor = __.a.TypeVar( 'ModelDescriptor' ) # TODO? Typed dictionary.
+ModelDescriptor = __.typx.TypeVar( 'ModelDescriptor' ) # TODO? Typed dictionary.
 
 
 class Provider(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Produces clients. '''
 
     name: str
     # TODO: Reingester dictionary for configuration.
-    configuration: __.AbstractDictionary[ str, __.a.Any ]
+    configuration: __.AbstractDictionary[ str, __.typx.Any ]
 
     def __str__( self ) -> str: return f"AI provider {self.name!r}"
 
@@ -44,7 +44,7 @@ class Provider(
     async def produce_client(
         self,
         auxdata: __.CoreGlobals,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ]
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ]
     ) -> 'Client':
         ''' Produces client from descriptor dictionary. '''
         raise NotImplementedError
@@ -52,12 +52,12 @@ class Provider(
 
 class Client(
     __.immut.DataclassProtocol,
-    __.a.Protocol[ _core.ClientImplement, _core.ProviderVariants ],
-    decorators = ( __.a.runtime_checkable, ),
+    __.typx.Protocol[ _core.ClientImplement, _core.ProviderVariants ],
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Interacts with AI provider. '''
 
-    ModelGenera: __.a.ClassVar[ type[ _core.ModelGenera ] ] = (
+    ModelGenera: __.typx.ClassVar[ type[ _core.ModelGenera ] ] = (
         _core.ModelGenera )
 
     name: str
@@ -79,8 +79,8 @@ class Client(
         selfclass,
         auxdata: __.CoreGlobals,
         provider: 'Provider',
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.typx.Self:
         ''' Produces client from descriptor dictionary. '''
         raise NotImplementedError
 
@@ -89,7 +89,7 @@ class Client(
         selfclass,
         auxdata: __.CoreGlobals,
         provider: 'Provider',
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
     ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         descriptor_ = dict( descriptor )
@@ -178,8 +178,8 @@ class Client(
 
 
 class ControlsProcessor(
-    __.immut.DataclassProtocol, __.a.Protocol[ _core.NativeControls ],
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol[ _core.NativeControls ],
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Handles model controls. '''
 
@@ -208,8 +208,8 @@ class ControlsProcessor(
 
 
 class ConversationTokenizer(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Tokenizes conversation or piece of text for counting. '''
 
@@ -234,8 +234,8 @@ class ConversationTokenizer(
 
 
 class InvocationsProcessor(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Handles everything related to invocations. '''
 
@@ -249,7 +249,7 @@ class InvocationsProcessor(
         raise NotImplementedError
 
     @__.abstract_member_function
-    def nativize_invocable( self, invoker: __.Invoker ) -> __.a.Any:
+    def nativize_invocable( self, invoker: __.Invoker ) -> __.typx.Any:
         ''' Converts normalized invocable into native tool call. '''
         raise NotImplementedError
 
@@ -257,7 +257,7 @@ class InvocationsProcessor(
     def nativize_invocables(
         self,
         invokers: __.AbstractIterable[ __.Invoker ],
-    ) -> __.a.Any:
+    ) -> __.typx.Any:
         ''' Converts normalized invocables into native tool calls. '''
         raise NotImplementedError
 
@@ -276,8 +276,8 @@ class InvocationsProcessor(
 
 
 class MessagesProcessor(
-    __.immut.DataclassProtocol, __.a.Protocol[ _core.NativeMessages ],
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol[ _core.NativeMessages ],
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Handles everything related to messages. '''
 
@@ -299,8 +299,8 @@ class MessagesProcessor(
 
 
 class Model(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Represents an AI model. '''
 
@@ -319,8 +319,8 @@ class Model(
         selfclass,
         client: 'Client',
         name: str,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.typx.Self:
         ''' Produces model from descriptor dictionary. '''
         raise NotImplementedError
 
@@ -337,8 +337,8 @@ class Model(
 
 
 class ModelAttributes(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Attributes for all genera of AI models. '''
 
@@ -348,15 +348,15 @@ class ModelAttributes(
     @__.abstract_member_function
     def from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.typx.Self:
         ''' Produces model attributes from descriptor dictionary. '''
         raise NotImplementedError
 
     @classmethod
     def init_args_from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
     ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         args = __.accret.Dictionary( )
@@ -366,8 +366,8 @@ class ModelAttributes(
 
 
 class ConverserModel(
-    Model, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    Model, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Represents AI chat model. '''
 
@@ -426,7 +426,7 @@ class ConverserAttributes( ModelAttributes ):
     @classmethod
     def init_args_from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
     ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         args = super( ).init_args_from_descriptor( descriptor )
@@ -452,20 +452,20 @@ class ConverserAttributes( ModelAttributes ):
 
 
 class ConverserSerdeProcessor(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' (De)serialization in preferred formats for converser model. '''
 
     model: 'ConverserModel'
 
     @__.abstract_member_function
-    def deserialize_data( self, data: str ) -> __.a.Any:
+    def deserialize_data( self, data: str ) -> __.typx.Any:
         ''' Deserializes text in preferred format of model to data. '''
         raise NotImplementedError
 
     @__.abstract_member_function
-    def serialize_data( self, data: __.a.Any ) -> str:
+    def serialize_data( self, data: __.typx.Any ) -> str:
         ''' Serializes data to text in preferred format of model. '''
         raise NotImplementedError
 
@@ -475,4 +475,4 @@ class ConverserSerdeProcessor(
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-ClientsByName: __.a.TypeAlias = __.AbstractDictionary[ str, Client ]
+ClientsByName: __.typx.TypeAlias = __.AbstractDictionary[ str, Client ]

@@ -28,7 +28,7 @@ from . import registries as _registries
 
 def descriptors_from_configuration(
     auxdata: __.CoreGlobals
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.a.Any ] ]:
+) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.typx.Any ] ]:
     ''' Validates and returns descriptors from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = [ ]

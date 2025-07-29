@@ -30,12 +30,12 @@ class Cli( __.ApplicationCli ):
     ''' CLI for execution, inspection, and tests of API server. '''
 
     apiserver: _server.Control = _server.Control( )
-    command: __.a.Union[
-        __.a.Annotation[
+    command: __.typx.Union[
+        __.typx.Annotated[
             __.CoreCliInspectCommand,
             __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
         ],
-        __.a.Annotation[
+        __.typx.Annotated[
             'ExecuteServerCommand',
             __.tyro.conf.subcommand( 'execute', prefix_name = False ),
         ],
@@ -51,7 +51,7 @@ class Cli( __.ApplicationCli ):
 
     def prepare_invocation_args(
         self,
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
         args = __.ApplicationCli.prepare_invocation_args( self )
         args[ 'apiserver' ] = self.apiserver
         return args

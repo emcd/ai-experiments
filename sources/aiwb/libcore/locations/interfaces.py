@@ -35,8 +35,8 @@ from . import exceptions as _exceptions
 
 
 class _Common(
-    __.immut.Protocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.Protocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Common functionality across all accessors. '''
 
@@ -81,8 +81,8 @@ class _Common(
 
 
 class AdapterBase(
-    _Common, __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    _Common, __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Common functionality for all access adapters. '''
 
@@ -96,14 +96,14 @@ class AdapterBase(
 
 
 class CacheBase(
-    _Common, __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    _Common, __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Common functionality for all caches. '''
 
 
-@__.a.runtime_checkable
-class Filter( __.a.Protocol ):
+@__.typx.runtime_checkable
+class Filter( __.typx.Protocol ):
     ''' Determines if directory entry should be filtered. '''
 
     @__.abstract_member_function
@@ -113,8 +113,8 @@ class Filter( __.a.Protocol ):
 
 class DirectoryOperations(
     __.immut.Protocol,
-    __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Standard operations on directories. '''
 
@@ -186,8 +186,8 @@ class DirectoryOperations(
 
 class FileOperations(
     __.immut.Protocol,
-    __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Standard operations on files. '''
 
@@ -222,8 +222,8 @@ class FileOperations(
 
 class GeneralOperations(
     __.immut.Protocol,
-    __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Standard operations on locations of indeterminate species. '''
 
@@ -293,8 +293,8 @@ class GeneralOperations(
 
 class ReconciliationOperations(
     __.immut.Protocol,
-    __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Standard operations for cache reconciliation. '''
 
@@ -313,7 +313,7 @@ class ReconciliationOperations(
             = _core.ConflictResolutionActions.Error,
         impurities: _core.ImpurityResolutionActions
             = _core.ImpurityResolutionActions.Ignore,
-    ) -> __.a.Self: # TODO: Return dirents of affected locations.
+    ) -> __.typx.Self: # TODO: Return dirents of affected locations.
         ''' Commits cache to sources. '''
         raise NotImplementedError
 
@@ -338,41 +338,41 @@ class ReconciliationOperations(
             = _core.ConflictResolutionActions.Error,
         impurities: _core.ImpurityResolutionActions
             = _core.ImpurityResolutionActions.Ignore,
-    ) -> __.a.Self: # TODO: Return dirents of affected locations.
+    ) -> __.typx.Self: # TODO: Return dirents of affected locations.
         ''' Reingests cache from sources. '''
         raise NotImplementedError
 
 
 class DirectoryAdapter(
-    AdapterBase, DirectoryOperations, __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    AdapterBase, DirectoryOperations, __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Directory access adapter. '''
 
 
 class FileAdapter(
-    AdapterBase, FileOperations, __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    AdapterBase, FileOperations, __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' File access adapter. '''
 
 
 class GeneralAdapter(
-    AdapterBase, GeneralOperations, __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    AdapterBase, GeneralOperations, __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' General location access adapter. '''
 
     @classmethod
     @__.abstract_member_function
-    def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
+    def from_url( selfclass, url: _core.PossibleUrl ) -> __.typx.Self:
         ''' Produces adapter from URL. '''
         raise NotImplementedError
 
 
 class CacheManager(
-    ReconciliationOperations, __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    ReconciliationOperations, __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Manager for collection of caches.
 
@@ -382,7 +382,7 @@ class CacheManager(
 
     @classmethod
     @__.abstract_member_function
-    async def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
+    async def from_url( selfclass, url: _core.PossibleUrl ) -> __.typx.Self:
         ''' Produces cache manager from storage location URL. '''
         raise NotImplementedError
 
@@ -398,42 +398,42 @@ class CacheManager(
 
 
 class DirectoryCache(
-    CacheBase, DirectoryOperations, __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    CacheBase, DirectoryOperations, __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Directory cache. '''
 
 
 class FileCache(
-    CacheBase, FileOperations, __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    CacheBase, FileOperations, __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' File cache. '''
 
 
 class GeneralCache(
-    CacheBase, GeneralOperations, __.a.Protocol,
-    class_decorators = ( __.a.runtime_checkable, ),
+    CacheBase, GeneralOperations, __.typx.Protocol,
+    class_decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' General location cache. '''
 
     @classmethod
     @__.abstract_member_function
-    def from_url( selfclass, url: _core.PossibleUrl ) -> __.a.Self:
+    def from_url( selfclass, url: _core.PossibleUrl ) -> __.typx.Self:
         ''' Produces cache from URL. '''
         raise NotImplementedError
 
 
 class FilePresenter(
-    __.immut.DataclassProtocol, __.a.Protocol,
-    decorators = ( __.a.runtime_checkable, ),
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Presenter with standard operations on files. '''
 
     accessor: 'FileAccessor'
 
     @__.abstract_member_function
-    async def acquire_content( self ) -> __.a.Any:
+    async def acquire_content( self ) -> __.typx.Any:
         ''' Returns content of file as specific type. '''
         raise NotImplementedError
 
@@ -451,7 +451,7 @@ class FilePresenter(
     @__.abstract_member_function
     async def update_content(
         self,
-        content: __.a.Any,
+        content: __.typx.Any,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
         options: _core.FileUpdateOptions = _core.FileUpdateOptions.Defaults,
     ) -> _core.Inode:
@@ -463,16 +463,17 @@ class FilePresenter(
 
 # TODO: Python 3.12: type statement for aliases
 
-DirectoryAccessor: __.a.TypeAlias = 'DirectoryAdapter | DirectoryCache'
-FileAccessor: __.a.TypeAlias = 'FileAdapter | FileCache'
-GeneralAccessor: __.a.TypeAlias = 'GeneralAdapter | GeneralCache'
-PossibleFilter: __.a.TypeAlias = 'bytes | str | Filter'
-PossibleRelativeLocator: __.a.TypeAlias = (
+DirectoryAccessor: __.typx.TypeAlias = 'DirectoryAdapter | DirectoryCache'
+FileAccessor: __.typx.TypeAlias = 'FileAdapter | FileCache'
+GeneralAccessor: __.typx.TypeAlias = 'GeneralAdapter | GeneralCache'
+PossibleFilter: __.typx.TypeAlias = 'bytes | str | Filter'
+PossibleRelativeLocator: __.typx.TypeAlias = (
     __.PossiblePath | __.AbstractIterable[ __.PossiblePath ] )
-SpecificAccessor: __.a.TypeAlias = 'DirectoryAccessor | FileAccessor'
-SpecificAdapter: __.a.TypeAlias = 'DirectoryAdapter | FileAdapter'
-SpecificCache: __.a.TypeAlias = 'DirectoryCache | FileCache'
+SpecificAccessor: __.typx.TypeAlias = 'DirectoryAccessor | FileAccessor'
+SpecificAdapter: __.typx.TypeAlias = 'DirectoryAdapter | FileAdapter'
+SpecificCache: __.typx.TypeAlias = 'DirectoryCache | FileCache'
 
-CreateParentsArgument: __.a.TypeAlias = __.a.Annotation[
-    bool, __.a.Doc( ''' Create parent directories if they do not exist. ''' )
+CreateParentsArgument: __.typx.TypeAlias = __.typx.Annotated[
+    bool,
+    __.typx.Doc( ''' Create parent directories if they do not exist. ''' ),
 ]

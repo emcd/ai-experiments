@@ -24,13 +24,13 @@
 from . import __
 
 
-ClientImplement = __.a.TypeVar( 'ClientImplement', covariant = True )
-NativeControls = __.a.TypeVar( 'NativeControls', covariant = True )
-NativeMessages = __.a.TypeVar( 'NativeMessages', covariant = True )
-ProviderVariants = __.a.TypeVar( 'ProviderVariants', covariant = True )
+ClientImplement = __.typx.TypeVar( 'ClientImplement', covariant = True )
+NativeControls = __.typx.TypeVar( 'NativeControls', covariant = True )
+NativeMessages = __.typx.TypeVar( 'NativeMessages', covariant = True )
+ProviderVariants = __.typx.TypeVar( 'ProviderVariants', covariant = True )
 
-InvocationDescriptor: __.a.TypeAlias = (
-    __.AbstractDictionary[ str, __.a.Any ] )
+InvocationDescriptor: __.typx.TypeAlias = (
+    __.AbstractDictionary[ str, __.typx.Any ] )
 
 
 class ClientDefaults( __.immut.DataclassObject ):
@@ -41,8 +41,8 @@ class ClientDefaults( __.immut.DataclassObject ):
     @classmethod
     def from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.typx.Self:
         ''' Produces client defaults instance from descriptor. '''
         args = __.accret.Dictionary( )
         for arg_name in ( 'converser-model', ):
@@ -62,8 +62,8 @@ class ClientAttributes( __.immut.DataclassObject ):
     @classmethod
     def from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.typx.Self:
         ''' Produces client attributes instance from descriptor. '''
         return selfclass(
             **selfclass.init_args_from_descriptor( descriptor ) )
@@ -71,8 +71,8 @@ class ClientAttributes( __.immut.DataclassObject ):
     @classmethod
     def init_args_from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         args = __.accret.Dictionary( )
         args[ 'defaults' ] = (
@@ -84,17 +84,17 @@ class ClientAttributes( __.immut.DataclassObject ):
 class ConversationReactors( __.immut.DataclassObject ):
     ''' Callbacks for AI provider to correspond with caller. '''
 
-    allocator: __.a.Callable[ [ __.MessageCanister ], __.a.Any ] = (
+    allocator: __.typx.Callable[ [ __.MessageCanister ], __.typx.Any ] = (
         lambda canister: canister )
-    deallocator: __.a.Callable[ [ __.a.Any ], None ] = (
+    deallocator: __.typx.Callable[ [ __.typx.Any ], None ] = (
         lambda handle: None )
-    failure_notifier: __.a.Callable[ [ str ], None ] = (
+    failure_notifier: __.typx.Callable[ [ str ], None ] = (
         lambda status: None )
-    progress_notifier: __.a.Callable[ [ int ], None ] = (
+    progress_notifier: __.typx.Callable[ [ int ], None ] = (
         lambda tokens_count: None )
-    success_notifier: __.a.Callable[ [ __.a.Any ], None ] = (
+    success_notifier: __.typx.Callable[ [ __.typx.Any ], None ] = (
         lambda status: None )
-    updater: __.a.Callable[ [ __.a.Any ], None ] = (
+    updater: __.typx.Callable[ [ __.typx.Any ], None ] = (
         lambda handle: None )
 
 
@@ -143,8 +143,8 @@ class ConverserFormatPreferences(
     @classmethod
     def from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.typx.Self:
         args = __.accret.Dictionary( )
         for arg_species in ( 'data', 'math', 'text' ):
             match arg_species:
@@ -172,8 +172,8 @@ class ConverserTokensLimits(
     @classmethod
     def from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.a.Any ],
-    ) -> __.a.Self:
+        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    ) -> __.typx.Self:
         args = __.accret.Dictionary( )
         for arg_name in ( 'per-response', 'total' ):
             arg = descriptor.get( arg_name )
@@ -189,8 +189,8 @@ class InvocationRequest(
     ''' Provider-neutral invocation (tool use) request. '''
 
     name: str
-    arguments: __.AbstractDictionary[ str, __.a.Any ]
-    invocation: __.a.Callable # TODO: Full signature.
+    arguments: __.AbstractDictionary[ str, __.typx.Any ]
+    invocation: __.typx.Callable # TODO: Full signature.
     specifics: __.accret.Dictionary = ( # TODO: Full signature.
         __.dataclass_declare( default_factory = __.accret.Dictionary ) )
 
@@ -199,7 +199,7 @@ class InvocationRequest(
         selfclass,
         descriptor: InvocationDescriptor,
         context, # TODO: Signature.
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         ''' Produces instance from descriptor dictionary. '''
         from .exceptions import InvocationFormatError as Error
         if not isinstance( descriptor, __.AbstractDictionary ):
@@ -234,14 +234,14 @@ class ModelsIntegrator(
     ''' Integrates attributes from configuration for matching models. '''
     # TODO: Immutable class attributes.
 
-    attributes: __.AbstractDictionary[ str, __.a.Any ]
+    attributes: __.AbstractDictionary[ str, __.typx.Any ]
     behaviors: ModelIntegrationBehaviors
     regex: __.re.Pattern
 
     @classmethod
     def from_descriptor(
-        selfclass, descriptor: __.AbstractDictionary[ str, __.a.Any ]
-    ) -> __.a.Self:
+        selfclass, descriptor: __.AbstractDictionary[ str, __.typx.Any ]
+    ) -> __.typx.Self:
         ''' Instance from configuration. '''
         desc = dict( descriptor )
         # TODO: Error if 'name-regex' is missing.
@@ -254,8 +254,8 @@ class ModelsIntegrator(
             attributes = attributes, behaviors = behaviors, regex = regex )
 
     def __call__(
-        self, name: str, attributes: __.AbstractDictionary[ str, __.a.Any ]
-    ) -> __.AbstractDictionary[ str, __.a.Any ]:
+        self, name: str, attributes: __.AbstractDictionary[ str, __.typx.Any ]
+    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
         ''' Returns integrated copy of model attributes. '''
         if not self.regex.match( name ): return attributes
         ours = dict( self.attributes )
@@ -283,14 +283,14 @@ class ModelGenera( __.Enum ): # TODO: Python 3.11: StrEnum
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-InvocationsRequests: __.a.TypeAlias = (
+InvocationsRequests: __.typx.TypeAlias = (
     __.AbstractSequence[ InvocationRequest ] )
-ModelsIntegrators: __.a.TypeAlias = __.AbstractSequence[ ModelsIntegrator ]
-ModelsIntegratorsMutable: __.a.TypeAlias = (
+ModelsIntegrators: __.typx.TypeAlias = __.AbstractSequence[ ModelsIntegrator ]
+ModelsIntegratorsMutable: __.typx.TypeAlias = (
     __.AbstractMutableSequence[ ModelsIntegrator ] )
-ModelsIntegratorsByGenus: __.a.TypeAlias = (
+ModelsIntegratorsByGenus: __.typx.TypeAlias = (
     __.AbstractDictionary[ ModelGenera, ModelsIntegrators ] )
-ModelsIntegratorsByGenusMutable: __.a.TypeAlias = (
+ModelsIntegratorsByGenusMutable: __.typx.TypeAlias = (
     __.AbstractMutableDictionary[ ModelGenera, ModelsIntegratorsMutable ] )
 
 
@@ -298,8 +298,8 @@ conversation_reactors_minimal = ConversationReactors( )
 
 
 def _merge_dictionaries_recursive(
-    theirs: __.AbstractMutableDictionary[ str, __.a.Any ],
-    ours: __.AbstractDictionary[ str, __.a.Any ],
+    theirs: __.AbstractMutableDictionary[ str, __.typx.Any ],
+    ours: __.AbstractDictionary[ str, __.typx.Any ],
 ):
     for name, our_value in ours.items( ):
         if name not in theirs:

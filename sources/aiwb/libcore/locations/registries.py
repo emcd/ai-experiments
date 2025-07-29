@@ -28,14 +28,14 @@ from . import interfaces as _interfaces
 
 
 # TODO: Python 3.12: type statement for aliases
-AdaptersRegistry: __.a.TypeAlias = (
+AdaptersRegistry: __.typx.TypeAlias = (
     __.AbstractDictionary[ str, type[ '_interfaces.GeneralAdapter' ] ] )
-CachesRegistry: __.a.TypeAlias = (
+CachesRegistry: __.typx.TypeAlias = (
     __.AbstractDictionary[ str, type[ '_interfaces.CacheManager' ] ] )
-FilePresentersRegistry: __.a.TypeAlias = (
+FilePresentersRegistry: __.typx.TypeAlias = (
     __.AbstractDictionary[ str, type[ '_interfaces.FilePresenter' ] ] )
 # TODO: Content filters versus dirent filters.
-FiltersRegistry: __.a.TypeAlias = (
+FiltersRegistry: __.typx.TypeAlias = (
     __.AbstractDictionary[ str, type[ '_interfaces.Filter' ] ] )
 
 
@@ -182,7 +182,7 @@ def filters_from_specifiers(
 
 def _parse_filter_specifier(
     specifier: str
-) -> ( str, __.AbstractSequence[ __.a.Any ] ):
+) -> ( str, __.AbstractSequence[ __.typx.Any ] ):
     for index, delim in enumerate( specifier ):
         if ':' == delim: break
         if delim in ( '<', '>' ): break

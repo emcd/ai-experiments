@@ -37,7 +37,7 @@ class Information(
     @classmethod
     async def prepare(
         selfclass, package: str, exits: __.ExitsAsync
-    ) -> __.a.Self:
+    ) -> __.typx.Self:
         ''' Acquires information about our package distribution. '''
         from importlib.metadata import packages_distributions
         from aiofiles import open as open_

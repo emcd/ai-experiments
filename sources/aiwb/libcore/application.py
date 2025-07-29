@@ -35,21 +35,21 @@ _execution_id = __.uuid4( ).urn
 class Information( metaclass = __.accret.Dataclass ):
     ''' Information about an application. '''
 
-    name: __.a.Annotation[
+    name: __.typx.Annotated[
         str,
-        __.a.Doc( "For derivation of platform directories." ),
+        __.typx.Doc( "For derivation of platform directories." ),
     ] = __.package_name
-    publisher: __.a.Annotation[
+    publisher: __.typx.Annotated[
         __.typx.Optional[ str ],
-        __.a.Doc( "For derivation of platform directories." ),
+        __.typx.Doc( "For derivation of platform directories." ),
     ] = None
-    version: __.a.Annotation[
+    version: __.typx.Annotated[
         __.typx.Optional[ str ],
-        __.a.Doc( "For derivation of platform directories." ),
+        __.typx.Doc( "For derivation of platform directories." ),
     ] = None
-    execution_id: __.a.Annotation[
+    execution_id: __.typx.Annotated[
         __.typx.Optional[ str ],
-        __.a.Doc( "For telemetry, etc..." ),
+        __.typx.Doc( "For telemetry, etc..." ),
     ] = _execution_id
 
     def produce_platform_directories( self ) -> __.PlatformDirs:

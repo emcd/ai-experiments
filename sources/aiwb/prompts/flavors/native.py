@@ -32,12 +32,12 @@ class Definition( _core.Definition ):
 
         __slots__ = ( 'controls', )
 
-        controls: __.a.Any # TODO: Correct type for controls.
+        controls: __.typx.Any # TODO: Correct type for controls.
 
         def __init__(
             self,
             definition: 'Definition',
-            values: __.AbstractDictionary[ str, __.a.Any ] = None
+            values: __.AbstractDictionary[ str, __.typx.Any ] = None
         ):
             super( ).__init__( definition )
             values = values or { }
