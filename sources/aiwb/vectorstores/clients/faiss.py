@@ -42,7 +42,7 @@ class Factory( _core.Factory ):
     async def client_from_descriptor(
         self,
         auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ]
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ]
     ):
         # TODO: Return future.
         # TODO? Remove dependency on Langchain.

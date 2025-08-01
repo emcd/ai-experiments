@@ -36,17 +36,6 @@ from asyncio import (
     Lock as MutexAsync,
 )
 from collections import namedtuple # TODO: Replace with dataclass.
-from collections.abc import (
-    Awaitable as        AbstractAwaitable,
-    Collection as       AbstractCollection,
-    Coroutine as        AbstractCoroutine,
-    Mapping as          AbstractDictionary,
-    Iterable as         AbstractIterable,
-    AsyncIterable as    AbstractIterableAsync,
-    MutableMapping as   AbstractMutableDictionary,
-    MutableSequence as  AbstractMutableSequence,
-    Sequence as         AbstractSequence,
-)
 from contextlib import (
     ExitStack as            Exits,
     AsyncExitStack as       ExitsAsync,
@@ -95,10 +84,10 @@ from absence import Absential, absent, is_absent
 
 from . import _generics as g
 
-ClassDecorators: typx.TypeAlias = AbstractIterable[ typx.Callable[ [ type ], type ] ]
-NominativeArgumentsDictionary: typx.TypeAlias = AbstractDictionary[ str, typx.Any ]
+ClassDecorators: typx.TypeAlias = cabc.Iterable[ typx.Callable[ [ type ], type ] ]
+NominativeArgumentsDictionary: typx.TypeAlias = cabc.Mapping[ str, typx.Any ]
 TextComparand: typx.TypeAlias = str | re.Pattern
-TextComparands: typx.TypeAlias = AbstractIterable[ TextComparand ]
+TextComparands: typx.TypeAlias = cabc.Iterable[ TextComparand ]
 
 
 _immutability_label = 'immutability'
@@ -115,10 +104,10 @@ def calculate_class_fqname( class_: type ) -> str:
     return f"{class_.__module__}.{class_.__qualname__}"
 
 
-async def chain_async( *iterables: AbstractIterable | AbstractIterableAsync ):
+async def chain_async( *iterables: cabc.Iterable | cabc.AsyncIterable ):
     ''' Chains items from iterables in sequence and asynchronously. '''
     for iterable in iterables:
-        if isinstance( iterable, AbstractIterableAsync ):
+        if isinstance( iterable, cabc.AsyncIterable ):
             async for item in iterable: yield item
         else:
             for item in iterable: yield item
@@ -142,7 +131,7 @@ async def gather_async(
         bool,
         typx.Doc( ''' Ignore or error on non-awaitables. Ignore, if true. ''' )
     ] = False,
-) -> AbstractSequence:
+) -> cabc.Sequence:
     ''' Gathers results from invocables concurrently and asynchronously. '''
     from exceptiongroup import ExceptionGroup # TODO: Python 3.11: builtin
     if ignore_nonawaitables:
@@ -155,7 +144,7 @@ async def gather_async(
     return tuple( result.extract( ) for result in results )
 
 
-async def intercept_error_async( awaitable: AbstractAwaitable ) -> g.Result:
+async def intercept_error_async( awaitable: cabc.Awaitable ) -> g.Result:
     ''' Converts unwinding exceptions to error results.
 
         Exceptions, which are not instances of :py:exc:`Exception` or one of
@@ -180,7 +169,7 @@ async def read_files_async(
     *files: PathLike,
     deserializer: typx.Callable[ [ str ], typx.Any ] = None,
     return_exceptions: bool = False
-) -> AbstractSequence:
+) -> cabc.Sequence:
     ''' Reads files asynchronously. '''
     # TODO? Batch to prevent fd exhaustion over large file sets.
     from aiofiles import open as open_
@@ -207,11 +196,11 @@ async def read_files_async(
 
 async def _gather_async_permissive(
     operands: typx.Any
-) -> AbstractSequence:
+) -> cabc.Sequence:
     from asyncio import gather # TODO? Python 3.11: TaskGroup
     awaitables = { }
     for i, operand in enumerate( operands ):
-        if isinstance( operand, AbstractAwaitable ):
+        if isinstance( operand, cabc.Awaitable ):
             awaitables[ i ] = intercept_error_async( operand )
     results_ = await gather( *awaitables.values( ) )
     results = list( operands )
@@ -222,11 +211,11 @@ async def _gather_async_permissive(
 
 async def _gather_async_strict(
     operands: typx.Any
-) -> AbstractSequence:
+) -> cabc.Sequence:
     from asyncio import gather # TODO? Python 3.11: TaskGroup
     awaitables = [ ]
     for operand in operands:
-        if not isinstance( operand, AbstractAwaitable ):
+        if not isinstance( operand, cabc.Awaitable ):
             raise ValueError( f"Operand {operand!r} must be awaitable." )
         awaitables.append( intercept_error_async( operand ) )
     return await gather( *awaitables )

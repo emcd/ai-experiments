@@ -26,7 +26,7 @@ from . import __
 
 async def analyze(
     context: __.Context, arguments: __.Arguments
-) -> __.AbstractSequence:
+) -> __.cabc.Sequence:
     ''' Reads URL or filesystem path and analyzes contents with an AI agent.
 
         AI agent analyzes contents according to instructions and returns

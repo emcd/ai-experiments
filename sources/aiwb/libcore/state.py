@@ -47,7 +47,7 @@ class Globals(
     exits: __.ExitsAsync # TODO? Make accretive.
     notifications: _notifications.Queue
 
-    def as_dictionary( self ) -> __.AbstractDictionary[ str, __.typx.Any ]:
+    def as_dictionary( self ) -> __.cabc.Mapping[ str, __.typx.Any ]:
         ''' Returns shallow copy of state. '''
         from dataclasses import fields
         return {

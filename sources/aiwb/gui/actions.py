@@ -251,7 +251,7 @@ async def _deactivate_duplicate_invocations( components ):
 
 async def _deduplicate_invocations(
     components
-) -> __.AbstractSequence[ int ]:
+) -> __.cabc.Sequence[ int ]:
     ''' Deduplicates invocations and their results. '''
     history = components.column_conversation_history
     deduplicators = { }  # { tool_name: [ deduplicator_instances ] }

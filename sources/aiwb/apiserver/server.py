@@ -74,7 +74,7 @@ async def prepare(
 @__.exit_manager_async
 async def _execute_server_thread(
     server: __.UvicornServer,
-    nomargs: __.AbstractDictionary[ str, __.typx.Any ],
+    nomargs: __.cabc.Mapping[ str, __.typx.Any ],
 ) -> __.cabc.AsyncGenerator:
     scribe = __.acquire_scribe( __package__ )
     from asyncio import sleep
