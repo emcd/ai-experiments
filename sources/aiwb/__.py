@@ -93,7 +93,6 @@ import                      tyro
 from absence import Absential, absent, is_absent
 
 
-from . import _annotations as a
 from . import _generics as g
 
 ClassDecorators: typx.TypeAlias = AbstractIterable[ typx.Callable[ [ type ], type ] ]

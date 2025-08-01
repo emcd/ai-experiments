@@ -21,15 +21,15 @@
 ''' Generic types. '''
 
 
-from . import _annotations as _a
+import typing_extensions as _typx
 
 
-T = _a.TypeVar( 'T' ) # generic
-U = _a.TypeVar( 'U' ) # generic
-E = _a.TypeVar( 'E', bound = Exception ) # error
+T = _typx.TypeVar( 'T' ) # generic
+U = _typx.TypeVar( 'U' ) # generic
+E = _typx.TypeVar( 'E', bound = Exception ) # error
 
 
-class Result( _a.Generic[ T ] ):
+class Result( _typx.Generic[ T ] ):
     ''' Either a value or an error. '''
     # TODO: Enforce class and instance immutability.
 
@@ -48,8 +48,8 @@ class Result( _a.Generic[ T ] ):
         raise self.error
 
     def transform(
-        self, function: _a.Callable[ [ T ], U ]
-    ) -> _a.Self | "Result[ U ]":
+        self, function: _typx.Callable[ [ T ], U ]
+    ) -> _typx.Self | "Result[ U ]":
         ''' Transforms value in value result. Ignores error result. '''
         # Like Result.map in Rust.
         if isinstance( self, Value ): return Value( function( self.value ) )
