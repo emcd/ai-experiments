@@ -48,13 +48,13 @@ class IoContentDeduplicator( __.Deduplicator ):
     ''' Deduplicates I/O content operations. '''
 
     @classmethod
-    def provide_invocable_names( selfclass ) -> __.AbstractCollection[ str ]:
+    def provide_invocable_names( selfclass ) -> __.cabc.Collection[ str ]:
         return { 'read', 'write_file', 'write_pieces' }
 
     def is_duplicate(
         self,
         invocable_name: str,
-        arguments: __.AbstractDictionary[ str, __.typx.Any ],
+        arguments: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> bool:
         our_location = self.arguments.get( 'location' )
         their_location = arguments.get( 'location' )
@@ -71,13 +71,13 @@ class SurveyDirectoryDeduplicator( __.Deduplicator ):
     ''' Deduplicates directory survey operations. '''
 
     @classmethod
-    def provide_invocable_names( selfclass ) -> __.AbstractCollection[ str ]:
+    def provide_invocable_names( selfclass ) -> __.cabc.Collection[ str ]:
         return { 'list_folder' }
 
     def is_duplicate(
         self,
         invocable_name: str,
-        arguments: __.AbstractDictionary[ str, __.typx.Any ],
+        arguments: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> bool:
         our_location = self.arguments.get( 'location' )
         their_location = arguments.get( 'location' )

@@ -205,7 +205,7 @@ async def restore_prompt_variables( components, row_name, state, species ):
     ''' Restores prompt variables from loaded state. '''
     from .updaters import populate_prompt_variables
     container_state = state.get( row_name )
-    if not isinstance( container_state, __.AbstractDictionary ):
+    if not isinstance( container_state, __.cabc.Mapping ):
         container_state = _restore_prompt_variables_v0(
             components, container_state, species = species )
     await populate_prompt_variables(

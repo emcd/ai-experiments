@@ -34,7 +34,7 @@ class Factory(
     async def client_from_descriptor(
         self,
         auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ):
         ''' Produces client from descriptor dictionary. '''
         raise NotImplementedError
@@ -59,7 +59,7 @@ def derive_vectorstores_location( auxdata: __.Globals, url: str ) -> __.Path:
 
 def descriptors_from_configuration(
     auxdata: __.Globals
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.typx.Any ] ]:
+) -> __.cabc.Sequence[ __.cabc.Mapping[ str, __.typx.Any ] ]:
     ''' Validates and returns descriptors from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = [ ]
@@ -113,7 +113,7 @@ async def prepare_clients(
 
 async def prepare_factories(
     auxdata: __.Globals
-) -> __.AbstractDictionary[ str, Factory ]:
+) -> __.cabc.Mapping[ str, Factory ]:
     ''' Prepares factories from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = descriptors_from_configuration( auxdata )

@@ -176,10 +176,10 @@ class DirectoryOperations(
         self,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
         filters: __.Absential[
-            __.AbstractIterable[ 'PossibleFilter' ]
+            __.cabc.Iterable[ 'PossibleFilter' ]
         ] = __.absent,
         recurse: bool = True,
-    ) -> __.AbstractSequence[ _core.DirectoryEntry ]:
+    ) -> __.cabc.Sequence[ _core.DirectoryEntry ]:
         ''' Returns list of directory entries, subject to filtering. '''
         raise NotImplementedError
 
@@ -320,7 +320,7 @@ class ReconciliationOperations(
     @__.abstract_member_function
     async def difference(
         self
-    ) -> __.AbstractSequence[ _core.CacheDifferenceBase ]:
+    ) -> __.cabc.Sequence[ _core.CacheDifferenceBase ]:
         ''' Reports differences between cache and sources. '''
         raise NotImplementedError
 
@@ -468,7 +468,7 @@ FileAccessor: __.typx.TypeAlias = 'FileAdapter | FileCache'
 GeneralAccessor: __.typx.TypeAlias = 'GeneralAdapter | GeneralCache'
 PossibleFilter: __.typx.TypeAlias = 'bytes | str | Filter'
 PossibleRelativeLocator: __.typx.TypeAlias = (
-    __.PossiblePath | __.AbstractIterable[ __.PossiblePath ] )
+    __.PossiblePath | __.cabc.Iterable[ __.PossiblePath ] )
 SpecificAccessor: __.typx.TypeAlias = 'DirectoryAccessor | FileAccessor'
 SpecificAdapter: __.typx.TypeAlias = 'DirectoryAdapter | FileAdapter'
 SpecificCache: __.typx.TypeAlias = 'DirectoryCache | FileCache'

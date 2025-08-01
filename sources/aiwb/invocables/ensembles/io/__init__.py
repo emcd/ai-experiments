@@ -39,7 +39,7 @@ _name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
 
 async def prepare(
     auxdata: __.Globals,
-    descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    descriptor: __.cabc.Mapping[ str, __.typx.Any ],
 ) -> 'Ensemble':
     ''' Installs dependencies and returns ensemble. '''
     # TODO: Install dependencies: github, etc....
@@ -53,7 +53,7 @@ class Ensemble( __.Ensemble ):
 
     async def prepare_invokers(
         self, auxdata: __.Globals
-    ) -> __.AbstractDictionary[ str, __.Invoker ]:
+    ) -> __.cabc.Mapping[ str, __.Invoker ]:
         registry = [
             (   invocable,
                 argschema,

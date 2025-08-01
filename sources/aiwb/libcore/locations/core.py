@@ -325,19 +325,19 @@ class Url(
 
 # TODO: Python 3.12: type statement for aliases
 AlienResolutionActionsTable: __.typx.TypeAlias = (
-    __.AbstractDictionary[ Url, AlienResolutionActions ] )
+    __.cabc.Mapping[ Url, AlienResolutionActions ] )
 ConflictResolutionActionsTable: __.typx.TypeAlias = (
-    __.AbstractDictionary[ Url, ConflictResolutionActions ] )
+    __.cabc.Mapping[ Url, ConflictResolutionActions ] )
 ImpurityResolutionActionsTable: __.typx.TypeAlias = (
-    __.AbstractDictionary[ Url, ImpurityResolutionActions ] )
+    __.cabc.Mapping[ Url, ImpurityResolutionActions ] )
 PermissionsTable: __.typx.TypeAlias = (
-    __.AbstractDictionary[ Possessor, Permissions ] )
+    __.cabc.Mapping[ Possessor, Permissions ] )
 PossibleUrl: __.typx.TypeAlias = bytes | str | __.PathLike | _UrlParts
 
 
 def is_permissions_table( table: __.typx.Any ) -> bool:
     ''' Validates table is mapping from possessors to permissions. '''
-    if not isinstance( table, __.AbstractDictionary ): return False
+    if not isinstance( table, __.cabc.Mapping ): return False
     return all(
         isinstance( name, Possessor ) and isinstance( value, Permissions )
         for name, value in table.items( ) )

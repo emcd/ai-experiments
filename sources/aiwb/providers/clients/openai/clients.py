@@ -33,7 +33,7 @@ else:
     _AsyncOpenAI: __.typx.TypeAlias = __.typx.Any
 
 
-ClientDescriptor: __.typx.TypeAlias = __.AbstractDictionary[ str, __.typx.Any ]
+ClientDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
 
 
 _model_genera = frozenset( (
@@ -81,7 +81,7 @@ class Client( __.Client ):
         self,
         auxdata: __.CoreGlobals,
         genus: __.Absential[ __.ModelGenera ] = __.absent,
-    ) -> __.AbstractSequence[ __.Model ]:
+    ) -> __.cabc.Sequence[ __.Model ]:
         if __.absent is genus: genera = _model_genera
         else:
             genus = __.typx.cast( __.ModelGenera, genus )
@@ -95,7 +95,7 @@ class Client( __.Client ):
                 acquirer = self._acquire_model_names ) )
 
     @__.abstract_member_function
-    async def _acquire_model_names( self ) -> __.AbstractSequence[ str ]:
+    async def _acquire_model_names( self ) -> __.cabc.Sequence[ str ]:
         ''' Acquires model names from API or other source. '''
         raise NotImplementedError
 
@@ -120,7 +120,7 @@ class OpenAiClient( Client ):
         selfclass,
         auxdata: __.CoreGlobals,
         provider: __.Provider,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.typx.Self:
         await selfclass.assert_environment( auxdata )
         # TODO: Return future which acquires models in background.
@@ -138,7 +138,7 @@ class OpenAiClient( Client ):
     def variant( self ) -> ProviderVariants:
         return ProviderVariants.OpenAi
 
-    async def _acquire_model_names( self ) -> __.AbstractSequence[ str ]:
+    async def _acquire_model_names( self ) -> __.cabc.Sequence[ str ]:
         return sorted( map(
             lambda model: model.id,
             ( await self.produce_implement( ).models.list( ) ).data ) )

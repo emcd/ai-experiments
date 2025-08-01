@@ -283,7 +283,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         self, name: __.PossibleRelativeLocator
     ) -> __.GeneralAccessor:
         if isinstance( name, __.PossiblePath ): name = ( name, )
-        if isinstance( name, __.AbstractIterable[ __.PossiblePath ] ):
+        if isinstance( name, __.cabc.Iterable[ __.PossiblePath ] ):
             return __.adapter_from_url(
                 self.url.with_path(
                     __.Path( self.url.path ).joinpath( *name ) ) )
@@ -293,10 +293,10 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         self,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         filters: __.Absential[
-            __.AbstractIterable[ __.PossibleFilter ]
+            __.cabc.Iterable[ __.PossibleFilter ]
         ] = __.absent,
         recurse: bool = True
-    ) -> __.AbstractSequence[ __.DirectoryEntry ]:
+    ) -> __.cabc.Sequence[ __.DirectoryEntry ]:
         from aiofiles.os import scandir
         if filters: filters = __.filters_from_specifiers( filters )
         scanners = [ ]

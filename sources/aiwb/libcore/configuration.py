@@ -58,7 +58,7 @@ async def _acquire_includes(
     application_name: str,
     directories: __.PlatformDirs,
     specs: tuple[ str ]
-) -> __.AbstractSequence[ dict ]:
+) -> __.cabc.Sequence[ dict ]:
     from itertools import chain
     from tomli import loads
     locations = tuple(

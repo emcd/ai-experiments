@@ -107,7 +107,7 @@ def assess_overlap( op1: Operation, op2: Operation ) -> bool:
 
 
 def verify_operations(
-    operations: __.AbstractSequence[ Operation ], file_length: int
+    operations: __.cabc.Sequence[ Operation ], file_length: int
 ) -> list[ Operation ]:
     ''' Verifies all operations are valid and non-overlapping. '''
     if not operations: return [ ]
@@ -126,7 +126,7 @@ def verify_operations(
 
 
 def apply_operations(
-    lines: list[ str ], operations: __.AbstractSequence[ Operation ]
+    lines: list[ str ], operations: __.cabc.Sequence[ Operation ]
 ) -> list[ str ]:
     ''' Applies sequence of operations to content lines. '''
     if not operations: return lines
@@ -168,7 +168,7 @@ async def acquire_content( accessor: __.FileAccessor ) -> tuple[ str, int ]:
 
 async def update_content(
     accessor: __.FileAccessor, content: str
-) -> __.AbstractDictionary:
+) -> __.cabc.Mapping:
     ''' Updates file with modified content. '''
     presenter = __.text_file_presenter_from_accessor( accessor = accessor )
     result = await presenter.update_content(
@@ -183,7 +183,7 @@ async def update_content(
 
 async def write_pieces(
     context: __.Context, arguments: __.Arguments
-) -> __.AbstractDictionary:
+) -> __.cabc.Mapping:
     ''' Modifies file at URL or filesystem path with partial content updates.
 
         Operations can insert, delete, or replace content at specific line

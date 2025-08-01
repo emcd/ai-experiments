@@ -37,7 +37,7 @@ class Definition( _core.Definition ):
         def __init__(
             self,
             definition: 'Definition',
-            values: __.AbstractDictionary[ str, __.typx.Any ] = None
+            values: __.cabc.Mapping[ str, __.typx.Any ] = None
         ):
             super( ).__init__( definition )
             values = values or { }
@@ -91,7 +91,7 @@ class Store( _core.Store ):
     async def acquire_definitions(
         self,
         auxdata: __.Globals,
-    ) -> __.AbstractDictionary[ str, 'Definition' ]:
+    ) -> __.cabc.Mapping[ str, 'Definition' ]:
         scribe = __.acquire_scribe( __package__ )
         location = self.location
         match location:

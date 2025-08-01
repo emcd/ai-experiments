@@ -149,7 +149,7 @@ class Canister(
 
     attributes: __.SimpleNamespace = (
         __.dataclass_declare( default_factory = __.SimpleNamespace ) )
-    contents: __.AbstractMutableSequence[ Content ] = (
+    contents: __.cabc.MutableSequence[ Content ] = (
         __.dataclass_declare( default_factory = list ) )
 
     def add_content( self, data, /, **descriptor ):
@@ -218,7 +218,7 @@ class UserCanister( Canister ):
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-Canisters: __.typx.TypeAlias = __.AbstractIterable[ Canister ]
+Canisters: __.typx.TypeAlias = __.cabc.Iterable[ Canister ]
 
 
 # TODO: Cluster: Bundle of related canisters.

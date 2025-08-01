@@ -29,14 +29,14 @@ from . import interfaces as _interfaces
 
 # TODO: Python 3.12: type statement for aliases
 AdaptersRegistry: __.typx.TypeAlias = (
-    __.AbstractDictionary[ str, type[ '_interfaces.GeneralAdapter' ] ] )
+    __.cabc.Mapping[ str, type[ '_interfaces.GeneralAdapter' ] ] )
 CachesRegistry: __.typx.TypeAlias = (
-    __.AbstractDictionary[ str, type[ '_interfaces.CacheManager' ] ] )
+    __.cabc.Mapping[ str, type[ '_interfaces.CacheManager' ] ] )
 FilePresentersRegistry: __.typx.TypeAlias = (
-    __.AbstractDictionary[ str, type[ '_interfaces.FilePresenter' ] ] )
+    __.cabc.Mapping[ str, type[ '_interfaces.FilePresenter' ] ] )
 # TODO: Content filters versus dirent filters.
 FiltersRegistry: __.typx.TypeAlias = (
-    __.AbstractDictionary[ str, type[ '_interfaces.Filter' ] ] )
+    __.cabc.Mapping[ str, type[ '_interfaces.Filter' ] ] )
 
 
 # TODO: Use accretive validator dictionaries for registries.
@@ -58,7 +58,7 @@ def adapter_from_url( url: _core.PossibleUrl ) -> '_interfaces.GeneralAdapter':
 
 async def apply_filters(
     dirent: _core.DirectoryEntry,
-    filters: __.AbstractIterable[ '_interfaces.Filter' ],
+    filters: __.cabc.Iterable[ '_interfaces.Filter' ],
 ) -> bool:
     ''' Applies iterable of filters to directory entry. '''
     for filter_ in filters:
@@ -162,8 +162,8 @@ def text_file_presenter_from_url(
 
 
 def filters_from_specifiers(
-    filters: __.AbstractIterable[ '_interfaces.PossibleFilter' ]
-) -> __.AbstractSequence[ '_interfaces.Filter' ]:
+    filters: __.cabc.Iterable[ '_interfaces.PossibleFilter' ]
+) -> __.cabc.Sequence[ '_interfaces.Filter' ]:
     ''' Converts iterable of possible filters into filters. '''
     filters_ = [ ]
     for filter_ in filters:
@@ -182,7 +182,7 @@ def filters_from_specifiers(
 
 def _parse_filter_specifier(
     specifier: str
-) -> ( str, __.AbstractSequence[ __.typx.Any ] ):
+) -> ( str, __.cabc.Sequence[ __.typx.Any ] ):
     for index, delim in enumerate( specifier ):
         if ':' == delim: break
         if delim in ( '<', '>' ): break

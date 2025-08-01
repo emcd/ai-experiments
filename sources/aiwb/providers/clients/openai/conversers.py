@@ -25,8 +25,8 @@ from . import __
 
 # TODO: Python 3.12: Use type statement for aliases.
 # TODO? Use typing.TypedDictionary.
-AttributesDescriptor: __.typx.TypeAlias = __.AbstractDictionary[ str, __.typx.Any ]
-ModelDescriptor: __.typx.TypeAlias = __.AbstractDictionary[ str, __.typx.Any ]
+AttributesDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
+ModelDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
 OpenAiControls: __.typx.TypeAlias = dict[ str, __.typx.Any ]
 OpenAiMessage: __.typx.TypeAlias = dict[ str, __.typx.Any ]
 OpenAiMessageContent: __.typx.TypeAlias = str | list[ dict[ str, __.typx.Any ] ]
@@ -144,7 +144,7 @@ class InvocationsProcessor( __.InvocationsProcessor ):
 
     def nativize_invocables(
         self,
-        invokers: __.AbstractIterable[ __.Invoker ],
+        invokers: __.cabc.Iterable[ __.Invoker ],
     ) -> __.typx.Any:
         if not self.model.attributes.supports_invocations: return { }
         args = { }

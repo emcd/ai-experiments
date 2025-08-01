@@ -30,18 +30,18 @@ NativeMessages = __.typx.TypeVar( 'NativeMessages', covariant = True )
 ProviderVariants = __.typx.TypeVar( 'ProviderVariants', covariant = True )
 
 InvocationDescriptor: __.typx.TypeAlias = (
-    __.AbstractDictionary[ str, __.typx.Any ] )
+    __.cabc.Mapping[ str, __.typx.Any ] )
 
 
 class ClientDefaults( __.immut.DataclassObject ):
     ''' Collection of default values for AI provider. '''
 
-    converser_model: __.AbstractSequence[ str ] = ( )
+    converser_model: __.cabc.Sequence[ str ] = ( )
 
     @classmethod
     def from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.typx.Self:
         ''' Produces client defaults instance from descriptor. '''
         args = __.accret.Dictionary( )
@@ -62,7 +62,7 @@ class ClientAttributes( __.immut.DataclassObject ):
     @classmethod
     def from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.typx.Self:
         ''' Produces client attributes instance from descriptor. '''
         return selfclass(
@@ -71,8 +71,8 @@ class ClientAttributes( __.immut.DataclassObject ):
     @classmethod
     def init_args_from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
-    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
+    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         args = __.accret.Dictionary( )
         args[ 'defaults' ] = (
@@ -143,7 +143,7 @@ class ConverserFormatPreferences(
     @classmethod
     def from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.typx.Self:
         args = __.accret.Dictionary( )
         for arg_species in ( 'data', 'math', 'text' ):
@@ -172,7 +172,7 @@ class ConverserTokensLimits(
     @classmethod
     def from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.typx.Self:
         args = __.accret.Dictionary( )
         for arg_name in ( 'per-response', 'total' ):
@@ -189,7 +189,7 @@ class InvocationRequest(
     ''' Provider-neutral invocation (tool use) request. '''
 
     name: str
-    arguments: __.AbstractDictionary[ str, __.typx.Any ]
+    arguments: __.cabc.Mapping[ str, __.typx.Any ]
     invocation: __.typx.Callable # TODO: Full signature.
     specifics: __.accret.Dictionary = ( # TODO: Full signature.
         __.dataclass_declare( default_factory = __.accret.Dictionary ) )
@@ -202,7 +202,7 @@ class InvocationRequest(
     ) -> __.typx.Self:
         ''' Produces instance from descriptor dictionary. '''
         from .exceptions import InvocationFormatError as Error
-        if not isinstance( descriptor, __.AbstractDictionary ):
+        if not isinstance( descriptor, __.cabc.Mapping ):
             raise Error( "Invocation descriptor is not dictionary." )
         if 'name' not in descriptor:
             raise Error( "Invocation descriptor without name." )
@@ -234,13 +234,13 @@ class ModelsIntegrator(
     ''' Integrates attributes from configuration for matching models. '''
     # TODO: Immutable class attributes.
 
-    attributes: __.AbstractDictionary[ str, __.typx.Any ]
+    attributes: __.cabc.Mapping[ str, __.typx.Any ]
     behaviors: ModelIntegrationBehaviors
     regex: __.re.Pattern
 
     @classmethod
     def from_descriptor(
-        selfclass, descriptor: __.AbstractDictionary[ str, __.typx.Any ]
+        selfclass, descriptor: __.cabc.Mapping[ str, __.typx.Any ]
     ) -> __.typx.Self:
         ''' Instance from configuration. '''
         desc = dict( descriptor )
@@ -254,8 +254,8 @@ class ModelsIntegrator(
             attributes = attributes, behaviors = behaviors, regex = regex )
 
     def __call__(
-        self, name: str, attributes: __.AbstractDictionary[ str, __.typx.Any ]
-    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
+        self, name: str, attributes: __.cabc.Mapping[ str, __.typx.Any ]
+    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
         ''' Returns integrated copy of model attributes. '''
         if not self.regex.match( name ): return attributes
         ours = dict( self.attributes )
@@ -284,30 +284,30 @@ class ModelGenera( __.Enum ): # TODO: Python 3.11: StrEnum
 
 # TODO: Python 3.12: Use type statement for aliases.
 InvocationsRequests: __.typx.TypeAlias = (
-    __.AbstractSequence[ InvocationRequest ] )
-ModelsIntegrators: __.typx.TypeAlias = __.AbstractSequence[ ModelsIntegrator ]
+    __.cabc.Sequence[ InvocationRequest ] )
+ModelsIntegrators: __.typx.TypeAlias = __.cabc.Sequence[ ModelsIntegrator ]
 ModelsIntegratorsMutable: __.typx.TypeAlias = (
-    __.AbstractMutableSequence[ ModelsIntegrator ] )
+    __.cabc.MutableSequence[ ModelsIntegrator ] )
 ModelsIntegratorsByGenus: __.typx.TypeAlias = (
-    __.AbstractDictionary[ ModelGenera, ModelsIntegrators ] )
+    __.cabc.Mapping[ ModelGenera, ModelsIntegrators ] )
 ModelsIntegratorsByGenusMutable: __.typx.TypeAlias = (
-    __.AbstractMutableDictionary[ ModelGenera, ModelsIntegratorsMutable ] )
+    __.cabc.MutableMapping[ ModelGenera, ModelsIntegratorsMutable ] )
 
 
 conversation_reactors_minimal = ConversationReactors( )
 
 
 def _merge_dictionaries_recursive(
-    theirs: __.AbstractMutableDictionary[ str, __.typx.Any ],
-    ours: __.AbstractDictionary[ str, __.typx.Any ],
+    theirs: __.cabc.MutableMapping[ str, __.typx.Any ],
+    ours: __.cabc.Mapping[ str, __.typx.Any ],
 ):
     for name, our_value in ours.items( ):
         if name not in theirs:
             theirs[ name ] = our_value
             continue
         their_value = theirs[ name ]
-        if (    not isinstance( their_value, __.AbstractDictionary )
-            or  not isinstance( our_value, __.AbstractDictionary )
+        if (    not isinstance( their_value, __.cabc.Mapping )
+            or  not isinstance( our_value, __.cabc.Mapping )
         ):
             theirs[ name ] = our_value
             continue

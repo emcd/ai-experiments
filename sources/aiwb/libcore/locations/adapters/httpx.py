@@ -256,7 +256,7 @@ async def register_defaults( ):
 
 
 def _expiration_from_headers(
-    headers: __.AbstractDictionary[ str, str ]
+    headers: __.cabc.Mapping[ str, str ]
 ) -> __.typx.Optional[ __.DateTime ]:
     from email.utils import parsedate_to_datetime
     cache_control = headers.get( 'Cache-Control' )
@@ -279,7 +279,7 @@ def _expiration_from_headers(
 
 def _headers_from_file_update_options(
     options: __.FileUpdateOptions, inode: __.Inode, content: bytes
-) -> __.AbstractDictionary[ str, str ]:
+) -> __.cabc.Mapping[ str, str ]:
     is_void = __.LocationSpecies.Void is inode.species
     headers = { }
     if __.FileUpdateOptions.Absence & options:
@@ -296,7 +296,7 @@ def _headers_from_file_update_options(
 
 
 def _inode_from_headers(
-    headers: __.AbstractDictionary[ str, str ],
+    headers: __.cabc.Mapping[ str, str ],
     permissions: __.Permissions,
     species: __.LocationSpecies,
 ) -> __.Inode:
@@ -325,7 +325,7 @@ def _inode_from_headers(
 
 
 def _methods_to_permissions(
-    methods: __.AbstractCollection[ str ]
+    methods: __.cabc.Collection[ str ]
 ) -> __.Permissions:
     permissions = __.Permissions.Abstain
     if 'GET' in methods:

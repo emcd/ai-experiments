@@ -51,7 +51,7 @@ class Cli( __.ApiServerCli ):
 
     def prepare_invocation_args(
         self,
-    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
+    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
         args = __.ApiServerCli.prepare_invocation_args( self )
         args[ 'guiserver' ] = self.guiserver
         return args

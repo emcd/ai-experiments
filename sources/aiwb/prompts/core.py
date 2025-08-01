@@ -62,7 +62,7 @@ class Definition(
     def instantiate_descriptor(
         selfclass,
         store: 'Store',
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ]
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ]
     ):
         return selfclass( store, **descriptor )
 
@@ -92,7 +92,7 @@ class Store(
     async def prepare(
         selfclass,
         auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.typx.Self:
         args = selfclass.init_args_from_descriptor( auxdata, descriptor )
         return selfclass( **args )
@@ -101,8 +101,8 @@ class Store(
     def init_args_from_descriptor(
         selfclass,
         auxdata: __.Globals,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
-    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
+    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
         distribution = auxdata.distribution
         name = descriptor[ 'name' ]
         location = __.location_adapter_from_url(
@@ -118,7 +118,7 @@ class Store(
     async def acquire_definitions(
         self,
         auxdata: __.Globals,
-    ) -> __.AbstractDictionary[ str, 'Definition' ]:
+    ) -> __.cabc.Mapping[ str, 'Definition' ]:
         raise NotImplementedError
 
 
@@ -128,8 +128,8 @@ flavors = __.accret.Dictionary( )
 
 async def acquire_definitions(
     auxdata: __.Globals,
-    stores: __.AbstractDictionary[ str, 'Store' ],
-) -> __.AbstractDictionary[ str, Definition ]:
+    stores: __.cabc.Mapping[ str, 'Store' ],
+) -> __.cabc.Mapping[ str, Definition ]:
     ''' Loads prompt definitions from stores. '''
     scribe = __.acquire_scribe( __package__ )
     results = await __.gather_async(
@@ -150,7 +150,7 @@ async def acquire_definitions(
 
 async def acquire_stores(
     auxdata: __.Globals,
-) -> __.AbstractDictionary[ str, 'Store' ]:
+) -> __.cabc.Mapping[ str, 'Store' ]:
     ''' Loads configured promptstores. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = descriptors_from_configuration( auxdata )
@@ -174,7 +174,7 @@ async def acquire_stores(
 
 def descriptors_from_configuration(
     auxdata: __.Globals
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.typx.Any ] ]:
+) -> __.cabc.Sequence[ __.cabc.Mapping[ str, __.typx.Any ] ]:
     ''' Validates and returns descriptors from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = [ ]

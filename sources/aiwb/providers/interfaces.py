@@ -36,7 +36,7 @@ class Provider(
 
     name: str
     # TODO: Reingester dictionary for configuration.
-    configuration: __.AbstractDictionary[ str, __.typx.Any ]
+    configuration: __.cabc.Mapping[ str, __.typx.Any ]
 
     def __str__( self ) -> str: return f"AI provider {self.name!r}"
 
@@ -44,7 +44,7 @@ class Provider(
     async def produce_client(
         self,
         auxdata: __.CoreGlobals,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ]
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ]
     ) -> 'Client':
         ''' Produces client from descriptor dictionary. '''
         raise NotImplementedError
@@ -79,7 +79,7 @@ class Client(
         selfclass,
         auxdata: __.CoreGlobals,
         provider: 'Provider',
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.typx.Self:
         ''' Produces client from descriptor dictionary. '''
         raise NotImplementedError
@@ -89,7 +89,7 @@ class Client(
         selfclass,
         auxdata: __.CoreGlobals,
         provider: 'Provider',
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         descriptor_ = dict( descriptor )
@@ -162,7 +162,7 @@ class Client(
         self,
         auxdata: __.CoreGlobals,
         genus: __.Absential[ _core.ModelGenera ] = __.absent,
-    ) -> __.AbstractSequence[ 'Model' ]:
+    ) -> __.cabc.Sequence[ 'Model' ]:
         ''' Returns models available from provider.
 
             Accepts optional model genus as filter. If not supplied, then
@@ -186,7 +186,7 @@ class ControlsProcessor(
     model: 'Model'
 
     @property
-    def controls( self ) -> __.AbstractSequence[ __.Control ]:
+    def controls( self ) -> __.cabc.Sequence[ __.Control ]:
         ''' Array of controls available to model. '''
         return self.model.attributes.controls
 
@@ -201,7 +201,7 @@ class ControlsProcessor(
     @__.abstract_member_function
     def nativize_controls(
         self,
-        controls: __.AbstractDictionary[ str, __.Control.Instance ],
+        controls: __.cabc.Mapping[ str, __.Control.Instance ],
     ) -> _core.NativeControls:
         ''' Converts normalized controls into native arguments. '''
         raise NotImplementedError
@@ -256,7 +256,7 @@ class InvocationsProcessor(
     @__.abstract_member_function
     def nativize_invocables(
         self,
-        invokers: __.AbstractIterable[ __.Invoker ],
+        invokers: __.cabc.Iterable[ __.Invoker ],
     ) -> __.typx.Any:
         ''' Converts normalized invocables into native tool calls. '''
         raise NotImplementedError
@@ -319,7 +319,7 @@ class Model(
         selfclass,
         client: 'Client',
         name: str,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.typx.Self:
         ''' Produces model from descriptor dictionary. '''
         raise NotImplementedError
@@ -342,13 +342,13 @@ class ModelAttributes(
 ):
     ''' Attributes for all genera of AI models. '''
 
-    controls: __.AbstractSequence[ __.Control ] = ( )
+    controls: __.cabc.Sequence[ __.Control ] = ( )
 
     @classmethod
     @__.abstract_member_function
     def from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.typx.Self:
         ''' Produces model attributes from descriptor dictionary. '''
         raise NotImplementedError
@@ -356,7 +356,7 @@ class ModelAttributes(
     @classmethod
     def init_args_from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         args = __.accret.Dictionary( )
@@ -401,9 +401,9 @@ class ConverserModel(
     @__.abstract_member_function
     async def converse_v0(
         self,
-        messages: __.AbstractSequence[ __.MessageCanister ],
+        messages: __.cabc.Sequence[ __.MessageCanister ],
         supplements, # TODO: Annotate.
-        controls: __.AbstractDictionary[ str, __.Control.Instance ],
+        controls: __.cabc.Mapping[ str, __.Control.Instance ],
         reactors, # TODO: Annotate.
     ):
         ''' Interacts with model to complete a round of conversation. '''
@@ -416,7 +416,7 @@ class ConverserAttributes( ModelAttributes ):
     accepts_supervisor_instructions: bool = False
     format_preferences: _core.ConverserFormatPreferences = (
         _core.ConverserFormatPreferences( ) )
-    modalities: __.AbstractSequence[ _core.ConverserModalities ] = (
+    modalities: __.cabc.Sequence[ _core.ConverserModalities ] = (
         _core.ConverserModalities.Text, )
     supports_continuous_response: bool = False
     supports_invocations: bool = False
@@ -426,7 +426,7 @@ class ConverserAttributes( ModelAttributes ):
     @classmethod
     def init_args_from_descriptor(
         selfclass,
-        descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+        descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.NominativeArgumentsDictionary:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         args = super( ).init_args_from_descriptor( descriptor )
@@ -475,4 +475,4 @@ class ConverserSerdeProcessor(
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-ClientsByName: __.typx.TypeAlias = __.AbstractDictionary[ str, Client ]
+ClientsByName: __.typx.TypeAlias = __.cabc.Mapping[ str, Client ]

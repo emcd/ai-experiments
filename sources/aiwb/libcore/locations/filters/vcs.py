@@ -54,7 +54,7 @@ class Filter( __.Filter ):
     '''
     # TODO: Immutable class and instance attributes.
 
-    matchers: __.AbstractSequence[ str ]
+    matchers: __.cabc.Sequence[ str ]
 
     def __init__( self, *arguments ):
         arguments_count = len( arguments )

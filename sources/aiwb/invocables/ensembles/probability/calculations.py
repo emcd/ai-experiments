@@ -26,7 +26,7 @@ from . import __
 
 async def roll_dice(
     context: __.Context, arguments: __.Arguments
-) -> __.AbstractSequence:
+) -> __.cabc.Sequence:
     ''' Returns results of rolls for each named dice specification. '''
     return tuple(
         { spec[ 'name' ]: _roll_dice( spec[ 'dice' ] ) }
