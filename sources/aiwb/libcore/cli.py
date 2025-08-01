@@ -65,7 +65,7 @@ class Cli(
 
     def prepare_invocation_args(
         self,
-    ) -> __.AbstractDictionary[ str, __.typx.Any ]:
+    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
         args = dict(
             application = self.application,
             environment = True,
@@ -235,7 +235,7 @@ class LocationSurveyDirectoryCommand( metaclass = __.accret.Dataclass ):
     # TODO: Cache options.
 
     filters: __.typx.Annotated[
-        __.AbstractSequence[ str ],
+        __.cabc.Sequence[ str ],
         __.tyro.conf.arg( prefix_name = False ),
     ] = ( '@gitignore', '+vcs' )
     recurse: __.typx.Annotated[

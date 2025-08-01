@@ -26,7 +26,7 @@ from . import __
 
 async def list_folder(
     context: __.Context, arguments: __.Arguments,
-) -> __.AbstractDictionary:
+) -> __.cabc.Mapping:
     ''' Lists directory at URL or filesystem path.
 
         May be recursive or single level.
@@ -60,7 +60,7 @@ async def list_folder(
 
 async def read(
     context: __.Context, arguments: __.Arguments
-) -> __.AbstractDictionary:
+) -> __.cabc.Mapping:
     ''' Reads file at URL or filesystem path.
 
         Metadata includes location and MIME type.
@@ -86,7 +86,7 @@ async def read(
 
 async def write_file(
     context: __.Context, arguments: __.Arguments
-) -> __.AbstractDictionary:
+) -> __.cabc.Mapping:
     ''' Writes file at URL or filesystem path.
 
         Options can control update behavior.
@@ -99,7 +99,7 @@ async def write_file(
     if 'content' not in arguments:
         return { 'error': "Argument 'content' is required." }
     options = arguments.get( 'options', ( ) )
-    if not isinstance( options, __.AbstractSequence ):
+    if not isinstance( options, __.cabc.Sequence ):
         return { 'error': "Argument 'options' must be a list." }
     try:
         accessor = await __.accessor_from_arguments(
@@ -118,7 +118,7 @@ async def write_file(
 
 async def _read_as_bytes(
     accessor: __.FileAccessor, context: __.Context, arguments: __.Arguments
-) -> __.AbstractDictionary:
+) -> __.cabc.Mapping:
     try: result = await accessor.acquire_content_result( )
     except Exception as exc:
         # TODO? Generate apprisal notification.
@@ -136,7 +136,7 @@ async def _read_as_bytes(
 
 async def _read_as_string(
     accessor: __.FileAccessor, context: __.Context, arguments: __.Arguments
-) -> __.AbstractDictionary:
+) -> __.cabc.Mapping:
     presenter = __.text_file_presenter_from_accessor(
         accessor = accessor, charset = '#DETECT#' )
     try: result = await presenter.acquire_content_result( )
@@ -157,7 +157,7 @@ async def _read_as_string(
 
 async def _write_as_string(
     accessor: __.FileAccessor, context: __.Context, arguments: __.Arguments
-) -> __.AbstractDictionary:
+) -> __.cabc.Mapping:
     presenter = __.text_file_presenter_from_accessor( accessor = accessor )
     content = arguments[ 'content' ]
     options = arguments.get( 'options', ( ) )

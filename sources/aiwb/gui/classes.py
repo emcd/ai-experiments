@@ -578,7 +578,7 @@ class ConversationDescriptor(
     timestamp: int = (
         __.dataclass_declare( default_factory = __.time_ns ) )
     title: __.typx.Optional[ str ] = None
-    labels: __.AbstractMutableSequence[ str ] = (
+    labels: __.cabc.MutableSequence[ str ] = (
         __.dataclass_declare( default_factory = list ) )
     gui: __.typx.Optional[ __.SimpleNamespace ] = None
     indicator: __.typx.Optional[ Row ] = None

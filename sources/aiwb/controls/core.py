@@ -192,7 +192,7 @@ class FlexArray( DefinitionBase ):
     def validate_value( self, value ):
         elements = value
         element_class = self.element_definition.Instance
-        if not isinstance( elements, __.AbstractSequence ):
+        if not isinstance( elements, __.cabc.Sequence ):
             raise ValueError(
                 "Array of controls expected; "
                 "received instance of '{class_name}'.".format(
@@ -217,7 +217,7 @@ class Options( DefinitionBase ):
         return next( iter( descriptor[ 'options' ] ) )
 
     def __init__( self, name, options, **nomargs ):
-        if not isinstance( options, __.AbstractCollection ):
+        if not isinstance( options, __.cabc.Collection ):
             raise ValueError # TODO: Fill out error.
         self.options = options
         super( ).__init__( name, **nomargs )
@@ -243,7 +243,7 @@ class Text( DefinitionBase ):
 
 # TODO: Python 3.12: Use type statement for aliases.
 ControlsInstancesByName: __.typx.TypeAlias = (
-    __.AbstractDictionary[ str, DefinitionBase.Instance ] )
+    __.cabc.Mapping[ str, DefinitionBase.Instance ] )
 
 
 def descriptor_to_definition( descriptor ):

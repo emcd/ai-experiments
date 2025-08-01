@@ -31,7 +31,7 @@ _name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
 
 async def prepare(
     auxdata: __.Globals,
-    descriptor: __.AbstractDictionary[ str, __.typx.Any ],
+    descriptor: __.cabc.Mapping[ str, __.typx.Any ],
 ) -> 'Ensemble':
     ''' Returns ensemble. '''
     return Ensemble( name = _name )
@@ -43,7 +43,7 @@ class Ensemble( __.Ensemble ):
 
     async def prepare_invokers(
         self, auxdata: __.Globals
-    ) -> __.AbstractDictionary[ str, __.Invoker ]:
+    ) -> __.cabc.Mapping[ str, __.Invoker ]:
         return self.produce_invokers_from_registry( auxdata, _invocables )
 
 

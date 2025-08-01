@@ -146,7 +146,7 @@ class CacheManager( __.CacheManager ):
 
     async def difference(
         self
-    ) -> __.AbstractSequence[ __.CacheDifferenceBase ]:
+    ) -> __.cabc.Sequence[ __.CacheDifferenceBase ]:
         # No concept of aliens or impurities. Everything is considered.
         # TODO: Implement.
         pass
@@ -345,7 +345,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
         self, name: __.PossibleRelativeLocator
     ) -> __.GeneralAccessor:
         if isinstance( name, __.PossiblePath ): name = ( name, )
-        if isinstance( name, __.AbstractIterable[ __.PossiblePath ] ):
+        if isinstance( name, __.cabc.Iterable[ __.PossiblePath ] ):
             source_base_url = self.adapter.as_url( )
             source_url = source_base_url.with_path(
                 __.Path( source_base_url.path ).joinpath( *name ) )
@@ -361,10 +361,10 @@ class DirectoryCache( _Common, __.DirectoryCache ):
         self,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         filters: __.Absential[
-            __.AbstractIterable[ __.PossibleFilter ]
+            __.cabc.Iterable[ __.PossibleFilter ]
         ] = __.absent,
         recurse: bool = True
-    ) -> __.AbstractSequence[ __.DirectoryEntry ]:
+    ) -> __.cabc.Sequence[ __.DirectoryEntry ]:
         cache_adapter = __.adapter_from_url( self.cache_url )
         return await cache_adapter.survey_entries(
             attributes = attributes, filters = filters, recurse = recurse )

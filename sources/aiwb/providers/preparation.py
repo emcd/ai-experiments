@@ -28,7 +28,7 @@ from . import registries as _registries
 
 def descriptors_from_configuration(
     auxdata: __.CoreGlobals
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.typx.Any ] ]:
+) -> __.cabc.Sequence[ __.cabc.Mapping[ str, __.typx.Any ] ]:
     ''' Validates and returns descriptors from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = [ ]
@@ -57,8 +57,8 @@ async def prepare( auxdata: __.CoreGlobals ) -> __.accret.Dictionary:
 
 async def prepare_clients(
     auxdata: __.CoreGlobals,
-    providers: __.AbstractDictionary[ str, _interfaces.Provider ],
-) -> __.AbstractDictionary[ str, _interfaces.Client ]:
+    providers: __.cabc.Mapping[ str, _interfaces.Provider ],
+) -> __.cabc.Mapping[ str, _interfaces.Client ]:
     ''' Prepares clients from configuration. '''
     # TODO: Return futures for background loading.
     #       https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
@@ -87,7 +87,7 @@ async def prepare_clients(
 
 async def prepare_providers(
     auxdata: __.CoreGlobals
-) -> __.AbstractDictionary[ str, _interfaces.Provider ]:
+) -> __.cabc.Mapping[ str, _interfaces.Provider ]:
     ''' Prepares providers from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     descriptors = descriptors_from_configuration( auxdata )
