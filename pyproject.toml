@@ -14,6 +14,7 @@ dependencies = [
   'accretive~=4.1',
   'aiofiles',
   'chardet',
+  'emcd-appcore~=1.4',
   'exceptiongroup', # TODO: Python 3.11: Remove.
   'fastapi[standard]',
   'frigid~=4.1',

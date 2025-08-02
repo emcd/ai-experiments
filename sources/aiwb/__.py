@@ -22,10 +22,15 @@
 
 # ruff: noqa: F401
 
+import                          abc
+import                          asyncio
 import collections.abc as       cabc
+import contextlib as            ctxl
 import dataclasses as           dcls
 import                          enum
+import functools as             funct
 import                          io
+import                          os
 import                          re
 
 from abc import (
@@ -42,20 +47,14 @@ from contextlib import (
     contextmanager as       exit_manager,
     asynccontextmanager as  exit_manager_async,
 )
-from dataclasses import (
-    dataclass,
-    field as dataclass_declare,
-)
+from dataclasses import field as dataclass_declare
 from datetime import (
     datetime as DateTime,
     timedelta as TimeDelta,
     timezone as TimeZone,
 )
 from enum import Enum, auto as produce_enumeration_value
-from functools import (
-    cache as memoize,
-    partial as partial_function,
-)
+from functools import partial as partial_function
 from itertools import chain
 from logging import (
     Logger as Scribe,
@@ -84,7 +83,8 @@ from absence import Absential, absent, is_absent
 
 from . import _generics as g
 
-ClassDecorators: typx.TypeAlias = cabc.Iterable[ typx.Callable[ [ type ], type ] ]
+ClassDecorators: typx.TypeAlias = (
+    cabc.Iterable[ typx.Callable[ [ type ], type ] ] )
 NominativeArgumentsDictionary: typx.TypeAlias = cabc.Mapping[ str, typx.Any ]
 TextComparand: typx.TypeAlias = str | re.Pattern
 TextComparands: typx.TypeAlias = cabc.Iterable[ TextComparand ]
