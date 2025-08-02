@@ -81,7 +81,7 @@ def register_event_reactors( components, layout, component_name ):
     component = getattr( components, component_name )
     functions = entry.get( 'event_functions', { } )
     for event_name, function_name in functions.items( ):
-        function = __.partial_function(
+        function = __.funct.partial(
             getattr( registry, function_name ), components )
         if 'on_click' == event_name:
             component.on_click( function )

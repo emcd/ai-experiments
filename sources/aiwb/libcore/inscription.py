@@ -25,7 +25,7 @@ from . import __
 from . import state as _state
 
 
-class Modes( __.Enum ): # TODO: Python 3.11: StrEnum
+class Modes( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Possible modes for logging output. '''
 
     Null = 'null' # suppress library logs

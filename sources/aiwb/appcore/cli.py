@@ -35,7 +35,7 @@ class Cli( __.CoreCli ):
         ''' Invokes command after application preparation. '''
         nomargs = self.prepare_invocation_args( )
         from .preparation import prepare
-        async with __.ExitsAsync( ) as exits:
+        async with __.ctxl.AsyncExitStack( ) as exits:
             auxdata = await prepare( exits = exits, **nomargs )
             await self.command( auxdata = auxdata, display = self.display )
 
@@ -47,7 +47,7 @@ class Cli( __.CoreCli ):
         return args
 
 
-class EnablementTristate( __.Enum ): # TODO: Python 3.11: StrEnum
+class EnablementTristate( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Disable, enable, or retain the natural state? '''
 
     Disable = 'disable'
@@ -173,7 +173,7 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
 class ExecuteServerCommand( metaclass = __.immut.ProtocolClass ):
     ''' Runs API server until signal. '''
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def __call__(
         self,
         auxdata: _state.Globals,

@@ -27,14 +27,14 @@ from . import __
 
 
 # TODO: Replace with type variable for generics.
-class AccessImplement( metaclass = __.ABCFactory ):
+class AccessImplement( metaclass = __.abc.ABCMeta ):
     ''' Abstract base class for location access implements. '''
     # Note: Not a Protocol class because there is no common protocol.
     #       We just want issubclass support.
     #       Functions which return implements should cast.
 
 
-class AdapterInode( metaclass = __.ABCFactory ):
+class AdapterInode( metaclass = __.abc.ABCMeta ):
     ''' Abstract base class for adapter-specific location information. '''
     # Note: Not a Protocol class because there is no common protocol.
     #       We just want issubclass support.
@@ -62,7 +62,7 @@ class AcquireContentTextResult( AcquireContentResult ):
     content: str
 
 
-class AlienResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum
+class AlienResolutionActions( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Which action to take when unregistered cache entity is encountered.
 
         Simple caches might not have the concept of aliens. However, they are
@@ -96,7 +96,7 @@ class CacheDifferenceBase:
     #   InodeCacheDifference (bytes_count, content_id, mtime, species, etc...)
 
 
-class ConflictResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum
+class ConflictResolutionActions( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Which action to take upon conflict between cache and sources.
 
         Custom behaviors should be specified on cache manager initialization or
@@ -140,11 +140,11 @@ class FileUpdateOptions( __.enum.IntFlag ):
     ''' File update options bits. '''
 
     Defaults = 0  # create (if not exists), truncate
-    Append = __.produce_enumeration_value( ) # append
-    Absence = __.produce_enumeration_value( ) # error (if exists)
+    Append = __.enum.auto( ) # append
+    Absence = __.enum.auto( ) # error (if exists)
 
 
-class ImpurityResolutionActions( __.Enum ): # TODO: Python 3.11: StrEnum
+class ImpurityResolutionActions( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Which action to take when cache has unregistered alterations.
 
         Simple caches might not have the concept of impurities. However, they
@@ -230,15 +230,15 @@ class InodeAttributes( __.enum.IntFlag ):
     ''' Which nullable attributes to fill when requesting an inode. '''
 
     Nothing = 0
-    BytesCount = __.produce_enumeration_value( )
-    ContentId = __.produce_enumeration_value( )
-    Mimetype = __.produce_enumeration_value( )
-    Charset = __.produce_enumeration_value( )
-    Mtime = __.produce_enumeration_value( ) # modification time
-    Etime = __.produce_enumeration_value( ) # expiration time
+    BytesCount = __.enum.auto( )
+    ContentId = __.enum.auto( )
+    Mimetype = __.enum.auto( )
+    Charset = __.enum.auto( )
+    Mtime = __.enum.auto( ) # modification time
+    Etime = __.enum.auto( ) # expiration time
 
 
-class LocationSpecies( __.Enum ): # TODO: Python 3.11: StrEnum
+class LocationSpecies( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Species of entity at location. '''
     # TODO? Solaris doors, etc...
 
@@ -256,18 +256,18 @@ class Permissions( __.enum.IntFlag ):
     ''' Permissions bits to report or test access. '''
 
     Abstain = 0
-    Retrieve = __.produce_enumeration_value( )
-    Create = __.produce_enumeration_value( )
-    Update = __.produce_enumeration_value( )
-    Delete = __.produce_enumeration_value( )
-    Execute = __.produce_enumeration_value( )
+    Retrieve = __.enum.auto( )
+    Create = __.enum.auto( )
+    Update = __.enum.auto( )
+    Delete = __.enum.auto( )
+    Execute = __.enum.auto( )
 
 Permissions_CUD = Permissions.Create | Permissions.Update | Permissions.Delete
 Permissions_RCUD = Permissions_CUD | Permissions.Retrieve
 Permissions_RCUDX = Permissions_RCUD | Permissions.Execute
 
 
-class Possessor( __.Enum ):
+class Possessor( __.enum.Enum ):
     ''' Representation of potential owner of location. '''
 
     CurrentUser = 'current user'

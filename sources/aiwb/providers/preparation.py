@@ -94,7 +94,7 @@ async def prepare_providers(
     names = frozenset(
         descriptor.get( 'factory', descriptor[ 'name' ] )
         for descriptor in descriptors )
-    preparers = __.DictionaryProxy(
+    preparers = __.types.MappingProxyType(
         {   name: _registries.preparers_registry[ name ]( auxdata )
             for name in names } )
     results = await __.gather_async(

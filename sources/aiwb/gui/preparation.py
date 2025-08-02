@@ -32,14 +32,14 @@ class Manager(
 ):
     ''' Manager for GUI components and server. '''
 
-    components: __.SimpleNamespace
+    components: __.types.SimpleNamespace
     deduplicator: _updaters.UpdatesDeduplicator
     server: _server.Accessor
     transformers: __.accret.Dictionary
 
 
 async def prepare(
-    exits: __.ExitsAsync, *,
+    exits: __.ctxl.AsyncExitStack, *,
     apiserver: __.ApiServerControl = __.ApiServerControl( ),
     application: __.ApplicationInformation = __.ApplicationInformation( ),
     configedits: __.DictionaryEdits = ( ),
@@ -77,7 +77,7 @@ async def prepare(
 
 async def _prepare_components_base(
     auxdata: __.ApiServerGlobals,
-) -> __.SimpleNamespace:
+) -> __.types.SimpleNamespace:
     ''' Prepares foundation for GUI components tracker. '''
     from panel import extension
     extension( 'mathjax' )
@@ -86,7 +86,7 @@ async def _prepare_components_base(
     from .templates.default import DefaultTemplate
     template = DefaultTemplate( design = Native )
     await _prepare_favicon( auxdata, template = template )
-    return __.SimpleNamespace( template__ = template )
+    return __.types.SimpleNamespace( template__ = template )
 
 
 async def _prepare_components_complete( auxdata: _state.Globals ):

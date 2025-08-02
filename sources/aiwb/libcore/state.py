@@ -27,7 +27,7 @@ from . import distribution as _distribution
 from . import notifications as _notifications
 
 
-class DirectorySpecies( __.Enum ): # TODO: Python 3.11: StrEnum
+class DirectorySpecies( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Possible species for locations. '''
 
     Cache = 'cache'
@@ -44,7 +44,7 @@ class Globals(
     configuration: __.accret.Dictionary
     directories: __.PlatformDirs
     distribution: _distribution.Information
-    exits: __.ExitsAsync # TODO? Make accretive.
+    exits: __.ctxl.AsyncExitStack # TODO? Make accretive.
     notifications: _notifications.Queue
 
     def as_dictionary( self ) -> __.cabc.Mapping[ str, __.typx.Any ]:

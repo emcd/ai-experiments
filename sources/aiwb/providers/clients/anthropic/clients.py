@@ -41,7 +41,7 @@ _model_genera = frozenset( (
 ) )
 
 
-class ProviderVariants( __.Enum ):
+class ProviderVariants( __.enum.Enum ):
     ''' Anthropic provider variants. '''
 
     Anthropic =     'anthropic'
@@ -91,11 +91,11 @@ class Client( __.Client ):
             auxdata,
             client = self,
             genera = genera,
-            acquirer = __.partial_function(
+            acquirer = __.funct.partial(
                 __.cache_acquire_model_names,
                 acquirer = self._acquire_model_names ) )
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def _acquire_model_names( self ) -> __.cabc.Sequence[ str ]:
         ''' Acquires model names from API or other source. '''
         raise NotImplementedError
@@ -170,7 +170,7 @@ class Provider( __.Provider ):
 # https://docs.anthropic.com/en/docs/about-claude/models
 # https://docs.anthropic.com/en/docs/resources/model-deprecations
 # TODO: Move lists of models to providers data.
-_model_names = __.DictionaryProxy( {
+_model_names = __.types.MappingProxyType( {
     ProviderVariants.Anthropic: (
         'claude-2.0',
         'claude-2.1',

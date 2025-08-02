@@ -32,21 +32,21 @@ OpenAiMessage: __.typx.TypeAlias = dict[ str, __.typx.Any ]
 OpenAiMessageContent: __.typx.TypeAlias = str | list[ dict[ str, __.typx.Any ] ]
 
 
-class InvocationsSupportLevels( __.Enum ): # TODO: Python 3.11: StrEnum
+class InvocationsSupportLevels( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Degree to which invocations are supported. '''
 
     Single      = 'single'      # Mid-2023.
     Concurrent  = 'concurrent'  # Late 2023 and beyond.
 
 
-class NativeMessageRefinementActions( __.Enum ): # TODO: Python 3.11: StrEnum
+class NativeMessageRefinementActions( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Which action to perform on native message under refinement cursor. '''
 
     Retain      = 'retain'
     Merge       = 'merge'
 
 
-class NativeSupervisorRoles( __.Enum ):
+class NativeSupervisorRoles( __.enum.Enum ):
     ''' Which role to use for supervisor instructions. '''
 
     System      = 'system'      # Default.
@@ -383,7 +383,7 @@ def _canister_from_response_element( model, element ):
     # TODO: Appropriate error classes.
     if ( delta := hasattr( element, 'delta' ) ): message = element.delta
     else: message = element.message
-    attributes = __.SimpleNamespace(
+    attributes = __.types.SimpleNamespace(
         behaviors = [ ],
         model_context = {
             'provider': model.provider.name,

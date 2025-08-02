@@ -71,7 +71,7 @@ async def prepare(
         thread = thread )
 
 
-@__.exit_manager_async
+@__.ctxl.asynccontextmanager
 async def _execute_server_thread(
     server: __.UvicornServer,
     nomargs: __.cabc.Mapping[ str, __.typx.Any ],

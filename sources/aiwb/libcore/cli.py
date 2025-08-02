@@ -59,7 +59,7 @@ class Cli(
         ''' Invokes command after library preparation. '''
         nomargs = self.prepare_invocation_args( )
         from .preparation import prepare
-        async with __.ExitsAsync( ) as exits:
+        async with __.ctxl.AsyncExitStack( ) as exits:
             auxdata = await prepare( exits = exits, **nomargs )
             await self.command( auxdata = auxdata, display = self.display )
 
@@ -76,7 +76,7 @@ class Cli(
         return args
 
 
-class DisplayFormats( __.Enum ): # TODO: Python 3.11: StrEnum
+class DisplayFormats( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Format in which to display structured output. '''
 
     Json =      'json'
@@ -84,14 +84,14 @@ class DisplayFormats( __.Enum ): # TODO: Python 3.11: StrEnum
     Toml =      'toml'
 
 
-class DisplayStreams( __.Enum ): # TODO: Python 3.11: StrEnum
+class DisplayStreams( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Stream upon which to place output. '''
 
     Stderr =    'stderr'
     Stdout =    'stdout'
 
 
-class Inspectees( __.Enum ): # TODO: Python 3.11: StrEnum
+class Inspectees( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Facet of the application to inspect. '''
 
     Configuration =     'configuration'

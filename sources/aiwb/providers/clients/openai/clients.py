@@ -41,7 +41,7 @@ _model_genera = frozenset( (
 ) )
 
 
-class ProviderVariants( __.Enum ):
+class ProviderVariants( __.enum.Enum ):
     ''' OpenAI client variants. '''
 
     OpenAi =            'openai'
@@ -90,11 +90,11 @@ class Client( __.Client ):
             auxdata,
             client = self,
             genera = genera,
-            acquirer = __.partial_function(
+            acquirer = __.funct.partial(
                 __.cache_acquire_model_names,
                 acquirer = self._acquire_model_names ) )
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def _acquire_model_names( self ) -> __.cabc.Sequence[ str ]:
         ''' Acquires model names from API or other source. '''
         raise NotImplementedError
