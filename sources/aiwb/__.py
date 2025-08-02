@@ -30,8 +30,10 @@ import dataclasses as           dcls
 import                          enum
 import functools as             funct
 import                          io
+import itertools as             itert
 import                          os
 import                          re
+import                          types
 
 from abc import (
     ABCMeta as ABCFactory,
