@@ -32,16 +32,16 @@ class Edit(
 ):
     ''' Base representation of an edit to configuration. '''
 
-    address: __.AbstractSequence[ str ]
+    address: __.cabc.Sequence[ str ]
 
     @__.abstract_member_function
-    def __call__( self, configuration: __.AbstractMutableDictionary ):
+    def __call__( self, configuration: __.cabc.MutableMapping ):
         ''' Performs edit. '''
         raise NotImplementedError
 
     def dereference(
         self,
-        configuration: __.AbstractMutableDictionary
+        configuration: __.cabc.MutableMapping
     ) -> __.typx.Any:
         ''' Dereferences value at address in configuration. '''
         configuration_ = configuration
@@ -52,7 +52,7 @@ class Edit(
 
     def inject(
         self,
-        configuration: __.AbstractMutableDictionary,
+        configuration: __.cabc.MutableMapping,
         value: __.typx.Any
     ):
         ''' Injects value at address in configuration. '''
@@ -69,7 +69,7 @@ class ElementsEntryEdit( Edit ):
     editee: tuple[ str, __.typx.Any ]
     identifier: __.typx.Optional[ tuple[ str, __.typx.Any ] ] = None
 
-    def __call__( self, configuration: __.AbstractMutableDictionary ):
+    def __call__( self, configuration: __.cabc.MutableMapping ):
         array = self.dereference( configuration )
         if self.identifier: iname, ivalue = self.identifier
         else: iname, ivalue = None, None
@@ -86,9 +86,9 @@ class SimpleEdit( Edit ):
 
     value: __.typx.Any
 
-    def __call__( self, configuration: __.AbstractMutableDictionary ):
+    def __call__( self, configuration: __.cabc.MutableMapping ):
         self.inject( configuration, self.value )
 
 
 # TODO: Python 3.12: Use type statement for aliases.
-Edits: __.typx.TypeAlias = __.AbstractIterable[ Edit ]
+Edits: __.typx.TypeAlias = __.cabc.Iterable[ Edit ]

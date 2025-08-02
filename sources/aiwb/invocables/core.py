@@ -38,18 +38,18 @@ class Deduplicator(
     ''' Determines if tool invocations can be deduplicated. '''
 
     invocable_name: str
-    arguments: __.AbstractDictionary[ str, __.typx.Any ]
+    arguments: __.cabc.Mapping[ str, __.typx.Any ]
 
     @classmethod
     @__.abstract_member_function
-    def provide_invocable_names( selfclass ) -> __.AbstractCollection[ str ]:
+    def provide_invocable_names( selfclass ) -> __.cabc.Collection[ str ]:
         raise NotImplementedError
 
     @__.abstract_member_function
     def is_duplicate(
         self,
         invocable_name: str,
-        arguments: __.AbstractDictionary[ str, __.typx.Any ],
+        arguments: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> bool:
         raise NotImplementedError
 
@@ -75,12 +75,12 @@ class Ensemble(
     @__.abstract_member_function
     async def prepare_invokers(
         self, auxdata: __.Globals
-    ) -> __.AbstractDictionary[ str, 'Invoker' ]:
+    ) -> __.cabc.Mapping[ str, 'Invoker' ]:
         raise NotImplementedError
 
     def produce_invokers_from_registry(
         self, auxdata: __.Globals, registry
-    ) -> __.AbstractDictionary[ str, 'Invoker' ]:
+    ) -> __.cabc.Mapping[ str, 'Invoker' ]:
         # TODO: Handle pair-wise iterable or dictionary.
         # TODO: Use standard filter information.
         invokers = (
@@ -136,7 +136,7 @@ Invocable: __.typx.TypeAlias = (
     __.typx.Callable[
         [ __.Globals, 'Invoker', Arguments, __.accret.Namespace ],
         #[ Context, Arguments ],
-        __.AbstractCoroutine[ __.typx.Any, __.typx.Any, __.typx.Any ] ] )
+        __.cabc.Coroutine[ __.typx.Any, __.typx.Any, __.typx.Any ] ] )
 
 
 # TODO: Use accretive validator dictionary for preparers registry.
@@ -145,8 +145,8 @@ preparers = __.accret.Dictionary( )
 
 def descriptors_from_configuration(
     auxdata: __.Globals,
-    defaults: __.AbstractDictionary[ str, __.typx.Any ] = None,
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.typx.Any ] ]:
+    defaults: __.cabc.Mapping[ str, __.typx.Any ] = None,
+) -> __.cabc.Sequence[ __.cabc.Mapping[ str, __.typx.Any ] ]:
     ''' Validates and returns descriptors from configuration. '''
     scribe = __.acquire_scribe( __package__ )
     defaults_ = dict( defaults or { } )
@@ -200,8 +200,8 @@ async def prepare_ensembles( auxdata ):
 
 async def prepare_invokers(
     auxdata: __.Globals,
-    ensembles: __.AbstractDictionary[ str, Ensemble ],
-) -> __.AbstractDictionary[ str, 'Invoker' ]:
+    ensembles: __.cabc.Mapping[ str, Ensemble ],
+) -> __.cabc.Mapping[ str, 'Invoker' ]:
     ''' Prepares invokers from ensembles. '''
     scribe = __.acquire_scribe( __package__ )
     results = await __.gather_async(
@@ -233,7 +233,7 @@ _default_ensemble_descriptors = __.DictionaryProxy( {
 def _trim_descriptions( schema ):
     from inspect import cleandoc
     for entry_name, entry in schema.items( ):
-        if isinstance( entry, __.AbstractDictionary ):
+        if isinstance( entry, __.cabc.Mapping ):
             _trim_descriptions( entry )
         if 'description' != entry_name: continue
         if not isinstance( entry, str ): continue

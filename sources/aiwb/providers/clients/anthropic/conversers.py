@@ -32,8 +32,8 @@ from . import __
 AnthropicControls: __.typx.TypeAlias = dict[ str, __.typx.Any ]
 AnthropicMessage: __.typx.TypeAlias = dict[ str, __.typx.Any ]
 AnthropicMessageContent: __.typx.TypeAlias = str | list[ dict[ str, __.typx.Any ] ]
-AttributesDescriptor: __.typx.TypeAlias = __.AbstractDictionary[ str, __.typx.Any ]
-ModelDescriptor: __.typx.TypeAlias = __.AbstractDictionary[ str, __.typx.Any ]
+AttributesDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
+ModelDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
 
 
 class NativeMessageRefinementActions( __.Enum ): # TODO: Python 3.11: StrEnum
@@ -117,7 +117,7 @@ class InvocationsProcessor( __.InvocationsProcessor ):
 
     def nativize_invocables(
         self,
-        invokers: __.AbstractIterable[ __.Invoker ],
+        invokers: __.cabc.Iterable[ __.Invoker ],
     ) -> __.typx.Any:
         # TODO: return type: list[ anthropic.types.ToolParam ]
         tools = [ self.nativize_invocable( invoker ) for invoker in invokers ]
@@ -295,7 +295,7 @@ class Tokenizer( __.ConversationTokenizer ):
 
 
 def _sanitize_messages_for_tokenization(
-    arguments: __.AbstractDictionary[ str, __.typx.Any ]
+    arguments: __.cabc.Mapping[ str, __.typx.Any ]
 ) -> tuple[ list[ AnthropicMessage ], int ]:
     messages = list( arguments[ 'messages' ] )
     # [anthropic.BadRequestError] Error code: 400

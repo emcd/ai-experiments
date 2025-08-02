@@ -35,8 +35,8 @@ class UpdateRequest(
     ''' Request for update which may be deduplicated. '''
 
     updater: __.typx.Callable[ ..., __.typx.Any ]
-    posargs: __.AbstractSequence[ __.typx.Any ] = ( )
-    nomargs: __.AbstractDictionary[ str, __.typx.Any ] = __.DictionaryProxy( { } )
+    posargs: __.cabc.Sequence[ __.typx.Any ] = ( )
+    nomargs: __.cabc.Mapping[ str, __.typx.Any ] = __.DictionaryProxy( { } )
 
     def __hash__( self ) -> int:
         return hash( (
@@ -77,7 +77,7 @@ class UpdatesDeduplicator(
         __.dataclass_declare( default_factory = set ) )
     updates_mutexes: dict[ UpdateRequest, __.MutexAsync ] = (
         __.dataclass_declare( default_factory = dict ) )
-    updates_tasks: dict[ UpdateRequest, __.AbstractCoroutine ] = (
+    updates_tasks: dict[ UpdateRequest, __.cabc.Coroutine ] = (
         __.dataclass_declare( default_factory = dict ) )
 
     async def __aenter__( self ): return self
@@ -110,8 +110,8 @@ class UpdatesDeduplicator(
     async def execute(
         self,
         updater: __.typx.Callable[ ..., __.typx.Any ],
-        posargs: __.AbstractSequence[ __.typx.Any ] = ( ),
-        nomargs: __.AbstractDictionary[ str, __.typx.Any ] = (
+        posargs: __.cabc.Sequence[ __.typx.Any ] = ( ),
+        nomargs: __.cabc.Mapping[ str, __.typx.Any ] = (
             __.DictionaryProxy( { } ) ),
     ) -> None:
         ''' Executes update if not already in progress. '''
@@ -141,8 +141,8 @@ class UpdatesDeduplicator(
     async def schedule(
         self,
         updater: __.typx.Callable[ ..., __.typx.Any ],
-        posargs: __.AbstractSequence[ __.typx.Any ] = ( ),
-        nomargs: __.AbstractDictionary[ str, __.typx.Any ] = (
+        posargs: __.cabc.Sequence[ __.typx.Any ] = ( ),
+        nomargs: __.cabc.Mapping[ str, __.typx.Any ] = (
             __.DictionaryProxy( { } ) ),
         delay: float = 0.1,  # seconds
     ) -> None:

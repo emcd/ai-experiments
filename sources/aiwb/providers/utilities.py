@@ -29,7 +29,7 @@ from . import interfaces as _interfaces
 
 async def acquire_provider_configuration(
     auxdata: __.CoreGlobals, name: str
-) -> __.AbstractDictionary[ str, __.typx.Any ]:
+) -> __.cabc.Mapping[ str, __.typx.Any ]:
     ''' Returns configuration dictionary for AI provider. '''
     directory = auxdata.distribution.provide_data_location( 'providers', name )
     # TODO: Raise error if provider data directory does not exist.
@@ -86,9 +86,9 @@ async def cache_acquire_model_names(
     client: _interfaces.Client,
     acquirer: __.typx.Callable[
         [ ],
-        __.AbstractCoroutine[ __.typx.Any, __.typx.Any, __.AbstractSequence[ str ] ],
+        __.cabc.Coroutine[ __.typx.Any, __.typx.Any, __.cabc.Sequence[ str ] ],
     ],
-) -> __.AbstractSequence[ str ]:
+) -> __.cabc.Sequence[ str ]:
     ''' Acquires model names with persistent caching. '''
     # TODO? Use cache accessor from libcore.locations.
     from json import dumps, loads
@@ -132,7 +132,7 @@ def invocation_requests_from_canister(
         if ignore_invalid_canister: return [ ]
         raise Error( "Missing invocation data." ) # TODO: Better error.
     descriptors = canister.attributes.invocation_data
-    if not isinstance( descriptors, __.AbstractSequence ):
+    if not isinstance( descriptors, __.cabc.Sequence ):
         if ignore_invalid_canister: return [ ]
         raise Error( "Invocations requests is not sequence." )
     # TODO: Construct context at caller.
@@ -150,9 +150,9 @@ _models_caches = __.accret.Dictionary( )
 async def memcache_acquire_models(
     auxdata: __.CoreGlobals,
     client: _interfaces.Client,
-    genera: __.AbstractCollection[ _core.ModelGenera ],
+    genera: __.cabc.Collection[ _core.ModelGenera ],
     acquirer: __.typx.Callable, # TODO: Full signature.
-) -> __.AbstractSequence[ _interfaces.Model ]:
+) -> __.cabc.Sequence[ _interfaces.Model ]:
     ''' Caches models in memory, as necessary. '''
     provider_name = client.provider.name
     if provider_name not in _models_caches:
@@ -174,7 +174,7 @@ async def memcache_acquire_models(
         auxdata, client = client, genera = genera, acquirer = acquirer )
 
 
-_models_integrators_caches: __.AbstractDictionary[
+_models_integrators_caches: __.cabc.Mapping[
     str, _core.ModelsIntegratorsByGenusMutable
 ] = __.accret.Dictionary( )
 async def memcache_acquire_models_integrators(
@@ -198,7 +198,7 @@ async def memcache_acquire_models_integrators(
 
 async def _acquire_configuration(
     auxdata: __.CoreGlobals, directory: __.Path
-) -> __.AbstractDictionary[ str, __.typx.Any ]:
+) -> __.cabc.Mapping[ str, __.typx.Any ]:
     from tomli import loads
     files = directory.glob( '*.toml' )
     acquirers = tuple(
@@ -212,7 +212,7 @@ async def _acquire_configuration(
 
 async def _acquire_configurations(
     auxdata: __.CoreGlobals, directory: __.Path, index_name: str
-) -> __.AbstractDictionary[ str, __.typx.Any ]:
+) -> __.cabc.Mapping[ str, __.typx.Any ]:
     subdirectories = tuple(
         entity for entity in directory.rglob( f"{index_name}/*" )
         if entity.is_dir( ) )
@@ -230,7 +230,7 @@ async def _acquire_configurations(
 
 def _copy_custom_provider_configurations(
     auxdata: __.CoreGlobals, provider_name: str, index_name: str
-) -> __.AbstractSequence[ __.AbstractDictionary[ str, __.typx.Any ] ]:
+) -> __.cabc.Sequence[ __.cabc.Mapping[ str, __.typx.Any ] ]:
     factory_descriptors = (
         auxdata.configuration.get( 'provider-factories', ( ) ) )
     try:
@@ -244,9 +244,9 @@ def _copy_custom_provider_configurations(
 async def _memcache_acquire_models(
     auxdata: __.CoreGlobals,
     client: _interfaces.Client,
-    genera: __.AbstractCollection[ _core.ModelGenera ],
+    genera: __.cabc.Collection[ _core.ModelGenera ],
     acquirer: __.typx.Callable, # TODO: Full signature.
-) -> __.AbstractSequence[ _interfaces.Model ]:
+) -> __.cabc.Sequence[ _interfaces.Model ]:
     models_by_genus = _models_caches[ client.provider.name ][ client.name ]
     integrators = (
         await memcache_acquire_models_integrators(
@@ -255,7 +255,7 @@ async def _memcache_acquire_models(
     for genus in genera:
         models_by_genus[ genus ].clear( )
         for name in names:
-            descriptor: __.AbstractDictionary[ str, __.typx.Any ] = { }
+            descriptor: __.cabc.Mapping[ str, __.typx.Any ] = { }
             for integrator in integrators[ genus ]:
                 # TODO: Pass client to get variant.
                 descriptor = integrator( name, descriptor )
