@@ -47,7 +47,7 @@ async def acquire_provider_configuration(
         configuration[ index_name ] = tuple( sorted(
             configuration[ index_name ] + configurations_,
             key = lambda cfg: cfg[ 'name' ] ) )
-    return __.DictionaryProxy( configuration )
+    return __.types.MappingProxyType( configuration )
 
 
 async def acquire_models_integrators(
@@ -76,7 +76,7 @@ async def acquire_models_integrators(
             #       Catch regex errors and provide proper context.
             integrators[ genus ].append(
                 _core.ModelsIntegrator.from_descriptor( descriptor ) )
-    return __.DictionaryProxy( {
+    return __.types.MappingProxyType( {
         genus: tuple( sequence ) for genus, sequence
         in integrators.items( ) } )
 
@@ -193,7 +193,7 @@ async def memcache_acquire_models_integrators(
         # TODO? async mutex in case of clear-update during access
         cache.clear( )
         cache.update( await acquire_models_integrators( auxdata, name ) )
-    return __.DictionaryProxy( cache )
+    return __.types.MappingProxyType( cache )
 
 
 async def _acquire_configuration(
@@ -224,8 +224,8 @@ async def _acquire_configurations(
     for subdirectory, configuration in zip( subdirectories, configurations ):
         configuration_ = { 'name': subdirectory.name }
         configuration_.update( configuration )
-        configurations_.append( __.DictionaryProxy( configuration_ ) )
-    return __.DictionaryProxy( { index_name: tuple( configurations_ ) } )
+        configurations_.append( __.types.MappingProxyType( configuration_ ) )
+    return __.types.MappingProxyType( { index_name: tuple( configurations_ ) } )
 
 
 def _copy_custom_provider_configurations(

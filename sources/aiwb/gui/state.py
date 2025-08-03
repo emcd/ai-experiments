@@ -38,5 +38,5 @@ class Globals( __.ApiServerGlobals ):
         gui: _server.Accessor,
     ) -> __.typx.Self:
         ''' Produces DTO from base DTO plus attribute injections. '''
-        injections = __.DictionaryProxy( dict( gui = gui ) )
+        injections = __.types.MappingProxyType( dict( gui = gui ) )
         return selfclass( **base.as_dictionary( ), **injections )

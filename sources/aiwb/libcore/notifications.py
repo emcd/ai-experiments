@@ -47,7 +47,7 @@ class Queue( __.immut.DataclassObject ):
     ''' Queue for notifications to be consumed by application. '''
 
     # TODO: Hide queue attribute.
-    queue: __.SimpleQueue = __.dataclass_declare(
+    queue: __.SimpleQueue = __.dcls.field(
         default_factory = __.SimpleQueue )
 
     # TODO? enqueue_admonition
@@ -91,7 +91,7 @@ class Queue( __.immut.DataclassObject ):
 
     # TODO: enqueue_future
 
-    @__.exit_manager
+    @__.ctxl.contextmanager
     def enqueue_on_error(
         self,
         summary: str, *,

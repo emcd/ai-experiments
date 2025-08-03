@@ -91,7 +91,7 @@ class _Common( __.AdapterBase ):
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         pursue_indirection: bool = True,
     ) -> __.Inode:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationExamineFailure, url = self.url )
         try:
             from os.path import realpath
@@ -138,7 +138,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         pursue_indirection: bool = True,
         species: __.Absential[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificAdapter:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationAccessorDerivationFailure,
             entity_name = _entity_name, url = self.url )
         try:
@@ -205,7 +205,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
             raise __.LocationCreateFailure(
                 url = self.url, reason = str( exc ) ) from exc
         url = accessor.as_url( )
-        Error = __.partial_function( __.LocationCreateFailure, url = url )
+        Error = __.funct.partial( __.LocationCreateFailure, url = url )
         exists = await _probe_accessor_if_exists(
             accessor,
             species = __.LocationSpecies.Directory,
@@ -236,7 +236,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
             raise __.LocationCreateFailure(
                 url = self.url, reason = str( exc ) ) from exc
         url = accessor.as_url( )
-        Error = __.partial_function( __.LocationCreateFailure, url = url )
+        Error = __.funct.partial( __.LocationCreateFailure, url = url )
         exists = await _probe_accessor_if_exists(
             accessor,
             species = __.LocationSpecies.File,
@@ -338,7 +338,7 @@ class FileAdapter( _Common, __.FileAdapter ):
     async def acquire_content_result(
         self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing
     ) -> __.AcquireContentBytesResult:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationAcquireContentFailure, url = self.url )
         try:
             from os import fstat
@@ -361,7 +361,7 @@ class FileAdapter( _Common, __.FileAdapter ):
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.Inode:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationUpdateContentFailure, url = self.url )
         flags = _flags_from_file_update_options( options )
         await _create_parent_directories(

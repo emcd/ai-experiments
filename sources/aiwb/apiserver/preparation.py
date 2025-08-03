@@ -27,7 +27,7 @@ from . import state as _state
 
 
 async def prepare(
-    exits: __.ExitsAsync, *,
+    exits: __.ctxl.AsyncExitStack, *,
     apiserver: _server.Control = _server.Control( ),
     application: __.ApplicationInformation = __.ApplicationInformation( ),
     configedits: __.DictionaryEdits = ( ),

@@ -42,12 +42,12 @@ class _Common(
 
     def __str__( self ) -> str: return str( self.as_url( ) )
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def as_url( self ) -> _core.Url:
         ''' Returns URL associated with location. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def check_access(
         self,
         permissions: _core.Permissions,
@@ -56,14 +56,14 @@ class _Common(
         ''' Does current process have access to location? '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def check_existence(
         self, pursue_indirection: bool = True
     ) -> bool:
         ''' Does location exist? '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def examine(
         self,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
@@ -72,7 +72,7 @@ class _Common(
         ''' Returns inode-like object for location. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def expose_implement( self ) -> _core.AccessImplement:
         ''' Exposes concrete implement used to perform operations. '''
         raise NotImplementedError
@@ -87,7 +87,7 @@ class AdapterBase(
     ''' Common functionality for all access adapters. '''
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def is_cache_manager( selfclass ) -> bool:
         ''' Is access adapter a cache manager for itself?
 
@@ -106,7 +106,7 @@ class CacheBase(
 class Filter( __.typx.Protocol ):
     ''' Determines if directory entry should be filtered. '''
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def __call__( self, dirent: _core.DirectoryEntry ) -> bool:
         raise NotImplementedError
 
@@ -118,7 +118,7 @@ class DirectoryOperations(
 ):
     ''' Standard operations on directories. '''
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def create_directory(
         self,
         name: 'PossibleRelativeLocator',
@@ -129,7 +129,7 @@ class DirectoryOperations(
         ''' Creates directory relative to URL of this accessor. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def create_file(
         self,
         name: 'PossibleRelativeLocator',
@@ -142,7 +142,7 @@ class DirectoryOperations(
 
     # TODO: create_indirection
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def delete_directory(
         self,
         name: 'PossibleRelativeLocator',
@@ -153,7 +153,7 @@ class DirectoryOperations(
         ''' Deletes directory relative to URL of this accessor. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def delete_file(
         self,
         name: 'PossibleRelativeLocator',
@@ -164,14 +164,14 @@ class DirectoryOperations(
 
     # TODO: delete_indirection
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def produce_entry_accessor(
         self, name: 'PossibleRelativeLocator'
     ) -> 'GeneralAccessor':
         ''' Derives new accessor relative to URL of this accessor. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def survey_entries(
         self,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
@@ -191,7 +191,7 @@ class FileOperations(
 ):
     ''' Standard operations on files. '''
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def acquire_content( self ) -> bytes:
         ''' Returns content of file as raw bytes. '''
         raise NotImplementedError
@@ -199,7 +199,7 @@ class FileOperations(
     # TODO: acquire_content_continuous
     #       Returns iterator which has inode attribute.
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def acquire_content_result(
         self,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
@@ -207,7 +207,7 @@ class FileOperations(
         ''' Returns inode and content of file as raw bytes. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def update_content(
         self,
         content: bytes,
@@ -227,7 +227,7 @@ class GeneralOperations(
 ):
     ''' Standard operations on locations of indeterminate species. '''
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def as_directory( self ) -> 'DirectoryAccessor':
         ''' Returns directory accessor without sanity checks.
 
@@ -235,7 +235,7 @@ class GeneralOperations(
         '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def as_file( self ) -> 'FileAccessor':
         ''' Returns file accessor without sanity checks.
 
@@ -243,7 +243,7 @@ class GeneralOperations(
         '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def as_specific(
         self,
         force: bool = False,
@@ -259,7 +259,7 @@ class GeneralOperations(
         species: __.Absential[ _core.LocationSpecies ] = __.absent,
     ) -> _core.LocationSpecies:
         ''' Discovers or asserts species of location. '''
-        Error = __.partial_function(
+        Error = __.funct.partial(
             _exceptions.LocationSpeciesAssertionError, url = self.as_url( ) )
         try:
             species_ = (
@@ -275,17 +275,17 @@ class GeneralOperations(
             return species_
         return species
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def is_directory( self, pursue_indirection: bool = True ) -> bool:
         ''' Is location a directory? '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def is_file( self, pursue_indirection: bool = True ) -> bool:
         ''' Is location a regular file? '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def is_indirection( self ) -> bool:
         ''' Does location provide indirection to another location? '''
         raise NotImplementedError
@@ -304,7 +304,7 @@ class ReconciliationOperations(
 
     # TODO? clear
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def commit(
         self, *,
         aliens: _core.AlienResolutionActions
@@ -317,19 +317,19 @@ class ReconciliationOperations(
         ''' Commits cache to sources. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def difference(
         self
     ) -> __.cabc.Sequence[ _core.CacheDifferenceBase ]:
         ''' Reports differences between cache and sources. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def is_divergent( self ) -> bool:
         ''' Checks if cache matches sources. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def reingest(
         self, *,
         aliens: _core.AlienResolutionActions
@@ -364,7 +364,7 @@ class GeneralAdapter(
     ''' General location access adapter. '''
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def from_url( selfclass, url: _core.PossibleUrl ) -> __.typx.Self:
         ''' Produces adapter from URL. '''
         raise NotImplementedError
@@ -381,17 +381,17 @@ class CacheManager(
     # TODO: Immutable instance attributes.
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def from_url( selfclass, url: _core.PossibleUrl ) -> __.typx.Self:
         ''' Produces cache manager from storage location URL. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def as_url( self ) -> _core.Url:
         ''' Returns URL associated with cache storage location. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def produce_cache( self, adapter: 'GeneralAdapter' ) -> 'GeneralCache':
         ''' Produces cache from general location access adapter. '''
         raise NotImplementedError
@@ -418,7 +418,7 @@ class GeneralCache(
     ''' General location cache. '''
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def from_url( selfclass, url: _core.PossibleUrl ) -> __.typx.Self:
         ''' Produces cache from URL. '''
         raise NotImplementedError
@@ -432,7 +432,7 @@ class FilePresenter(
 
     accessor: 'FileAccessor'
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def acquire_content( self ) -> __.typx.Any:
         ''' Returns content of file as specific type. '''
         raise NotImplementedError
@@ -440,7 +440,7 @@ class FilePresenter(
     # TODO: acquire_content_continuous
     #       Returns iterator which has inode attribute.
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def acquire_content_result(
         self, *,
         attributes: _core.InodeAttributes = _core.InodeAttributes.Nothing,
@@ -448,7 +448,7 @@ class FilePresenter(
         ''' Returns inode and content of file as specific type. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def update_content(
         self,
         content: __.typx.Any,

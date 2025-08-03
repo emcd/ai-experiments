@@ -383,7 +383,7 @@ def _canister_from_response_element( model, element ):
     # TODO: Appropriate error classes.
     if ( delta := hasattr( element, 'delta' ) ): message = element.delta
     else: message = element.message
-    attributes = __.SimpleNamespace(
+    attributes = __.types.SimpleNamespace(
         behaviors = [ ],
         model_context = {
             'provider': model.provider.name,

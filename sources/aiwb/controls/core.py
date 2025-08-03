@@ -24,7 +24,7 @@
 from . import __
 
 
-class DefinitionBase( metaclass = __.ABCFactory ):
+class DefinitionBase( metaclass = __.abc.ABCMeta ):
     # TODO: Protocol class.
 
     class Instance:
@@ -46,14 +46,14 @@ class DefinitionBase( metaclass = __.ABCFactory ):
     @classmethod
     def instantiate_descriptor( class_, descriptor ):
         nomargs = descriptor.copy( )
-        nomargs[ 'attributes' ] = __.SimpleNamespace(
+        nomargs[ 'attributes' ] = __.types.SimpleNamespace(
             **( nomargs.get( 'attributes', { } ) ) )
         if 'default' not in nomargs:
             nomargs[ 'default' ] = class_.produce_default( descriptor )
         return class_( **nomargs )
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def produce_default( class_, descriptor ):
         raise NotImplementedError # TODO: Fill out error.
 
@@ -71,7 +71,7 @@ class DefinitionBase( metaclass = __.ABCFactory ):
     def deserialize( self, data ):
         return self.create_control( data )
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def validate_value( self, value ):
         raise NotImplementedError # TODO: Fill out error.
 
@@ -253,7 +253,7 @@ def descriptor_to_definition( descriptor ):
 
 
 def deserialize_dictionary( definitions, dictionary ):
-    return __.DictionaryProxy( {
+    return __.types.MappingProxyType( {
         name: definitions[ name ].deserialize( data )
         for name, data in dictionary.items( ) } )
 

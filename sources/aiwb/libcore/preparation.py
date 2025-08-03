@@ -34,7 +34,7 @@ from . import state as _state
 
 
 async def prepare(
-    exits: __.ExitsAsync,
+    exits: __.ctxl.AsyncExitStack,
     application: _application.Information = _application.Information( ),
     configedits: _dictedits.Edits = ( ),
     configfile: __.Absential[ _locations.Url ] = __.absent,

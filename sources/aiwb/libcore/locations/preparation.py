@@ -35,7 +35,7 @@ async def register_defaults( ):
         import_module( f".{name}", genus_module.__package__ )
         for genus_module in genera_modules
         for name, attribute in vars( genus_module ).items( )
-        if not name.startswith( '_' ) and ismodule( attribute ) )
+        if not name.startswith( '_' ) and not name.startswith( '@' ) and ismodule( attribute ) )
     registrators = tuple(
         species_module.register_defaults( )
         for species_module in species_modules

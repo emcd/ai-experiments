@@ -26,7 +26,7 @@ from . import state as _state
 
 
 async def prepare(
-    exits: __.ExitsAsync, *,
+    exits: __.ctxl.AsyncExitStack, *,
     application: __.ApplicationInformation = __.ApplicationInformation( ),
     configedits: __.DictionaryEdits = ( ),
     configfile: __.Absential[ __.Url ] = __.absent,

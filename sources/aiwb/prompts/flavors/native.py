@@ -41,7 +41,7 @@ class Definition( _core.Definition ):
         ):
             super( ).__init__( definition )
             values = values or { }
-            self.controls = __.DictionaryProxy( {
+            self.controls = __.types.MappingProxyType( {
                 name: (
                     variable.create_control( values[ name ] )
                     if name in values else variable.create_control_default( ) )
@@ -78,10 +78,10 @@ class Definition( _core.Definition ):
         super( ).__init__( location, name )
         self.species = species
         self.templates = templates # TODO: Validate.
-        self.attributes = attributes or __.DictionaryProxy( { } )
+        self.attributes = attributes or __.types.MappingProxyType( { } )
         # TODO: Validate fragments. Bucket by MIME type?
         self.fragments = fragments or { }
-        self.variables = __.DictionaryProxy( {
+        self.variables = __.types.MappingProxyType( {
             variable[ 'name' ]: descriptor_to_definition( variable )
             for variable in variables } )
 
@@ -100,7 +100,7 @@ class Store( _core.Store ):
         # TODO: Rename 'descriptors' to 'definitions'.
         location = location / 'descriptors'
         files = tuple( location.resolve( strict = True ).glob( '*.toml' ) )
-        deserializer = __.partial_function(
+        deserializer = __.funct.partial(
             _deserialize_definition_data, store = self )
         results = await __.read_files_async(
             *files, deserializer = deserializer, return_exceptions = True )
@@ -113,7 +113,7 @@ class Store( _core.Store ):
                         error, summary, scribe = scribe )
                 case __.g.Value( definition ):
                     definitions[ definition.name ] = definition
-        return __.DictionaryProxy( definitions )
+        return __.types.MappingProxyType( definitions )
 
 _core.flavors[ 'native' ] = Store
 

@@ -59,7 +59,7 @@ class Cli(
         ''' Invokes command after library preparation. '''
         nomargs = self.prepare_invocation_args( )
         from .preparation import prepare
-        async with __.ExitsAsync( ) as exits:
+        async with __.ctxl.ExitStackAsync( ) as exits:
             auxdata = await prepare( exits = exits, **nomargs )
             await self.command( auxdata = auxdata, display = self.display )
 

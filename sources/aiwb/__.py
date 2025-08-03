@@ -35,28 +35,16 @@ import                          os
 import                          re
 import                          types
 
-from abc import (
-    ABCMeta as ABCFactory,
-    abstractmethod as abstract_member_function,
-)
 from asyncio import (
     Lock as MutexAsync,
 )
 from collections import namedtuple # TODO: Replace with dataclass.
-from contextlib import (
-    ExitStack as            Exits,
-    AsyncExitStack as       ExitsAsync,
-    contextmanager as       exit_manager,
-    asynccontextmanager as  exit_manager_async,
-)
-from dataclasses import field as dataclass_declare
 from datetime import (
     datetime as DateTime,
     timedelta as TimeDelta,
     timezone as TimeZone,
 )
-from enum import Enum, auto as produce_enumeration_value
-from functools import partial as partial_function
+from enum import Enum
 from itertools import chain
 from logging import (
     Logger as Scribe,
@@ -67,11 +55,6 @@ from pathlib import Path
 from queue import SimpleQueue
 from threading import Thread
 from time import time_ns
-from types import (
-    MappingProxyType as DictionaryProxy,
-    ModuleType as Module,
-    SimpleNamespace,
-)
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -183,7 +166,7 @@ async def read_files_async(
     else:
         def extractor( stream ): return stream.read( )
         def transformer( datum ): return deserializer( datum )
-    async with ExitsAsync( ) as exits:
+    async with ctxl.AsyncExitStack( ) as exits:
         streams = await gather_async(
             *(  exits.enter_async_context( open_( file ) )
                 for file in files ),

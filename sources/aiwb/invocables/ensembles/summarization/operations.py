@@ -33,7 +33,7 @@ async def analyze(
         analysis as a list of one or more chunks, depending on size of entity
         to be analyzed.
     '''
-    operators = __.SimpleNamespace(
+    operators = __.types.SimpleNamespace(
         from_directory = _list_directory_as_cell,
         from_file = _analyze_file,
         from_http = _analyze_http,

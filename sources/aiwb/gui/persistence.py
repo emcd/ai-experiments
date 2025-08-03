@@ -357,7 +357,7 @@ def _restore_prompt_variables_v0( gui, state, species ):
         variable = variables[ name ]
         if isinstance( variable, FlexArray ): value = [ value ]
         data[ name ] = value
-    return __.DictionaryProxy( data )
+    return __.types.MappingProxyType( data )
 
 
 def _standardize_invocation_requests_v0( canister_state ):

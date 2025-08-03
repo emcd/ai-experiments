@@ -57,7 +57,7 @@ class _Common( __.AdapterBase ):
         permissions: __.Permissions,
         pursue_indirection: bool = True,
     ) -> bool:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationCheckAccessFailure, url = self.url )
         try:
             inode = await self._inspect_permissions(
@@ -96,7 +96,7 @@ class _Common( __.AdapterBase ):
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         pursue_indirection: bool = True,
     ) -> __.Inode:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationExamineFailure, url = self.url )
         try:
             inode = await self._inspect_permissions(
@@ -145,7 +145,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         return selfclass( url = __.Url.from_url( url ) )
 
     def as_directory( self ) -> '__.DirectoryAdapter':
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationAccessorDerivationFailure,
             entity_name = _entity_name, url = self.url )
         reason = "No derivative available for directory."
@@ -160,7 +160,7 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
         pursue_indirection: bool = True,
         species: __.Absential[ __.LocationSpecies ] = __.absent,
     ) -> __.SpecificAdapter:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationAccessorDerivationFailure,
             entity_name = _entity_name, url = self.url )
         try:
@@ -201,7 +201,7 @@ class FileAdapter( _Common, __.FileAdapter ):
     async def acquire_content_result(
         self, attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
     ) -> __.AcquireContentBytesResult:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationAcquireContentFailure, url = self.url )
         async with _httpx.AsyncClient( ) as client:
             response = await client.get( self.implement )
@@ -226,7 +226,7 @@ class FileAdapter( _Common, __.FileAdapter ):
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.Inode:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationUpdateContentFailure, url = self.url )
         try: inode_ = await self._examine( )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
@@ -292,7 +292,7 @@ def _headers_from_file_update_options(
             start, end = size, size + delta - 1
             size_new = size + delta
             headers[ 'Content-Range' ] = f"bytes {start}-{end}/{size_new}"
-    return __.DictionaryProxy( headers )
+    return __.types.MappingProxyType( headers )
 
 
 def _inode_from_headers(

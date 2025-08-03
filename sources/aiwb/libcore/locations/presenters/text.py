@@ -42,7 +42,7 @@ class FilePresenter( __.FilePresenter ):
         self, *,
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
     ) -> __.AcquireContentTextResult:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationAcquireContentFailure, url = self.accessor.as_url( ) )
         attributes |= __.InodeAttributes.Mimetype
         if '#DETECT#' == self.charset:
@@ -75,7 +75,7 @@ class FilePresenter( __.FilePresenter ):
         attributes: __.InodeAttributes = __.InodeAttributes.Nothing,
         options: __.FileUpdateOptions = __.FileUpdateOptions.Defaults,
     ) -> __.Inode:
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationUpdateContentFailure, url = self.accessor.as_url( ) )
         content_nl = self._nativize_newlines( content )
         # Charset detection is meaningless for output.

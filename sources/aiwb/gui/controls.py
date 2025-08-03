@@ -24,21 +24,21 @@
 from . import __
 
 
-class ComponentManager( metaclass = __.ABCFactory ):
+class ComponentManager( metaclass = __.abc.ABCMeta ):
 
     def __init__( self, control, callback ):
         self.control = control
         self.callback = callback
         self.component = component = self._materialize( control, callback )
         component.auxdata__ = getattr(
-            component, 'auxdata__', __.SimpleNamespace( ) )
+            component, 'auxdata__', __.types.SimpleNamespace( ) )
         component.auxdata__.manager = self
 
     def assimilate( self ):
         self.control.value = self.component.value
         return self
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def _materialize( self, control, callback ):
         raise NotImplementedError
 
@@ -51,7 +51,7 @@ class ContainerManager:
             _materialize_instance( control, callback )
             for control in controls ]
         container.auxdata__ = getattr(
-            container, 'auxdata__', __.SimpleNamespace( ) )
+            container, 'auxdata__', __.types.SimpleNamespace( ) )
         container.auxdata__.manager = self
 
     def assimilate( self ):

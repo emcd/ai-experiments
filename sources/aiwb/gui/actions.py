@@ -300,7 +300,7 @@ async def _deduplicate_invocations(
     return tuple( sorted( deactivations, reverse = True ) )
 
 
-@__.exit_manager
+@__.ctxl.contextmanager
 def _update_conversation_progress( components, message ):
     from .updaters import update_conversation_status
     yield update_conversation_status(

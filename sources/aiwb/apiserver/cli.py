@@ -45,7 +45,7 @@ class Cli( __.ApplicationCli ):
         ''' Invokes command after API server preparation. '''
         nomargs = self.prepare_invocation_args( )
         from .preparation import prepare
-        async with __.ExitsAsync( ) as exits:
+        async with __.ctxl.AsyncExitStack( ) as exits:
             auxdata = await prepare( exits = exits, **nomargs )
             await self.command( auxdata = auxdata, display = self.display )
 
