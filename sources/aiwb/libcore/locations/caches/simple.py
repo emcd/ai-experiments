@@ -98,12 +98,12 @@ class _Common( __.CacheBase, __.typx.Protocol ):
     def expose_implement( self ) -> __.AccessImplement:
         return self.adapter.expose_implement( )
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def _ingest( self ):
         raise NotImplementedError
 
     async def _ingest_if_absent( self ):
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationCacheIngestFailure,
             source_url = self.adapter.as_url( ), cache_url = self.cache_url )
         cache_adapter = __.adapter_from_url( self.cache_url )
@@ -217,7 +217,7 @@ class GeneralCache( _Common, __.GeneralCache ):
         pursue_indirection: bool = True,
         species: __.Absential[ __.LocationSpecies ] = __.absent,
     ) -> '__.SpecificCache':
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationAccessorDerivationFailure,
             entity_name = _entity_name, url = self.cache_url )
         try:
@@ -259,7 +259,7 @@ class GeneralCache( _Common, __.GeneralCache ):
         return await cache_adapter.is_indirection( )
 
     async def _ingest( self ):
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationCacheIngestFailure,
             source_url = self.adapter.as_url( ), cache_url = self.cache_url )
         try: adapter = await self.adapter.as_specific( )
@@ -370,7 +370,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
             attributes = attributes, filters = filters, recurse = recurse )
 
     async def _ingest( self ):
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationCacheIngestFailure,
             source_url = self.adapter.as_url( ), cache_url = self.cache_url )
         cache_adapter = __.adapter_from_url( self.cache_url )
@@ -427,7 +427,7 @@ class FileCache( _Common, __.FileCache ):
             content, attributes = attributes, options = options )
 
     async def _ingest( self ):
-        Error = __.partial_function(
+        Error = __.funct.partial(
             __.LocationCacheIngestFailure,
             source_url = self.adapter.as_url( ), cache_url = self.cache_url )
         try:

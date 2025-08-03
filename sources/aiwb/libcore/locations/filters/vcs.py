@@ -24,7 +24,7 @@
 from . import __
 
 
-_names = __.DictionaryProxy( {
+_names = __.types.MappingProxyType( {
     'BitKeeper':    'bk',
     'Bazaar':       'bzr',
     'CVS':          'cvs',

@@ -1,13 +1,13 @@
 # ruff: noqa
 
-class PopulationIdentifier( metaclass = __.ABCFactory ):
+class PopulationIdentifier( metaclass = __.abc.ABCMeta ):
     ''' Abstract base class for user population identifiers. '''
     # Note: Not a Protocol class because there is no common protocol.
     #       We just want issubclass support.
     #       Functions which return identifiers should cast.
 
 
-class UserIdentifier( metaclass = __.ABCFactory ):
+class UserIdentifier( metaclass = __.abc.ABCMeta ):
     ''' Abstract base class for user identifiers. '''
     # Note: Not a Protocol class because there is no common protocol.
     #       We just want issubclass support.
@@ -29,17 +29,17 @@ class Population( Possesor, __.a.Protocol ):
     ''' Representation of user population which can own a location. '''
     # TODO: Immutable class and object attributes.
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def provide_identifier( self ) -> PopulationIdentifier:
         ''' Provides system identifier for user population. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def provide_name( self ) -> str:
         ''' Provides name or alias of system identifier for user populaton. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def provide_users( self ) -> __.AbstractIterable[ User ]:
         ''' Provides users which are members of populaton. '''
         raise NotImplementedError
@@ -50,17 +50,17 @@ class User( Possessor, __.a.Protocol ):
     ''' Representation of user who can own a location. '''
     # TODO: Immutable class and object attributes.
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def provide_identifier( self ) -> UserIdentifier:
         ''' Provides system identifier for user. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def provide_name( self ) -> str:
         ''' Provides name or alias of system identifier for user. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def provide_populations( self ) -> __.AbstractIterable[ Population ]:
         ''' Provides populations of which user is a member. '''
         raise NotImplementedError
@@ -82,7 +82,7 @@ class SpecificPopulation( Population, __.a.Protocol ):
     # TODO: Immutable class and object attributes.
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def from_identifier(
         selfclass, identifier: PopulationIdentifier
     ) -> __.a.Self:
@@ -90,7 +90,7 @@ class SpecificPopulation( Population, __.a.Protocol ):
         raise NotImplementedError
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def from_name( selfclass, name: str ) -> __.a.Self:
         ''' Produces user population representation from name or alias. '''
         raise NotImplementedError
@@ -102,7 +102,7 @@ class SpecificUser( User, __.a.Protocol ):
     # TODO: Immutable class and object attributes.
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def from_identifier(
         selfclass, identifier: UserIdentifier
     ) -> __.a.Self:
@@ -110,7 +110,7 @@ class SpecificUser( User, __.a.Protocol ):
         raise NotImplementedError
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def from_name( selfclass, name: str ) -> __.a.Self:
         ''' Produces user representation from name or alias. '''
         raise NotImplementedError

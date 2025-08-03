@@ -347,7 +347,7 @@ def _append_user_cache_control_watermarks(
 
 def _canister_from_response_element( model, element ):
     # TODO: Appropriate error classes.
-    attributes = __.SimpleNamespace(
+    attributes = __.types.SimpleNamespace(
         behaviors = [ ],
         model_context = {
             'provider': model.provider.name,
@@ -402,7 +402,7 @@ def _collect_supervisor_instructions(
 async def _converse_complete_v0(
     model: Model, arguments: dict[ str, __.typx.Any ], reactors
 ): # TODO: return signature
-    error = __.partial_function(
+    error = __.funct.partial(
         __.ModelOperateFailure, model = model, operation = 'chat completion' )
     client = model.client.produce_implement( )
     from anthropic import AnthropicError
@@ -414,7 +414,7 @@ async def _converse_complete_v0(
 async def _converse_continuous_v0(
     model: Model, arguments: dict[ str, __.typx.Any ], reactors
 ): # TODO: return signature
-    error = __.partial_function(
+    error = __.funct.partial(
         __.ModelOperateFailure, model = model, operation = 'chat completion' )
     client = model.client.produce_implement( )
     from anthropic import AnthropicError

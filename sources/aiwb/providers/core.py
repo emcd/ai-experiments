@@ -192,7 +192,7 @@ class InvocationRequest(
     arguments: __.cabc.Mapping[ str, __.typx.Any ]
     invocation: __.typx.Callable # TODO: Full signature.
     specifics: __.accret.Dictionary = ( # TODO: Full signature.
-        __.dataclass_declare( default_factory = __.accret.Dictionary ) )
+        __.dcls.field( default_factory = __.accret.Dictionary ) )
 
     @classmethod
     def from_descriptor(
@@ -211,7 +211,7 @@ class InvocationRequest(
             raise Error( f"Invocable {name!r} is not available." )
         arguments = descriptor.get( 'arguments', { } )
         # TODO: Provide supplements based on specification from invocable.
-        invocation = __.partial_function(
+        invocation = __.funct.partial(
             context.invokers[ name ],
             auxdata = context.auxdata,
             arguments = arguments,
@@ -225,7 +225,7 @@ class ModelIntegrationBehaviors( __.enum.IntFlag ):
     # TODO: Immutable class attributes.
 
     Default             = 0
-    ReplaceControls     = __.produce_enumeration_value( )
+    ReplaceControls     = __.enum.auto( )
 
 
 class ModelsIntegrator(
@@ -249,7 +249,7 @@ class ModelsIntegrator(
         behaviors = ModelIntegrationBehaviors.Default
         if desc.pop( 'replaces-controls', False ):
             behaviors |= ModelIntegrationBehaviors.ReplaceControls
-        attributes = __.DictionaryProxy( desc )
+        attributes = __.types.MappingProxyType( desc )
         return selfclass(
             attributes = attributes, behaviors = behaviors, regex = regex )
 
@@ -266,7 +266,7 @@ class ModelsIntegrator(
         ): theirs[ 'controls' ] = controls
         else: theirs[ 'controls' ].extend( controls )
         _merge_dictionaries_recursive( theirs, ours )
-        return __.DictionaryProxy( theirs )
+        return __.types.MappingProxyType( theirs )
 
 
 class ModelGenera( __.Enum ): # TODO: Python 3.11: StrEnum

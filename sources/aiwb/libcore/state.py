@@ -44,7 +44,7 @@ class Globals(
     configuration: __.accret.Dictionary
     directories: __.PlatformDirs
     distribution: _distribution.Information
-    exits: __.ExitsAsync # TODO? Make accretive.
+    exits: __.ctxl.AsyncExitStack # TODO? Make accretive.
     notifications: _notifications.Queue
 
     def as_dictionary( self ) -> __.cabc.Mapping[ str, __.typx.Any ]:

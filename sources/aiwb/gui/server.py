@@ -27,7 +27,7 @@ from . import __
 class Accessor( __.immut.DataclassObject ):
     ''' Accessor for server properties and thread. '''
 
-    components: __.SimpleNamespace
+    components: __.types.SimpleNamespace
     control: 'Control'
 
     async def execute( self, auxdata: __.ApiServerGlobals ):
@@ -52,9 +52,9 @@ class Control( __.immut.DataclassObject ):
             address = address, port = port, reload = self.reload )
 
 
-@__.exit_manager_async
+@__.ctxl.contextmanager_async
 async def _execute_server_thread(
-    components: __.SimpleNamespace, control: Control
+    components: __.types.SimpleNamespace, control: Control
 ) -> __.cabc.AsyncGenerator:
     scribe = __.acquire_scribe( __package__ )
     from asyncio import get_running_loop, sleep
@@ -70,7 +70,7 @@ async def _execute_server_thread(
 
 
 def _start_gui(
-    components: __.SimpleNamespace, control: Control
+    components: __.types.SimpleNamespace, control: Control
 ) -> __.typx.Any: # TODO: Proper type.
     # TODO: Honor address and port for listener socket binding.
     return components.template__.show(

@@ -24,9 +24,9 @@
 from . import __
 
 
-Arguments: __.typx.TypeAlias = __.DictionaryProxy[ str, __.typx.Any ]
+Arguments: __.typx.TypeAlias = __.types.MappingProxyType[ str, __.typx.Any ]
 #Arguments = __.typx.TypeVar( 'Arguments', bound = __.pydantic.BaseModel )
-ArgumentsModel: __.typx.TypeAlias = __.DictionaryProxy[ str, __.typx.Any ]
+ArgumentsModel: __.typx.TypeAlias = __.types.MappingProxyType[ str, __.typx.Any ]
 #ArgumentsModel: __.typx.TypeAlias = type[ __.pydantic.BaseModel ]
 
 
@@ -41,11 +41,11 @@ class Deduplicator(
     arguments: __.cabc.Mapping[ str, __.typx.Any ]
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def provide_invocable_names( selfclass ) -> __.cabc.Collection[ str ]:
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def is_duplicate(
         self,
         invocable_name: str,
@@ -72,7 +72,7 @@ class Ensemble(
 
     name: str
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def prepare_invokers(
         self, auxdata: __.Globals
     ) -> __.cabc.Mapping[ str, 'Invoker' ]:
@@ -87,7 +87,7 @@ class Ensemble(
             Invoker.from_invocable(
                 ensemble = self, invocable = invocable, argschema = argschema )
             for invocable, argschema in registry )
-        return __.DictionaryProxy( {
+        return __.types.MappingProxyType( {
             invoker.name: invoker for invoker in invokers } )
 
 
@@ -177,11 +177,11 @@ async def prepare( auxdata ):
 async def prepare_ensembles( auxdata ):
     ''' Prepares ensembles of invokers from defaults and configuration. '''
     scribe = __.acquire_scribe( __package__ )
-    descriptors = __.DictionaryProxy( {
+    descriptors = __.types.MappingProxyType( {
         descriptor[ 'name' ]: descriptor
         for descriptor in descriptors_from_configuration(
             auxdata, defaults = _default_ensemble_descriptors ) } )
-    preparers_ = __.DictionaryProxy( {
+    preparers_ = __.types.MappingProxyType( {
         name: preparers[ name ]( auxdata, descriptor )
         for name, descriptor in descriptors.items( ) } )
     results = await __.gather_async(
@@ -217,16 +217,16 @@ async def prepare_invokers(
                     error, summary, scribe = scribe )
             case __.g.Value( invokers_ ):
                 invokers.update( invokers_ )
-    return __.DictionaryProxy( invokers )
+    return __.types.MappingProxyType( invokers )
 
 
-_default_ensemble_descriptors = __.DictionaryProxy( {
+_default_ensemble_descriptors = __.types.MappingProxyType( {
     'io':
-        __.DictionaryProxy( { 'name': 'io', 'enable': True } ),
+        __.types.MappingProxyType( { 'name': 'io', 'enable': True } ),
     'probability':
-        __.DictionaryProxy( { 'name': 'probability', 'enable': True } ),
+        __.types.MappingProxyType( { 'name': 'probability', 'enable': True } ),
     'summarization':
-        __.DictionaryProxy( { 'name': 'summarization', 'enable': True } ),
+        __.types.MappingProxyType( { 'name': 'summarization', 'enable': True } ),
 } )
 
 
