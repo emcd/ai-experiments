@@ -114,7 +114,7 @@ class Store(
                 user_home = __.Path.home( ) ) ).expose_implement( )
         return __.accret.Dictionary( name = name, location = location )
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def acquire_definitions(
         self,
         auxdata: __.Globals,
@@ -145,7 +145,7 @@ async def acquire_definitions(
                     error, summary, scribe = scribe )
             case __.g.Value( definitions_ ):
                 definitions.update( definitions_ )
-    return __.DictionaryProxy( definitions )
+    return __.types.MappingProxyType( definitions )
 
 
 async def acquire_stores(
@@ -169,7 +169,7 @@ async def acquire_stores(
                     error, summary, details = descriptor, scribe = scribe )
             case __.g.Value( store ):
                 stores[ store.name ] = store
-    return __.DictionaryProxy( stores )
+    return __.types.MappingProxyType( stores )
 
 
 def descriptors_from_configuration(

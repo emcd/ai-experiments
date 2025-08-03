@@ -24,7 +24,7 @@
 from . import __
 
 
-class DeltaType( str, __.Enum ):
+class DeltaType( str, __.enum.Enum ):
     ''' Types of partial content update operations. '''
     INSERT = 'insert'
     DELETE = 'delete'

@@ -36,7 +36,7 @@ class UpdateRequest(
 
     updater: __.typx.Callable[ ..., __.typx.Any ]
     posargs: __.cabc.Sequence[ __.typx.Any ] = ( )
-    nomargs: __.cabc.Mapping[ str, __.typx.Any ] = __.DictionaryProxy( { } )
+    nomargs: __.cabc.Mapping[ str, __.typx.Any ] = __.types.MappingProxyType( { } )
 
     def __hash__( self ) -> int:
         return hash( (
@@ -72,13 +72,13 @@ class UpdatesDeduplicator(
     #       - Custom timeout handlers/recovery
 
     master_mutex: __.MutexAsync = (
-        __.dataclass_declare( default_factory = __.MutexAsync ) )
+        __.dcls.field( default_factory = __.MutexAsync ) )
     updates_insequent: set[ UpdateRequest ] = (
-        __.dataclass_declare( default_factory = set ) )
+        __.dcls.field( default_factory = set ) )
     updates_mutexes: dict[ UpdateRequest, __.MutexAsync ] = (
-        __.dataclass_declare( default_factory = dict ) )
+        __.dcls.field( default_factory = dict ) )
     updates_tasks: dict[ UpdateRequest, __.cabc.Coroutine ] = (
-        __.dataclass_declare( default_factory = dict ) )
+        __.dcls.field( default_factory = dict ) )
 
     async def __aenter__( self ): return self
 
@@ -112,7 +112,7 @@ class UpdatesDeduplicator(
         updater: __.typx.Callable[ ..., __.typx.Any ],
         posargs: __.cabc.Sequence[ __.typx.Any ] = ( ),
         nomargs: __.cabc.Mapping[ str, __.typx.Any ] = (
-            __.DictionaryProxy( { } ) ),
+            __.types.MappingProxyType( { } ) ),
     ) -> None:
         ''' Executes update if not already in progress. '''
         scribe = __.acquire_scribe( __package__ )
@@ -143,7 +143,7 @@ class UpdatesDeduplicator(
         updater: __.typx.Callable[ ..., __.typx.Any ],
         posargs: __.cabc.Sequence[ __.typx.Any ] = ( ),
         nomargs: __.cabc.Mapping[ str, __.typx.Any ] = (
-            __.DictionaryProxy( { } ) ),
+            __.types.MappingProxyType( { } ) ),
         delay: float = 0.1,  # seconds
     ) -> None:
         ''' Schedules update on a delay if not already in progress. '''
@@ -185,14 +185,14 @@ def add_conversation_indicator( components, descriptor, position = 0 ):
     from .classes import ConversationIndicator
     from .events import on_select_conversation
     from .layouts import conversation_indicator_layout as layout
-    container_components = __.SimpleNamespace(
+    container_components = __.types.SimpleNamespace(
         parent__ = components, identity__ = descriptor.identity )
     _components.generate( container_components, layout, 'column_indicator' )
     container_components.rehtml_indicator = indicator = (
         ConversationIndicator( container_components ) )
     container_components.text_title.object = descriptor.title
     indicator.param.watch(
-        __.partial_function( on_select_conversation, components ), 'clicked' )
+        __.funct.partial( on_select_conversation, components ), 'clicked' )
     _components.register_event_reactors(
         container_components, layout, 'column_indicator' )
     conversations = components.column_conversations_indicators
@@ -297,7 +297,7 @@ async def create_conversation( components, descriptor, state = None ):
     from .layouts import conversation_container_names
     from .persistence import inject_conversation
     # TODO: Restrict GUI namespace to conversation components.
-    components_ = __.SimpleNamespace( **components.__dict__ )
+    components_ = __.types.SimpleNamespace( **components.__dict__ )
     for component_name in conversation_container_names:
         layout = getattr( layouts, f"{component_name}_layout" )
         _components.generate( components_, layout, f"column_{component_name}" )
@@ -315,7 +315,7 @@ async def create_conversation( components, descriptor, state = None ):
 def create_message( gui, dto ):
     # TODO: Handle content arrays properly.
     layout = determine_message_layout( dto )
-    gui_ = __.SimpleNamespace(
+    gui_ = __.types.SimpleNamespace(
         canister__ = dto,
         index__ = None,
         layout__ = layout,
@@ -500,12 +500,12 @@ async def populate_prompt_variables( components, species, data = None ):
     match species:
         case 'supervisor':
             from .events import on_change_system_prompt
-            event_reactor = __.partial_function(
+            event_reactor = __.funct.partial(
                 on_change_system_prompt, components )
             postpopulator = postpopulate_system_prompt_variables
         case _: # user
             from .events import on_change_canned_prompt
-            event_reactor = __.partial_function(
+            event_reactor = __.funct.partial(
                 on_change_canned_prompt, components )
             postpopulator = postpopulate_canned_prompt_variables
     ContainerManager( row, prompt.controls.values( ), event_reactor )
@@ -793,7 +793,7 @@ def _populate_prompts_selector( gui, species ):
             and not definition.attributes.get( 'conceal', False ) ) )
     selector.options = names
     selector.auxdata__ = getattr(
-        selector, 'auxdata__', __.SimpleNamespace( prompts_cache = { } ) )
+        selector, 'auxdata__', __.types.SimpleNamespace( prompts_cache = { } ) )
 
 
 async def _update_and_save_conversation( components ):

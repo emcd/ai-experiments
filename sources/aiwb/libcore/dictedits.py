@@ -34,7 +34,7 @@ class Edit(
 
     address: __.cabc.Sequence[ str ]
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def __call__( self, configuration: __.cabc.MutableMapping ):
         ''' Performs edit. '''
         raise NotImplementedError

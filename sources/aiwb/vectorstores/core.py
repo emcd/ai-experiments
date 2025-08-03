@@ -30,7 +30,7 @@ class Factory(
 ):
     ''' Produces clients. '''
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def client_from_descriptor(
         self,
         auxdata: __.Globals,
@@ -119,7 +119,7 @@ async def prepare_factories(
     descriptors = descriptors_from_configuration( auxdata )
     names = frozenset(
         descriptor[ 'factory' ] for descriptor in descriptors )
-    preparers_ = __.DictionaryProxy(
+    preparers_ = __.types.MappingProxyType(
         { name: preparers[ name ]( auxdata ) for name in names } )
     results = await __.gather_async(
         *preparers_.values( ), return_exceptions = True )

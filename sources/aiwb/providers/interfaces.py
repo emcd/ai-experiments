@@ -40,7 +40,7 @@ class Provider(
 
     def __str__( self ) -> str: return f"AI provider {self.name!r}"
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def produce_client(
         self,
         auxdata: __.CoreGlobals,
@@ -65,7 +65,7 @@ class Client(
     provider: 'Provider'
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def assert_environment(
         selfclass,
         auxdata: __.CoreGlobals,
@@ -74,7 +74,7 @@ class Client(
         raise NotImplementedError
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def from_descriptor(
         selfclass,
         auxdata: __.CoreGlobals,
@@ -128,7 +128,7 @@ class Client(
         ''' Returns default model available from provider, if it exists. '''
         defaults = getattr( self.attributes.defaults, f"{genus.value}_model" )
         models = await self.survey_models( auxdata = auxdata, genus = genus )
-        models_by_name = __.DictionaryProxy( {
+        models_by_name = __.types.MappingProxyType( {
             model.name: model for model in models } )
         # TODO: Default defaults from provider configuration.
         defaults = defaults or models_by_name
@@ -142,12 +142,12 @@ class Client(
                 f"Could not access default {genus.value} model "
                 f"on provider {self.name!r}." ) from None
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def produce_implement( self ) -> _core.ClientImplement:
         ''' Produces client implement to interact with provider. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def produce_model(
         self,
         genus: _core.ModelGenera,
@@ -157,7 +157,7 @@ class Client(
         ''' Produces model from descriptor. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def survey_models(
         self,
         auxdata: __.CoreGlobals,
@@ -171,7 +171,7 @@ class Client(
         raise NotImplementedError
 
     @property
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def variant( self ) -> _core.ProviderVariants:
         ''' Provider variant. '''
         raise NotImplementedError
@@ -198,7 +198,7 @@ class ControlsProcessor(
         # TODO: Use 'control.name'. (Requires definitions.)
         return frozenset( { control[ 'name' ] for control in self.controls } )
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def nativize_controls(
         self,
         controls: __.cabc.Mapping[ str, __.Control.Instance ],
@@ -217,7 +217,7 @@ class ConversationTokenizer(
 
     # TODO: count_conversation_tokens
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def count_text_tokens( self, text: str ) -> int:
         ''' Counts tokens, using tokenizer for model, in text. '''
         raise NotImplementedError
@@ -225,7 +225,7 @@ class ConversationTokenizer(
     ## v0 Compatibility Functions ##
     # TODO: Remove once cutover to conversation objects is complete.
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def count_conversation_tokens_v0(
         self, messages: __.MessagesCanisters, supplements
     ) -> int:
@@ -241,19 +241,19 @@ class InvocationsProcessor(
 
     model: 'Model'
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def __call__(
         self, request: _core.InvocationRequest
     ) -> __.MessageCanister: # TODO? Return InvocationResult.
         ''' Uses invocable to produce result for conversation. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def nativize_invocable( self, invoker: __.Invoker ) -> __.typx.Any:
         ''' Converts normalized invocable into native tool call. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def nativize_invocables(
         self,
         invokers: __.cabc.Iterable[ __.Invoker ],
@@ -261,7 +261,7 @@ class InvocationsProcessor(
         ''' Converts normalized invocables into native tool calls. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def requests_from_canister(
         self,
         auxdata: __.CoreGlobals, *,
@@ -288,7 +288,7 @@ class MessagesProcessor(
     ## v0 Compatibility Functions ##
     # TODO: Remove once cutover to conversation objects is complete.
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def nativize_messages_v0(
         self,
         canisters: __.MessagesCanisters,
@@ -314,7 +314,7 @@ class Model(
         return f"{self.client} model {self.name!r}"
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def from_descriptor(
         selfclass,
         client: 'Client',
@@ -325,7 +325,7 @@ class Model(
         raise NotImplementedError
 
     @property
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def controls_processor( self ) -> 'ControlsProcessor':
         ''' Controls processor for model. '''
         raise NotImplementedError
@@ -345,7 +345,7 @@ class ModelAttributes(
     controls: __.cabc.Sequence[ __.Control ] = ( )
 
     @classmethod
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def from_descriptor(
         selfclass,
         descriptor: __.cabc.Mapping[ str, __.typx.Any ],
@@ -372,25 +372,25 @@ class ConverserModel(
     ''' Represents AI chat model. '''
 
     @property
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def invocations_processor( self ) -> 'InvocationsProcessor':
         ''' Invocations processor for model. '''
         raise NotImplementedError
 
     @property
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def messages_processor( self ) -> 'MessagesProcessor':
         ''' Conversation messages processor for model. '''
         raise NotImplementedError
 
     @property
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def serde_processor( self ) -> 'ConverserSerdeProcessor':
         ''' (De)serialization processor for model. '''
         raise NotImplementedError
 
     @property
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def tokenizer( self ) -> 'ConversationTokenizer':
         ''' Appropriate tokenizer for conversations. '''
         raise NotImplementedError
@@ -398,7 +398,7 @@ class ConverserModel(
     ## v0 Compatibility Functions ##
     # TODO: Remove once cutover to conversation objects is complete.
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def converse_v0(
         self,
         messages: __.cabc.Sequence[ __.MessageCanister ],
@@ -459,12 +459,12 @@ class ConverserSerdeProcessor(
 
     model: 'ConverserModel'
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def deserialize_data( self, data: str ) -> __.typx.Any:
         ''' Deserializes text in preferred format of model to data. '''
         raise NotImplementedError
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def serialize_data( self, data: __.typx.Any ) -> str:
         ''' Serializes data to text in preferred format of model. '''
         raise NotImplementedError

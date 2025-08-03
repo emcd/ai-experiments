@@ -424,7 +424,7 @@ class AdaptiveTextArea( ReactiveHTML ):
 
     _style_css__ = param.String( default = '' )
 
-    _style_default__ = __.DictionaryProxy( {
+    _style_default__ = __.types.MappingProxyType( {
         'font-size': '100%',
         'resize': 'none',
     } )
@@ -533,7 +533,7 @@ class CompactSelector( ReactiveHTML ):
     value = param.String( )
     _style_css__ = param.String( )
 
-    _style_default__ = __.DictionaryProxy( {
+    _style_default__ = __.types.MappingProxyType( {
         'appearance': 'none',
         '-moz-appearance': 'none', '-webkit-appearance': 'none',
         'border-radius': '10%',
@@ -574,13 +574,13 @@ class ConversationDescriptor(
 ):
 
     identity: str = (
-        __.dataclass_declare( default_factory = lambda: __.uuid4( ).hex ) )
+        __.dcls.field( default_factory = lambda: __.uuid4( ).hex ) )
     timestamp: int = (
-        __.dataclass_declare( default_factory = __.time_ns ) )
+        __.dcls.field( default_factory = __.time_ns ) )
     title: __.typx.Optional[ str ] = None
     labels: __.cabc.MutableSequence[ str ] = (
-        __.dataclass_declare( default_factory = list ) )
-    gui: __.typx.Optional[ __.SimpleNamespace ] = None
+        __.dcls.field( default_factory = list ) )
+    gui: __.typx.Optional[ __.types.SimpleNamespace ] = None
     indicator: __.typx.Optional[ Row ] = None
 
 

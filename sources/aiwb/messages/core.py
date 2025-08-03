@@ -29,7 +29,7 @@ class DirectoryManager( __.immut.DataclassObject ):
 
     auxdata: __.accret.Namespace
 
-    _mkdir_nomargs_default = __.DictionaryProxy( dict(
+    _mkdir_nomargs_default = __.types.MappingProxyType( dict(
         exist_ok = True, parents = True ) )
 
     def assert_content_directory( self, identity ):
@@ -71,7 +71,7 @@ class Content(
 ):
     ''' Base for various content types. '''
 
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     async def save( self, manager: DirectoryManager ):
         ''' Persists content to durable storage. '''
         raise NotImplementedError
@@ -82,9 +82,9 @@ class TextualContent( Content ):
 
     data: str
     identity: str = (
-        __.dataclass_declare( default_factory = lambda: __.uuid4( ).hex ) )
+        __.dcls.field( default_factory = lambda: __.uuid4( ).hex ) )
     timestamp: int = (
-        __.dataclass_declare( default_factory = __.time_ns ) )
+        __.dcls.field( default_factory = __.time_ns ) )
     mimetype: str = 'text/markdown'
 
     async def save( self, manager: DirectoryManager ):
@@ -110,7 +110,7 @@ class TextualContent( Content ):
 # TODO: PictureContent
 
 
-class Role( __.Enum ): # TODO: Python 3.11: StrEnum
+class Role( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Platform-neutral role of conversation message.
 
         Implementations must map these roles to their native roles or
@@ -147,10 +147,10 @@ class Canister(
 ):
     ''' Message canister which can have multiple contents. '''
 
-    attributes: __.SimpleNamespace = (
-        __.dataclass_declare( default_factory = __.SimpleNamespace ) )
+    attributes: __.types.SimpleNamespace = (
+        __.dcls.field( default_factory = __.types.SimpleNamespace ) )
     contents: __.cabc.MutableSequence[ Content ] = (
-        __.dataclass_declare( default_factory = list ) )
+        __.dcls.field( default_factory = list ) )
 
     def add_content( self, data, /, **descriptor ):
         ''' Adds content of appropriate type to canister. '''
@@ -175,7 +175,7 @@ class Canister(
     def __len__( self ): return len( self.contents )
 
     @property
-    @__.abstract_member_function
+    @__.abc.abstractmethod
     def role( self ) -> Role:
         ''' Corresponding message role for canister. '''
 
@@ -281,7 +281,7 @@ async def restore_canister( manager, canister_state ):
             attributes[ 'invocation_data' ] = loads( invocation_data )
     if attributes:
         # TODO? Convert hyphenated keys to underscored.
-        nomargs[ 'attributes' ] = __.SimpleNamespace( **attributes )
+        nomargs[ 'attributes' ] = __.types.SimpleNamespace( **attributes )
     canister = role.produce_canister( **nomargs )
     for content in contents: canister.contents.append( content )
     return canister

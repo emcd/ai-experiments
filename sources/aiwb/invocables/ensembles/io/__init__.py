@@ -65,7 +65,7 @@ class Ensemble( __.Ensemble ):
                 in SurveyDirectoryDeduplicator.provide_invocable_names( )
                 else None )
             for invocable, argschema in _invocables ]
-        return __.DictionaryProxy( {
+        return __.types.MappingProxyType( {
             invoker.name: invoker for invoker in (
                 __.Invoker.from_invocable(
                     ensemble = self,
