@@ -63,6 +63,7 @@ import typing_extensions as typx
 import                      tyro
 
 from absence import Absential, absent, is_absent
+from appcore import asyncf, generics
 
 
 from . import _generics as g
@@ -203,37 +204,3 @@ async def _gather_async_strict(
             raise ValueError( f"Operand {operand!r} must be awaitable." )
         awaitables.append( intercept_error_async( operand ) )
     return await gather( *awaitables )
-
-
-def _repair_class_reproduction( original, reproduction ):
-    from platform import python_implementation
-    match python_implementation( ):
-        case 'CPython':
-            _repair_cpython_class_closures( original, reproduction )
-
-
-def _repair_cpython_class_closures( oldcls, newcls ):
-    # https://github.com/python/cpython/issues/90562
-    # https://github.com/python/cpython/pull/124455/files
-    def try_repair_closure( function ):
-        # If no class cell on function, then nothing to repair here.
-        try: index = function.__code__.co_freevars.index( '__class__' )
-        except ValueError: return False
-        closure = function.__closure__[ index ]
-        if oldcls is closure.cell_contents:
-            closure.cell_contents = newcls
-            return True
-        return False
-
-    from inspect import isfunction, unwrap
-    # Iterate over all class attributes, seeking class closure to fix.
-    # Fixing one is fixing all, since the closure cell is shared.
-    for attribute in newcls.__dict__.values( ):
-        attribute_ = unwrap( attribute )
-        if isfunction( attribute_ ) and try_repair_closure( attribute_ ):
-            return
-        if isinstance( attribute_, property ):
-            for aname in ( 'fget', 'fset', 'fdel' ):
-                accessor = getattr( attribute_, aname )
-                if None is accessor: continue
-                if try_repair_closure( accessor ): return
