@@ -184,16 +184,16 @@ async def prepare_ensembles( auxdata ):
     preparers_ = __.types.MappingProxyType( {
         name: preparers[ name ]( auxdata, descriptor )
         for name, descriptor in descriptors.items( ) } )
-    results = await __.gather_async(
+    results = await __.asyncf.gather_async(
         *preparers_.values( ), return_exceptions = True )
     ensembles = __.accret.Dictionary( )
     for name, result in zip( preparers_.keys( ), results ):
         match result:
-            case __.g.Error( error ):
+            case __.generics.Error( error ):
                 summary = "Could not prepare invokers ensemble {name!r}."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
-            case __.g.Value( ensemble ):
+            case __.generics.Value( ensemble ):
                 ensembles[ name ] = ensemble
     return ensembles
 
@@ -204,18 +204,18 @@ async def prepare_invokers(
 ) -> __.cabc.Mapping[ str, 'Invoker' ]:
     ''' Prepares invokers from ensembles. '''
     scribe = __.acquire_scribe( __package__ )
-    results = await __.gather_async(
+    results = await __.asyncf.gather_async(
         *(  ensemble.prepare_invokers( auxdata )
             for ensemble in ensembles.values( ) ),
         return_exceptions = True )
     invokers = { }
     for result in results:
         match result:
-            case __.g.Error( error ):
+            case __.generics.Error( error ):
                 summary = "Could not prepare invoker."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
-            case __.g.Value( invokers_ ):
+            case __.generics.Value( invokers_ ):
                 invokers.update( invokers_ )
     return __.types.MappingProxyType( invokers )
 

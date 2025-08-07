@@ -94,18 +94,18 @@ async def prepare_clients(
     names = tuple( descriptor[ 'name' ] for descriptor in descriptors )
     factories_per_client = tuple(
         factories[ descriptor[ 'factory' ] ] for descriptor in descriptors )
-    results = await __.gather_async(
+    results = await __.asyncf.gather_async(
         *(  factory.client_from_descriptor( auxdata, descriptor )
             for factory, descriptor
             in zip( factories_per_client, descriptors ) ),
         return_exceptions = True )
     for name, descriptor, result in zip( names, descriptors, results ):
         match result:
-            case __.g.Error( error ):
+            case __.generics.Error( error ):
                 summary = f"Could not load vectorstore {name!r}."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
-            case __.g.Value( future ):
+            case __.generics.Value( future ):
                 clients[ name ] = dict(
                     name = name, data = descriptor, instance = future )
     return clients
@@ -121,15 +121,15 @@ async def prepare_factories(
         descriptor[ 'factory' ] for descriptor in descriptors )
     preparers_ = __.types.MappingProxyType(
         { name: preparers[ name ]( auxdata ) for name in names } )
-    results = await __.gather_async(
+    results = await __.asyncf.gather_async(
         *preparers_.values( ), return_exceptions = True )
     factories = { }
     for name, result in zip( preparers_.keys( ), results ):
         match result:
-            case __.g.Error( error ):
+            case __.generics.Error( error ):
                 summary = "Could not prepare vectorstore factory {name!r}."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
-            case __.g.Value( factory ):
+            case __.generics.Value( factory ):
                 factories[ name ] = factory
     return factories

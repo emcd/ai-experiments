@@ -100,7 +100,7 @@ async def use_invocables(
     invokers = tuple(
         model.invocations_processor( request ) for request in requests )
     with _update_conversation_progress( components, 'Invoking tools...' ):
-        canisters = await __.gather_async( *invokers )
+        canisters = await __.asyncf.gather_async( *invokers )
     for canister in canisters: _add_message( components, canister )
 # TODO: Move invocation elision to chat postprocessing.
 # TODO: Properly elide based on presence of invocation data.

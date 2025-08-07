@@ -107,11 +107,11 @@ class Store( _core.Store ):
         definitions = { }
         for file, result in zip( files, results ):
             match result:
-                case __.g.Error( error ):
+                case __.generics.Error( error ):
                     summary = f"Could not load prompt definition at '{file}'."
                     auxdata.notifications.enqueue_error(
                         error, summary, scribe = scribe )
-                case __.g.Value( definition ):
+                case __.generics.Value( definition ):
                     definitions[ definition.name ] = definition
         return __.types.MappingProxyType( definitions )
 
