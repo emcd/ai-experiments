@@ -94,7 +94,7 @@ class UpdatesDeduplicator(
                 "Waiting for {count} updates to complete.".format(
                     count = len( self.updates_mutexes ) ) )
             try:
-                await __.gather_async( *(
+                await __.asyncf.gather_async( *(
                     mutex.acquire( )
                     for mutex in self.updates_mutexes.values( ) ) )
             except Exception as exc:

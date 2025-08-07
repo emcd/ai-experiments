@@ -56,7 +56,7 @@ async def populate( components, layout, component_name ):
     #populators = (
     #    populate( components, layout, element_name )
     #    for element_name in entry.get( 'contains', ( ) ) )
-    #await __.gather_async( *populators )
+    #await __.asyncf.gather_async( *populators )
     for element_name in entry.get( 'contains', ( ) ):
         await populate( components, layout, element_name )
     function_name = entry.get( 'populator_function' )
