@@ -34,7 +34,7 @@ async def acquire_provider_configuration(
     directory = auxdata.distribution.provide_data_location( 'providers', name )
     # TODO: Raise error if provider data directory does not exist.
     configuration = { }
-    for configuration_ in await __.gather_async(
+    for configuration_ in await __.asyncf.gather_async(
         _acquire_configuration( auxdata, directory ),
         _acquire_configurations( auxdata, directory, 'model-families' ),
         _acquire_configurations( auxdata, directory, 'models' )
@@ -205,7 +205,7 @@ async def _acquire_configuration(
         __.text_file_presenter_from_url( file ).acquire_content( )
         for file in files )
     configuration = { }
-    for content in await __.gather_async( *acquirers ):
+    for content in await __.asyncf.gather_async( *acquirers ):
         configuration.update( loads( content ) )
     return configuration
 
@@ -219,7 +219,7 @@ async def _acquire_configurations(
     acquirers = tuple(
         _acquire_configuration( auxdata, subdirectory )
         for subdirectory in subdirectories )
-    configurations = await __.gather_async( *acquirers )
+    configurations = await __.asyncf.gather_async( *acquirers )
     configurations_ = [ ]
     for subdirectory, configuration in zip( subdirectories, configurations ):
         configuration_ = { 'name': subdirectory.name }
