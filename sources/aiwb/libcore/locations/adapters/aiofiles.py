@@ -324,7 +324,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
                 results.append( dirent_ )
             if recurse:
                 results.extend( __.chain.from_iterable(
-                    await __.gather_async( *scanners ) ) )
+                    await __.asyncf.gather_async( *scanners ) ) )
         return results
 
 

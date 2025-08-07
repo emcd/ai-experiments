@@ -162,7 +162,7 @@ class Canister(
         state: dict[ str, __.typx.Any ] = (
             dict( role = Role.from_canister( self ).value ) )
         savers = tuple( content.save( manager ) for content in self )
-        contents_identifiers = await __.gather_async( *savers )
+        contents_identifiers = await __.asyncf.gather_async( *savers )
         state[ 'contents' ] = contents_identifiers
         if ( attributes := self.attributes.__dict__ ):
             state[ 'attributes' ] = attributes
@@ -266,7 +266,7 @@ async def restore_canister( manager, canister_state ):
     restorers = tuple(
         restore_content( manager, content_identity )
         for content_identity in canister_state.get( 'contents', ( ) ) )
-    contents = list( await __.gather_async( *restorers ) )
+    contents = list( await __.asyncf.gather_async( *restorers ) )
     if 'invocation_data' not in attributes: # TEMP: Until upgrade complete.
         from json import loads
         invocation_data = None

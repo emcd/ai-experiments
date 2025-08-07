@@ -132,18 +132,18 @@ async def acquire_definitions(
 ) -> __.cabc.Mapping[ str, Definition ]:
     ''' Loads prompt definitions from stores. '''
     scribe = __.acquire_scribe( __package__ )
-    results = await __.gather_async(
+    results = await __.asyncf.gather_async(
         *(  store.acquire_definitions( auxdata )
             for store in stores.values( ) ),
         return_exceptions = True )
     definitions = { }
     for result in results:
         match result:
-            case __.g.Error( error ):
+            case __.generics.Error( error ):
                 summary = "Could not load prompt definition."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
-            case __.g.Value( definitions_ ):
+            case __.generics.Value( definitions_ ):
                 definitions.update( definitions_ )
     return __.types.MappingProxyType( definitions )
 
@@ -159,15 +159,15 @@ async def acquire_stores(
         flavors[ descriptor.get( 'flavor', 'native' ) ]
         .prepare( auxdata, descriptor )
         for descriptor in descriptors )
-    results = await __.gather_async( *preparers, return_exceptions = True )
+    results = await __.asyncf.gather_async( *preparers, return_exceptions = True )
     stores = { }
     for name, descriptor, result in zip( names, descriptors, results ):
         match result:
-            case __.g.Error( error ):
+            case __.generics.Error( error ):
                 summary = f"Could not load prompts store {name!r}."
                 auxdata.notifications.enqueue_error(
                     error, summary, details = descriptor, scribe = scribe )
-            case __.g.Value( store ):
+            case __.generics.Value( store ):
                 stores[ store.name ] = store
     return __.types.MappingProxyType( stores )
 

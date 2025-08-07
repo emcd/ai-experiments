@@ -48,7 +48,7 @@ async def prepare(
     names = ( 'invocables', 'prompts', 'providers', 'vectorstores' )
     modules = tuple(
         import_module( f".{name}", __.package_name ) for name in names )
-    attributes = await __.gather_async( *(
+    attributes = await __.asyncf.gather_async( *(
         module.prepare( auxdata_base ) for module in modules ) )
     auxdata = _state.Globals.from_base(
         auxdata_base, **dict( zip( names, attributes ) ) )
