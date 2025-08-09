@@ -69,18 +69,18 @@ async def prepare_clients(
     providers_per_client = tuple(
         providers[ descriptor.get( 'factory', name ) ]
         for name, descriptor in zip( names, descriptors ) )
-    results = await __.gather_async(
+    results = await __.asyncf.gather_async(
         *(  provider.produce_client( auxdata, descriptor )
             for provider, descriptor
             in zip( providers_per_client, descriptors ) ),
         return_exceptions = True )
     for name, descriptor, result in zip( names, descriptors, results ):
         match result:
-            case __.g.Error( error ):
+            case __.generics.Error( error ):
                 summary = f"Could not load AI provider {name!r}."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
-            case __.g.Value( client ):
+            case __.generics.Value( client ):
                 clients[ name ] = client
     return clients
 
@@ -97,15 +97,15 @@ async def prepare_providers(
     preparers = __.types.MappingProxyType(
         {   name: _registries.preparers_registry[ name ]( auxdata )
             for name in names } )
-    results = await __.gather_async(
+    results = await __.asyncf.gather_async(
         *preparers.values( ), return_exceptions = True )
     providers = { }
     for name, result in zip( preparers.keys( ), results ):
         match result:
-            case __.g.Error( error ):
+            case __.generics.Error( error ):
                 summary = f"Could not prepare AI provider {name!r}."
                 auxdata.notifications.enqueue_error(
                     error, summary, scribe = scribe )
-            case __.g.Value( provider ):
+            case __.generics.Value( provider ):
                 providers[ name ] = provider
     return providers

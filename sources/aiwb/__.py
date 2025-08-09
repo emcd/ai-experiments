@@ -66,8 +66,6 @@ from absence import Absential, absent, is_absent
 from appcore import asyncf, generics
 
 
-from . import _generics as g
-
 ClassDecorators: typx.TypeAlias = (
     cabc.Iterable[ typx.Callable[ [ type ], type ] ] )
 NominativeArgumentsDictionary: typx.TypeAlias = cabc.Mapping[ str, typx.Any ]
@@ -105,51 +103,6 @@ def exception_to_str( exception: BaseException ) -> str:
         message = str( exception ) )
 
 
-async def gather_async(
-    *operands: typx.Any,
-    return_exceptions: typx.Annotated[
-        bool,
-        typx.Doc( ''' Raw or wrapped results. Wrapped, if true. ''' )
-    ] = False,
-    error_message: str = 'Failure of async operations.',
-    ignore_nonawaitables: typx.Annotated[
-        bool,
-        typx.Doc( ''' Ignore or error on non-awaitables. Ignore, if true. ''' )
-    ] = False,
-) -> cabc.Sequence:
-    ''' Gathers results from invocables concurrently and asynchronously. '''
-    from exceptiongroup import ExceptionGroup # TODO: Python 3.11: builtin
-    if ignore_nonawaitables:
-        results = await _gather_async_permissive( operands )
-    else:
-        results = await _gather_async_strict( operands )
-    if return_exceptions: return results
-    errors = tuple( result.error for result in results if result.is_error( ) )
-    if errors: raise ExceptionGroup( error_message, errors )
-    return tuple( result.extract( ) for result in results )
-
-
-async def intercept_error_async( awaitable: cabc.Awaitable ) -> g.Result:
-    ''' Converts unwinding exceptions to error results.
-
-        Exceptions, which are not instances of :py:exc:`Exception` or one of
-        its subclasses, are allowed to propagate. In particular,
-        :py:exc:`KeyboardInterrupt` and :py:exc:`SystemExit` must be allowed
-        to propagate to be consistent with :py:class:`asyncio.TaskGroup`
-        behavior.
-
-        Helpful when working with :py:func:`asyncio.gather`, for example,
-        because exceptions can be distinguished from computed values
-        and collected together into an exception group.
-
-        In general, it is a bad idea to swallow exceptions. In this case,
-        the intent is to add them into an exception group for continued
-        propagation.
-    '''
-    try: return g.Value( await awaitable )
-    except Exception as exc: return g.Error( exc )
-
-
 async def read_files_async(
     *files: PathLike,
     deserializer: typx.Callable[ [ str ], typx.Any ] = None,
@@ -167,11 +120,11 @@ async def read_files_async(
         def extractor( stream ): return stream.read( )
         def transformer( datum ): return deserializer( datum )
     async with ctxl.AsyncExitStack( ) as exits:
-        streams = await gather_async(
+        streams = await asyncf.gather_async(
             *(  exits.enter_async_context( open_( file ) )
                 for file in files ),
             return_exceptions = return_exceptions )
-        data = await gather_async(
+        data = await asyncf.gather_async(
             *( extractor( stream ) for stream in streams ),
             return_exceptions = return_exceptions,
             ignore_nonawaitables = return_exceptions )
@@ -179,28 +132,3 @@ async def read_files_async(
     return data
 
 
-async def _gather_async_permissive(
-    operands: typx.Any
-) -> cabc.Sequence:
-    from asyncio import gather # TODO? Python 3.11: TaskGroup
-    awaitables = { }
-    for i, operand in enumerate( operands ):
-        if isinstance( operand, cabc.Awaitable ):
-            awaitables[ i ] = intercept_error_async( operand )
-    results_ = await gather( *awaitables.values( ) )
-    results = list( operands )
-    for i, result in zip( awaitables.keys( ), results_ ):
-        results[ i ] = result
-    return results
-
-
-async def _gather_async_strict(
-    operands: typx.Any
-) -> cabc.Sequence:
-    from asyncio import gather # TODO? Python 3.11: TaskGroup
-    awaitables = [ ]
-    for operand in operands:
-        if not isinstance( operand, cabc.Awaitable ):
-            raise ValueError( f"Operand {operand!r} must be awaitable." )
-        awaitables.append( intercept_error_async( operand ) )
-    return await gather( *awaitables )

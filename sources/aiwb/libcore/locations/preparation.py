@@ -40,4 +40,4 @@ async def register_defaults( ):
         species_module.register_defaults( )
         for species_module in species_modules
         if hasattr( species_module, 'register_defaults' ) )
-    await __.gather_async( *registrators )
+    await __.asyncf.gather_async( *registrators )

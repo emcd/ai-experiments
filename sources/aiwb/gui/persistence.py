@@ -105,7 +105,7 @@ async def remove_orphans( components ):
         _collect_content_ids_from_conversation( components, location )
         for location in conversations_locations )
     extant_ids = frozenset( chain.from_iterable(
-        await __.gather_async( *collectors ) ) )
+        await __.asyncf.gather_async( *collectors ) ) )
     extant_ids_prefixes = frozenset(
         identity[ : 4 ] for identity in extant_ids )
     ic( len( extant_ids_prefixes ) )
@@ -162,7 +162,7 @@ async def restore_conversation_messages( components, column_name, state ):
     restorers = tuple(
         restore_canister( manager, canister_state )
         for canister_state in canister_states )
-    canisters = await __.gather_async( *restorers )
+    canisters = await __.asyncf.gather_async( *restorers )
     # TODO: Prepare messages en masse and then swap .objects on column.
     column.clear( )
     for canister in canisters:
@@ -242,7 +242,7 @@ async def save_conversation_messages( components, column_name ):
     savers = tuple(
         canister_components.canister__.save( manager )
         for canister_components in canisters_components )
-    state = await __.gather_async( *savers )
+    state = await __.asyncf.gather_async( *savers )
     return { column_name: state }
 
 
@@ -303,10 +303,10 @@ async def upgrade_conversation( components, identity ):
     restorers = tuple(
         restore_canister( directory_manager, canister_state )
         for canister_state in state.get( 'column_conversation_history', ( ) ) )
-    canisters = await __.gather_async( *restorers )
+    canisters = await __.asyncf.gather_async( *restorers )
     savers = tuple(
         canister.save( directory_manager ) for canister in canisters )
-    history_upgrade = await __.gather_async( *savers )
+    history_upgrade = await __.asyncf.gather_async( *savers )
     state[ 'column_conversation_history' ] = history_upgrade
     async with open_( file, 'w' ) as stream:
         await stream.write( dumps( state, indent = 2 ) )
@@ -325,7 +325,7 @@ async def upgrade_conversations( components ):
         upgrade_conversation( components, descriptor[ 'identity' ] )
         for descriptor in index[ 'descriptors' ] )
     # TODO: Submit upgrades to queue to prevent fd exhaustion.
-    #await __.gather_async( *upgraders )
+    #await __.asyncf.gather_async( *upgraders )
     for upgrader in upgraders: await upgrader
 
 
