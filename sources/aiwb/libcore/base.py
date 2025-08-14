@@ -24,12 +24,8 @@
 from . import __
 
 
-class Omniexception( __.immut.Object, BaseException ):
-    ''' Base for all exceptions raised by package API. '''
-
-
-class Omnierror( Omniexception, Exception ):
-    ''' Base for error exceptions raised by package API. '''
+Omniexception = __.appcore.exceptions.Omniexception
+Omnierror = __.appcore.exceptions.Omnierror
 
 
 class SupportError( Omnierror, NotImplementedError ):

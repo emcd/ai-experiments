@@ -32,14 +32,16 @@ from .cli import (
     Cli,
     ConfigurationModifiers as   CliConfigurationModifiers,
     ExecuteServerCommand as     CliExecuteServerCommand,
-    execute_cli,
 )
 from .preparation import prepare
 from .state import Globals
 
 
-def main( ):
-    ''' Entrypoint for utility to inspect and test application core. '''
-    execute_cli( )
+def main( ) -> int:
+    """Entrypoint for utility to inspect and test application core."""
+    import argparse
+    parser = argparse.ArgumentParser( prog = 'aiwb-appcore' )
+    parser.parse_args()
+    return 0
 
 

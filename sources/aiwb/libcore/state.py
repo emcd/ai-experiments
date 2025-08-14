@@ -18,67 +18,18 @@
 #============================================================================#
 
 
-''' Immutable global state. '''
+""" Immutable global state. """
 
 
 from . import __
-from . import application as _application
-from . import distribution as _distribution
 from . import notifications as _notifications
 
 
-class DirectorySpecies( __.enum.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Possible species for locations. '''
-
-    Cache = 'cache'
-    Data = 'data'
-    State = 'state'
+DirectorySpecies = __.appcore.DirectorySpecies
 
 
-class Globals(
-    __.immut.DataclassObject
-):
-    ''' Immutable global data. Required by many library functions. '''
+class Globals( __.appcore.Globals ):
+    """Immutable global data. Required by many library functions."""
 
-    application: _application.Information
-    configuration: __.accret.Dictionary
-    directories: __.PlatformDirs
-    distribution: _distribution.Information
-    exits: __.ctxl.AsyncExitStack # TODO? Make accretive.
     notifications: _notifications.Queue
 
-    def as_dictionary( self ) -> __.cabc.Mapping[ str, __.typx.Any ]:
-        ''' Returns shallow copy of state. '''
-        from dataclasses import fields
-        return {
-            field.name: getattr( self, field.name )
-            for field in fields( self )
-            if not field.name.startswith( '_' ) }
-
-    def provide_cache_location( self, *appendages: str ) -> __.Path:
-        ''' Provides cache location from configuration. '''
-        return self.provide_location( DirectorySpecies.Cache, *appendages )
-
-    def provide_data_location( self, *appendages: str ) -> __.Path:
-        ''' Provides data location from configuration. '''
-        return self.provide_location( DirectorySpecies.Data, *appendages )
-
-    def provide_state_location( self, *appendages: str ) -> __.Path:
-        ''' Provides state location from configuration. '''
-        return self.provide_location( DirectorySpecies.State, *appendages )
-
-    def provide_location(
-        self, species: DirectorySpecies, *appendages: str
-    ) -> __.Path:
-        ''' Provides particular species of location from configuration. '''
-        species = species.value
-        base = getattr( self.directories, f"user_{species}_path" )
-        if spec := self.configuration.get( 'locations', { } ).get( species ):
-            args = {
-                f"user_{species}": base,
-                'user_home': __.Path.home( ),
-                'application_name': self.application.name,
-            }
-            base = __.Path( spec.format( **args ) )
-        if appendages: return base.joinpath( *appendages )
-        return base

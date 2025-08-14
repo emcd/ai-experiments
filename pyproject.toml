@@ -55,7 +55,6 @@ keywords = [ 'ai', 'llm', 'workbench', 'conversation' ]
 [project.scripts]
 aiwb-apiserver = 'aiwb.apiserver:main'
 aiwb-appcore = 'aiwb.appcore:main'
-aiwb-libcore = 'aiwb.libcore:main'
 [project.gui-scripts]
 aiwb = 'aiwb.gui:main'
 [project.optional-dependencies]
