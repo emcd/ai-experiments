@@ -58,6 +58,8 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 import accretive as         accret
+import appcore              as appcore
+import appcore.dictedits    as _appcore_dictedits  # noqa: F401
 import frigid as            immut
 import typing_extensions as typx
 import                      tyro

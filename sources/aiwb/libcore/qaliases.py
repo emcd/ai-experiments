@@ -34,22 +34,20 @@ from .cli import (
     InspectCommand as       CoreCliInspectCommand,
     LocationCommand as      CoreCliLocationCommand,
 )
-from .dictedits import (
-    Edit as                 DictionaryEdit,
-    Edits as                DictionaryEdits,
-    ElementsEntryEdit as    ElementsEntryDictionaryEdit,
-    SimpleEdit as           SimpleDictionaryEdit,
-)
-from .distribution import Information as DistributionInformation
-from .exceptions import *
-from .inscription import (
-    Control as InscriptionControl,
-    Modes as InscriptionModes,
-)
 from .locations.qaliases import *
 from .notifications import Queue as CoreNotificationsQueue
 from .preparation import prepare as prepare_core
 from .state import (
     DirectorySpecies as     CoreDirectorySpecies,
     Globals as              CoreGlobals,
+)
+from appcore import (
+    InscriptionControl,
+    ScribePresentations as InscriptionModes,
+)
+from appcore.dictedits import (
+    Edit as                 DictionaryEdit,
+    Edits as                DictionaryEdits,
+    ElementsEntryEdit as    ElementsEntryDictionaryEdit,
+    SimpleEdit as           SimpleDictionaryEdit,
 )

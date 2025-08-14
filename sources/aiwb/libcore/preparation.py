@@ -18,16 +18,11 @@
 #============================================================================#
 
 
-''' Preparation of the library core. '''
+""" Preparation of the library core. """
 
 
 from . import __
 from . import application as _application
-from . import configuration as _configuration
-from . import dictedits as _dictedits
-from . import distribution as _distribution
-from . import environment as _environment
-from . import inscription as _inscription
 from . import locations as _locations
 from . import notifications as _notifications
 from . import state as _state
@@ -35,57 +30,45 @@ from . import state as _state
 
 async def prepare(
     exits: __.ctxl.AsyncExitStack,
-    application: _application.Information = _application.Information( ),
-    configedits: _dictedits.Edits = ( ),
-    configfile: __.Absential[ _locations.Url ] = __.absent,
-    environment: bool = False,
-    inscription: __.Absential[ _inscription.Control ] = __.absent,
+    application: _application.Information = _application.Information(),
+    configedits: __.appcore.dictedits.Edits = (),
+    configfile: __.Absential[_locations.Url | __.Path | __.io.TextIOBase] = __.absent,
+    environment: bool | __.NominativeArgumentsDictionary = False,
+    inscription: __.Absential[ __.appcore.InscriptionControl ] = __.absent,
 ) -> _state.Globals:
-    ''' Prepares globals DTO for use with library functions.
+    """Prepares globals DTO for use with library functions."""
 
-        Also:
-        * Configures logging for library package (not application).
-        * Optionally, loads process environment from files.
-
-        Note that asynchronous preparation allows for applications to
-        concurrently initialize other entities outside of the library, even
-        though the library initialization, itself, is inherently sequential.
-    '''
-    await _locations.register_defaults( )
-    directories = application.produce_platform_directories( )
-    distribution = (
-        await _distribution.Information.prepare(
-            package = __.package_name, exits = exits ) )
-    configuration = (
-        await _configuration.acquire(
-            application_name = application.name,
-            directories = directories,
-            distribution = distribution,
-            edits = configedits,
-            file = configfile ) )
-    notifications = _notifications.Queue( )
-    auxdata = _state.Globals(
-        application = application,
-        configuration = configuration,
-        directories = directories,
-        distribution = distribution,
+    await _locations.register_defaults()
+    if not __.is_absent( configfile ) and isinstance( configfile, _locations.Url ):
+        configfile = __.Path( configfile.path )
+    base = await __.appcore.prepare(
         exits = exits,
-        notifications = notifications )
-    if environment: await _environment.update( auxdata )
-    _inscription.prepare( auxdata, control = inscription )
+        application = application,
+        configedits = configedits,
+        configfile = configfile,
+        environment = environment,
+        inscription = inscription,
+    )
+    auxdata = _state.Globals(
+        **base.as_dictionary(),
+        notifications = _notifications.Queue(),
+    )
     _inscribe_preparation_report( auxdata )
     return auxdata
 
 
-def _inscribe_preparation_report( auxdata: _state.Globals ):
+def _inscribe_preparation_report( auxdata: _state.Globals ) -> None:
     scribe = __.acquire_scribe( __.package_name )
     scribe.info( f"Application Name: {auxdata.application.name}" )
-    scribe.info( f"Execution ID: {auxdata.application.execution_id}" )
+    execution_id = getattr( auxdata.application, "execution_id", None )
+    if execution_id is not None:
+        scribe.info( f"Execution ID: {execution_id}" )
     scribe.info( "Application Cache Location: {}".format(
-        auxdata.provide_cache_location( ) ) )
+        auxdata.provide_cache_location() ) )
     scribe.info( "Application Data Location: {}".format(
-        auxdata.provide_data_location( ) ) )
+        auxdata.provide_data_location() ) )
     scribe.info( "Application State Location: {}".format(
-        auxdata.provide_state_location( ) ) )
+        auxdata.provide_state_location() ) )
     scribe.info( "Package Data Location: {}".format(
-        auxdata.distribution.provide_data_location( ) ) )
+        auxdata.distribution.provide_data_location() ) )
+
