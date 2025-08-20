@@ -25,57 +25,57 @@ from . import __
 from . import state as _state
 
 
+_inscription_default = __.appcore.InscriptionControl(
+    mode = __.appcore.ScribePresentations.Rich )
+
 async def prepare(
     exits: __.ctxl.AsyncExitStack, *,
-    application: __.ApplicationInformation = __.ApplicationInformation( ),
-    configedits: __.DictionaryEdits = ( ),
+    configedits: __.appcore.dictedits.Edits = ( ),
     configfile: __.Absential[ __.Url ] = __.absent,
     environment: bool = True,
-    inscription: __.InscriptionControl = (
-        __.InscriptionControl( mode = __.InscriptionModes.Rich ) ),
+    inscription: __.appcore.InscriptionControl = _inscription_default,
 ) -> _state.Globals:
     ''' Prepares AI-related functionality for applications. '''
-    _configure_logging( application = application, inscription = inscription )
-    # TODO: Configure metrics and traces emitters.
     auxdata_base = await __.prepare_core(
-        application = application,
         configedits = configedits,
         configfile = configfile,
         environment = environment,
         exits = exits,
         inscription = inscription )
+    # _configure_logging(
+    #     application = auxdata_base.application, inscription = inscription )
+    # TODO: Configure metrics and traces emitters.
     from importlib import import_module
     names = ( 'invocables', 'prompts', 'providers', 'vectorstores' )
     modules = tuple(
         import_module( f".{name}", __.package_name ) for name in names )
     attributes = await __.asyncf.gather_async( *(
         module.prepare( auxdata_base ) for module in modules ) )
-    auxdata = _state.Globals.from_base(
+    return _state.Globals.from_base(
         auxdata_base, **dict( zip( names, attributes ) ) )
-    return auxdata
 
 
-def _configure_logging(
-    application: __.ApplicationInformation,
-    inscription: __.InscriptionControl,
-):
-    ''' Configures standard Python logging for application. '''
-    import logging
-    from rich.console import Console
-    from rich.logging import RichHandler
-    if None is inscription.level:
-        from os import environ
-        envvar_name = (
-            "{name}_LOG_LEVEL".format( name = application.name.upper( ) ) )
-        level_name = environ.get( envvar_name, 'INFO' )
-    else: level_name = inscription.level
-    level = getattr( logging, level_name.upper( ) )
-    handler = RichHandler(
-        console = Console( stderr = True ),
-        rich_tracebacks = True,
-        show_time = False )
-    logging.basicConfig(
-        format = '%(name)s: %(message)s',
-        level = level,
-        handlers = [ handler ] )
-    logging.captureWarnings( True )
+# def _configure_logging(
+#     application: __.ApplicationInformation,
+#     inscription: __.InscriptionControl,
+# ):
+#     ''' Configures standard Python logging for application. '''
+#     import logging
+#     from rich.console import Console
+#     from rich.logging import RichHandler
+#     if None is inscription.level:
+#         from os import environ
+#         envvar_name = (
+#             "{name}_LOG_LEVEL".format( name = application.name.upper( ) ) )
+#         level_name = environ.get( envvar_name, 'INFO' )
+#     else: level_name = inscription.level
+#     level = getattr( logging, level_name.upper( ) )
+#     handler = RichHandler(
+#         console = Console( stderr = True ),
+#         rich_tracebacks = True,
+#         show_time = False )
+#     logging.basicConfig(
+#         format = '%(name)s: %(message)s',
+#         level = level,
+#         handlers = [ handler ] )
+#     logging.captureWarnings( True )

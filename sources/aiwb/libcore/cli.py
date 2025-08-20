@@ -22,58 +22,9 @@
 
 
 from . import __
-from . import application as _application
-from . import inscription as _inscription
 from . import locations as _locations
+from . import preparation as _preparation
 from . import state as _state
-
-
-# Decorate "outside" dataclasses.
-# Note: For better or worse, this is in-place mutation of types.
-__.tyro.conf.configure( __.tyro.conf.OmitArgPrefixes )(
-        _application.Information )
-
-
-class Cli(
-    metaclass = __.accret.Dataclass,
-    class_mutables = ( '__dataclass_params__', ),
-):
-    ''' Utility for inspection and tests of library core. '''
-
-    application: _application.Information
-    configfile: __.typx.Optional[ str ] = None
-    display: 'ConsoleDisplay'
-    inscription: _inscription.Control
-    command: __.typx.Union[
-        __.typx.Annotated[
-            'InspectCommand',
-            __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
-        ],
-        __.typx.Annotated[
-            'LocationCommand',
-            __.tyro.conf.subcommand( 'location', prefix_name = False ),
-        ],
-    ]
-
-    async def __call__( self ):
-        ''' Invokes command after library preparation. '''
-        nomargs = self.prepare_invocation_args( )
-        from .preparation import prepare
-        async with __.ctxl.AsyncExitStack( ) as exits:
-            auxdata = await prepare( exits = exits, **nomargs )
-            await self.command( auxdata = auxdata, display = self.display )
-
-    def prepare_invocation_args(
-        self,
-    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
-        args = dict(
-            application = self.application,
-            environment = True,
-            inscription = self.inscription,
-        )
-        if self.configfile:
-            args[ 'configfile' ] = _locations.Url.from_url( self.configfile )
-        return args
 
 
 class DisplayFormats( __.enum.Enum ): # TODO: Python 3.11: StrEnum
@@ -89,16 +40,6 @@ class DisplayStreams( __.enum.Enum ): # TODO: Python 3.11: StrEnum
 
     Stderr =    'stderr'
     Stdout =    'stdout'
-
-
-class Inspectees( __.enum.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Facet of the application to inspect. '''
-
-    Configuration =     'configuration'
-    ''' Displays application configuration. '''
-    # TODO: Directories.
-    Environment =       'environment'
-    ''' Displays application-relevant process environment. '''
 
 
 class ConsoleDisplay( __.immut.DataclassObject ):
@@ -169,7 +110,7 @@ class ConsoleDisplay( __.immut.DataclassObject ):
             case _:
                 return lambda obj: print( serializer( obj ), file = stream )
 
-    async def provide_stream( self ) -> __.io.TextIOWrapper:
+    async def provide_stream( self ) -> __.typx.TextIO:
         ''' Provides output stream for display. '''
         # TODO: async context manager for async file streams
         # TODO: return async stream - need async printers
@@ -181,6 +122,43 @@ class ConsoleDisplay( __.immut.DataclassObject ):
     async def render( self, obj: __.typx.Any ):
         ''' Renders object according to options. '''
         ( await self.provide_printer( ) )( obj )
+
+
+class CliInscriptionControl( __.immut.DataclassObject ):
+    ''' Logging configuration. '''
+
+    mode: __.appcore.ScribePresentations = (
+        __.appcore.ScribePresentations.Plain )
+    level: __.typx.Literal[
+        'debug', 'info', 'warn', 'error', 'critical'  # noqa: F821
+    ] = 'info'
+    target: str = 'stream://stderr'
+
+    def as_control( self ) -> __.appcore.InscriptionControl:
+        ''' Produces compatible inscription control. '''
+        target_ = __.urlparse( self.target )
+        target = __.sys.stderr
+        match target_.scheme:
+            case '' | 'file':
+                target = (
+                    __.appcore.InscriptionTargetDescriptor(
+                        location = target_.path ) )
+            case 'stream':
+                match target_.netloc:
+                    case 'stderr': target = __.sys.stderr
+                    case 'stdout': target = __.sys.stdout
+        return __.appcore.InscriptionControl(
+            mode = self.mode, level = self.level, target = target )
+
+
+class Inspectees( __.enum.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Facet of the application to inspect. '''
+
+    Configuration =     'configuration'
+    ''' Displays application configuration. '''
+    # TODO: Directories.
+    Environment =       'environment'
+    ''' Displays application-relevant process environment. '''
 
 
 class InspectCommand( metaclass = __.accret.Dataclass ):
@@ -205,28 +183,6 @@ class InspectCommand( metaclass = __.accret.Dataclass ):
                 await display.render( {
                     name: value for name, value in environ.items( )
                     if name.startswith( prefix ) } )
-
-
-class LocationCommand( metaclass = __.accret.Dataclass ):
-    ''' Accesses a location via URL or local filesystem path. '''
-
-    command: __.typx.Union[
-        __.typx.Annotated[
-            'LocationSurveyDirectoryCommand',
-            __.tyro.conf.subcommand( 'list-folder', prefix_name = False ),
-        ],
-        __.typx.Annotated[
-            'LocationAcquireContentCommand',
-            __.tyro.conf.subcommand( 'read', prefix_name = False ),
-        ],
-        # TODO: LocationUpdateContentCommand (write)
-    ]
-
-    async def __call__(
-        self,
-        auxdata: _state.Globals,
-        display: ConsoleDisplay,
-    ): await self.command( auxdata = auxdata, display = display )
 
 
 class LocationSurveyDirectoryCommand( metaclass = __.accret.Dataclass ):
@@ -274,16 +230,71 @@ class LocationAcquireContentCommand( metaclass = __.accret.Dataclass ):
         pass
 
 
+class LocationCommand( metaclass = __.accret.Dataclass ):
+    ''' Accesses a location via URL or local filesystem path. '''
+
+    command: __.typx.Union[
+        __.typx.Annotated[
+            LocationSurveyDirectoryCommand,
+            __.tyro.conf.subcommand( 'list-folder', prefix_name = False ),
+        ],
+        __.typx.Annotated[
+            LocationAcquireContentCommand,
+            __.tyro.conf.subcommand( 'read', prefix_name = False ),
+        ],
+        # TODO: LocationUpdateContentCommand (write)
+    ]
+
+    async def __call__(
+        self,
+        auxdata: _state.Globals,
+        display: ConsoleDisplay,
+    ): await self.command( auxdata = auxdata, display = display )
+
+
+class Cli( __.immut.DataclassObject ):
+    ''' Utility for inspection and tests of library core. '''
+
+    configfile: __.typx.Optional[ str ] = None
+    display: ConsoleDisplay
+    inscription: CliInscriptionControl
+    command: __.typx.Union[
+        __.typx.Annotated[
+            InspectCommand,
+            __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
+        ],
+        __.typx.Annotated[
+            LocationCommand,
+            __.tyro.conf.subcommand( 'location', prefix_name = False ),
+        ],
+    ]
+
+    async def __call__( self ):
+        ''' Invokes command after library preparation. '''
+        nomargs = self.prepare_invocation_args( )
+        async with __.ctxl.AsyncExitStack( ) as exits:
+            auxdata = await _preparation.prepare( exits = exits, **nomargs )
+            await self.command( auxdata = auxdata, display = self.display )
+
+    def prepare_invocation_args(
+        self,
+    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
+        inscription = self.inscription.as_control( )
+        args: __.NominativeArguments = dict(
+            environment = True, inscription = inscription )
+        if self.configfile: args[ 'configfile' ] = self.configfile
+        return args
+
+
 def execute_cli( ):
-    from asyncio import run
     config = (
         #__.tyro.conf.OmitSubcommandPrefixes,
         __.tyro.conf.EnumChoicesFromValues,
     )
+    inscription = CliInscriptionControl(
+        mode = __.appcore.ScribePresentations.Rich )
     default = Cli(
-        application = _application.Information( ),
         display = ConsoleDisplay( ),
-        inscription = _inscription.Control( mode = _inscription.Modes.Rich ),
-        command = InspectCommand( ),
-    )
-    run( __.tyro.cli( Cli, config = config, default = default )( ) )
+        inscription = inscription,
+        command = InspectCommand( ) )
+    __.asyncio.run( __.tyro.cli( Cli, config = config, default = default )( ) )

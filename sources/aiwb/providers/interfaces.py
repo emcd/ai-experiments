@@ -90,7 +90,7 @@ class Client(
         auxdata: __.CoreGlobals,
         provider: 'Provider',
         descriptor: __.cabc.Mapping[ str, __.typx.Any ],
-    ) -> __.NominativeArgumentsDictionary:
+    ) -> __.NominativeArguments:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         descriptor_ = dict( descriptor )
         # TODO: Raise error on missing name.
@@ -357,7 +357,7 @@ class ModelAttributes(
     def init_args_from_descriptor(
         selfclass,
         descriptor: __.cabc.Mapping[ str, __.typx.Any ],
-    ) -> __.NominativeArgumentsDictionary:
+    ) -> __.NominativeArguments:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         args = __.accret.Dictionary( )
         # TODO: Control descriptors to definitions.
@@ -427,7 +427,7 @@ class ConverserAttributes( ModelAttributes ):
     def init_args_from_descriptor(
         selfclass,
         descriptor: __.cabc.Mapping[ str, __.typx.Any ],
-    ) -> __.NominativeArgumentsDictionary:
+    ) -> __.NominativeArguments:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
         args = super( ).init_args_from_descriptor( descriptor )
         for arg_name in (

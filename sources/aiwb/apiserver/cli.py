@@ -26,6 +26,19 @@ from . import server as _server
 from . import state as _state
 
 
+class ExecuteServerCommand( __.ApplicationCliExecuteServerCommand ):
+    ''' Runs API server until signal. '''
+
+    async def __call__(
+        self,
+        auxdata: _state.Globals,
+        display: __.CliConsoleDisplay,
+    ):
+        scribe = __.acquire_scribe( __package__ )
+        await self.execute_until_signal(
+            auxdata = auxdata, display = display, scribe = scribe )
+
+
 class Cli( __.ApplicationCli ):
     ''' CLI for execution, inspection, and tests of API server. '''
 
@@ -36,7 +49,7 @@ class Cli( __.ApplicationCli ):
             __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
         ],
         __.typx.Annotated[
-            'ExecuteServerCommand',
+            ExecuteServerCommand,
             __.tyro.conf.subcommand( 'execute', prefix_name = False ),
         ],
     ]
@@ -57,19 +70,6 @@ class Cli( __.ApplicationCli ):
         return args
 
 
-class ExecuteServerCommand( __.ApplicationCliExecuteServerCommand ):
-    ''' Runs API server until signal. '''
-
-    async def __call__(
-        self,
-        auxdata: _state.Globals,
-        display: __.CliConsoleDisplay,
-    ):
-        scribe = __.acquire_scribe( __package__ )
-        await self.execute_until_signal(
-            auxdata = auxdata, display = display, scribe = scribe )
-
-
 def execute_cli( ):
     from asyncio import run
     config = (
@@ -77,10 +77,11 @@ def execute_cli( ):
         __.tyro.conf.EnumChoicesFromValues,
     )
     default = Cli(
-        application = __.ApplicationInformation( ),
         configuration = __.ApplicationCliConfigurationModifiers( ),
         display = __.CliConsoleDisplay( ),
-        inscription = __.InscriptionControl( mode = __.InscriptionModes.Rich ),
+        inscription = (
+            __.CliInscriptionControl(
+                mode = __.appcore.ScribePresentations.Rich ) ),
         command = ExecuteServerCommand( ),
     )
     run( __.tyro.cli( Cli, config = config, default = default )( ) )

@@ -463,15 +463,15 @@ class FilePresenter(
 
 # TODO: Python 3.12: type statement for aliases
 
-DirectoryAccessor: __.typx.TypeAlias = 'DirectoryAdapter | DirectoryCache'
-FileAccessor: __.typx.TypeAlias = 'FileAdapter | FileCache'
-GeneralAccessor: __.typx.TypeAlias = 'GeneralAdapter | GeneralCache'
-PossibleFilter: __.typx.TypeAlias = 'bytes | str | Filter'
+DirectoryAccessor: __.typx.TypeAlias = DirectoryAdapter | DirectoryCache
+FileAccessor: __.typx.TypeAlias = FileAdapter | FileCache
+GeneralAccessor: __.typx.TypeAlias = GeneralAdapter | GeneralCache
+PossibleFilter: __.typx.TypeAlias = bytes | str | Filter
 PossibleRelativeLocator: __.typx.TypeAlias = (
     __.PossiblePath | __.cabc.Iterable[ __.PossiblePath ] )
-SpecificAccessor: __.typx.TypeAlias = 'DirectoryAccessor | FileAccessor'
-SpecificAdapter: __.typx.TypeAlias = 'DirectoryAdapter | FileAdapter'
-SpecificCache: __.typx.TypeAlias = 'DirectoryCache | FileCache'
+SpecificAccessor: __.typx.TypeAlias = DirectoryAccessor | FileAccessor
+SpecificAdapter: __.typx.TypeAlias = DirectoryAdapter | FileAdapter
+SpecificCache: __.typx.TypeAlias = DirectoryCache | FileCache
 
 CreateParentsArgument: __.typx.TypeAlias = __.typx.Annotated[
     bool,

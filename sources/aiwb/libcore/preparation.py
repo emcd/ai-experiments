@@ -22,12 +22,6 @@
 
 
 from . import __
-from . import application as _application
-from . import configuration as _configuration
-from . import dictedits as _dictedits
-from . import distribution as _distribution
-from . import environment as _environment
-from . import inscription as _inscription
 from . import locations as _locations
 from . import notifications as _notifications
 from . import state as _state
@@ -35,11 +29,10 @@ from . import state as _state
 
 async def prepare(
     exits: __.ctxl.AsyncExitStack,
-    application: _application.Information = _application.Information( ),
-    configedits: _dictedits.Edits = ( ),
+    configedits: __.appcore.dictedits.Edits = ( ),
     configfile: __.Absential[ _locations.Url ] = __.absent,
     environment: bool = False,
-    inscription: __.Absential[ _inscription.Control ] = __.absent,
+    inscription: __.Absential[ __.appcore.InscriptionControl ] = __.absent,
 ) -> _state.Globals:
     ''' Prepares globals DTO for use with library functions.
 
@@ -52,35 +45,47 @@ async def prepare(
         though the library initialization, itself, is inherently sequential.
     '''
     await _locations.register_defaults( )
-    directories = application.produce_platform_directories( )
-    distribution = (
-        await _distribution.Information.prepare(
-            package = __.package_name, exits = exits ) )
-    configuration = (
-        await _configuration.acquire(
-            application_name = application.name,
-            directories = directories,
-            distribution = distribution,
-            edits = configedits,
-            file = configfile ) )
+    auxdata_base = await __.appcore.prepare(
+        configedits = configedits,
+        environment = environment,
+        exits = exits,
+        inscription = inscription )
     notifications = _notifications.Queue( )
     auxdata = _state.Globals(
-        application = application,
-        configuration = configuration,
-        directories = directories,
-        distribution = distribution,
-        exits = exits,
+        application = auxdata_base.application,
+        configuration = auxdata_base.configuration,
+        directories = auxdata_base.directories,
+        distribution = auxdata_base.distribution,
+        exits = auxdata_base.exits,
         notifications = notifications )
-    if environment: await _environment.update( auxdata )
-    _inscription.prepare( auxdata, control = inscription )
+    _prepare_scribe_icecream( inscription )
     _inscribe_preparation_report( auxdata )
     return auxdata
+
+
+def _prepare_scribe_icecream(
+    control: __.Absential[ __.appcore.InscriptionControl ]
+):
+    ''' Prepares Icecream debug printing. '''
+    if __.is_absent( control ):
+        control = __.appcore.InscriptionControl( )
+    from icecream import ic, install
+    nomargs = dict( includeContext = True, prefix = 'DEBUG    ' )
+    match control.mode:
+        case __.appcore.ScribePresentations.Null:
+            ic.configureOutput( **nomargs )
+            ic.disable( )
+        case __.appcore.ScribePresentations.Plain:
+            ic.configureOutput( **nomargs )
+        case __.appcore.ScribePresentations.Rich:
+            from rich.pretty import pretty_repr
+            ic.configureOutput( argToStringFunction = pretty_repr, **nomargs )
+    install( )
 
 
 def _inscribe_preparation_report( auxdata: _state.Globals ):
     scribe = __.acquire_scribe( __.package_name )
     scribe.info( f"Application Name: {auxdata.application.name}" )
-    scribe.info( f"Execution ID: {auxdata.application.execution_id}" )
     scribe.info( "Application Cache Location: {}".format(
         auxdata.provide_cache_location( ) ) )
     scribe.info( "Application Data Location: {}".format(

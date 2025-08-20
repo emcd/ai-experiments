@@ -26,19 +26,22 @@ from . import server as _server
 from . import state as _state
 
 
-async def prepare(
+_inscription_default = (
+    __.appcore.InscriptionControl(
+        mode = __.appcore.ScribePresentations.Rich ) )
+_server_default = _server.Control( )
+
+
+async def prepare( # noqa: PLR0913
     exits: __.ctxl.AsyncExitStack, *,
-    apiserver: _server.Control = _server.Control( ),
-    application: __.ApplicationInformation = __.ApplicationInformation( ),
-    configedits: __.DictionaryEdits = ( ),
+    apiserver: _server.Control = _server_default,
+    configedits: __.appcore.dictedits.Edits = ( ),
     configfile: __.Absential[ __.Url ] = __.absent,
     environment: bool = True,
-    inscription: __.InscriptionControl = (
-        __.InscriptionControl( mode = __.InscriptionModes.Rich ) ),
+    inscription: __.appcore.InscriptionControl = _inscription_default,
 ) -> _state.Globals:
     ''' Prepares API server state. '''
     auxdata_base = await __.prepare_application(
-        application = application,
         configedits = configedits,
         configfile = configfile,
         environment = environment,

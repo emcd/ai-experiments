@@ -33,6 +33,7 @@ import                          io
 import itertools as             itert
 import                          os
 import                          re
+import                          sys
 import                          types
 
 from asyncio import (
@@ -58,6 +59,8 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 import accretive as         accret
+import                      appcore
+import                      appcore.dictedits
 import frigid as            immut
 import typing_extensions as typx
 import                      tyro
@@ -68,7 +71,7 @@ from appcore import asyncf, generics
 
 ClassDecorators: typx.TypeAlias = (
     cabc.Iterable[ typx.Callable[ [ type ], type ] ] )
-NominativeArgumentsDictionary: typx.TypeAlias = cabc.Mapping[ str, typx.Any ]
+NominativeArguments: typx.TypeAlias = cabc.Mapping[ str, typx.Any ]
 TextComparand: typx.TypeAlias = str | re.Pattern
 TextComparands: typx.TypeAlias = cabc.Iterable[ TextComparand ]
 
@@ -130,5 +133,3 @@ async def read_files_async(
             ignore_nonawaitables = return_exceptions )
     if deserializer: return tuple( transformer( datum ) for datum in data )
     return data
-
-

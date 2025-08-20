@@ -20,7 +20,7 @@
 
 ''' Internal imports and utilities for the application core. '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F403
 
 
 from ..__ import *

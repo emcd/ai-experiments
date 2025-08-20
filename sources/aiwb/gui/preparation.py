@@ -38,21 +38,25 @@ class Manager(
     transformers: __.accret.Dictionary
 
 
+_inscription_default = (
+    __.appcore.InscriptionControl(
+        mode = __.appcore.ScribePresentations.Rich ) )
+_apiserver_default = __.ApiServerControl( )
+# _guiserver_default = _server.Control( )
+
+
 async def prepare(
     exits: __.ctxl.AsyncExitStack, *,
-    apiserver: __.ApiServerControl = __.ApiServerControl( ),
-    application: __.ApplicationInformation = __.ApplicationInformation( ),
-    configedits: __.DictionaryEdits = ( ),
+    apiserver: __.ApiServerControl = _apiserver_default,
+    configedits: __.appcore.dictedits.Edits = ( ),
     configfile: __.Absential[ __.Url ] = __.absent,
     environment: bool = True,
     guiserver: _server.Control = _server.Control,
-    inscription: __.InscriptionControl = (
-        __.InscriptionControl( mode = __.InscriptionModes.Rich ) ),
+    inscription: __.appcore.InscriptionControl = _inscription_default,
 ) -> _state.Globals:
     ''' Prepares GUI. '''
     auxdata_base = await __.prepare_apiserver(
         apiserver = apiserver,
-        application = application,
         configedits = configedits,
         configfile = configfile,
         environment = environment,
@@ -104,9 +108,9 @@ async def _prepare_favicon(
     ''' Loads favicon for browser tab. '''
     # https://github.com/holoviz/panel/blob/2bacc0ee8162b962537ca8ba71fa302ba01a57f5/panel/template/base.py#L789-L792
     # https://news.ycombinator.com/item?id=30347043
-    accessor = (
-        auxdata.distribution.provide_data_location_accessor(
-            'icons/favicon-32.png' ).as_file( ) )
+    accessor = __.location_adapter_from_url(
+        auxdata.distribution.provide_data_location(
+            'icons/favicon-32.png' ) ).as_file( )
     icon = await accessor.acquire_content( )
     from base64 import b64encode
     icon_b64 = b64encode( icon ).decode( )

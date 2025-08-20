@@ -25,28 +25,6 @@ from . import __
 from . import state as _state
 
 
-class Cli( __.CoreCli ):
-    ''' Utility for configuration, inspection, and tests of application. '''
-
-    # TODO: Add commands for prompts, providers, and vectorstores.
-    configuration: 'ConfigurationModifiers'
-
-    async def __call__( self ):
-        ''' Invokes command after application preparation. '''
-        nomargs = self.prepare_invocation_args( )
-        from .preparation import prepare
-        async with __.ctxl.AsyncExitStack( ) as exits:
-            auxdata = await prepare( exits = exits, **nomargs )
-            await self.command( auxdata = auxdata, display = self.display )
-
-    def prepare_invocation_args(
-        self,
-    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
-        args = __.CoreCli.prepare_invocation_args( self )
-        args[ 'configedits' ] = self.configuration.as_edits( )
-        return args
-
-
 class EnablementTristate( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Disable, enable, or retain the natural state? '''
 
@@ -137,11 +115,11 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
         __.tyro.conf.UseAppendAction,
     ] = ( )
 
-    def as_edits( self ) -> __.DictionaryEdits:
+    def as_edits( self ) -> __.appcore.dictedits.Edits:
         ''' Returns modifications as sequence of configuration edits. '''
         edits = [ ]
         if None is not self.maintenance:
-            edits.append( __.SimpleDictionaryEdit(
+            edits.append( __.appcore.dictedits.SimpleEdit(
                 address = ( 'maintenance-mode', ),
                 value = self.maintenance ) )
         for collection_name in (
@@ -149,7 +127,7 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
         ):
             collection = getattr( self, f"all_{collection_name}" )
             if not collection.is_retain( ):
-                edits.append( __.ElementsEntryDictionaryEdit(
+                edits.append( __.appcore.ElementsEntryEdit(
                     address = ( collection_name, ),
                     editee = ( 'enable', bool( collection ) ) ) )
             disables = frozenset(
@@ -158,16 +136,38 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
                 getattr( self, f"enable_{collection_name}" ) )
             # TODO: Raise error if intersection of sets is not empty.
             for disable in disables:
-                edits.append( __.ElementsEntryDictionaryEdit(
+                edits.append( __.appcore.ElementsEntryEdit(
                     address = ( collection_name, ),
                     identifier = ( 'name', disable ),
                     editee = ( 'enable', False ) ) )
             for enable in enables:
-                edits.append( __.ElementsEntryDictionaryEdit(
+                edits.append( __.appcore.ElementsEntryEdit(
                     address = ( collection_name, ),
                     identifier = ( 'name', enable ),
                     editee = ( 'enable', True ) ) )
         return tuple( edits )
+
+
+class Cli( __.CoreCli ):
+    ''' Utility for configuration, inspection, and tests of application. '''
+
+    # TODO: Add commands for prompts, providers, and vectorstores.
+    configuration: ConfigurationModifiers
+
+    async def __call__( self ):
+        ''' Invokes command after application preparation. '''
+        nomargs = self.prepare_invocation_args( )
+        from .preparation import prepare
+        async with __.ctxl.AsyncExitStack( ) as exits:
+            auxdata = await prepare( exits = exits, **nomargs )
+            await self.command( auxdata = auxdata, display = self.display )
+
+    def prepare_invocation_args(
+        self,
+    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
+        args = __.CoreCli.prepare_invocation_args( self )
+        args[ 'configedits' ] = self.configuration.as_edits( )
+        return args
 
 
 class ExecuteServerCommand( metaclass = __.immut.ProtocolClass ):
@@ -201,16 +201,15 @@ class ExecuteServerCommand( metaclass = __.immut.ProtocolClass ):
 
 
 def execute_cli( ):
-    from asyncio import run
     config = (
         #__.tyro.conf.OmitSubcommandPrefixes,
         __.tyro.conf.EnumChoicesFromValues,
     )
     default = Cli(
-        application = __.ApplicationInformation( ),
         configuration = ConfigurationModifiers( ),
         display = __.CliConsoleDisplay( ),
-        inscription = __.InscriptionControl( mode = __.InscriptionModes.Rich ),
-        command = __.CoreCliInspectCommand( ),
-    )
-    run( __.tyro.cli( Cli, config = config, default = default )( ) )
+        inscription = (
+            __.CliInscriptionControl(
+                mode = __.appcore.ScribePresentations.Rich ) ),
+        command = __.CoreCliInspectCommand( ) )
+    __.asyncio.run( __.tyro.cli( Cli, config = config, default = default )( ) )

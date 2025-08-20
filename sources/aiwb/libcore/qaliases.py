@@ -26,30 +26,16 @@
 # ruff: noqa: F401,F403
 
 
-from .application import Information as ApplicationInformation
 from .base import *
 from .cli import (
     Cli as                  CoreCli,
     ConsoleDisplay as       CliConsoleDisplay,
+                            CliInscriptionControl,
     InspectCommand as       CoreCliInspectCommand,
     LocationCommand as      CoreCliLocationCommand,
 )
-from .dictedits import (
-    Edit as                 DictionaryEdit,
-    Edits as                DictionaryEdits,
-    ElementsEntryEdit as    ElementsEntryDictionaryEdit,
-    SimpleEdit as           SimpleDictionaryEdit,
-)
-from .distribution import Information as DistributionInformation
 from .exceptions import *
-from .inscription import (
-    Control as InscriptionControl,
-    Modes as InscriptionModes,
-)
 from .locations.qaliases import *
 from .notifications import Queue as CoreNotificationsQueue
 from .preparation import prepare as prepare_core
-from .state import (
-    DirectorySpecies as     CoreDirectorySpecies,
-    Globals as              CoreGlobals,
-)
+from .state import Globals as CoreGlobals
