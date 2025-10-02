@@ -24,3 +24,4 @@
 from .asyncfn import *
 from .imports import *
 from .nomina import *
+from .notifications import Queue as NotificationsQueue

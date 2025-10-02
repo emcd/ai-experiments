@@ -34,6 +34,5 @@ from .cli import (
     LocationCommand as      CoreCliLocationCommand,
 )
 from .locations.qaliases import *
-from .notifications import Queue as CoreNotificationsQueue
 from .preparation import prepare as prepare_core
 from .state import Globals as CoreGlobals

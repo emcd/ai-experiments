@@ -21,7 +21,7 @@
 ''' Notifications queue and envents. '''
 
 
-from . import __
+from . import imports as __
 
 
 class _NotificationBase( __.immut.DataclassObject ):

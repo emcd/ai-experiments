@@ -24,7 +24,6 @@
 from . import __
 from . import cli
 from . import locations
-from . import notifications
 
 from .cli import (
     Cli,
@@ -34,7 +33,6 @@ from .cli import (
     execute_cli,
 )
 from .locations.qaliases import *
-from .notifications import Queue as NotificationsQueue
 from .state import Globals
 
 

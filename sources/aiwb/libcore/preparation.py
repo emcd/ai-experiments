@@ -23,7 +23,6 @@
 
 from . import __
 from . import locations as _locations
-from . import notifications as _notifications
 from . import state as _state
 
 
@@ -50,7 +49,7 @@ async def prepare(
         environment = environment,
         exits = exits,
         inscription = inscription )
-    notifications = _notifications.Queue( )
+    notifications = __.NotificationsQueue( )
     auxdata = _state.Globals(
         application = auxdata_base.application,
         configuration = auxdata_base.configuration,

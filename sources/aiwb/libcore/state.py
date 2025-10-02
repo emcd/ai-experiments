@@ -22,13 +22,12 @@
 
 
 from . import __
-from . import notifications as _notifications
 
 
 class Globals( __.appcore.Globals ):
     ''' Immutable global data. Required by many library functions. '''
 
-    notifications: _notifications.Queue
+    notifications: __.NotificationsQueue
 
     def as_dictionary( self ) -> __.cabc.Mapping[ str, __.typx.Any ]:
         ''' Returns shallow copy of state. '''
