@@ -34,7 +34,7 @@ class _NotificationBase( __.immut.DataclassObject ):
 class ApprisalNotification( _NotificationBase ):
     ''' Notification for recoverable error or similar condition. '''
 
-    exception: BaseException = None
+    exception: __.typx.Optional[ BaseException ] = None
 
 
 class ErrorNotification( _NotificationBase ):
@@ -56,28 +56,28 @@ class Queue( __.immut.DataclassObject ):
         self,
         summary: str, *,
         details: __.typx.Any = None,
-        exception: BaseException = None,
+        exception: __.typx.Optional[ BaseException ] = None,
         inscribe_trace: bool = False,
-        scribe: __.Scribe = None,
+        scribe: __.typx.Optional[ __.Scribe ] = None,
     ) -> __.typx.Self:
         ''' Enqueues apprisal notification, optionally logging it. '''
         if scribe:
             scribe_args = { }
             if exception and inscribe_trace:
                 scribe_args[ 'exc_info' ] = exception
-            scribe.warn( summary, **scribe_args )
+            scribe.warning( summary, **scribe_args )
         return self._enqueue(
             ApprisalNotification(
                 summary = summary, details = details, exception = exception ) )
 
-    def enqueue_error(
+    def enqueue_error( # noqa: PLR0913
         self,
         error: Exception,
         summary: str, *,
         append_reason: bool = True,
         details: __.typx.Any = None,
         inscribe_trace: bool = False,
-        scribe: __.Scribe = None,
+        scribe: __.typx.Optional[ __.Scribe ] = None,
     ) -> __.typx.Self:
         ''' Enqueues error notification, optionally logging it. '''
         if append_reason: summary = f"{summary} Reason: {error}"
@@ -98,7 +98,7 @@ class Queue( __.immut.DataclassObject ):
         append_reason: bool = True,
         details: __.typx.Any = None,
         inscribe_trace: bool = False,
-        scribe: __.Scribe = None
+        scribe: __.typx.Optional[ __.Scribe ] = None
     ):
         ''' Produces context manager which enqueues errors. '''
         try: yield
