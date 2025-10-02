@@ -26,3 +26,4 @@
 from platformdirs import PlatformDirs
 
 from ..__ import *
+from ..exceptions import *

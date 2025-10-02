@@ -27,6 +27,7 @@ __version__ = '1.0a202404271857'
 from . import __
 from . import appcore
 from . import controls
+from . import exceptions
 from . import invocables
 from . import libcore
 from . import messages

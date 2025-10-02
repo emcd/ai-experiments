@@ -20,7 +20,6 @@
 
 ''' Internal imports and utilities for locations interfaces. '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F403
 
 from ..__ import *
-from ..base import Omnierror, SupportError

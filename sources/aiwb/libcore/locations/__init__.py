@@ -20,8 +20,6 @@
 
 ''' Abstractions and common implementations for various kinds of locations. '''
 
-# ruff: noqa: F401,F403
-
 
 from . import __
 from . import adapters
@@ -37,5 +35,3 @@ from . import utilities
 
 from .preparation import register_defaults
 from ._api import *
-
-
