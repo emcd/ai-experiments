@@ -23,7 +23,6 @@
 
 from . import __
 from . import cli
-from . import locations
 
 from .cli import (
     Cli,
@@ -32,7 +31,6 @@ from .cli import (
     LocationCommand as CliLocationCommand,
     execute_cli,
 )
-from .locations.qaliases import *
 from .state import Globals
 
 

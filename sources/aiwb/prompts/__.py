@@ -24,8 +24,5 @@
 
 
 from ..__ import *
-from ..libcore import (
-    Globals,
-    LocationAccessImplement,
-    location_adapter_from_url,
-)
+from ..libcore import Globals
+from ..locations.qaliases import *

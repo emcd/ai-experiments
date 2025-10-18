@@ -20,8 +20,8 @@
 
 ''' Internal imports and utilities for summarization invocables. '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F403
 
 
-from ....libcore.locations.qaliases import *
+from ....locations.qaliases import *
 from ..__ import *

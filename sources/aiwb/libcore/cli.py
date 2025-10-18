@@ -22,7 +22,6 @@
 
 
 from . import __
-from . import locations as _locations
 from . import preparation as _preparation
 from . import state as _state
 
@@ -208,7 +207,7 @@ class LocationSurveyDirectoryCommand( metaclass = __.accret.Dataclass ):
         auxdata: _state.Globals,
         display: ConsoleDisplay,
     ):
-        accessor = _locations.directory_adapter_from_url( self.url )
+        accessor = __.locations.directory_adapter_from_url( self.url )
         dirents = await accessor.survey_entries(
             filters = self.filters, recurse = self.recurse )
         # TODO: Implement.
@@ -219,7 +218,7 @@ class LocationAcquireContentCommand( metaclass = __.accret.Dataclass ):
     ''' Reads content from file at given URL or filesystem path. '''
 
     # TODO: Options
-    url: _locations.Url
+    url: __.locations.Url
 
     async def __call__(
         self,

@@ -20,10 +20,10 @@
 
 ''' Internal imports and utilities for I/O invocables. '''
 
-# ruff: noqa: F401,F403,F405
+# ruff: noqa: F403,F405
 
 
-from ....libcore.locations.qaliases import *
+from ....locations.qaliases import *
 from ..__ import *
 
 

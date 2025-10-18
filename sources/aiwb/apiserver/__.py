@@ -30,5 +30,6 @@ from uvicorn import (
 )
 
 from ..__ import *
-from ..libcore.qaliases import *
 from ..appcore.qaliases import *
+from ..libcore.qaliases import *
+from ..locations.qaliases import *

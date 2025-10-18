@@ -25,3 +25,4 @@
 
 from ..__ import *
 from ..libcore.qaliases import *
+from ..locations.qaliases import *

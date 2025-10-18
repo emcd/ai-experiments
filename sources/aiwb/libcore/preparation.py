@@ -22,14 +22,13 @@
 
 
 from . import __
-from . import locations as _locations
 from . import state as _state
 
 
 async def prepare(
     exits: __.ctxl.AsyncExitStack,
     configedits: __.appcore.dictedits.Edits = ( ),
-    configfile: __.Absential[ _locations.Url ] = __.absent,
+    configfile: __.Absential[ __.Url ] = __.absent,
     environment: bool = False,
     inscription: __.Absential[ __.appcore.InscriptionControl ] = __.absent,
 ) -> _state.Globals:
@@ -43,7 +42,7 @@ async def prepare(
         concurrently initialize other entities outside of the library, even
         though the library initialization, itself, is inherently sequential.
     '''
-    await _locations.register_defaults( )
+    await __.locations.register_defaults( )
     auxdata_base = await __.appcore.prepare(
         configedits = configedits,
         environment = environment,

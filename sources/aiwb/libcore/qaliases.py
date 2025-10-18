@@ -23,7 +23,7 @@
     Useful for avoiding namespace collisions from attribute imports.
 '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F401
 
 
 from .cli import (
@@ -33,6 +33,5 @@ from .cli import (
     InspectCommand as       CoreCliInspectCommand,
     LocationCommand as      CoreCliLocationCommand,
 )
-from .locations.qaliases import *
 from .preparation import prepare as prepare_core
 from .state import Globals as CoreGlobals

@@ -25,5 +25,7 @@
 
 from platformdirs import PlatformDirs
 
+from .. import locations
 from ..__ import *
 from ..exceptions import *
+from ..locations.qaliases import *
