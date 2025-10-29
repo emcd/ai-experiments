@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "librovore": {
+      "command": "uvx",
+      "args": [ "librovore", "serve" ]
+    },
     "pyright": {
       "command": "mcp-language-server",
       "args": [
@@ -9,24 +13,6 @@
         ".",
         "--",
         "--stdio"
-      ]
-    },
-    "ruff": {
-       "command": "mcp-language-server",
-       "args": [
-         "--lsp",
-         "ruff",
-         "--workspace",
-         ".",
-         "--",
-         "server",
-         "--preview"
-      ]
-    },
-    "text-editor": {
-      "command": "uvx",
-      "args": [
-        "mcp-text-editor"
       ]
     }
   }

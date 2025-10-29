@@ -1,13 +1,6 @@
-.claude
 .env
-.gemini
 .ipynb_checkpoints/
-.mcp.json
 .tool-versions
 .*.swp
-AGENTS.md
-CLAUDE.md
-CONVENTIONS.md
-GEMINI.md
 __pycache__/
 bug-reports/
