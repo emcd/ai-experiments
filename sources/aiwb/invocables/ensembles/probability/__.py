@@ -20,7 +20,7 @@
 
 ''' Internal imports and utilities for probability invocables. '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F403
 
 
 from ..__ import *

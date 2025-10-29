@@ -119,7 +119,7 @@ class _Common( __.AdapterBase ):
             response_h = await client.head( self.implement )
             if HTTPStatus.NOT_FOUND == response_h.status_code:
                 return inode_absent
-            else: response_h.raise_for_status( )
+            response_h.raise_for_status( )
             response_o = await client.options( self.implement )
         species = __.LocationSpecies.File
         if HTTPStatus.OK != response_o.status_code:

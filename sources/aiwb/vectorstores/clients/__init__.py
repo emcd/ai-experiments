@@ -20,7 +20,6 @@
 
 ''' Vectorstore clients, including standalone in-memory databases. '''
 
-# ruff: noqa: F401
 
 
 from . import __

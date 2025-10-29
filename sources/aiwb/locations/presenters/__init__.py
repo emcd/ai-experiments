@@ -25,7 +25,6 @@
     into a different format or type by the presenter.
 '''
 
-# ruff: noqa: F401
 
 
 from . import __

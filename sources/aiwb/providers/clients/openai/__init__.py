@@ -20,7 +20,6 @@
 
 ''' Implementation of OpenAI AI provider. '''
 
-# ruff: noqa: F401
 
 
 from . import __

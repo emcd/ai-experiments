@@ -24,7 +24,6 @@
     Large Language Models. "Be liberal in what you accept, and conservative
     in what you send." RIP, Jon. '''
 
-# ruff: noqa: F401,F403
 
 
 from . import __

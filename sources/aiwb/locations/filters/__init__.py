@@ -20,7 +20,6 @@
 
 ''' Filters for directory entries. '''
 
-# ruff: noqa: F401
 
 
 from . import __

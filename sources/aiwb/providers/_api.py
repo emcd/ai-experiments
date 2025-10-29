@@ -20,7 +20,7 @@
 
 ''' Internal aggregation of providers API. '''
 
-# ruff: noqa: F401,F403
+# ruff: noqa: F403
 
 
 from .core import *

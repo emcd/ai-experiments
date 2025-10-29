@@ -20,7 +20,6 @@
 
 ''' Controls for models and prompts. '''
 
-# ruff: noqa: F401,F403
 
 
 from . import __

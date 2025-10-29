@@ -31,7 +31,7 @@ _document_autoscroller_code = '''
 if (component.value == 'scrolling')
     window.scrollTo(0, document.body.scrollHeight);'''
 def generate_document_autoscroller( components, layout, component_name ):
-    if not hasattr( components, component_name ): return
+    if not hasattr( components, component_name ): return None
     component = getattr( components, component_name )
     return dict(
         value = _document_autoscroller_code,
@@ -51,7 +51,7 @@ def generate_message_copier( components, layout, component_name ):
     #       and not the clipboard of the OS under which the Python code
     #       is running. E.g., consider the Windows Subsystem for Linux case:
     #       no X server and no direct access to Windows API.
-    if not hasattr( components, component_name ): return
+    if not hasattr( components, component_name ): return None
     component = getattr( components, component_name )
     return dict(
         value = _message_copier_code,
@@ -66,7 +66,7 @@ if (component.visible)
     }, 0);
 '''
 def generate_title_edit_focus( components, layout, component_name ):
-    if not hasattr( components, component_name ): return
+    if not hasattr( components, component_name ): return None
     component = getattr( components, component_name )
     return dict(
         value = _title_edit_focus_code,

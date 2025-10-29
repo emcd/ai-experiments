@@ -20,7 +20,6 @@
 
 ''' Support for AI use of tools. '''
 
-# ruff: noqa: F401,F403
 
 
 from . import __

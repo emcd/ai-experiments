@@ -20,7 +20,6 @@
 
 ''' API server. '''
 
-# ruff: noqa: F401,F403,F405
 
 
 from . import __

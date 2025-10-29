@@ -205,6 +205,7 @@ dummy-variable-rgx = '^_$'
 ignore = [
   'E701',     # multiple-statements-on-one-line-colon
   'PLC0415',  # import-outside-top-level
+  'SIM114',   # if-with-same-arms: violates project style (line length, trailing conditionals)
   'SIM300',   # yoda-condition: scarred by assignment expressions, I am
 ]
 select = [ # default: E4, E7, E9, F

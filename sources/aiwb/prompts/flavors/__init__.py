@@ -20,7 +20,6 @@
 
 ''' Prompt implementation flavors. '''
 
-# ruff: noqa: F401
 
 
 from . import __

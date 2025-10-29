@@ -20,7 +20,6 @@
 
 ''' Ensembles of invocables. '''
 
-# ruff: noqa: F401
 
 
 from . import __

@@ -20,7 +20,6 @@
 
 ''' Conversation message classes and utilities. '''
 
-# ruff: noqa: F401,F403
 
 
 from . import __
