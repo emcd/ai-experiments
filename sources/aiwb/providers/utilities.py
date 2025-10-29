@@ -90,7 +90,7 @@ async def cache_acquire_model_names(
     ],
 ) -> __.cabc.Sequence[ str ]:
     ''' Acquires model names with persistent caching. '''
-    # TODO? Use cache accessor from libcore.locations.
+    # TODO? Use cache accessor from locations.
     from json import dumps, loads
     from aiofiles import open as open_
     scribe = __.acquire_scribe( __package__ )

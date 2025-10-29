@@ -24,5 +24,5 @@
 
 
 from ..__ import *
-from ..libcore.qaliases import *
+from ..clicore.qaliases import *
 from ..locations.qaliases import *

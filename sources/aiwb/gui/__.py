@@ -25,8 +25,8 @@
 
 from ..__ import *
 from ..apiserver.qaliases import *
-from ..appcore.qaliases import *
-from ..libcore.qaliases import *
+from ..application.qaliases import *
+from ..clicore.qaliases import *
 from ..locations.qaliases import *
 from ..messages.qaliases import *
 from ..providers.qaliases import *

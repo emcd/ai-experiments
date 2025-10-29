@@ -15,8 +15,8 @@ The migration from `ImmutableClass` to `frigid` in the `ai-experiments` codebase
 
 ### ✅ Forward Reference Fixes
 All forward reference issues were systematically identified and fixed using AST analysis tools:
-- `sources/aiwb/libcore/cli.py` - Fixed ConsoleDisplay, InspectCommand, LocationCommand references
-- `sources/aiwb/appcore/cli.py` - Fixed ConfigurationModifiers reference
+- `sources/aiwb/clicore/cli.py` - Fixed ConsoleDisplay, InspectCommand, LocationCommand references
+- `sources/aiwb/application/cli.py` - Fixed ConfigurationModifiers reference
 - `sources/aiwb/gui/cli.py` - Fixed ExecuteServerCommand reference
 - `sources/aiwb/apiserver/cli.py` - Fixed ExecuteServerCommand reference
 - `sources/aiwb/apiserver/server.py` - Fixed Control reference
@@ -51,8 +51,8 @@ Comprehensive investigation revealed:
 ## Files Affected
 
 The following files use the broken inheritance pattern:
-- `sources/aiwb/libcore/locations/interfaces.py` - Base `FilePresenter` class
-- `sources/aiwb/libcore/locations/presenters/text.py` - Concrete `FilePresenter` class
+- `sources/aiwb/locations/interfaces.py` - Base `FilePresenter` class
+- `sources/aiwb/locations/presenters/text.py` - Concrete `FilePresenter` class
 
 ## Next Steps
 

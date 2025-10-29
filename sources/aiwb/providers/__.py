@@ -27,6 +27,6 @@ from ..__ import *
 from ..controls.qaliases import *
 from ..exceptions import *
 from ..invocables.qaliases import *
-from ..libcore.qaliases import *
+from ..clicore.qaliases import *
 from ..locations.qaliases import *
 from ..messages.qaliases import *
