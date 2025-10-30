@@ -108,7 +108,7 @@ _bokeh_button_stylesheets = '''
 .bk-btn-default:focus,.bk-btn-default:active {
     outline: 1px dotted #ccc;
 }
-'''
+'''  # noqa: E501
 
 _bokeh_font_stylesheets = '''
 :host {
@@ -363,7 +363,7 @@ label:hover > .bk-description > .bk-icon,
 .bk-icon.bk-opaque {
     opacity: 1;
 }
-'''
+'''  # noqa: E501
 
 _bokeh_menu_stylesheets = '''
 :host {
@@ -502,7 +502,8 @@ class AdaptiveTextArea( ReactiveHTML ):
             data.submission_event = true;''',
     }
 
-    _stylesheets: _ClassVar[ list ] = [ _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
+    _stylesheets: _ClassVar[ list ] = [
+        _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
 
     _template = '''
         <textarea id="textarea"
@@ -511,7 +512,7 @@ class AdaptiveTextArea( ReactiveHTML ):
             onkeydown="${script('handle_keydown')}"
             placeholder="${placeholder}"
             style="${_style_css__}; height: ${model.height}px; width: ${model.width}px;"
-        ></textarea>'''
+        ></textarea>''' # noqa: E501
 
     def __init__( self, **params ):
         super( ).__init__( **params )
@@ -544,7 +545,8 @@ class CompactSelector( ReactiveHTML ):
         '-moz-text-align-last': 'center',
     } )
 
-    _stylesheets: _ClassVar[ list ] = [ _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
+    _stylesheets: _ClassVar[ list ] = [
+        _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
 
     _template = '''
         <div class="bk-input-group">
@@ -558,7 +560,7 @@ class CompactSelector( ReactiveHTML ):
             <option value="{{option_name}}">{{option_value}}</option>
             {% endfor %}
         </select>
-        </div>'''
+        </div>''' # noqa: E501
 
     def __init__( self, **params ):
         super( ).__init__( **params )

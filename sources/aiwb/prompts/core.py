@@ -159,7 +159,8 @@ async def acquire_stores(
         flavors[ descriptor.get( 'flavor', 'native' ) ]
         .prepare( auxdata, descriptor )
         for descriptor in descriptors )
-    results = await __.asyncf.gather_async( *preparers, return_exceptions = True )
+    results = await __.asyncf.gather_async(
+        *preparers, return_exceptions = True )
     stores = { }
     for name, descriptor, result in zip( names, descriptors, results ):
         match result:

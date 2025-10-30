@@ -29,7 +29,8 @@ AttributesDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
 ModelDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
 OpenAiControls: __.typx.TypeAlias = dict[ str, __.typx.Any ]
 OpenAiMessage: __.typx.TypeAlias = dict[ str, __.typx.Any ]
-OpenAiMessageContent: __.typx.TypeAlias = str | list[ dict[ str, __.typx.Any ] ]
+OpenAiMessageContent: __.typx.TypeAlias = (
+    str | list[ dict[ str, __.typx.Any ] ] )
 
 
 class InvocationsSupportLevels( __.enum.Enum ): # TODO: Python 3.11: StrEnum
@@ -39,7 +40,9 @@ class InvocationsSupportLevels( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     Concurrent  = 'concurrent'  # Late 2023 and beyond.
 
 
-class NativeMessageRefinementActions( __.enum.Enum ): # TODO: Python 3.11: StrEnum
+class NativeMessageRefinementActions(
+    __.enum.Enum
+): # TODO: Python 3.11: StrEnum
     ''' Which action to perform on native message under refinement cursor. '''
 
     Retain      = 'retain'

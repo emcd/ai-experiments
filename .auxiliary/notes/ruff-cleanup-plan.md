@@ -269,7 +269,7 @@ These may indicate design issues and can be deferred or left as-is if they refle
 - [x] Phase 1.3: RET502/505 - Implicit/superfluous returns (3 errors fixed)
 - **Phase 1 Complete: 39 errors fixed, 131 remaining (excluding 5 SIM114)**
 - **Note:** SIM114 added to pyproject.toml ignore list
-- [ ] Phase 2.1: E501 - Line too long
+- [x] Phase 2.1: E501 - Line too long (23 errors fixed)
 - [ ] Phase 2.2: TRY003 - Raise vanilla args
 - [x] Phase 2.3: RUF012 - Mutable class defaults (9 errors fixed)
 - [ ] Phase 2.4: PERF401 - Manual list comprehension

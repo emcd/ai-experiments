@@ -25,7 +25,8 @@ from . import __
 from . import core as _core
 
 
-ModelDescriptor = __.typx.TypeVar( 'ModelDescriptor' ) # TODO? Typed dictionary.
+ModelDescriptor = __.typx.TypeVar(
+    'ModelDescriptor' ) # TODO? Typed dictionary.
 
 
 class Provider(

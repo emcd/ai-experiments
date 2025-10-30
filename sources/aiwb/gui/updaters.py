@@ -36,7 +36,8 @@ class UpdateRequest(
 
     updater: __.typx.Callable[ ..., __.typx.Any ]
     posargs: __.cabc.Sequence[ __.typx.Any ] = ( )
-    nomargs: __.cabc.Mapping[ str, __.typx.Any ] = __.types.MappingProxyType( { } )
+    nomargs: __.cabc.Mapping[ str, __.typx.Any ] = (
+        __.types.MappingProxyType( { } ) )
 
     def __hash__( self ) -> int:
         return hash( (
@@ -793,7 +794,8 @@ def _populate_prompts_selector( gui, species ):
             and not definition.attributes.get( 'conceal', False ) ) )
     selector.options = names
     selector.auxdata__ = getattr(
-        selector, 'auxdata__', __.types.SimpleNamespace( prompts_cache = { } ) )
+        selector, 'auxdata__',
+        __.types.SimpleNamespace( prompts_cache = { } ) )
 
 
 async def _update_and_save_conversation( components ):

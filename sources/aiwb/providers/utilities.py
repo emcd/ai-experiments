@@ -225,7 +225,8 @@ async def _acquire_configurations(
         configuration_ = { 'name': subdirectory.name }
         configuration_.update( configuration )
         configurations_.append( __.types.MappingProxyType( configuration_ ) )
-    return __.types.MappingProxyType( { index_name: tuple( configurations_ ) } )
+    return __.types.MappingProxyType(
+        { index_name: tuple( configurations_ ) } )
 
 
 def _copy_custom_provider_configurations(

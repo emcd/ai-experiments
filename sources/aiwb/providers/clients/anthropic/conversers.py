@@ -31,12 +31,15 @@ from . import __
 # TODO? Use typing.TypedDictionary.
 AnthropicControls: __.typx.TypeAlias = dict[ str, __.typx.Any ]
 AnthropicMessage: __.typx.TypeAlias = dict[ str, __.typx.Any ]
-AnthropicMessageContent: __.typx.TypeAlias = str | list[ dict[ str, __.typx.Any ] ]
+AnthropicMessageContent: __.typx.TypeAlias = (
+    str | list[ dict[ str, __.typx.Any ] ] )
 AttributesDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
 ModelDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
 
 
-class NativeMessageRefinementActions( __.enum.Enum ): # TODO: Python 3.11: StrEnum
+class NativeMessageRefinementActions(
+    __.enum.Enum
+): # TODO: Python 3.11: StrEnum
     ''' Which action to perform on native message under refinement cursor. '''
 
     Retain      = 'retain'

@@ -26,7 +26,8 @@ from . import __
 
 Arguments: __.typx.TypeAlias = __.types.MappingProxyType[ str, __.typx.Any ]
 #Arguments = __.typx.TypeVar( 'Arguments', bound = __.pydantic.BaseModel )
-ArgumentsModel: __.typx.TypeAlias = __.types.MappingProxyType[ str, __.typx.Any ]
+ArgumentsModel: __.typx.TypeAlias = (
+    __.types.MappingProxyType[ str, __.typx.Any ] )
 #ArgumentsModel: __.typx.TypeAlias = type[ __.pydantic.BaseModel ]
 
 
@@ -225,8 +226,8 @@ _default_ensemble_descriptors = __.types.MappingProxyType( {
         __.types.MappingProxyType( { 'name': 'io', 'enable': True } ),
     'probability':
         __.types.MappingProxyType( { 'name': 'probability', 'enable': True } ),
-    'summarization':
-        __.types.MappingProxyType( { 'name': 'summarization', 'enable': True } ),
+    'summarization': __.types.MappingProxyType(
+        { 'name': 'summarization', 'enable': True } ),
 } )
 
 

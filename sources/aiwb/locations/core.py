@@ -280,7 +280,8 @@ class Url(
 ):
     ''' Tracks URL components separately. Displays as original string. '''
 
-    # Add explicit type annotations for ParseResult fields to fix Tyro compatibility
+    # Add explicit type annotations for ParseResult fields to fix Tyro
+    # compatibility
     scheme: str
     netloc: str
     path: str
