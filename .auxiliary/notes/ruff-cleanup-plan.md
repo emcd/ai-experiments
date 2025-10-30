@@ -271,7 +271,7 @@ These may indicate design issues and can be deferred or left as-is if they refle
 - **Note:** SIM114 added to pyproject.toml ignore list
 - [ ] Phase 2.1: E501 - Line too long
 - [ ] Phase 2.2: TRY003 - Raise vanilla args
-- [ ] Phase 2.3: RUF012 - Mutable class defaults
+- [x] Phase 2.3: RUF012 - Mutable class defaults (9 errors fixed)
 - [ ] Phase 2.4: PERF401 - Manual list comprehension
 - [ ] Phase 2.5: SIM103 - Needless bool
 - [ ] Phase 2.6: TRY004 - Type check without TypeError

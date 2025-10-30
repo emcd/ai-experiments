@@ -31,6 +31,7 @@ import param
 from panel.custom import Children, ReactiveHTML
 from panel.layout import Row
 from panel.layout.base import ListLike
+from typing_extensions import ClassVar as _ClassVar
 
 from . import __
 
@@ -429,11 +430,11 @@ class AdaptiveTextArea( ReactiveHTML ):
         'resize': 'none',
     } )
 
-    _child_config = {
+    _child_config: _ClassVar[ dict ] = {
         'value': 'template',
     }
 
-    _scripts = {
+    _scripts: _ClassVar[ dict ] = {
         'init': '''
             state.debounce_timer = null;
             textarea.value = data.value || '';
@@ -501,7 +502,7 @@ class AdaptiveTextArea( ReactiveHTML ):
             data.submission_event = true;''',
     }
 
-    _stylesheets = [ _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
+    _stylesheets: _ClassVar[ list ] = [ _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
 
     _template = '''
         <textarea id="textarea"
@@ -543,7 +544,7 @@ class CompactSelector( ReactiveHTML ):
         '-moz-text-align-last': 'center',
     } )
 
-    _stylesheets = [ _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
+    _stylesheets: _ClassVar[ list ] = [ _bokeh_font_stylesheets, _bokeh_input_stylesheets ]
 
     _template = '''
         <div class="bk-input-group">
@@ -590,7 +591,7 @@ class ConversationIndicator( ReactiveHTML ):
     mouse_hover__ = param.Boolean( False )
     row__ = param.Parameter( )
 
-    _scripts = {
+    _scripts: _ClassVar[ dict ] = {
         'my_mouseenter': '''
             if (event.target && event.target.matches(':hover')) {
                 var timeout = setTimeout(
@@ -642,7 +643,7 @@ class ConversationMessage( ReactiveHTML ):
     mouse_hover__ = param.Boolean( False )
     row__ = param.Parameter( )
 
-    _scripts = {
+    _scripts: _ClassVar[ dict ] = {
         'my_mouseenter': '''
             if (event.target && event.target.matches(':hover')) {
                 var timeout = setTimeout(
@@ -679,7 +680,7 @@ class EventsInterceptor( ListLike, ReactiveHTML ):
     key_pressed = param.String( )
     objects = Children( )
 
-    _scripts = {
+    _scripts: _ClassVar[ dict ] = {
         'handle_click': '''
             data.clicked = true;
             event.stopPropagation();
@@ -728,14 +729,14 @@ class MenuObjects( ListLike, ReactiveHTML ):
 
     objects = Children( )
 
-    _stylesheets = [
+    _stylesheets: _ClassVar[ list ] = [
         _bokeh_font_stylesheets,
         _bokeh_button_stylesheets,
         _bokeh_menu_stylesheets,
         _menu_objects_stylesheets,
     ]
 
-    _scripts = {
+    _scripts: _ClassVar[ dict ] = {
         'handle_mouseleave': '''
             state.menuVisible = false;
             menu.style.display = 'none';
