@@ -22,7 +22,7 @@
 
 
 from . import __
-from ... import exceptions as _exceptions
+from . import exceptions as _exceptions
 
 
 async def roll_dice(

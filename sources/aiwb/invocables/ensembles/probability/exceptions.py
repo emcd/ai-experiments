@@ -18,16 +18,15 @@
 #============================================================================#
 
 
-''' Exception classes for invocables. '''
+''' Exception classes for probability calculations. '''
 
 
 from . import __
 
 
-class EditContention( __.Omnierror, ValueError ):
-    ''' Edit operations overlap in file. '''
+class DiceSpecificationInvalidity( __.Omnierror, ValueError ):
+    ''' Invalid dice specification format or constraints. '''
 
-    def __init__( self, operation1_line, operation2_line ):
+    def __init__( self, specification: str, issue: str ):
         super( ).__init__(
-            f"Operation at line {operation1_line} overlaps with "
-            f"operation at line {operation2_line}." )
+            f"Invalid dice specification {specification!r}: {issue}." )
