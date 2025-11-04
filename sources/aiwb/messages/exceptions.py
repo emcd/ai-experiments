@@ -18,24 +18,15 @@
 #============================================================================#
 
 
-''' Convenience fucntions for Holoviz Panel GUI. '''
+''' Exception classes for messages. '''
 
 
-from .exceptions import ComponentAttributeAbsence as _ComponentAttributeAbsence
+from . import __
 
 
-def access_text_component_value( component ) -> str:
-    ''' Returns text value from appropriate component attribute. '''
-    if hasattr( component, 'value' ): return component.value
-    if hasattr( component, 'object' ): return str( component.object )
-    raise _ComponentAttributeAbsence(
-        type( component ).__qualname__, 'text', 'access text value' )
+class MimetypeInvalidity( __.Omnierror, ValueError ):
+    ''' MIME type is unrecognized or unsupported. '''
 
-
-def assign_text_component_value( component, text: str ):
-    ''' Assigns text value to appropriate component attribute. '''
-    if hasattr( component, 'value' ): component.value = text
-    elif hasattr( component, 'object' ): component.object = text
-    else:
-        raise _ComponentAttributeAbsence(
-            type( component ).__qualname__, 'text', 'assign text value' )
+    def __init__( self, mimetype, operation ):
+        super( ).__init__(
+            f"Cannot {operation}: unrecognized MIME type {mimetype!r}." )

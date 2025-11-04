@@ -22,6 +22,7 @@
 
 
 from . import __
+from . import exceptions as _exceptions
 
 
 class DefinitionBase( metaclass = __.abc.ABCMeta ):
@@ -85,7 +86,8 @@ class Boolean( DefinitionBase ):
 
     def validate_value( self, value ):
         if not isinstance( value, bool ):
-            raise ValueError # TODO: Fill out error.
+            raise _exceptions.ControlValueMisclassification(
+                self.name, 'bool', value )
         return value
 
 
@@ -108,9 +110,11 @@ class DiscreteInterval( DefinitionBase ):
         # NOTE: Might be too strict, if GUI controls accept floating-points.
         from numbers import Rational
         if not isinstance( value, Rational ):
-            raise ValueError # TODO: Fill out error.
+            raise _exceptions.ControlValueMisclassification(
+                self.name, 'Rational', value )
         if not ( self.minimum <= value <= self.maximum ):
-            raise ValueError # TODO: Fill out error.
+            raise _exceptions.ControlValueConstraintViolation(
+                self.name, value, self.minimum, self.maximum )
         # TODO: Ensure exact placement on discrete spectrum.
         return value
 
@@ -122,7 +126,8 @@ class FlexArray( DefinitionBase ):
         def __init__( self, definition, value ):
             subvalues = value
             if definition.maximum and definition.maximum < len( subvalues ):
-                raise ValueError # TODO: Fill out error.
+                raise _exceptions.ControlArrayDimensionViolation(
+                    definition.name, len( subvalues ), definition.maximum )
             element_definition = definition.element_definition
             elements = [
                 element_definition.create_control( subvalue )
@@ -139,7 +144,8 @@ class FlexArray( DefinitionBase ):
             element_definition = definition.element_definition
             elements_count = len( elements )
             if definition.maximum and definition.maximum <= elements_count:
-                raise Exception # TODO: Fill out error.
+                raise _exceptions.ControlArrayCapacityViolation(
+                    definition.name, elements_count, definition.maximum )
             elements.append( element_definition.create_control( value ) )
             return self
 
@@ -172,7 +178,8 @@ class FlexArray( DefinitionBase ):
         self.element_definition = element_definition
         self.minimum = minimum
         if maximum and minimum > maximum:
-            raise ValueError # TODO: Fill out error.
+            raise _exceptions.ControlArrayDefinitionInvalidity(
+                name, f"minimum ({minimum}) > maximum ({maximum})" )
         self.maximum = maximum
         nomargs[ 'default' ] = [
             element_definition.create_control( value )
@@ -193,17 +200,12 @@ class FlexArray( DefinitionBase ):
         elements = value
         element_class = self.element_definition.Instance
         if not isinstance( elements, __.cabc.Sequence ):
-            raise ValueError(
-                "Array of controls expected; "
-                "received instance of '{class_name}'.".format(
-                    class_name = type( elements ).__qualname__ ) )
+            raise _exceptions.ControlValueMisclassification(
+                self.name, 'Sequence', elements )
         for element in elements:
             if not isinstance( element, element_class ):
-                raise ValueError(
-                    "Control of type '{class_name}' expected; "
-                    "received {element!r}.".format(
-                        class_name = element_class.__qualname__,
-                        element = element ) )
+                raise _exceptions.ControlElementMisclassification(
+                    self.name, element_class.__qualname__, element )
         return elements
 
 
@@ -218,13 +220,15 @@ class Options( DefinitionBase ):
 
     def __init__( self, name, options, **nomargs ):
         if not isinstance( options, __.cabc.Collection ):
-            raise ValueError # TODO: Fill out error.
+            raise _exceptions.ControlValueMisclassification(
+                name, 'Collection', options )
         self.options = options
         super( ).__init__( name, **nomargs )
 
     def validate_value( self, value ):
         if value not in self.options:
-            raise ValueError # TODO: Fill out error.
+            raise _exceptions.ControlOptionValueInvalidity(
+                self.name, value, self.options )
         return value
 
 
@@ -237,7 +241,8 @@ class Text( DefinitionBase ):
 
     def validate_value( self, value ):
         if not isinstance( value, str ):
-            raise ValueError # TODO: Fill out error.
+            raise _exceptions.ControlValueMisclassification(
+                self.name, 'str', value )
         return value
 
 
@@ -271,4 +276,4 @@ def _species_to_class( name ):
     if 'flex-array' == name: return FlexArray
     if 'options' == name: return Options
     if 'text' == name: return Text
-    raise ValueError( f"Unknown class name '{name}'." )
+    raise _exceptions.ControlSpeciesIrrecognizability( name )

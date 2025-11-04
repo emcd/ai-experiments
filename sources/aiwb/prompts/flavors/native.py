@@ -23,6 +23,10 @@
 
 from .. import core as _core
 from . import __
+from ..exceptions import (
+    PromptRenderFailure as _PromptRenderFailure,
+    PromptTemplateAbsence as _PromptTemplateAbsence,
+)
 
 
 class Definition( _core.Definition ):
@@ -63,7 +67,7 @@ class Definition( _core.Definition ):
             text = '\n\n'.join( # TODO: Configurable delimiter.
                 template.render( variables = variables, fragments = fragments )
                 for template in templates )
-            if not text: raise ValueError( 'Empty prompt rendered.' )
+            if not text: raise _PromptRenderFailure( "empty text produced" )
             return text
 
         def serialize( self ) -> dict:
@@ -153,7 +157,7 @@ def discover_file_from_stores( auxdata: __.Globals, name: str ) -> __.Path:
     for file in files:
         if not file.exists( ): continue
         return file
-    raise FileNotFoundError( f"Could not find prompt {name!r}." )
+    raise _PromptTemplateAbsence( name )
 
 
 def _deserialize_definition_data( data: str, store: 'Store' ) -> 'Definition':

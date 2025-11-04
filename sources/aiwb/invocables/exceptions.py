@@ -18,24 +18,24 @@
 #============================================================================#
 
 
-''' Convenience fucntions for Holoviz Panel GUI. '''
+''' Exception classes for invocables. '''
 
 
-from .exceptions import ComponentAttributeAbsence as _ComponentAttributeAbsence
+from . import __
 
 
-def access_text_component_value( component ) -> str:
-    ''' Returns text value from appropriate component attribute. '''
-    if hasattr( component, 'value' ): return component.value
-    if hasattr( component, 'object' ): return str( component.object )
-    raise _ComponentAttributeAbsence(
-        type( component ).__qualname__, 'text', 'access text value' )
+class DiceSpecificationInvalidity( __.Omnierror, ValueError ):
+    ''' Invalid dice specification format or constraints. '''
+
+    def __init__( self, dice_spec, reason ):
+        super( ).__init__(
+            f"Invalid dice specification '{dice_spec}': {reason}." )
 
 
-def assign_text_component_value( component, text: str ):
-    ''' Assigns text value to appropriate component attribute. '''
-    if hasattr( component, 'value' ): component.value = text
-    elif hasattr( component, 'object' ): component.object = text
-    else:
-        raise _ComponentAttributeAbsence(
-            type( component ).__qualname__, 'text', 'assign text value' )
+class EditContention( __.Omnierror, ValueError ):
+    ''' Edit operations overlap in file. '''
+
+    def __init__( self, operation1_line, operation2_line ):
+        super( ).__init__(
+            f"Operation at line {operation1_line} overlaps with "
+            f"operation at line {operation2_line}." )

@@ -22,6 +22,7 @@
 
 
 from . import __
+from .exceptions import MimetypeInvalidity as _MimetypeInvalidity
 
 
 class DirectoryManager( __.immut.DataclassObject ):
@@ -236,7 +237,7 @@ def classify_mimetype( mimetype ):
     if mimetype in ( 'application/json', 'text/markdown', 'text/plain', ):
         return 'textual'
     # TODO: aural, motion-av, pictorial
-    raise ValueError( f"Unrecognized MIME type: {mimetype}" )
+    raise _MimetypeInvalidity( mimetype, "classify content type" )
 
 
 def create_content( data, /, **descriptor ):
@@ -311,10 +312,10 @@ async def restore_content( manager, identity ):
 
 def translate_mimetype_to_filename( basename, mimetype ):
     ''' Translates MIME type to filename with appropriate extension. '''
-    # TODO: Appropriate error class.
     match mimetype:
         case 'application/json': extension = 'json'
         case 'text/markdown': extension = 'md'
         case 'text/plain': extension = 'text'
-        case _: raise ValueError( f"Unrecognized MIME type: {mimetype}" )
+        case _:
+            raise _MimetypeInvalidity( mimetype, "derive file extension" )
     return f"{basename}.{extension}"

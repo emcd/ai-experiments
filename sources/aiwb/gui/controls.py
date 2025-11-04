@@ -22,6 +22,7 @@
 
 
 from . import __
+from ..controls import exceptions as _control_exceptions
 
 
 class ComponentManager( metaclass = __.abc.ABCMeta ):
@@ -113,8 +114,8 @@ class FlexArray( ComponentManager ):
         container = self.component
         definition = array.definition
         if definition.maximum and definition.maximum < len( container ):
-            raise RuntimeError(
-                f"Too many values for flexible array {array.name} in GUI." )
+            raise _control_exceptions.ControlArrayCapacityViolation(
+                array.name, len( container ), definition.maximum )
         elements = [ ]
         for component in container:
             manager = component.auxdata__.manager

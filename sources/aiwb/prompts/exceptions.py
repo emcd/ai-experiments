@@ -18,24 +18,21 @@
 #============================================================================#
 
 
-''' Convenience fucntions for Holoviz Panel GUI. '''
+''' Exception classes for prompts. '''
 
 
-from .exceptions import ComponentAttributeAbsence as _ComponentAttributeAbsence
+from . import __
 
 
-def access_text_component_value( component ) -> str:
-    ''' Returns text value from appropriate component attribute. '''
-    if hasattr( component, 'value' ): return component.value
-    if hasattr( component, 'object' ): return str( component.object )
-    raise _ComponentAttributeAbsence(
-        type( component ).__qualname__, 'text', 'access text value' )
+class PromptRenderFailure( __.Omnierror, ValueError ):
+    ''' Prompt rendering produced invalid result. '''
+
+    def __init__( self, reason ):
+        super( ).__init__( f"Prompt rendering failed: {reason}." )
 
 
-def assign_text_component_value( component, text: str ):
-    ''' Assigns text value to appropriate component attribute. '''
-    if hasattr( component, 'value' ): component.value = text
-    elif hasattr( component, 'object' ): component.object = text
-    else:
-        raise _ComponentAttributeAbsence(
-            type( component ).__qualname__, 'text', 'assign text value' )
+class PromptTemplateAbsence( __.Omnierror, FileNotFoundError ):
+    ''' Prompt template not found. '''
+
+    def __init__( self, prompt_name ):
+        super( ).__init__( f"Could not find prompt {prompt_name!r}." )

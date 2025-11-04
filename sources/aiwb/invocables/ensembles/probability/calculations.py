@@ -22,6 +22,7 @@
 
 
 from . import __
+from ...exceptions import DiceSpecificationInvalidity as _DiceSpecificationInvalidity
 
 
 async def roll_dice(
@@ -39,13 +40,14 @@ def _roll_dice( dice ):
     regex = re.compile(
         r'''(?P<number>\d+)d(?P<sides>\d+)(?P<offset>[+\-]\d+)?''' )
     match = regex.match( dice )
-    if not match: raise ValueError( f"Invalid dice spec, '{dice}'." )
+    if not match:
+        raise _DiceSpecificationInvalidity( dice, "does not match format" )
     number = int( match.group( 'number' ) )
     sides = int( match.group( 'sides' ) )
     offset = match.group( 'offset' )
     offset = int( offset ) if offset else 0
     if number < 1 or sides < 4 or sides % 2 == 1 or number + offset < 1:
-        raise ValueError( f"Invalid dice spec, '{dice}'." )
+        raise _DiceSpecificationInvalidity( dice, "invalid constraints" )
     return sum(
         randint( 1, sides )
         for _ in range( number ) ) + offset

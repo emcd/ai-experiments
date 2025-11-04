@@ -18,24 +18,16 @@
 #============================================================================#
 
 
-''' Convenience fucntions for Holoviz Panel GUI. '''
+''' Exception classes for GUI components. '''
 
 
-from .exceptions import ComponentAttributeAbsence as _ComponentAttributeAbsence
+from . import __
 
 
-def access_text_component_value( component ) -> str:
-    ''' Returns text value from appropriate component attribute. '''
-    if hasattr( component, 'value' ): return component.value
-    if hasattr( component, 'object' ): return str( component.object )
-    raise _ComponentAttributeAbsence(
-        type( component ).__qualname__, 'text', 'access text value' )
+class ComponentAttributeAbsence( __.Omnierror, AttributeError ):
+    ''' Component missing required attribute. '''
 
-
-def assign_text_component_value( component, text: str ):
-    ''' Assigns text value to appropriate component attribute. '''
-    if hasattr( component, 'value' ): component.value = text
-    elif hasattr( component, 'object' ): component.object = text
-    else:
-        raise _ComponentAttributeAbsence(
-            type( component ).__qualname__, 'text', 'assign text value' )
+    def __init__( self, component_class, attribute_name, operation ):
+        super( ).__init__(
+            f"Cannot {operation}: component of type {component_class!r} "
+            f"has no {attribute_name!r} attribute." )
