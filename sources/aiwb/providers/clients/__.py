@@ -25,3 +25,4 @@
 
 from ..__ import *
 from .._api import *
+from ..exceptions import *

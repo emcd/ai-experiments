@@ -23,6 +23,7 @@
 
 from . import __
 from . import core as _core
+from . import exceptions as _exceptions
 
 
 ModelDescriptor = __.typx.TypeVar(
@@ -116,10 +117,8 @@ class Client(
                 in await self.survey_models( auxdata, genus = genus )
                 if name == model.name )
         except StopIteration:
-            # TODO: Raise appropriate type of error.
-            raise LookupError(
-                f"Could not access {genus.value} model {name!r} "
-                f"on provider {self.name!r}." ) from None
+            raise _exceptions.ModelInaccessibility(
+                self.name, genus, name ) from None
 
     async def access_model_default(
         self,
@@ -138,10 +137,8 @@ class Client(
                 models_by_name[ default ] for default in defaults
                 if default in models_by_name )
         except StopIteration:
-            # TODO: Raise appropriate type of error.
-            raise LookupError(
-                f"Could not access default {genus.value} model "
-                f"on provider {self.name!r}." ) from None
+            raise _exceptions.ModelInaccessibility(
+                self.name, genus ) from None
 
     @__.abc.abstractmethod
     def produce_implement( self ) -> _core.ClientImplement:

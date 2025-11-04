@@ -155,9 +155,10 @@ class InvocationsProcessor( __.InvocationsProcessor ):
         supplement = model_context.get( 'supplement', { } )
         specifics = supplement.get( 'tool_use', [ ] )
         if len( requests ) != len( specifics ):
-            raise __.InvocationFormatError(
-                "Number of invocation requests must match "
-                "number of tool calls." )
+            raise __.InvocationRequestCountMismatch(
+                expected_count = len( specifics ),
+                received_count = len( requests ),
+                invocation_type = 'tool use' )
         for i, request in enumerate( requests ):
             request.specifics.update( specifics[ i ] )
         return requests
@@ -239,8 +240,8 @@ class SerdeProcessor( __.ConverserSerdeProcessor ):
             case __.DataFormatPreferences.JSON:
                 from ....codecs.json import loads
                 return loads( data )
-        raise __.SupportError(
-            f"Cannot deserialize data from {data_format.value} format." )
+        raise __.ProviderDataFormatNoSupport(
+            data_format.value, 'deserialize' )
 
     def serialize_data( self, data: __.typx.Any ) -> str:
         data_format = self.model.attributes.format_preferences.request_data
@@ -248,8 +249,8 @@ class SerdeProcessor( __.ConverserSerdeProcessor ):
             case __.DataFormatPreferences.JSON:
                 from json import dumps
                 return dumps( data )
-        raise __.SupportError(
-            f"Cannot serialize data to {data_format.value} format." )
+        raise __.ProviderDataFormatNoSupport(
+            data_format.value, 'serialize' )
 
 
 class Tokenizer( __.ConversationTokenizer ):
@@ -372,8 +373,8 @@ def _canister_from_response_element( model, element ):
             return (
                 __.MessageRole.Invocation
                 .produce_canister( attributes = attributes ) )
-    raise AssertionError(
-        "Cannot create message canister from unknown message species." )
+    raise __.MessageRoleInvalidity(
+        element.type, "element conversion" )
 
 
 def _collect_response_as_content_v0( model, indices, event, reactors ):

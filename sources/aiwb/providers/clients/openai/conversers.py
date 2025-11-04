@@ -188,15 +188,17 @@ class InvocationsProcessor( __.InvocationsProcessor ):
         supplement = model_context.get( 'supplement', { } )
         if ( specifics := supplement.get( 'function_call' ) ):
             if 1 != len( requests ):
-                raise __.InvocationFormatError(
-                    "Can only have one invocation request "
-                    "with legacy function." )
+                raise __.InvocationRequestCountMismatch(
+                    expected_count = 1,
+                    received_count = len( requests ),
+                    invocation_type = 'legacy function' )
             requests[ 0 ].specifics.update( specifics )
         elif ( specifics := supplement.get( 'tool_calls' ) ):
             if len( requests ) != len( specifics ):
-                raise __.InvocationFormatError(
-                    "Number of invocation requests must match "
-                    "number of tool calls." )
+                raise __.InvocationRequestCountMismatch(
+                    expected_count = len( specifics ),
+                    received_count = len( requests ),
+                    invocation_type = 'tool calls' )
             for i, request in enumerate( requests ):
                 request.specifics.update( specifics[ i ] )
         return requests
@@ -333,8 +335,8 @@ class SerdeProcessor( __.ConverserSerdeProcessor ):
             case __.DataFormatPreferences.JSON:
                 from ....codecs.json import loads
                 return loads( data )
-        raise __.SupportError(
-            f"Cannot deserialize data from {data_format.value} format." )
+        raise __.ProviderDataFormatNoSupport(
+            data_format.value, 'deserialize' )
 
     def serialize_data( self, data: __.typx.Any ) -> str:
         data_format = self.model.attributes.format_preferences.request_data
@@ -342,8 +344,8 @@ class SerdeProcessor( __.ConverserSerdeProcessor ):
             case __.DataFormatPreferences.JSON:
                 from json import dumps
                 return dumps( data )
-        raise __.SupportError(
-            f"Cannot serialize data to {data_format.value} format." )
+        raise __.ProviderDataFormatNoSupport(
+            data_format.value, 'serialize' )
 
 
 class Tokenizer( __.ConversationTokenizer ):
@@ -407,8 +409,8 @@ def _canister_from_response_element( model, element ):
         return (
             __.MessageRole.Invocation
             .produce_canister( attributes = attributes ) )
-    raise AssertionError(
-        "Cannot create message canister from unknown message species." )
+    raise __.MessageRoleInvalidity(
+        role = "empty message", context = "element conversion" )
 
 
 def _collect_response_as_content_v0(
@@ -789,11 +791,11 @@ def _refine_native_function_message(
     cursor_role = cursor[ 'role' ]
     match cursor_role:
         case 'function':
-            raise AssertionError(
-                "Adjacent function results detected." )
+            raise __.MessageRefinementFailure(
+                issue_type = 'adjacent', detected_role = cursor_role )
         case 'tool':
-            raise AssertionError(
-                "Mixed function and tool call results detected." )
+            raise __.MessageRefinementFailure(
+                issue_type = 'mixed', detected_role = cursor_role )
     return NativeMessageRefinementActions.Retain
 
 
@@ -814,7 +816,8 @@ def _refine_native_message(
             return _refine_native_tool_message( model, anchor, cursor )
         case 'user':
             return _refine_native_user_message( model, anchor, cursor )
-    raise AssertionError( f"Unknown anchor role: {anchor_role!r}" )
+    raise __.MessageRoleInvalidity(
+        anchor_role, "message refinement" )
 
 
 def _refine_native_messages(
@@ -842,8 +845,8 @@ def _refine_native_tool_message(
     # TODO: Appropriate error classes.
     cursor_role = cursor[ 'role' ]
     if 'function' == cursor_role:
-        raise AssertionError(
-            "Mixed function and tool call results detected." )
+        raise __.MessageRefinementFailure(
+            issue_type = 'mixed', detected_role = cursor_role )
     return NativeMessageRefinementActions.Retain
 
 

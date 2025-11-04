@@ -24,6 +24,7 @@
 from os import stat_result as _StatResult
 
 from . import __
+from . import exceptions as _exceptions
 
 
 _module_name = __name__.replace( f"{__package__}.", '' )
@@ -524,8 +525,7 @@ def _species_from_stat( stat: _StatResult ) -> __.LocationSpecies:
     if S_ISCHR( mode ):     return __.LocationSpecies.Stream
     inode_type = mode & S_IFMT
     # TODO? Other entities: doors, etc....
-    raise __.SupportError(
-        f"Inode type {inode_type!r} not supported by {_entity_name}." )
+    raise _exceptions.InodeSpeciesNoSupport( inode_type, _entity_name )
 
 
 def _tabulate_permissions(

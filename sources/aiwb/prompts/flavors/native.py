@@ -67,7 +67,7 @@ class Definition( _core.Definition ):
             text = '\n\n'.join( # TODO: Configurable delimiter.
                 template.render( variables = variables, fragments = fragments )
                 for template in templates )
-            if not text: raise _PromptRenderFailure( "empty text produced" )
+            if not text: raise _PromptRenderFailure( issue = 'empty output' )
             return text
 
         def serialize( self ) -> dict:

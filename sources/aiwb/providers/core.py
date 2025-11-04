@@ -201,14 +201,17 @@ class InvocationRequest(
         context, # TODO: Signature.
     ) -> __.typx.Self:
         ''' Produces instance from descriptor dictionary. '''
-        from .exceptions import InvocationFormatError as Error
+        from . import exceptions as _exceptions
         if not isinstance( descriptor, __.cabc.Mapping ):
-            raise Error( "Invocation descriptor is not dictionary." )
+            raise _exceptions.InvocationFieldTypeMismatch(
+                field = 'descriptor',
+                expected_type = 'Mapping',
+                received_type = type( descriptor ).__qualname__ )
         if 'name' not in descriptor:
-            raise Error( "Invocation descriptor without name." )
+            raise _exceptions.InvocationFieldAbsence( field = 'name' )
         name = descriptor[ 'name' ]
         if name not in context.invokers:
-            raise Error( f"Invocable {name!r} is not available." )
+            raise _exceptions.InvocableInaccessibility( name = name )
         arguments = descriptor.get( 'arguments', { } )
         # TODO: Provide supplements based on specification from invocable.
         invocation = __.funct.partial(

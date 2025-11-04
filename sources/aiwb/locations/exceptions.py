@@ -57,6 +57,14 @@ class FilterSpecifierValidityError( __.Omnierror, ValueError ):
             f"Filter specifier {specifier!r} is invalid. Reason: {reason}" )
 
 
+class InodeSpeciesNoSupport( __.SupportError ):
+    ''' Inode type not supported by entity. '''
+
+    def __init__( self, inode_type, entity_name ):
+        super( ).__init__(
+            f"Inode type {inode_type!r} not supported by {entity_name}." )
+
+
 class LocationAccessorDerivationFailure( __.SupportError, AssertionError ):
     ''' Failure to derive specific location accessor. '''
 

@@ -109,8 +109,8 @@ class AnthropicClient( Client ):
         from os import environ
         api_key_name = 'ANTHROPIC_API_KEY'
         if api_key_name not in environ:
-            # TODO: Raise appropriate error.
-            raise LookupError( f"Missing {api_key_name!r}." )
+            raise __.ProviderCredentialsInavailability(
+                'anthropic', api_key_name )
 
     @classmethod
     async def from_descriptor(

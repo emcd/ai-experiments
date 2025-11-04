@@ -127,14 +127,16 @@ def invocation_requests_from_canister(
     invocables: __.accret.Namespace,
     ignore_invalid_canister: bool = False,
 ) -> _core.InvocationsRequests:
-    Error = _exceptions.InvocationFormatError
     if not hasattr( canister.attributes, 'invocation_data' ):
         if ignore_invalid_canister: return [ ]
-        raise Error( "Missing invocation data." ) # TODO: Better error.
+        raise _exceptions.InvocationFieldAbsence( field = 'invocation_data' )
     descriptors = canister.attributes.invocation_data
     if not isinstance( descriptors, __.cabc.Sequence ):
         if ignore_invalid_canister: return [ ]
-        raise Error( "Invocations requests is not sequence." )
+        raise _exceptions.InvocationFieldTypeMismatch(
+            field = 'invocation_data',
+            expected_type = 'Sequence',
+            received_type = type( descriptors ).__qualname__ )
     # TODO: Construct context at caller.
     invokers = invocables.invokers
     context = __.accret.Namespace(

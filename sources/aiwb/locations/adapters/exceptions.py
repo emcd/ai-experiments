@@ -18,25 +18,8 @@
 #============================================================================#
 
 
-''' Exception classes for prompts. '''
+''' Exception classes for location adapters. '''
 
+# ruff: noqa: F403
 
-from . import __
-
-
-class PromptRenderFailure( __.Omnierror, ValueError ):
-    ''' Prompt rendering produced invalid result. '''
-
-    def __init__( self, issue: str, details: __.Absential[ str ] = __.absent ):
-        if __.is_absent( details ):
-            super( ).__init__( f"Prompt rendering failed: {issue}." )
-        else:
-            super( ).__init__(
-                f"Prompt rendering failed: {issue} ({details})." )
-
-
-class PromptTemplateAbsence( __.Omnierror, FileNotFoundError ):
-    ''' Prompt template not found. '''
-
-    def __init__( self, prompt_name ):
-        super( ).__init__( f"Could not find prompt {prompt_name!r}." )
+from ..exceptions import *

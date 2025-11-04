@@ -111,8 +111,8 @@ class OpenAiClient( Client ):
         from os import environ
         api_key_name = 'OPENAI_API_KEY'
         if api_key_name not in environ:
-            # TODO: Raise appropriate error.
-            raise LookupError( f"Missing {api_key_name!r}." )
+            raise __.ProviderCredentialsInavailability(
+                'openai', api_key_name )
         # TODO: Warn on missing 'OPENAI_ORG_ID' and 'OPENAI_PROJECT_ID'.
 
     @classmethod
