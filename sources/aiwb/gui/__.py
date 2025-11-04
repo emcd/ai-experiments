@@ -24,6 +24,7 @@
 
 
 from ..__ import *
+from ..exceptions import *
 from ..apiserver.qaliases import *
 from ..application.qaliases import *
 from ..clicore.qaliases import *

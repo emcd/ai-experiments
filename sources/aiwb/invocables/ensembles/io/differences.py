@@ -22,7 +22,7 @@
 
 
 from . import __
-from ...exceptions import EditContention as _EditContention
+from . import exceptions as _exceptions
 
 
 class DeltaType( str, __.enum.Enum ):
@@ -120,7 +120,8 @@ def verify_operations(
     # Check for overlaps
     for i, op in enumerate( sorted_ops[ :-1 ] ):
         if assess_overlap( op, sorted_ops[ i + 1 ] ):
-            raise _EditContention( op.start, sorted_ops[ i + 1 ].start )
+            raise _exceptions.EditContention(
+                op.start, sorted_ops[ i + 1 ].start )
     return sorted_ops
 
 

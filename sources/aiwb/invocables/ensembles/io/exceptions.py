@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Exception classes for invocables. '''
+''' Exception classes for I/O operations. '''
 
 
 from . import __
@@ -27,7 +27,7 @@ from . import __
 class EditContention( __.Omnierror, ValueError ):
     ''' Edit operations overlap in file. '''
 
-    def __init__( self, operation1_line, operation2_line ):
+    def __init__( self, operation1_line: int, operation2_line: int ):
         super( ).__init__(
             f"Operation at line {operation1_line} overlaps with "
             f"operation at line {operation2_line}." )

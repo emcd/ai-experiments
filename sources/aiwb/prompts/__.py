@@ -24,5 +24,6 @@
 
 
 from ..__ import *
+from ..exceptions import *
 from ..clicore import Globals
 from ..locations.qaliases import *
