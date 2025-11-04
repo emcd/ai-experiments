@@ -44,7 +44,7 @@ def assimilate_canister_dto_from_gui( canister_components ):
     behaviors = [ ]
     for behavior in ( 'active', 'pinned' ):
         if getattr( canister_components, f"toggle_{behavior}" ).value:
-            behaviors.append( behavior )
+            behaviors.append( behavior ) # noqa: PERF401
     canister.attributes.behaviors = behaviors
     # TODO: Implement full array support.
     if canister:

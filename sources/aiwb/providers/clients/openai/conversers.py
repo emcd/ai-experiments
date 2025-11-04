@@ -216,7 +216,7 @@ def _filter_unmatched_tool_calls(
             kept = [ ]
             for call in message[ 'tool_calls' ]:
                 if call.get( 'id' ) in tool_result_ids:
-                    kept.append( call )
+                    kept.append( call ) # noqa: PERF401
             if not kept: continue
             message_filtered = dict( message )
             message_filtered[ 'tool_calls' ] = kept

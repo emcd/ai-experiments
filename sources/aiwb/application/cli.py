@@ -127,7 +127,7 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
         ):
             collection = getattr( self, f"all_{collection_name}" )
             if not collection.is_retain( ):
-                edits.append( __.appcore.ElementsEntryEdit(
+                edits.append( __.appcore.dictedits.ElementsEntryEdit(
                     address = ( collection_name, ),
                     editee = ( 'enable', bool( collection ) ) ) )
             disables = frozenset(
@@ -135,16 +135,18 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
             enables = frozenset(
                 getattr( self, f"enable_{collection_name}" ) )
             # TODO: Raise error if intersection of sets is not empty.
-            for disable in disables:
-                edits.append( __.appcore.ElementsEntryEdit(
+            edits.extend(
+                __.appcore.dictedits.ElementsEntryEdit(
                     address = ( collection_name, ),
                     identifier = ( 'name', disable ),
-                    editee = ( 'enable', False ) ) )
-            for enable in enables:
-                edits.append( __.appcore.ElementsEntryEdit(
+                    editee = ( 'enable', False ) )
+                for disable in disables )
+            edits.extend(
+                __.appcore.dictedits.ElementsEntryEdit(
                     address = ( collection_name, ),
                     identifier = ( 'name', enable ),
-                    editee = ( 'enable', True ) ) )
+                    editee = ( 'enable', True ) )
+                for enable in enables )
         return tuple( edits )
 
 

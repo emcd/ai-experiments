@@ -87,7 +87,7 @@ class SurveyDirectoryDeduplicator( __.Deduplicator ):
         our_filters = set( self.arguments.get( 'filters', [ ] ) )
         their_filters = set( arguments.get( 'filters', [ ] ) )
         if not our_filters.issubset( their_filters ): return False
-        if (    self.arguments.get( 'recurse', True )
+        if (    self.arguments.get( 'recurse', True ) # noqa: SIM103
             <   arguments.get( 'recurse', True )
         ): return False
         return True

@@ -78,7 +78,7 @@ def verify_operation( op: Operation, file_length: int ) -> bool:
     match op.opcode:
         case DeltaType.INSERT:
             if op.content is None: return False
-            if op.end is not None: return False
+            if op.end is not None: return False # noqa: SIM103
             return True
         case DeltaType.DELETE | DeltaType.REPLACE:
             if op.end is None: return False
@@ -86,7 +86,7 @@ def verify_operation( op: Operation, file_length: int ) -> bool:
             if op.end > file_length: return False
             if op.opcode == DeltaType.REPLACE and op.content is None:
                 return False
-            if op.opcode == DeltaType.DELETE and op.content is not None:
+            if op.opcode == DeltaType.DELETE and op.content is not None: # noqa: SIM103
                 return False
             return True
     return False  # Unknown opcode

@@ -81,7 +81,7 @@ def honor_inode_attributes(
 def is_textual_mimetype( mimetype: str, possible: bool = False ) -> bool:
     if possible and 'application/octet-stream' == mimetype: return True
     if mimetype.startswith( 'text/' ): return True
-    if mimetype in (
+    if mimetype in ( # noqa: SIM103
         'application/ecmascript',
         'application/graphql',
         'application/javascript',

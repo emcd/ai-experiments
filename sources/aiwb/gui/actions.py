@@ -231,7 +231,7 @@ async def _check_invocation_requests( components, message_components ) -> bool:
         case __.MessageRole.Invocation: pass
         case _: return False
     if not message_components.toggle_active.value: return False
-    if not components.checkbox_auto_functions.value: return False
+    if not components.checkbox_auto_functions.value: return False # noqa: SIM103
     return True
 
 

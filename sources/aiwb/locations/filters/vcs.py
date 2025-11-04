@@ -125,7 +125,7 @@ def _match_git_dir( path: __.Path ):
     if 'GIT_DIR' in environ:
         git_dir = __.Path( environ[ 'GIT_DIR' ] )
         if git_dir == path: return True
-    if '.git' == path.name: return True
+    if '.git' == path.name: return True # noqa: SIM103
     return False
 
 

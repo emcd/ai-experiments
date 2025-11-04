@@ -28,9 +28,9 @@ from . import state as _state
 def generate( components, layout, component_name ):
     ''' Recursively generates components from layout specification. '''
     entry = layout[ component_name ]
-    elements = [ ]
-    for element_name in entry.get( 'contains', ( ) ):
-        elements.append( generate( components, layout, element_name ) )
+    elements = [
+        generate( components, layout, element_name )
+        for element_name in entry.get( 'contains', ( ) ) ]
     if entry.get( 'virtual', False ): return None
     component_class = entry[ 'component_class' ]
     component_arguments = entry.get( 'component_arguments', { } )
