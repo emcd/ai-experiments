@@ -72,7 +72,7 @@ class Definition( _core.Definition ):
             from ...controls.core import serialize_dictionary
             return serialize_dictionary( self.controls )
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self, location, name, species, templates,
         attributes = None, fragments = None, variables = ( )
     ):

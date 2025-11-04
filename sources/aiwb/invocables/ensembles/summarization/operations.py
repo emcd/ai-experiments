@@ -174,7 +174,7 @@ async def _list_directory_as_cell( *posargs, **nomargs ):
     return [ await _list_directory( *posargs, **nomargs ) ]
 
 
-async def _operate( context, source, operators, control = None ):
+async def _operate( context, source, operators, control = None ):  # noqa: PLR0911
     # TODO: Support wildcards.
     tokens_total = 0
     tokens_max = _access_tokens_limit( context ) * 3 // 4

@@ -249,7 +249,7 @@ async def _deactivate_duplicate_invocations( components ):
         _conversations.assimilate_canister_dto_to_gui( invocation_components )
 
 
-async def _deduplicate_invocations(
+async def _deduplicate_invocations(  # noqa: PLR0915
     components
 ) -> __.cabc.Sequence[ int ]:
     ''' Deduplicates invocations and their results. '''

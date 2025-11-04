@@ -40,7 +40,7 @@ class Operation( __.immut.DataclassObject ):
     content: str | None = None
 
 
-def produce_operation_error( op: Operation, file_length: int ) -> str:
+def produce_operation_error( op: Operation, file_length: int ) -> str:  # noqa: C901, PLR0911, PLR0912
     ''' Produces error message for invalid operation. '''
     if op.start < 0: return f"Start line {op.start} is negative"
     if op.start > file_length:
@@ -72,7 +72,7 @@ def produce_operation_error( op: Operation, file_length: int ) -> str:
     return ''
 
 
-def verify_operation( op: Operation, file_length: int ) -> bool:
+def verify_operation( op: Operation, file_length: int ) -> bool:  # noqa: PLR0911
     ''' Verifies that operation is valid for given file length. '''
     if op.start < 0: return False
     if op.start > file_length: return False
@@ -181,7 +181,7 @@ async def update_content(
     }
 
 
-async def write_pieces(
+async def write_pieces(  # noqa: PLR0911
     context: __.Context, arguments: __.Arguments
 ) -> __.cabc.Mapping:
     ''' Modifies file at URL or filesystem path with partial content updates.

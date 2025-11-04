@@ -139,7 +139,7 @@ class UpdatesDeduplicator(
                     self.updates_mutexes.pop( request, None )
         scribe.debug( f"Completion of immediate update {updater}." )
 
-    async def schedule(
+    async def schedule(  # noqa: PLR0915
         self,
         updater: __.typx.Callable[ ..., __.typx.Any ],
         posargs: __.cabc.Sequence[ __.typx.Any ] = ( ),

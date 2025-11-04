@@ -57,7 +57,7 @@ async def collect_conversation( components ):
     return state
 
 
-async def inject_conversation( components, state ):
+async def inject_conversation( components, state ):  # noqa: PLR0912
     ''' Injects saved state into current conversation. '''
     from . import layouts
     from .layouts import conversation_container_names
@@ -85,7 +85,7 @@ async def inject_conversation( components, state ):
         else: continue
 
 
-async def remove_orphans( components ):
+async def remove_orphans( components ):  # noqa: PLR0915
     ''' Removes orphan messages from contents store. '''
     from itertools import chain
     from shutil import rmtree

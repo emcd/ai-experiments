@@ -427,7 +427,7 @@ async def _create_parent_directories(
         raise error_to_raise( reason = str( exc ) ) from exc
 
 
-def _derive_mimetype( species: __.LocationSpecies ) -> __.typx.Optional[ str ]:
+def _derive_mimetype( species: __.LocationSpecies ) -> __.typx.Optional[ str ]:  # noqa: PLR0911
     match species:
         case __.LocationSpecies.Blocks:     return 'inode/blockdevice'
         case __.LocationSpecies.Directory:  return 'inode/directory'
@@ -509,7 +509,7 @@ async def _probe_accessor_if_exists(
     return False
 
 
-def _species_from_stat( stat: _StatResult ) -> __.LocationSpecies:
+def _species_from_stat( stat: _StatResult ) -> __.LocationSpecies:  # noqa: PLR0911
     from stat import (
         S_IFMT,
         S_ISBLK, S_ISCHR, S_ISDIR, S_ISFIFO, S_ISLNK, S_ISREG, S_ISSOCK

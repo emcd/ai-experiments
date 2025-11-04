@@ -80,7 +80,10 @@ class Filter( __.Filter ):
                 reason = "Evaluates to empty set of matchers." )
         self.matchers = matchers
 
-    async def __call__( self, dirent: __.DirectoryEntry ) -> bool:
+    async def __call__( self, dirent: __.DirectoryEntry ) -> bool:  # noqa: C901, PLR0911, PLR0912
+        # TODO: Refactor to data-driven pattern using a dict of matcher
+        #       predicates. This would eliminate the large match statement and
+        #       reduce complexity metrics.
         path = __.Path( dirent.url.path )
         name = path.name
         isdir = dirent.is_directory( )

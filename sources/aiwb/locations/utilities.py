@@ -25,7 +25,7 @@ from . import core as _core
 from . import exceptions as _exceptions
 
 
-def honor_inode_attributes(
+def honor_inode_attributes(  # noqa: C901, PLR0912, PLR0915
     inode: _core.Inode,
     attributes: _core.InodeAttributes,
     error_to_raise: _exceptions.LocationOperateFailure,
@@ -33,6 +33,8 @@ def honor_inode_attributes(
 ) -> _core.Inode:
     ''' Honor requests for specific inode attributes. '''
     # Note: This function is too long. Not seeing a good way to break it up.
+    # TODO: Consider extracting attribute computation helpers, though
+    #       sequential dependencies (charset→mimetype) complicate extraction.
     Iattrs = _core.InodeAttributes
     aname = None
     have_content = __.absent is not content
