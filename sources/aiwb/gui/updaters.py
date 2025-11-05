@@ -31,6 +31,8 @@ from . import state as _state
 
 TOKEN_USAGE_WARNING_THRESHOLD = 0.75
 
+_NOMARGS_DEFAULT = __.types.MappingProxyType( { } )
+
 
 class UpdateRequest(
     __.immut.DataclassObject
@@ -39,8 +41,7 @@ class UpdateRequest(
 
     updater: __.typx.Callable[ ..., __.typx.Any ]
     posargs: __.cabc.Sequence[ __.typx.Any ] = ( )
-    nomargs: __.cabc.Mapping[ str, __.typx.Any ] = (
-        __.types.MappingProxyType( { } ) )
+    nomargs: __.cabc.Mapping[ str, __.typx.Any ] = _NOMARGS_DEFAULT
 
     def __hash__( self ) -> int:
         return hash( (
@@ -115,8 +116,7 @@ class UpdatesDeduplicator(
         self,
         updater: __.typx.Callable[ ..., __.typx.Any ],
         posargs: __.cabc.Sequence[ __.typx.Any ] = ( ),
-        nomargs: __.cabc.Mapping[ str, __.typx.Any ] = (
-            __.types.MappingProxyType( { } ) ),
+        nomargs: __.cabc.Mapping[ str, __.typx.Any ] = _NOMARGS_DEFAULT,
     ) -> None:
         ''' Executes update if not already in progress. '''
         scribe = __.acquire_scribe( __package__ )
@@ -146,8 +146,7 @@ class UpdatesDeduplicator(
         self,
         updater: __.typx.Callable[ ..., __.typx.Any ],
         posargs: __.cabc.Sequence[ __.typx.Any ] = ( ),
-        nomargs: __.cabc.Mapping[ str, __.typx.Any ] = (
-            __.types.MappingProxyType( { } ) ),
+        nomargs: __.cabc.Mapping[ str, __.typx.Any ] = _NOMARGS_DEFAULT,
         delay: float = 0.1,  # seconds
     ) -> None:
         ''' Schedules update on a delay if not already in progress. '''
@@ -629,7 +628,7 @@ def update_conversation_hilite( components, new_descriptor = None ):
     conversations = components.column_conversations_indicators
     old_descriptor = conversations.current_descriptor__
     if None is new_descriptor: new_descriptor = old_descriptor
-    if new_descriptor is not old_descriptor:
+    if new_descriptor is not old_descriptor:  # noqa: SIM102
         if None is not old_descriptor.indicator:
             # TODO: Cycle to a "previously seen" background color.
             old_descriptor.indicator.styles.pop( 'background', None )
@@ -710,13 +709,13 @@ async def update_invocations_prompt( components ):
     invokers = components.auxdata__.invocables.invokers
     multiselect = components.multichoice_functions
     names = [
-        name for name in invokers.keys( ) if name in associated_functions ]
+        name for name in invokers if name in associated_functions ]
     multiselect.value = [ # Preserve previous selections if possible.
         element for element in multiselect.value if element in names ]
     multiselect.options = names
     if not multiselect.value:
         multiselect.value = [
-            name for name in invokers.keys( )
+            name for name in invokers
             if associated_functions.get( name, False ) ]
     await update_invocables_selection( components )
 

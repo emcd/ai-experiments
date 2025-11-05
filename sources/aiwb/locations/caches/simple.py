@@ -26,6 +26,10 @@
     * Does not track upstream expiries (e.g., HTTP cache controls).
     * Does not track upstream MIME type or charset hints (e.g., HTTP
       'Content-Type' headers).
+
+    TODO: Refactor to avoid accessing private members (_ingest,
+          _ingest_if_absent). Consider making these protected/public or
+          using a cleaner interface pattern.
 '''
 
 
@@ -42,7 +46,7 @@ def _ensures_cache( function: __.typx.Callable ):
 
     @wraps( function )
     async def invoker( cache: '_Common', *posargs, **nomargs ):
-        await cache._ingest_if_absent( )
+        await cache._ingest_if_absent( )  # noqa: SLF001
         return await function( cache, *posargs, **nomargs )
 
     return invoker
@@ -274,7 +278,7 @@ class GeneralCache( _Common, __.GeneralCache ):
             species = ( await adapter.examine( ) ).inode.species
             reason = f"Cannot ingest entities of species {species.value!r}."
             raise Error( reason = reason )
-        await cache._ingest( )
+        await cache._ingest( )  # noqa: SLF001
 
 
 class DirectoryCache( _Common, __.DirectoryCache ):
@@ -393,7 +397,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
                 .relative_to( source_base_url.path ) )
             try:
                 entry_accessor = self.produce_entry_accessor( name )
-                await entry_accessor._ingest( )
+                await entry_accessor._ingest( )  # noqa: SLF001
             except Exception as exc:
                 raise Error( reason = str( exc ) ) from exc
 

@@ -276,8 +276,8 @@ async def restore_canister( manager, canister_state ):
                 iindex = attributes.get( 'invocation_index', -1 )
                 if -1 != iindex: invocation_data = contents.pop( iindex ).data
             case Role.Invocation:
-                if contents: invocation_data = contents.pop( 0 ).data
-                else: invocation_data = '[]'
+                invocation_data = (
+                    contents.pop( 0 ).data if contents else '[]' )
         if invocation_data:
             attributes[ 'invocation_data' ] = loads( invocation_data )
     if attributes:

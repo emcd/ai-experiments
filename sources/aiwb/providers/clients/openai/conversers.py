@@ -462,7 +462,7 @@ def _decide_exclude_message(
     model: 'Model', canister: __.MessageCanister
 ) -> bool:
     role = canister.role
-    if not model.attributes.accepts_supervisor_instructions:
+    if not model.attributes.accepts_supervisor_instructions:  # noqa: SIM102
         if __.MessageRole.Supervisor is role: return True
     return False
 
@@ -715,7 +715,7 @@ async def _process_iterative_response_v0( model, response, reactors ):
             try:
                 _process_iterative_response_element_v0(
                     model, indices, element, reactors )
-            except Exception:
+            except Exception:  # noqa: PERF203
                 for reference in indices.references.values( ):
                     reactors.deallocator( reference )
                 raise

@@ -167,16 +167,18 @@ def filters_from_specifiers(
     ''' Converts iterable of possible filters into filters. '''
     filters_ = [ ]
     for filter_ in filters:
-        if isinstance( filter_, bytes ): filter_ = filter_.decode( )
-        if isinstance( filter_, str ):
-            name, arguments = _parse_filter_specifier( filter_ )
+        filter_instance = filter_
+        if isinstance( filter_instance, bytes ):
+            filter_instance = filter_instance.decode( )
+        if isinstance( filter_instance, str ):
+            name, arguments = _parse_filter_specifier( filter_instance )
             if name in filters_registry:
-                filter_ = filters_registry[ name ]( *arguments )
+                filter_instance = filters_registry[ name ]( *arguments )
             # TODO? Collect errors into exception group.
             else: raise _exceptions.FilterAvailabilityError( name )
-        if isinstance( filter_, _interfaces.Filter ):
-            filters_.append( filter_ )
-        else: raise _exceptions.FilterClassValidityError( filter_ )
+        if isinstance( filter_instance, _interfaces.Filter ):
+            filters_.append( filter_instance )
+        else: raise _exceptions.FilterClassValidityError( filter_instance )
     return tuple( filters_ )
 
 

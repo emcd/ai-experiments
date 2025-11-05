@@ -135,7 +135,7 @@ def acquire_template( auxdata: __.Globals, identifier: str ):
     file = discover_file_from_stores(
         auxdata, f"templates/{identifier}.md.mako" )
     # TODO: Use 'module_directory' argument for caching.
-    return Template(
+    return Template( # noqa: S702
         filename = str( file ),
         error_handler = _report_template_error,
     )

@@ -79,8 +79,7 @@ class FilePresenter( __.FilePresenter ):
             __.LocationUpdateContentFailure, url = self.accessor.as_url( ) )
         content_nl = self._nativize_newlines( content )
         # Charset detection is meaningless for output.
-        if '#DETECT#' == self.charset: charset = None
-        else: charset = self.charset
+        charset = None if '#DETECT#' == self.charset else self.charset
         if not charset:
             from locale import getpreferredencoding
             charset = getpreferredencoding( )

@@ -56,5 +56,5 @@ def _roll_dice( dice ):
         raise _exceptions.DiceSpecificationInvalidity(
             dice, "invalid constraints" )
     return sum(
-        randint( 1, sides )
+        randint( 1, sides ) # noqa: S311
         for _ in range( number ) ) + offset
