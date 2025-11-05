@@ -188,7 +188,7 @@ async def prepare_ensembles( auxdata ):
     results = await __.asyncf.gather_async(
         *preparers_.values( ), return_exceptions = True )
     ensembles = __.accret.Dictionary( )
-    for name, result in zip( preparers_.keys( ), results ):
+    for name, result in zip( preparers_.keys( ), results, strict = True ):
         match result:
             case __.generics.Error( error ):
                 summary = "Could not prepare invokers ensemble {name!r}."

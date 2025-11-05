@@ -107,7 +107,7 @@ class Store( _core.Store ):
         results = await __.read_files_async(
             *files, deserializer = deserializer, return_exceptions = True )
         definitions = { }
-        for file, result in zip( files, results ):
+        for file, result in zip( files, results, strict = True ):
             match result:
                 case __.generics.Error( error ):
                     summary = f"Could not load prompt definition at '{file}'."

@@ -223,7 +223,9 @@ async def _acquire_configurations(
         for subdirectory in subdirectories )
     configurations = await __.asyncf.gather_async( *acquirers )
     configurations_ = [ ]
-    for subdirectory, configuration in zip( subdirectories, configurations ):
+    for subdirectory, configuration in zip(
+        subdirectories, configurations, strict = True
+    ):
         configuration_ = { 'name': subdirectory.name }
         configuration_.update( configuration )
         configurations_.append( __.types.MappingProxyType( configuration_ ) )

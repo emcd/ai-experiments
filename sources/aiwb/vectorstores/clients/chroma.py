@@ -64,3 +64,4 @@ class Factory( _core.Factory ):
                 embedding_function = embedder )
         # TODO: Run local server containers, where relevant.
         # TODO: Setup clients for server connections, where relevant.
+        return None  # TODO: Raise error.

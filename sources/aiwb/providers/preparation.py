@@ -52,7 +52,7 @@ async def prepare( auxdata: __.CoreGlobals ) -> __.accret.Dictionary:
     clients = await prepare_clients( auxdata, providers )
     #for client_name, client in clients.items( ):
     #    ic( client_name, await client.survey_models( auxdata ) )
-    return clients
+    return clients  # noqa: RET504
 
 
 async def prepare_clients(
@@ -68,13 +68,15 @@ async def prepare_clients(
     names = tuple( descriptor[ 'name' ] for descriptor in descriptors )
     providers_per_client = tuple(
         providers[ descriptor.get( 'factory', name ) ]
-        for name, descriptor in zip( names, descriptors ) )
+        for name, descriptor in zip( names, descriptors, strict = True ) )
     results = await __.asyncf.gather_async(
         *(  provider.produce_client( auxdata, descriptor )
             for provider, descriptor
-            in zip( providers_per_client, descriptors ) ),
+            in zip( providers_per_client, descriptors, strict = True ) ),
         return_exceptions = True )
-    for name, descriptor, result in zip( names, descriptors, results ):
+    for name, descriptor, result in zip(
+        names, descriptors, results, strict = True
+    ):
         match result:
             case __.generics.Error( error ):
                 summary = f"Could not load AI provider {name!r}."
@@ -100,7 +102,7 @@ async def prepare_providers(
     results = await __.asyncf.gather_async(
         *preparers.values( ), return_exceptions = True )
     providers = { }
-    for name, result in zip( preparers.keys( ), results ):
+    for name, result in zip( preparers.keys( ), results, strict = True ):
         match result:
             case __.generics.Error( error ):
                 summary = f"Could not prepare AI provider {name!r}."

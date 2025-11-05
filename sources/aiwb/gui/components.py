@@ -99,7 +99,8 @@ async def _prepare_icons_cache( auxdata ):
     directory = auxdata.distribution.provide_data_location( 'icons' )
     files = tuple( directory.glob( '*.svg' ) )
     icons = await __.read_files_async( *files )
-    _icons_cache.update( zip( ( file.stem for file in files ), icons ) )
+    _icons_cache.update(
+        zip( ( file.stem for file in files ), icons, strict = True ) )
 
 
 def _register_transformers( auxdata ):

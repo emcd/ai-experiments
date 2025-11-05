@@ -116,12 +116,12 @@ async def remove_orphans( components ):  # noqa: PLR0915
     ic( len( actual_ids_prefixes ) )
     orphan_ids_prefixes = actual_ids_prefixes - extant_ids_prefixes
     ic( len( orphan_ids_prefixes ) )
-    assert not orphan_ids_prefixes & extant_ids_prefixes
+    assert not orphan_ids_prefixes & extant_ids_prefixes # noqa: S101
     for id_prefix in orphan_ids_prefixes:
         location = contents_location / id_prefix
         ic( location )
         try: rmtree( location )
-        except Exception: continue
+        except Exception: continue # noqa: S112
     actual_ids = frozenset(
         location.stem
         for id_prefix in actual_ids_prefixes
@@ -132,12 +132,12 @@ async def remove_orphans( components ):  # noqa: PLR0915
     ic( len( actual_ids ) )
     orphan_ids = actual_ids - extant_ids
     ic( len( orphan_ids ) )
-    assert not orphan_ids & extant_ids
+    assert not orphan_ids & extant_ids # noqa: S101
     for identity in orphan_ids:
         location = contents_location / identity[ : 4 ] / identity
         ic( location )
         try: rmtree( location )
-        except Exception: continue
+        except Exception: continue # noqa: S112
 
 
 async def restore_conversation( components ):

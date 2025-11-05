@@ -52,7 +52,7 @@ async def prepare(
     attributes = await __.asyncf.gather_async( *(
         module.prepare( auxdata_base ) for module in modules ) )
     return _state.Globals.from_base(
-        auxdata_base, **dict( zip( names, attributes ) ) )
+        auxdata_base, **dict( zip( names, attributes, strict = True ) ) )
 
 
 # def _configure_logging(

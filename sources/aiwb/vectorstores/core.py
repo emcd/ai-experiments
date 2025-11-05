@@ -97,9 +97,11 @@ async def prepare_clients(
     results = await __.asyncf.gather_async(
         *(  factory.client_from_descriptor( auxdata, descriptor )
             for factory, descriptor
-            in zip( factories_per_client, descriptors ) ),
+            in zip( factories_per_client, descriptors, strict = True ) ),
         return_exceptions = True )
-    for name, descriptor, result in zip( names, descriptors, results ):
+    for name, descriptor, result in zip(
+        names, descriptors, results, strict = True
+    ):
         match result:
             case __.generics.Error( error ):
                 summary = f"Could not load vectorstore {name!r}."
@@ -124,7 +126,7 @@ async def prepare_factories(
     results = await __.asyncf.gather_async(
         *preparers_.values( ), return_exceptions = True )
     factories = { }
-    for name, result in zip( preparers_.keys( ), results ):
+    for name, result in zip( preparers_.keys( ), results, strict = True ):
         match result:
             case __.generics.Error( error ):
                 summary = "Could not prepare vectorstore factory {name!r}."

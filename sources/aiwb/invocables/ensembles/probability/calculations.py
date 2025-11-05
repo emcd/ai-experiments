@@ -25,6 +25,9 @@ from . import __
 from . import exceptions as _exceptions
 
 
+DICE_SIDES_MINIMUM = 4
+
+
 async def roll_dice(
     context: __.Context, arguments: __.Arguments
 ) -> __.cabc.Sequence:
@@ -47,7 +50,9 @@ def _roll_dice( dice ):
     sides = int( match.group( 'sides' ) )
     offset = match.group( 'offset' )
     offset = int( offset ) if offset else 0
-    if number < 1 or sides < 4 or sides % 2 == 1 or number + offset < 1:
+    if (    number < 1 or sides < DICE_SIDES_MINIMUM
+            or sides % 2 == 1 or number + offset < 1
+    ):
         raise _exceptions.DiceSpecificationInvalidity(
             dice, "invalid constraints" )
     return sum(

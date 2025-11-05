@@ -58,3 +58,4 @@ class Factory( _core.Factory ):
                 folder_path = str( location ),
                 embeddings = embedder,
                 index_name = arguments[ 'index' ] )
+        return None  # TODO: Raise error.

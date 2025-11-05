@@ -24,6 +24,9 @@
 from . import __
 
 
+FILE_SIZE_MAXIMUM = 40000
+
+
 async def analyze(
     context: __.Context, arguments: __.Arguments
 ) -> __.cabc.Sequence:
@@ -163,7 +166,7 @@ async def _list_directory( context, path, control = None ):
             dirent_fqname = str( dirent )
             if ignorer( dirent_fqname ): continue
             inode = dirent.stat( )
-            if 40000 < inode.st_size: continue
+            if FILE_SIZE_MAXIMUM < inode.st_size: continue
             dirents.append( dict(
                 location = dirent_fqname,
                 mime_type = from_file( dirent, mime = True ) ) )

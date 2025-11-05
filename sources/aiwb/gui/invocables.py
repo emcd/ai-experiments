@@ -46,7 +46,7 @@ async def extract_invocation_requests(
         canister = canister,
         invocables = invocables,
         ignore_invalid_canister = silent_extraction_failure )
-    return requests
+    return requests  # noqa: RET504
 
 
 async def package_invocables( components ):

@@ -29,6 +29,9 @@ from . import providers as _providers
 from . import state as _state
 
 
+TOKEN_USAGE_WARNING_THRESHOLD = 0.75
+
+
 class UpdateRequest(
     __.immut.DataclassObject
 ):
@@ -98,11 +101,11 @@ class UpdatesDeduplicator(
                 await __.asyncf.gather_async( *(
                     mutex.acquire( )
                     for mutex in self.updates_mutexes.values( ) ) )
-            except Exception as exc:
+            except Exception as exception:
                 scribe.error(
                     "Failed to cleanup pending updates. "
                     "Cause: {error}".format(
-                        error = __.exception_to_str( exc ) ) )
+                        error = __.exception_to_str( exception ) ) )
                 # TODO? Reraise error.
             finally:
                 for mutex in self.updates_mutexes.values( ):
@@ -830,7 +833,7 @@ async def _update_token_count( components ):
     tokens_usage = tokens_count / tokens_limit
     if tokens_usage >= 1:
         tokens_report = f"{tokens_report} 🚫"
-    elif tokens_usage >= 0.75:
+    elif tokens_usage >= TOKEN_USAGE_WARNING_THRESHOLD:
         tokens_report = f"{tokens_report} \N{Warning Sign}\uFE0F"
     else: tokens_report = f"{tokens_report} 👌"
     components.text_tokens_total.value = tokens_report

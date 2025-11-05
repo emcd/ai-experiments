@@ -198,7 +198,12 @@ cache_dir = '.auxiliary/caches/pytest'
 [tool.ruff]
 builtins = [ 'ic', 'ictr' ]
 cache-dir = '.auxiliary/caches/ruff'
-extend-exclude = [ 'sources/scrapy-projects', '.auxiliary/laboratory' ]
+extend-exclude = [
+  'sources/scrapy-projects',
+  '.auxiliary/laboratory',
+  '.auxiliary/previous',
+  '.auxiliary/utilities',
+]
 indent-width = 4
 line-length = 79
 [tool.ruff.lint]

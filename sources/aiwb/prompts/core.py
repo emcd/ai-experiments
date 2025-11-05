@@ -162,7 +162,9 @@ async def acquire_stores(
     results = await __.asyncf.gather_async(
         *preparers, return_exceptions = True )
     stores = { }
-    for name, descriptor, result in zip( names, descriptors, results ):
+    for name, descriptor, result in zip(
+        names, descriptors, results, strict = True
+    ):
         match result:
             case __.generics.Error( error ):
                 summary = f"Could not load prompts store {name!r}."
