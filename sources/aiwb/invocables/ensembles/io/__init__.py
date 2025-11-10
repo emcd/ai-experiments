@@ -43,7 +43,7 @@ async def prepare(
 ) -> 'Ensemble':
     ''' Installs dependencies and returns ensemble. '''
     # TODO: Install dependencies: github, etc....
-    return Ensemble( name = _name )
+    return Ensemble( name = _name )  # pyright: ignore[reportAbstractUsage]
 
 
 __.preparers[ _name ] = prepare
