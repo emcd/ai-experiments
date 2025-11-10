@@ -73,6 +73,50 @@ The match statement in the `loads` function (around line 41) only handles 4 spec
 - Add `case _: pass` as the last case in the match statement
 - This makes the match exhaustive without changing behavior
 
+### aiwb.vectorstores - Multiple Complex Type Issues
+**Error Types**: `reportUnknownVariableType`, `reportUnknownMemberType`, `reportUnknownParameterType`, `reportMatchNotExhaustive`
+
+**Issues**:
+1. Abstract method `Factory.client_from_descriptor` missing return type (requires understanding return type pattern)
+2. Module-level `preparers` Dictionary has Unknown type arguments
+3. Lists and tuples with Unknown element types due to type inference limitations
+4. Non-exhaustive match statements for GenericResult (would require adding `case _: pass`)
+5. Container types with Unknown type arguments that propagate through function returns
+
+**Reason for Deferral**:
+- Most errors stem from incomplete type information in container types and generic results
+- Would require extensive TypeVar usage or more precise type annotations throughout
+- Match statement exhaustiveness requires code modifications beyond type annotations
+- The `preparers` dictionary would need proper type arguments but contains heterogeneous values
+
+**Potential Solution**:
+- Add proper return type to abstract method (possibly a generic result type)
+- Add type arguments to module-level `preparers` dictionary
+- Consider using TypedDict or more specific container types
+- Add `case _: pass` to match statements
+
+### aiwb.application - Complex Class Hierarchy and kwargs Issues
+**Error Types**: `reportUnknownParameterType`, `reportUnknownVariableType`, `reportIndexIssue`, `reportArgumentType`
+
+**Issues**:
+1. Signal handler parameter types require importing from signal module
+2. Multiple issues with abstract class instantiation
+3. Container types with Unknown type arguments
+4. Complex kwargs unpacking in state.py (similar to apiserver.state)
+5. Mapping vs dict type compatibility issues
+
+**Reason for Deferral**:
+- Signal handler would require importing signal types (Signals enum or int)
+- Abstract class instantiation errors suggest design issues beyond type annotations
+- State class has same complex kwargs unpacking issues as apiserver
+- Many errors cascade from upstream type inference issues
+
+**Potential Solution**:
+- Add signal module imports for proper signal handler typing
+- Review abstract class usage and ensure proper implementation
+- Fix kwargs unpacking with explicit parameter passing or TypedDict
+- Add type arguments to container types
+
 ---
 
 ## Common Patterns Requiring Complex Fixes

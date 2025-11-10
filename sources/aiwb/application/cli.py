@@ -180,7 +180,7 @@ class ExecuteServerCommand( metaclass = __.immut.ProtocolClass ):
         self,
         auxdata: _state.Globals,
         display: __.CliConsoleDisplay,
-    ): raise NotImplementedError
+    ) -> None: raise NotImplementedError
 
     async def execute_until_signal(
         self,

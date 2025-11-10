@@ -76,15 +76,15 @@ def descriptors_from_configuration(
     return tuple( descriptors )
 
 
-async def prepare( auxdata: __.Globals ) -> __.accret.Dictionary:
+async def prepare( auxdata: __.Globals ) -> __.accret.Dictionary[ str, dict[ str, __.typx.Any ] ]:
     ''' Prepares clients from configuration and returns futures to them. '''
     factories = await prepare_factories( auxdata )
     return await prepare_clients( auxdata, factories )
 
 
 async def prepare_clients(
-    auxdata: __.Globals, factories: __.accret.Dictionary
-):
+    auxdata: __.Globals, factories: __.cabc.Mapping[ str, Factory ]
+) -> __.accret.Dictionary[ str, dict[ str, __.typx.Any ] ]:
     ''' Prepares clients from configuration. '''
     # TODO: Return futures for background loading.
     #       https://docs.python.org/3/library/asyncio-future.html#asyncio.Future

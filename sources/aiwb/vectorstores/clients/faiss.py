@@ -25,7 +25,7 @@ from .. import core as _core
 from . import __
 
 
-async def prepare( auxdata: __.Globals ):
+async def prepare( auxdata: __.Globals ) -> _core.Factory:
     ''' Installs dependencies and returns factory. '''
     # TODO: Install dependencies in isolated environment, if necessary.
     return Factory( )
