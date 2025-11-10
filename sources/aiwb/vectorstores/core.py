@@ -89,7 +89,7 @@ async def prepare_clients(
     # TODO: Return futures for background loading.
     #       https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
     scribe = __.acquire_scribe( __package__ )
-    clients = __.accret.Dictionary( )
+    clients: __.accret.Dictionary[ str, dict[ str, __.typx.Any ] ] = __.accret.Dictionary( )
     descriptors = descriptors_from_configuration( auxdata )
     names = tuple( descriptor[ 'name' ] for descriptor in descriptors )
     factories_per_client = tuple(
@@ -102,7 +102,7 @@ async def prepare_clients(
     for name, descriptor, result in zip(
         names, descriptors, results, strict = True
     ):
-        match result:
+        match result:  # pyright: ignore[reportMatchNotExhaustive]
             case __.generics.Error( error ):
                 summary = f"Could not load vectorstore {name!r}."
                 auxdata.notifications.enqueue_error(
@@ -125,9 +125,9 @@ async def prepare_factories(
         { name: preparers[ name ]( auxdata ) for name in names } )
     results = await __.asyncf.gather_async(
         *preparers_.values( ), return_exceptions = True )
-    factories = { }
+    factories: dict[ str, Factory ] = { }
     for name, result in zip( preparers_.keys( ), results, strict = True ):
-        match result:
+        match result:  # pyright: ignore[reportMatchNotExhaustive]
             case __.generics.Error( error ):
                 summary = "Could not prepare vectorstore factory {name!r}."
                 auxdata.notifications.enqueue_error(

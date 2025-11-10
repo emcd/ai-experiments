@@ -38,7 +38,7 @@ def loads( string: str ):
         start_index = end_index = len( string ) - 1
         for i in range( end_index, -1, -1 ):
             char = string[ i ]
-            match char:
+            match char:  # pyright: ignore[reportMatchNotExhaustive]
                 case '}': curly_counter += 1
                 case '{': curly_counter -= 1
                 case ']': square_counter += 1
