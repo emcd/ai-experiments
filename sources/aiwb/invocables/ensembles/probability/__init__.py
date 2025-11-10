@@ -34,7 +34,7 @@ async def prepare(
     descriptor: __.cabc.Mapping[ str, __.typx.Any ],
 ) -> 'Ensemble':
     ''' Returns ensemble. '''
-    return Ensemble( name = _name )
+    return Ensemble( name = _name )  # pyright: ignore[reportAbstractUsage]
 
 __.preparers[ _name ] = prepare
 
