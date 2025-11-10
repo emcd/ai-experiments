@@ -24,7 +24,7 @@
 from . import imports as __
 
 
-async def chain_async( *iterables: __.cabc.Iterable | __.cabc.AsyncIterable ):
+async def chain_async( *iterables: __.cabc.Iterable[ __.typx.Any ] | __.cabc.AsyncIterable[ __.typx.Any ] ):
     ''' Chains items from iterables in sequence and asynchronously. '''
     for iterable in iterables:
         if isinstance( iterable, __.cabc.AsyncIterable ):
@@ -34,11 +34,11 @@ async def chain_async( *iterables: __.cabc.Iterable | __.cabc.AsyncIterable ):
 
 
 async def read_files_async(
-    *files: __.PathLike,
+    *files: __.PathLike[ str ],
     deserializer: __.typx.Optional[
         __.typx.Callable[ [ str ], __.typx.Any ] ] = None,
     return_exceptions: bool = False
-) -> __.cabc.Sequence:
+) -> __.cabc.Sequence[ __.typx.Any ]:
     ''' Reads files asynchronously. '''
     # TODO? Batch to prevent fd exhaustion over large file sets.
     from aiofiles import open as open_

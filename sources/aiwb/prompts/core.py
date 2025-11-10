@@ -54,7 +54,7 @@ class Definition(
             ''' Renders prompt as string. '''
             raise NotImplementedError
 
-        def serialize( self ) -> dict:
+        def serialize( self ) -> dict[ str, __.typx.Any ]:
             ''' Serializes prompt as dictionary. '''
             raise NotImplementedError
 

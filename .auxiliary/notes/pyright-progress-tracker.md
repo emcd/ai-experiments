@@ -27,8 +27,8 @@ The project has 2515 Pyright type errors distributed across 12 packages. The top
 | aiwb.codecs | 8 → 12 (11 fixed) | Completed | Added str type annotation; 1 complex error deferred |
 | aiwb.vectorstores | 11 → 14 (3 fixed) | Completed | Added return types and Dictionary type args; 11 complex errors deferred |
 | aiwb.application | 12 → 43 (1 fixed) | Completed | Added async return type; 42 complex errors deferred |
-| aiwb.__ | 30 | Pending | Re-export module |
-| aiwb.prompts | 51 | Pending | |
+| aiwb.__ | 30 → 35 (3 fixed) | In Progress | Added type args to Iterable, AsyncIterable, PathLike, Sequence |
+| aiwb.prompts | 51 → 93 (2 fixed) | In Progress | Added str and dict type annotations; cascading errors revealed |
 | aiwb.messages | 61 | Pending | |
 | aiwb.controls | 163 | Pending | |
 | aiwb.locations | 170 | Pending | |
