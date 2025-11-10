@@ -59,6 +59,20 @@ The `from_base` classmethod has parameter type mismatches and missing parameters
 
 **Potential Solution**: Review base class definition and ensure parameter compatibility.
 
+### aiwb.codecs.json - Non-exhaustive Match Statement
+**Error Type**: `reportMatchNotExhaustive`
+
+**Issue**:
+The match statement in the `loads` function (around line 41) only handles 4 specific characters: `{`, `}`, `[`, `]`. Pyright reports that it doesn't exhaustively handle all possible string values.
+
+**Reason for Deferral**:
+- Requires code modification beyond type annotations (adding `case _: pass`)
+- While this wouldn't change the logic (unmatched cases already implicitly pass), it's a code change rather than a pure type annotation
+
+**Potential Solution**:
+- Add `case _: pass` as the last case in the match statement
+- This makes the match exhaustive without changing behavior
+
 ---
 
 ## Common Patterns Requiring Complex Fixes

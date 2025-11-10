@@ -23,8 +23,8 @@ The project has 2515 Pyright type errors distributed across 12 packages. The top
 
 | Package | Errors | Status | Notes |
 |---------|--------|--------|-------|
-| aiwb.apiserver | 4 → 13 (2 fixed) | In Progress | Fixed simple type annotation issues; 11 complex errors deferred |
-| aiwb.codecs | 8 | Pending | |
+| aiwb.apiserver | 4 → 13 (1 fixed) | Completed | Fixed AsyncGenerator type args; 12 complex errors deferred |
+| aiwb.codecs | 8 → 12 (11 fixed) | Completed | Added str type annotation; 1 complex error deferred |
 | aiwb.vectorstores | 11 | Pending | |
 | aiwb.application | 12 | Pending | |
 | aiwb.__ | 30 | Pending | Re-export module |

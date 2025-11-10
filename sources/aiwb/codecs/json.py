@@ -21,7 +21,7 @@
 ''' Robust JSON handling. '''
 
 
-def loads( string ):
+def loads( string: str ):
     from json import JSONDecodeError, loads as loads_
     # Language models can sometimes wrap JSON with Markdown code fences.
     if string.startswith( '```json' ) and string.endswith( '```' ):
