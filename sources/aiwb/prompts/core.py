@@ -72,11 +72,11 @@ class Definition(
 
     def produce_prompt( self, values = None ):
         ''' Produces prompt instance. '''
-        return self.Instance( definition = self, values = values )
+        return self.Instance( definition = self, values = values )  # pyright: ignore[reportAbstractUsage]
 
     def deserialize( self, data ):
         ''' Deserializes prompt instance from initial values. '''
-        return self.Instance( definition = self, values = data )
+        return self.Instance( definition = self, values = data )  # pyright: ignore[reportAbstractUsage]
 
 
 class Store(
