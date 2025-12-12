@@ -1,0 +1,12 @@
+format-version = 1
+
+[converser]
+name-regex = '^gpt-5-chat-latest(-.*)?$'
+modalities = [ 'text', 'pictures' ]
+
+[converser.special]
+invocations-support-level = 'concurrent'
+
+[converser.tokens-limits]
+per-response = 16_384
+total = 128_000

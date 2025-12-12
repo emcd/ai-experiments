@@ -1,0 +1,12 @@
+format-version = 1
+
+[converser]
+name-regex = '^gpt-5(-.*)?$'
+modalities = [ 'text', 'pictures' ]
+
+[converser.special]
+invocations-support-level = 'concurrent'
+
+[converser.tokens-limits]
+per-response = 128_000
+total = 400_000
