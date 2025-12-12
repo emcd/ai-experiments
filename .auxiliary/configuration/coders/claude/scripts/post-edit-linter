@@ -14,6 +14,10 @@ import sys
 
 def main( ):
     # event = _acquire_event_data( )
+    if not _is_command_available( 'hatch' ):
+        raise SystemExit( 0 )
+    if not _is_hatch_env_available( 'develop' ):
+        raise SystemExit( 0 )
     try:
         result = subprocess.run(
             [ 'hatch', '--env', 'develop', 'run', 'linters' ],  # noqa: S607
@@ -47,7 +51,7 @@ def _acquire_event_data( ):
 
 
 def _emit_decision_json( decision, reason ):
-    ''' Output JSON decision for Claude Code hook system. '''
+    ''' Outputs JSON decision for Claude Code hook system. '''
     response = { "decision": decision, "reason": reason }
     print( json.dumps( response ) )
     raise SystemExit( 2 )
@@ -56,6 +60,27 @@ def _emit_decision_json( decision, reason ):
 def _error( message ):
     print( message, file = sys.stderr )
     raise SystemExit( 2 )
+
+
+def _is_command_available( command ):
+    ''' Checks if a command is available in PATH. '''
+    try:
+        result = subprocess.run(  # noqa: S603
+            [ 'which', command ],  # noqa: S607
+            capture_output = True, check = False, text = True, timeout = 5 )
+    except Exception: return False
+    return result.returncode == 0
+
+
+def _is_hatch_env_available( env_name ):
+    ''' Checks if a specific Hatch environment exists. '''
+    try:
+        result = subprocess.run(
+            [ 'hatch', 'env', 'show' ],  # noqa: S607
+            capture_output = True, check = False, text = True, timeout = 10 )
+    except Exception: return False
+    if result.returncode != 0: return False
+    return env_name in result.stdout
 
 
 def _reactor_failure( message ):

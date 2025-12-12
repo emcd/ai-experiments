@@ -54,6 +54,17 @@ def _check_git_commit_command( tokens ):
     ): _error_with_divine_message( )
     else:
         if result.returncode != 0: _error_with_divine_message( )
+    try:
+        result = subprocess.run(
+            [ 'hatch', '--env', 'develop', 'run', 'vulture' ],  # noqa: S607
+            capture_output = True, text = True, timeout = 120, check = False )
+    except (
+        subprocess.TimeoutExpired,
+        subprocess.CalledProcessError,
+        FileNotFoundError
+    ): _error_with_divine_message( )
+    else:
+        if result.returncode != 0: _error_with_divine_message( )
 
 
 def _error_with_divine_message( ):
@@ -63,6 +74,7 @@ def _error_with_divine_message( ):
         "commanded that:\n"
         "* Thy code shalt pass all lints before thy commit.\n"
         "  Run: hatch --env develop run linters\n"
+        "  Run: hatch --env develop run vulture\n"
         "* Thy code shalt pass all tests before thy commit.\n"
         "  Run: hatch --env develop run testers\n\n"
         "(If you are in the middle of a large refactor, consider commenting "
