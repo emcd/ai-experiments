@@ -47,8 +47,8 @@ class Queue( __.immut.DataclassObject ):
     ''' Queue for notifications to be consumed by application. '''
 
     # TODO: Hide queue attribute.
-    queue: __.SimpleQueue = __.dcls.field(
-        default_factory = __.SimpleQueue )
+    queue: __.SimpleQueue[ _NotificationBase ] = __.dcls.field(
+        default_factory = lambda: __.SimpleQueue[ _NotificationBase ]( ) )
 
     # TODO? enqueue_admonition
 
@@ -62,7 +62,7 @@ class Queue( __.immut.DataclassObject ):
     ) -> __.typx.Self:
         ''' Enqueues apprisal notification, optionally logging it. '''
         if scribe:
-            scribe_args = { }
+            scribe_args: dict[ str, __.typx.Any ] = { }
             if exception and inscribe_trace:
                 scribe_args[ 'exc_info' ] = exception
             scribe.warning( summary, **scribe_args )
@@ -82,7 +82,7 @@ class Queue( __.immut.DataclassObject ):
         ''' Enqueues error notification, optionally logging it. '''
         if append_reason: summary = f"{summary} Reason: {error}"
         if scribe:
-            scribe_args = { }
+            scribe_args: dict[ str, __.typx.Any ] = { }
             if inscribe_trace: scribe_args[ 'exc_info' ] = error
             scribe.error( summary, **scribe_args )
         return self._enqueue(
@@ -99,7 +99,7 @@ class Queue( __.immut.DataclassObject ):
         details: __.typx.Any = None,
         inscribe_trace: bool = False,
         scribe: __.typx.Optional[ __.Scribe ] = None
-    ):
+    ) -> __.cabc.Generator[ None, None, None ]:
         ''' Produces context manager which enqueues errors. '''
         try: yield
         except Exception as exc:
