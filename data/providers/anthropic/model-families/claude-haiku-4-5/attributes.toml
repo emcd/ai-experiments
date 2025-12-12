@@ -1,0 +1,7 @@
+format-version = 1
+
+[converser]
+name-regex = '^claude-haiku-4-5(-.*)?$'
+
+[converser.tokens-limits]
+per-response = 64_000

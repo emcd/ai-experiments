@@ -1,0 +1,13 @@
+format-version = 1
+
+[converser]
+name-regex = '^claude-sonnet-4-5(-.*)?$'
+
+[converser.special]
+supports-computer-use = true
+
+[converser.tokens-limits]
+per-response = 64_000
+
+# TODO: Define controls for extended thinking.
+# TODO: Support 1M token context window with beta header

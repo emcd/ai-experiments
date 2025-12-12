@@ -18,7 +18,7 @@ response-data = 'JSON'
 supports-computer-use = false
 
 [converser.tokens-limits]
-per-response = 4_096
+per-response = 64_000
 total = 200_000
 
 # TODO: Move controls to library and reference the library.
