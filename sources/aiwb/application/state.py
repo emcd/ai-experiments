@@ -29,21 +29,21 @@ class Globals( __.CoreGlobals ):
 
     # TODO: Use proper types.
     invocables: __.accret.Namespace
-    prompts: __.types.MappingProxyType
-    providers: __.accret.Dictionary
-    vectorstores: dict
+    prompts: __.types.MappingProxyType[ str, __.typx.Any ]
+    providers: __.accret.Dictionary[ str, __.typx.Any ]
+    vectorstores: dict[ str, __.typx.Any ]
 
     @classmethod
     def from_base(
         selfclass,
         base: __.CoreGlobals, *,
         invocables: __.accret.Namespace,
-        prompts: __.types.MappingProxyType,
-        providers: __.accret.Dictionary,
-        vectorstores: dict,
+        prompts: __.types.MappingProxyType[ str, __.typx.Any ],
+        providers: __.accret.Dictionary[ str, __.typx.Any ],
+        vectorstores: dict[ str, __.typx.Any ],
     ) -> __.typx.Self:
         ''' Produces DTO from base DTO plus attribute injections. '''
-        injections = __.types.MappingProxyType( dict(
+        injections = __.types.MappingProxyType[ str, __.typx.Any ]( dict(
             invocables = invocables,
             prompts = prompts,
             providers = providers,

@@ -168,7 +168,7 @@ class CacheManager( __.CacheManager ):
     ) -> '__.GeneralCache':
         cache_url = self._calculate_cache_url(
             source_adapter = source_adapter )
-        return GeneralCache(
+        return GeneralCache(  # pyright: ignore[reportAbstractUsage]
             adapter = source_adapter, cache_url = cache_url )
 
     async def reingest(
@@ -356,7 +356,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
             source_adapter = __.adapter_from_url( source_url )
             cache_url = self.cache_url.with_path(
                 __.Path( self.cache_url.path ).joinpath( *name ) )
-            return GeneralCache(
+            return GeneralCache(  # pyright: ignore[reportAbstractUsage]
                 adapter = source_adapter, cache_url = cache_url )
         raise __.RelativeLocatorClassValidityError( type( name ) )
 

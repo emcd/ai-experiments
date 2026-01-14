@@ -47,7 +47,7 @@ class Queue( __.immut.DataclassObject ):
     ''' Queue for notifications to be consumed by application. '''
 
     # TODO: Hide queue attribute.
-    queue: __.SimpleQueue = __.dcls.field(
+    queue: __.SimpleQueue[ _NotificationBase ] = __.dcls.field(
         default_factory = __.SimpleQueue )
 
     # TODO? enqueue_admonition

@@ -27,14 +27,14 @@ from . import imports as __
 ClassDecorators: __.typx.TypeAlias = (
     __.cabc.Iterable[ __.typx.Callable[ [ type ], type ] ] )
 NominativeArguments: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
-TextComparand: __.typx.TypeAlias = str | __.re.Pattern
+TextComparand: __.typx.TypeAlias = str | __.re.Pattern[ str ]
 TextComparands: __.typx.TypeAlias = __.cabc.Iterable[ TextComparand ]
 
 
 _immutability_label = 'immutability'
 
 
-PossiblePath: __.typx.TypeAlias = bytes | str | __.PathLike
+PossiblePath: __.typx.TypeAlias = bytes | str | __.PathLike[ str ]
 
 
 package_name = __name__.split( '.', maxsplit = 1 )[ 0 ]

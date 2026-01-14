@@ -117,9 +117,9 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
 
     def as_edits( self ) -> __.appcore.dictedits.Edits:
         ''' Returns modifications as sequence of configuration edits. '''
-        edits = [ ]
+        edits: list[ __.appcore.dictedits.Edit ] = [ ]
         if None is not self.maintenance:
-            edits.append( __.appcore.dictedits.SimpleEdit(
+            edits.append( __.appcore.dictedits.SimpleEdit(  # pyright: ignore[reportAbstractUsage]
                 address = ( 'maintenance-mode', ),
                 value = self.maintenance ) )
         for collection_name in (
@@ -127,7 +127,7 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
         ):
             collection = getattr( self, f"all_{collection_name}" )
             if not collection.is_retain( ):
-                edits.append( __.appcore.dictedits.ElementsEntryEdit(
+                edits.append( __.appcore.dictedits.ElementsEntryEdit(  # pyright: ignore[reportAbstractUsage]
                     address = ( collection_name, ),
                     editee = ( 'enable', bool( collection ) ) ) )
             disables = frozenset(
@@ -136,13 +136,13 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
                 getattr( self, f"enable_{collection_name}" ) )
             # TODO: Raise error if intersection of sets is not empty.
             edits.extend(
-                __.appcore.dictedits.ElementsEntryEdit(
+                __.appcore.dictedits.ElementsEntryEdit(  # pyright: ignore[reportAbstractUsage]
                     address = ( collection_name, ),
                     identifier = ( 'name', disable ),
                     editee = ( 'enable', False ) )
                 for disable in disables )
             edits.extend(
-                __.appcore.dictedits.ElementsEntryEdit(
+                __.appcore.dictedits.ElementsEntryEdit(  # pyright: ignore[reportAbstractUsage]
                     address = ( collection_name, ),
                     identifier = ( 'name', enable ),
                     editee = ( 'enable', True ) )
@@ -180,7 +180,7 @@ class ExecuteServerCommand( metaclass = __.immut.ProtocolClass ):
         self,
         auxdata: _state.Globals,
         display: __.CliConsoleDisplay,
-    ): raise NotImplementedError
+    ) -> None: raise NotImplementedError
 
     async def execute_until_signal(
         self,
@@ -189,10 +189,10 @@ class ExecuteServerCommand( metaclass = __.immut.ProtocolClass ):
         scribe: __.Scribe,
     ):
         from asyncio import Future, get_running_loop
-        from signal import SIGINT, SIGTERM
-        signal_future = Future( )
+        from signal import SIGINT, SIGTERM, Signals
+        signal_future: Future[ Signals ] = Future( )
 
-        def react_to_signal( signum ):
+        def react_to_signal( signum: Signals ):
             scribe.info( f"Received signal {signum.name} ({signum.value})." )
             signal_future.set_result( signum )
 

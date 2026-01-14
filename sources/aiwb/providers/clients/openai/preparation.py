@@ -32,7 +32,7 @@ async def prepare( auxdata: __.CoreGlobals ):
     configuration = (
         await __.acquire_provider_configuration(
             auxdata = auxdata, name = __.provider_name ) )
-    return _clients.Provider(
+    return _clients.Provider(  # pyright: ignore[reportAbstractUsage]
         name = __.provider_name, configuration = configuration )
 
 __.preparers_registry[ __.provider_name ] = prepare

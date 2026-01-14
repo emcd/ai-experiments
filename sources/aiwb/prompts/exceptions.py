@@ -38,5 +38,5 @@ class PromptRenderFailure( __.Omnierror, ValueError ):
 class PromptTemplateAbsence( __.Omnierror, FileNotFoundError ):
     ''' Prompt template not found. '''
 
-    def __init__( self, prompt_name ):
+    def __init__( self, prompt_name: str ):
         super( ).__init__( f"Could not find prompt {prompt_name!r}." )

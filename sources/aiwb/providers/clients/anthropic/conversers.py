@@ -193,23 +193,23 @@ class Model( __.ConverserModel ):
 
     @property
     def controls_processor( self ) -> ControlsProcessor:
-        return ControlsProcessor( model = self )
+        return ControlsProcessor( model = self )  # pyright: ignore[reportAbstractUsage]
 
     @property
     def invocations_processor( self ) -> InvocationsProcessor:
-        return InvocationsProcessor( model = self )
+        return InvocationsProcessor( model = self )  # pyright: ignore[reportAbstractUsage]
 
     @property
     def messages_processor( self ) -> MessagesProcessor:
-        return MessagesProcessor( model = self )
+        return MessagesProcessor( model = self )  # pyright: ignore[reportAbstractUsage]
 
     @property
     def serde_processor( self ) -> 'SerdeProcessor':
-        return SerdeProcessor( model = self )
+        return SerdeProcessor( model = self )  # pyright: ignore[reportAbstractUsage]
 
     @property
     def tokenizer( self ) -> 'Tokenizer':
-        return Tokenizer( model = self )
+        return Tokenizer( model = self )  # pyright: ignore[reportAbstractUsage]
 
     async def converse_v0(
         self,

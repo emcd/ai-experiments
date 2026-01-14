@@ -180,10 +180,36 @@ implicit_optional = true
 pretty = true
 #strict = true
 
+# https://microsoft.github.io/pyright/#/configuration
 [tool.pyright]
-reportPrivateImportUsage = false
-reportSelfClsParameterName = false
+ignore = [ '.auxiliary', 'documentation', 'sources/scrapy-projects', 'tests' ] # Ignore diagnostics.
+include = [ 'sources/aiwb', 'tests' ]      # Consider for operations.
+reportConstantRedefinition = true
+reportInvalidTypeVarUse = true
+reportMatchNotExhaustive = true
+reportMissingImports = true
+reportMissingTypeStubs = true
+reportMissingTypeArgument = true
+reportPossiblyUnboundVariable = false # Covered by other linters.
+reportPrivateImportUsage = false      # Covered by other linters.
+reportPrivateUsage = false            # Covered by other linters.
+reportSelfClsParameterName = false    # Too opinionated.
+reportUnknownArgumentType = true
+reportUnknownLambdaType = true
+reportUnknownMemberType = true
+reportUnknownParameterType = true
+reportUnknownVariableType = true
+reportUnnecessaryCast = true
+reportUnnecessaryComparison = true
+reportUntypedBaseClass = true
+reportUntypedClassDecorator = true
+reportUntypedFunctionDecorator = true
+reportUntypedNamedTuple = true
+reportUnusedExpression = true
+reportUnusedImport = false            # Covered by other linters.
+reportUnusedVariable = false          # Covered by other linters.
 stubPath = 'sources/aiwb/_typedecls'
+#strict = [ 'sources' ]
 
 [tool.pytest.ini_options]
 # Note: Cannot run doctests from Pytest, because Pytest tries to update '_'
