@@ -27,22 +27,11 @@ from . import state as _state
 from . import updaters as _updaters
 
 
-class Manager(
-    __.immut.DataclassObject
-):
-    ''' Manager for GUI components and server. '''
-
-    components: __.types.SimpleNamespace
-    deduplicator: _updaters.UpdatesDeduplicator
-    server: _server.Accessor
-    transformers: __.accret.Dictionary
-
-
 _inscription_default = (
     __.appcore.InscriptionControl(
         mode = __.appcore.ScribePresentations.Rich ) )
 _apiserver_default = __.ApiServerControl( )
-# _guiserver_default = _server.Control( )
+_guiserver_default = _server.Control( )
 
 
 async def prepare(  # noqa: PLR0913
@@ -51,7 +40,7 @@ async def prepare(  # noqa: PLR0913
     configedits: __.appcore.dictedits.Edits = ( ),
     configfile: __.Absential[ __.Url ] = __.absent,
     environment: bool = True,
-    guiserver: _server.Control = _server.Control,
+    guiserver: _server.Control = _guiserver_default,
     inscription: __.appcore.InscriptionControl = _inscription_default,
 ) -> _state.Globals:
     ''' Prepares GUI. '''
@@ -64,13 +53,13 @@ async def prepare(  # noqa: PLR0913
         inscription = inscription )
     components = await _prepare_components_base( auxdata_base )
     server = _server.Accessor( components = components, control = guiserver )
-    manager = Manager(
+    manager = _state.Manager(
         components = components,
         deduplicator = _updaters.UpdatesDeduplicator( ),
         server = server,
         transformers = __.accret.Dictionary( ),
     )
-    auxdata = _state.Globals.from_base( auxdata_base, gui = manager )
+    auxdata = _state.Globals.from_apiserver( auxdata_base, gui = manager )
     components.auxdata__ = auxdata # Hack for legacy.
     await _prepare_components_complete( auxdata )
     await server.execute( auxdata )

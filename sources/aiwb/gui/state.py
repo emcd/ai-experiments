@@ -23,20 +23,40 @@
 
 from . import __
 from . import server as _server
+from . import updaters as _updaters
+
+
+class Manager( __.immut.DataclassObject ):
+    ''' Manager for GUI components and server. '''
+
+    components: __.types.SimpleNamespace
+    deduplicator: _updaters.UpdatesDeduplicator
+    server: _server.Accessor
+    transformers: __.accret.Dictionary
 
 
 class Globals( __.ApiServerGlobals ):
     ''' Immutable global data for GUI. '''
 
-    gui: _server.Accessor
+    gui: Manager
 
-    @__.typx.override
     @classmethod
-    def from_base(
+    def from_apiserver(
         selfclass,
         base: __.ApiServerGlobals, *,
-        gui: _server.Accessor,
+        gui: Manager,
     ) -> __.typx.Self:
         ''' Produces DTO from base DTO plus attribute injections. '''
-        injections = __.types.MappingProxyType( dict( gui = gui ) )
-        return selfclass( **base.as_dictionary( ), **injections )
+        return selfclass(
+            application = base.application,
+            configuration = base.configuration,
+            directories = base.directories,
+            distribution = base.distribution,
+            exits = base.exits,
+            notifications = base.notifications,
+            invocables = base.invocables,
+            prompts = base.prompts,
+            providers = base.providers,
+            vectorstores = base.vectorstores,
+            apiserver = base.apiserver,
+            gui = gui )

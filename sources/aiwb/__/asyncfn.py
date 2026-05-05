@@ -43,13 +43,11 @@ async def read_files_async(
     # TODO? Batch to prevent fd exhaustion over large file sets.
     from aiofiles import open as open_
     if return_exceptions:
-        def extractor( result ):
-            return result.extract( ).read( ) if result.is_value( ) else result
-        def transformer( result ):
-            return result.transform( deserializer )
+        extractor = _extract_result_stream
+        transformer = _transform_result
     else:
-        def extractor( stream ): return stream.read( )
-        def transformer( datum ): return deserializer( datum )
+        extractor = _extract_stream
+        transformer = _transform_datum
     async with __.ctxl.AsyncExitStack( ) as exits:
         streams = await __.asyncf.gather_async(
             *(  exits.enter_async_context( open_( file ) )
@@ -59,5 +57,43 @@ async def read_files_async(
             *( extractor( stream ) for stream in streams ),
             return_exceptions = return_exceptions,
             ignore_nonawaitables = return_exceptions )
-    if deserializer: return tuple( transformer( datum ) for datum in data )
+    if deserializer is not None:
+        return _transform_data(
+            data, transformer = transformer, deserializer = deserializer )
     return data
+
+
+def _extract_result_stream( result: __.typx.Any ) -> __.typx.Any:
+    ''' Extracts stream read coroutine from result wrapper. '''
+    return result.extract( ).read( ) if result.is_value( ) else result
+
+
+def _extract_stream( stream: __.typx.Any ) -> __.typx.Any:
+    ''' Extracts stream read coroutine. '''
+    return stream.read( )
+
+
+def _transform_datum(
+    datum: __.typx.Any, *,
+    deserializer: __.typx.Callable[ [ str ], __.typx.Any ],
+) -> __.typx.Any:
+    ''' Transforms datum with deserializer. '''
+    return deserializer( datum )
+
+
+def _transform_data(
+    data: __.cabc.Iterable[ __.typx.Any ], *,
+    transformer: __.cabc.Callable[ ..., __.typx.Any ],
+    deserializer: __.typx.Callable[ [ str ], __.typx.Any ],
+) -> tuple[ __.typx.Any, ... ]:
+    ''' Transforms data with deserializer. '''
+    return tuple(
+        transformer( datum, deserializer = deserializer ) for datum in data )
+
+
+def _transform_result(
+    result: __.typx.Any, *,
+    deserializer: __.typx.Callable[ [ str ], __.typx.Any ],
+) -> __.typx.Any:
+    ''' Transforms result wrapper with deserializer. '''
+    return result.transform( deserializer )

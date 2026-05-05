@@ -48,4 +48,5 @@ async def prepare( # noqa: PLR0913
         exits = exits,
         inscription = inscription )
     accessor = await _server.prepare( auxdata_base, control = apiserver )
-    return _state.Globals.from_base( auxdata_base, apiserver = accessor )
+    return _state.Globals.from_application(
+        auxdata_base, apiserver = accessor )

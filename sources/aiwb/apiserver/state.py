@@ -30,13 +30,22 @@ class Globals( __.ApplicationGlobals ):
 
     apiserver: _server.Accessor
 
-    @__.typx.override
     @classmethod
-    def from_base(
+    def from_application(
         selfclass,
         base: __.ApplicationGlobals, *,
         apiserver: _server.Accessor,
     ) -> __.typx.Self:
         ''' Produces DTO from base DTO plus attribute injections. '''
-        injections = __.types.MappingProxyType( dict( apiserver = apiserver ) )
-        return selfclass( **base.as_dictionary( ), **injections )
+        return selfclass(
+            application = base.application,
+            configuration = base.configuration,
+            directories = base.directories,
+            distribution = base.distribution,
+            exits = base.exits,
+            notifications = base.notifications,
+            invocables = base.invocables,
+            prompts = base.prompts,
+            providers = base.providers,
+            vectorstores = base.vectorstores,
+            apiserver = apiserver )

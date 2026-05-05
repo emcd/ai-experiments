@@ -43,10 +43,14 @@ class Globals( __.CoreGlobals ):
         vectorstores: dict,
     ) -> __.typx.Self:
         ''' Produces DTO from base DTO plus attribute injections. '''
-        injections = __.types.MappingProxyType( dict(
+        return selfclass(
+            application = base.application,
+            configuration = base.configuration,
+            directories = base.directories,
+            distribution = base.distribution,
+            exits = base.exits,
+            notifications = base.notifications,
             invocables = invocables,
             prompts = prompts,
             providers = providers,
-            vectorstores = vectorstores,
-        ) )
-        return selfclass( **base.as_dictionary( ), **injections )
+            vectorstores = vectorstores )

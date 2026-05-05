@@ -25,6 +25,14 @@ from . import __
 from . import state as _state
 
 
+class _IcecreamConfigureArguments( __.typx.TypedDict, total = False ):
+    ''' Nominative arguments for Icecream output configuration. '''
+
+    argToStringFunction: __.cabc.Callable[ [ __.typx.Any ], str ]
+    includeContext: bool
+    prefix: str
+
+
 async def prepare(
     exits: __.ctxl.AsyncExitStack,
     configedits: __.appcore.dictedits.Edits = ( ),
@@ -68,7 +76,8 @@ def _prepare_scribe_icecream(
     if __.is_absent( control ):
         control = __.appcore.InscriptionControl( )
     from icecream import ic, install
-    nomargs = dict( includeContext = True, prefix = 'DEBUG    ' )
+    nomargs: _IcecreamConfigureArguments = {
+        'includeContext': True, 'prefix': 'DEBUG    ' }
     match control.mode:
         case __.appcore.ScribePresentations.Null:
             ic.configureOutput( **nomargs )
@@ -77,7 +86,8 @@ def _prepare_scribe_icecream(
             ic.configureOutput( **nomargs )
         case __.appcore.ScribePresentations.Rich:
             from rich.pretty import pretty_repr
-            ic.configureOutput( argToStringFunction = pretty_repr, **nomargs )
+            nomargs[ 'argToStringFunction' ] = pretty_repr
+            ic.configureOutput( **nomargs )
     install( )
 
 
