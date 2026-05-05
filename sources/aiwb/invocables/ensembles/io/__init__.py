@@ -34,7 +34,7 @@ from .differences import write_pieces
 from .operations import list_folder, read, write_file
 
 
-_name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
+_name = __name__.rsplit( '.', maxsplit = 1 )[ -1 ]
 
 
 async def prepare(
@@ -50,6 +50,8 @@ __.preparers[ _name ] = prepare
 
 
 class Ensemble( __.Ensemble ):
+
+    name: str
 
     async def prepare_invokers(
         self, auxdata: __.Globals
@@ -82,5 +84,3 @@ _invocables = (
     ( write_file, update_content_argschema ),
     ( write_pieces, update_content_partial_argschema ),
 )
-
-

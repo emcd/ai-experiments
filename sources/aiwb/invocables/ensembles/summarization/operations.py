@@ -70,7 +70,7 @@ async def _analyze_file( context, path, control = None ):
         auxdata.prompts.definitions[ 'Automation: File Analysis' ]
         .produce_prompt( values = { 'format': format_name } ) )
     chunk_reader, mime_type = _determine_chunk_reader( path )
-    for chunk in await chunk_reader( auxdata, path ):
+    async for chunk in chunk_reader( auxdata, path ):
         messages: list[ Canister ] = [
             SupervisorCanister( ).add_content(
                 supervisor_prompt.render( auxdata ) ) ]

@@ -26,7 +26,7 @@ from .argschemata import summarize_content_argschema
 from .operations import analyze
 
 
-_name = __package__.rsplit( '.', maxsplit = 1 )[ -1 ]
+_name = __name__.rsplit( '.', maxsplit = 1 )[ -1 ]
 
 
 async def prepare(
@@ -41,6 +41,8 @@ __.preparers[ _name ] = prepare
 
 class Ensemble( __.Ensemble ):
 
+    name: str
+
     async def prepare_invokers(
         self, auxdata: __.Globals
     ) -> __.cabc.Mapping[ str, __.Invoker ]:
@@ -50,5 +52,4 @@ class Ensemble( __.Ensemble ):
 _invocables = (
     ( analyze, summarize_content_argschema ),
 )
-
 

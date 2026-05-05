@@ -28,12 +28,26 @@ from ..__ import *
 
 
 async def accessor_from_arguments(
-    arguments: Arguments,
+    arguments: cabc.MutableMapping[ str, typx.Any ],
     species: Absential[ LocationSpecies ] = absent,
 ) -> SpecificLocationAccessor:
     url = Url.from_url( arguments.pop( 'location' ) )
     adapter = location_adapter_from_url( url )
-    if adapter.is_cache_manager( ): accessor = adapter.produce_cache( )
+    if adapter.is_cache_manager( ): accessor = location_cache_from_url( url )
     else: accessor = adapter
     if LocationSpecies.File is species: return accessor.as_file( )
     return await accessor.as_specific( species = species )
+
+
+def is_directory_accessor(
+    accessor: typx.Any,
+) -> typx.TypeGuard[ DirectoryAccessor ]:
+    ''' Determines if object can survey directory entries. '''
+    return hasattr( accessor, 'survey_entries' )
+
+
+def is_file_accessor( accessor: typx.Any ) -> typx.TypeGuard[ FileAccessor ]:
+    ''' Determines if object can acquire and update file content. '''
+    return (
+        hasattr( accessor, 'acquire_content_result' )
+        and hasattr( accessor, 'update_content' ) )

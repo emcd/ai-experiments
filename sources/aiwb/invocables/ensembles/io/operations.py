@@ -33,13 +33,13 @@ async def list_folder(
         Optional filters, such as ignorefiles, may be applied.
     '''
     # TODO? file_size_maximum = arguments.get( 'file_size_maximum', 40000 )
-    arguments_ = arguments.copy( )
+    arguments_ = dict( arguments )
     # TODO: Validate arguments.
     try: accessor = await __.accessor_from_arguments( arguments_ )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
-    if not isinstance( accessor, __.DirectoryAccessor ):
+    if not __.is_directory_accessor( accessor ):
         return { 'error': 'Cannot list entries of non-directory.' }
     arguments_[ 'attributes' ] = __.InodeAttributes.Mimetype
     if 'filters' not in arguments_:
@@ -69,13 +69,13 @@ async def read(
         if the line numbering option is enabled. Otherwise, the file size will
         be returned without the content.
     '''
-    arguments_ = arguments.copy( )
+    arguments_ = dict( arguments )
     # TODO: Validate arguments.
     try: accessor = await __.accessor_from_arguments( arguments_ )
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
-    if not isinstance( accessor, __.FileAccessor ):
+    if not __.is_file_accessor( accessor ):
         return { 'error': 'Cannot acquire content of non-file.' }
     arguments_[ 'attributes' ] = (
         __.InodeAttributes.Mimetype | __.InodeAttributes.Charset )
@@ -93,7 +93,7 @@ async def write_file(
 
         Result includes number of bytes written.
     '''
-    arguments_ = arguments.copy( )
+    arguments_ = dict( arguments )
     if 'location' not in arguments:
         return { 'error': "Argument 'location' is required." }
     if 'content' not in arguments:
@@ -107,7 +107,7 @@ async def write_file(
     except Exception as exc:
         # TODO? Generate apprisal notification.
         return { 'error': str( exc ) }
-    if not isinstance( accessor, __.FileAccessor ):
+    if not __.is_file_accessor( accessor ):
         return { 'error': 'Cannot update content of non-file.' }
     arguments_[ 'attributes' ] = (
         __.InodeAttributes.Mimetype | __.InodeAttributes.Charset )

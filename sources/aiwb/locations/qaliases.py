@@ -36,8 +36,12 @@ from .core import (
 )
 from .exceptions import *
 from .interfaces import (
+    DirectoryAdapter,
     DirectoryAccessor,
+    DirectoryCache,
+    FileAdapter,
     FileAccessor,
+    FileCache,
     SpecificAccessor as     SpecificLocationAccessor,
 )
 from .registries import (

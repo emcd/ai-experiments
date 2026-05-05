@@ -98,11 +98,11 @@ def assess_overlap( op1: Operation, op2: Operation ) -> bool:
     if op1.opcode == DeltaType.INSERT:
         op1_range = ( op1.start + 1, op1.start + 1 )
     else:
-        op1_range = ( op1.start, op1.end )
+        op1_range = ( op1.start, op1.end or op1.start )
     if op2.opcode == DeltaType.INSERT:
         op2_range = ( op2.start + 1, op2.start + 1 )
     else:
-        op2_range = ( op2.start, op2.end )
+        op2_range = ( op2.start, op2.end or op2.start )
     return (
         op1_range[ 0 ] <= op2_range[ 1 ] and op2_range[ 0 ] <= op1_range[ 1 ] )
 
@@ -204,11 +204,13 @@ async def write_pieces(  # noqa: PLR0911
         return { 'error': "Argument 'location' is required." }
     if 'operations' not in arguments:
         return { 'error': "Argument 'operations' is required." }
-    arguments_ = arguments.copy( )
+    arguments_ = dict( arguments )
     try:
         accessor = await __.accessor_from_arguments(
             arguments_, species = __.LocationSpecies.File )
     except Exception as exc: return { 'error': str( exc ) }
+    if not __.is_file_accessor( accessor ):
+        return { 'error': 'Cannot update content of non-file.' }
     try: content, file_length = await acquire_content( accessor )
     except Exception as exc: return { 'error': str( exc ) }
     try:

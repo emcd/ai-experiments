@@ -24,10 +24,10 @@
 from . import __
 
 
-Arguments: __.typx.TypeAlias = __.types.MappingProxyType[ str, __.typx.Any ]
+Arguments: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
 #Arguments = __.typx.TypeVar( 'Arguments', bound = __.pydantic.BaseModel )
 ArgumentsModel: __.typx.TypeAlias = (
-    __.types.MappingProxyType[ str, __.typx.Any ] )
+    __.cabc.MutableMapping[ str, __.typx.Any ] )
 #ArgumentsModel: __.typx.TypeAlias = type[ __.pydantic.BaseModel ]
 
 
@@ -62,7 +62,7 @@ class Context(
 
     auxdata: __.Globals
     invoker: 'Invoker'
-    supplements: __.accret.Namespace
+    supplements: __.cabc.Mapping[ str, __.typx.Any ]
 
 
 class Ensemble(
@@ -126,17 +126,18 @@ class Invoker(
         self,
         auxdata: __.Globals,
         arguments: Arguments, *,
-        supplements: __.accret.Dictionary = None,
+        supplements: __.typx.Optional[ Arguments ] = None,
     ) -> __.typx.Any:
         context = Context(
-            auxdata = auxdata, invoker = self, supplements = supplements )
+            auxdata = auxdata,
+            invoker = self,
+            supplements = supplements or __.types.MappingProxyType( { } ) )
         return await self.invocable( context, arguments )
 
 
 Invocable: __.typx.TypeAlias = (
     __.typx.Callable[
-        [ __.Globals, 'Invoker', Arguments, __.accret.Namespace ],
-        #[ Context, Arguments ],
+        [ Context, Arguments ],
         __.cabc.Coroutine[ __.typx.Any, __.typx.Any, __.typx.Any ] ] )
 
 
@@ -146,7 +147,7 @@ preparers = __.accret.Dictionary( )
 
 def descriptors_from_configuration(
     auxdata: __.Globals,
-    defaults: __.cabc.Mapping[ str, __.typx.Any ] = None,
+    defaults: __.typx.Optional[ __.cabc.Mapping[ str, __.typx.Any ] ] = None,
 ) -> __.cabc.Sequence[ __.cabc.Mapping[ str, __.typx.Any ] ]:
     ''' Validates and returns descriptors from configuration. '''
     scribe = __.acquire_scribe( __package__ )
@@ -231,10 +232,10 @@ _default_ensemble_descriptors = __.types.MappingProxyType( {
 } )
 
 
-def _trim_descriptions( schema ):
+def _trim_descriptions( schema: ArgumentsModel ):
     from inspect import cleandoc
     for entry_name, entry in schema.items( ):
-        if isinstance( entry, __.cabc.Mapping ):
+        if isinstance( entry, __.cabc.MutableMapping ):
             _trim_descriptions( entry )
         if 'description' != entry_name: continue
         if not isinstance( entry, str ): continue
