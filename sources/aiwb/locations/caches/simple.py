@@ -39,36 +39,20 @@ from . import __
 _module_name = __name__.replace( f"{__package__}.", '' )
 _entity_name = f"cache '{_module_name}'"
 _A = __.typx.TypeVar( '_A', bound = __.AdapterBase )
-_C = __.typx.TypeVar( '_C', bound = '_CacheEnsurable' )
-_P = __.typx.ParamSpec( '_P' )
-_R = __.typx.TypeVar( '_R' )
+_F = __.typx.TypeVar(
+    '_F', bound = __.cabc.Callable[ ..., __.typx.Any ] )
 
 
-class _CacheEnsurable( __.typx.Protocol ):
-
-    async def _ingest_if_absent( self ) -> None:
-        raise NotImplementedError
-
-
-def _ensures_cache(
-    function: __.cabc.Callable[
-        __.typx.Concatenate[ _C, _P ],
-        __.types.CoroutineType[ __.typx.Any, __.typx.Any, _R ] ]
-) -> __.cabc.Callable[
-    __.typx.Concatenate[ _C, _P ],
-    __.types.CoroutineType[ __.typx.Any, __.typx.Any, _R ]
-]:
+def _ensures_cache( function: _F ) -> _F:
     ''' Decorator which ensures cache is filled before operation. '''
     from functools import wraps
 
     @wraps( function )
-    async def invoker(
-        cache: _C, *posargs: _P.args, **nomargs: _P.kwargs
-    ) -> _R:
+    async def invoker( cache, *posargs, **nomargs ):
         await cache._ingest_if_absent( )  # noqa: SLF001
         return await function( cache, *posargs, **nomargs )
 
-    return invoker
+    return __.typx.cast( _F, invoker )
 
 
 class _Common( __.CacheBase, __.typx.Protocol, __.typx.Generic[ _A ] ):
