@@ -34,6 +34,12 @@ from . import core as _core
 from . import exceptions as _exceptions
 
 
+# TODO: Remove cast after classcore exposes precise typing for
+#       class_decorators accepted by immutable protocol classes.
+_runtime_checkable_class_decorators = __.typx.cast(
+    __.typx.Any, ( __.typx.runtime_checkable, ) )
+
+
 class _Common(
     __.immut.Protocol, __.typx.Protocol,
     decorators = ( __.typx.runtime_checkable, ),
@@ -82,7 +88,7 @@ class _Common(
 
 class AdapterBase(
     _Common, __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' Common functionality for all access adapters. '''
 
@@ -97,7 +103,7 @@ class AdapterBase(
 
 class CacheBase(
     _Common, __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' Common functionality for all caches. '''
 
@@ -114,7 +120,7 @@ class Filter( __.typx.Protocol ):
 class DirectoryOperations(
     __.immut.Protocol,
     __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' Standard operations on directories. '''
 
@@ -187,7 +193,7 @@ class DirectoryOperations(
 class FileOperations(
     __.immut.Protocol,
     __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' Standard operations on files. '''
 
@@ -221,9 +227,9 @@ class FileOperations(
 
 
 class GeneralOperations(
-    __.immut.Protocol,
+    _Common,
     __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' Standard operations on locations of indeterminate species. '''
 
@@ -273,6 +279,7 @@ class GeneralOperations(
                     f"does not match actual species, '{species_}'." )
                 raise Error( reason = reason )
             return species_
+        if not isinstance( species, _core.LocationSpecies ): return species_
         return species
 
     @__.abc.abstractmethod
@@ -294,7 +301,7 @@ class GeneralOperations(
 class ReconciliationOperations(
     __.immut.Protocol,
     __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' Standard operations for cache reconciliation. '''
 
@@ -345,23 +352,33 @@ class ReconciliationOperations(
 
 class DirectoryAdapter(
     AdapterBase, DirectoryOperations, __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' Directory access adapter. '''
 
 
 class FileAdapter(
     AdapterBase, FileOperations, __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' File access adapter. '''
 
 
 class GeneralAdapter(
     AdapterBase, GeneralOperations, __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' General location access adapter. '''
+
+    @__.abc.abstractmethod
+    def as_directory( self ) -> 'DirectoryAdapter':
+        ''' Returns directory adapter without sanity checks. '''
+        raise NotImplementedError
+
+    @__.abc.abstractmethod
+    def as_file( self ) -> 'FileAdapter':
+        ''' Returns file adapter without sanity checks. '''
+        raise NotImplementedError
 
     @classmethod
     @__.abc.abstractmethod
@@ -372,7 +389,7 @@ class GeneralAdapter(
 
 class CacheManager(
     ReconciliationOperations, __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' Manager for collection of caches.
 
@@ -399,23 +416,33 @@ class CacheManager(
 
 class DirectoryCache(
     CacheBase, DirectoryOperations, __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' Directory cache. '''
 
 
 class FileCache(
     CacheBase, FileOperations, __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' File cache. '''
 
 
 class GeneralCache(
     CacheBase, GeneralOperations, __.typx.Protocol,
-    class_decorators = ( __.typx.runtime_checkable, ),
+    class_decorators = _runtime_checkable_class_decorators,
 ):
     ''' General location cache. '''
+
+    @__.abc.abstractmethod
+    def as_directory( self ) -> 'DirectoryCache':
+        ''' Returns directory cache without sanity checks. '''
+        raise NotImplementedError
+
+    @__.abc.abstractmethod
+    def as_file( self ) -> 'FileCache':
+        ''' Returns file cache without sanity checks. '''
+        raise NotImplementedError
 
     @classmethod
     @__.abc.abstractmethod
@@ -431,6 +458,12 @@ class FilePresenter(
     ''' Presenter with standard operations on files. '''
 
     accessor: 'FileAccessor'
+
+    # Allows presenter registries to instantiate protocol-typed presenter
+    # classes with MIME-specific keyword arguments.
+    def __init__(
+        self, *, accessor: 'FileAccessor', **nomargs: __.typx.Any
+    ) -> None: pass
 
     @__.abc.abstractmethod
     async def acquire_content( self ) -> __.typx.Any:

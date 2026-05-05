@@ -52,6 +52,9 @@ class FilePresenter( __.FilePresenter ):
         bytes_result = await self.accessor.acquire_content_result(
             attributes = attributes )
         mimetype = bytes_result.inode.mimetype
+        if not mimetype:
+            reason = "File content MIME type is unavailable."
+            raise Error( reason = reason )
         if not __.is_textual_mimetype( mimetype ):
             reason = f"File content is not text. MIME Type: {mimetype!r}"
             raise Error( reason = reason )
@@ -103,7 +106,7 @@ class FilePresenter( __.FilePresenter ):
                 from os import linesep
                 newline = linesep
             case '\r' | '\r\n': newline = self.newline
-            # TODO: Error on invalid case.
+            case _: raise __.NewlineSupportError( self.newline )
         return newline.join( content.split( '\n' ) )
 
     def _normalize_newlines( self, content: str ) -> str:
@@ -117,7 +120,7 @@ class FilePresenter( __.FilePresenter ):
                 return (
                     content.replace( '\r\n', '\r' ).replace( '\n', '\r' )
                     .replace( '\r', '\r\n' ) )
-            # TODO: Error on invalid case.
+            case _: raise __.NewlineSupportError( self.newline )
 
 
 async def register_defaults( ):

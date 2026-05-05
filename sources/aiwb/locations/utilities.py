@@ -28,7 +28,8 @@ from . import exceptions as _exceptions
 def honor_inode_attributes(  # noqa: C901, PLR0912, PLR0915
     inode: _core.Inode,
     attributes: _core.InodeAttributes,
-    error_to_raise: _exceptions.LocationOperateFailure,
+    error_to_raise: __.typx.Callable[
+        ..., _exceptions.LocationOperateFailure ],
     content: __.Absential[ bytes ] = __.absent,
 ) -> _core.Inode:
     ''' Honor requests for specific inode attributes. '''
@@ -37,32 +38,37 @@ def honor_inode_attributes(  # noqa: C901, PLR0912, PLR0915
     #       sequential dependencies (charset→mimetype) complicate extraction.
     Iattrs = _core.InodeAttributes
     aname = None
-    have_content = __.absent is not content
+    if isinstance( content, bytes ):
+        have_content = True
+        content_ = content
+    else:
+        have_content = False
+        content_ = b''
     bytes_count = inode.bytes_count
     if (    not aname and Iattrs.BytesCount & attributes
             and not isinstance( bytes_count, int ) # 0 is falsey
     ):
-        if have_content: bytes_count = len( content )
+        if have_content: bytes_count = len( content_ )
         else: aname = 'bytes_count'
     content_id = inode.content_id
     if not aname and Iattrs.ContentId & attributes and not content_id:
         if have_content:
             from hashlib import sha256
             hasher = sha256( )
-            hasher.update( content )
+            hasher.update( content_ )
             content_id = "sha256:{}".format( hasher.hexdigest( ) )
         else: aname = 'content_id'
     mimetype = inode.mimetype
     if not aname and Iattrs.Mimetype & attributes and not mimetype:
         if have_content:
             from magic import from_buffer
-            mimetype = from_buffer( content, mime = True )
+            mimetype = from_buffer( content_, mime = True )
         else: aname = 'mimetype'
     charset = inode.charset
     if not aname and Iattrs.Charset & attributes and not charset:
         if not mimetype: charset = None
         elif have_content and is_textual_mimetype( mimetype, possible = True ):
-            charset = _detect_charset( content )
+            charset = _detect_charset( content_ )
         else: aname = 'charset'
     mtime = inode.mtime
     if not aname and Iattrs.Mtime & attributes and not mtime:
@@ -105,6 +111,7 @@ def _detect_charset( content: bytes ) -> str | None:
     from chardet import detect
     charset = detect( content )[ 'encoding' ]
     if None is charset: return charset
+    if not isinstance( charset, str ): return None
     if charset.startswith( 'utf' ): return charset
     # Shake out false positives, like 'ascii' or 'MacRoman'.
     try: content.decode( 'utf-8' )

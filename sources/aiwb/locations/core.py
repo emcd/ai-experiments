@@ -200,7 +200,7 @@ class Inode(
         ''' Does inode represent nothing? '''
         return LocationSpecies.Void is self.species
 
-    def with_attributes(  # noqa: PLR0913
+    def with_attributes(  # noqa: C901, PLR0912, PLR0913, PLR0915
         self,
         bytes_count: __.Absential[ __.typx.Optional[ int ] ] = __.absent,
         content_id: __.Absential[ __.typx.Optional[ str ] ] = __.absent,
@@ -210,20 +210,41 @@ class Inode(
         etime: __.Absential[ __.typx.Optional[ __.DateTime ] ] = __.absent,
     ) -> __.typx.Self:
         ''' Returns copy with updated attributes. '''
+        bytes_count_: __.typx.Optional[ int ] = self.bytes_count
+        if __.is_absent( bytes_count ): pass
+        elif None is bytes_count: bytes_count_ = None
+        elif isinstance( bytes_count, int ):
+            bytes_count_ = bytes_count
+        content_id_: __.typx.Optional[ str ] = self.content_id
+        if __.is_absent( content_id ): pass
+        elif None is content_id: content_id_ = None
+        elif isinstance( content_id, str ):
+            content_id_ = content_id
+        mimetype_: __.typx.Optional[ str ] = self.mimetype
+        if __.is_absent( mimetype ): pass
+        elif None is mimetype: mimetype_ = None
+        elif isinstance( mimetype, str ):
+            mimetype_ = mimetype
+        charset_: __.typx.Optional[ str ] = self.charset
+        if __.is_absent( charset ): pass
+        elif None is charset: charset_ = None
+        elif isinstance( charset, str ): charset_ = charset
+        mtime_: __.typx.Optional[ __.DateTime ] = self.mtime
+        if __.is_absent( mtime ): pass
+        elif None is mtime: mtime_ = None
+        elif isinstance( mtime, __.DateTime ): mtime_ = mtime
+        etime_: __.typx.Optional[ __.DateTime ] = self.etime
+        if __.is_absent( etime ): pass
+        elif None is etime: etime_ = None
+        elif isinstance( etime, __.DateTime ): etime_ = etime
         return type( self )(
             species = self.species,
             permissions = self.permissions,
             supplement = self.supplement,
-            bytes_count = (
-                self.bytes_count if __.absent is bytes_count
-                else bytes_count ),
-            content_id = (
-                self.content_id if __.absent is content_id
-                else content_id ),
-            mimetype = self.mimetype if __.absent is mimetype else mimetype,
-            charset = self.charset if __.absent is charset else charset,
-            mtime = self.mtime if __.absent is mtime else mtime,
-            etime = self.etime if __.absent is etime else etime )
+            bytes_count = bytes_count_,
+            content_id = content_id_,
+            mimetype = mimetype_, charset = charset_,
+            mtime = mtime_, etime = etime_ )
 
 
 class InodeAttributes( __.enum.IntFlag ):
@@ -280,20 +301,12 @@ class Url(
 ):
     ''' Tracks URL components separately. Displays as original string. '''
 
-    # Add explicit type annotations for ParseResult fields to fix Tyro
-    # compatibility
-    scheme: str
-    netloc: str
-    path: str
-    params: str
-    query: str
-    fragment: str
-
     @classmethod
     def from_url( selfclass, url: 'PossibleUrl' ) -> __.typx.Self:
         ''' Produces canonical URL instance from URL-like object. '''
         if isinstance( url, __.PathLike ): url = url.__fspath__( )
-        if isinstance( url, ( str, bytes ) ): url = __.urlparse( url )
+        if isinstance( url, bytes ): url = url.decode( )
+        if isinstance( url, str ): url = __.urlparse( url )
         if isinstance( url, _UrlParts ):
             return selfclass(
                 scheme = url.scheme,
@@ -322,7 +335,6 @@ class Url(
             params = self.params,
             query = self.query,
             fragment = self.fragment )
-
 
 # TODO: Python 3.12: type statement for aliases
 AlienResolutionActionsTable: __.typx.TypeAlias = (

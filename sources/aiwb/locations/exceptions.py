@@ -197,6 +197,13 @@ class LocationSpeciesSupportError( __.SupportError ):
             f"Location species '{species}' not supported by {entity_name}." )
 
 
+class NewlineSupportError( __.SupportError, ValueError ):
+    ''' Attempt to use unsupported newline presentation. '''
+
+    def __init__( self, newline ):
+        super( ).__init__( f"Newline presentation unsupported: {newline!r}" )
+
+
 class PermissionsClassValidityError( __.Omnierror, TypeError, ValueError ):
     ''' Attempt to supply invalid class of object as permissions. '''
 

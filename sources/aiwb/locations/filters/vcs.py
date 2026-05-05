@@ -62,6 +62,10 @@ class Filter( __.Filter ):
             case 2: includes, excludes = arguments
             case 1: includes, excludes = arguments[ 0 ], ''
             case 0: includes, excludes = '', ''
+            case _:
+                raise __.FilterSpecifierValidityError(
+                    specifier = ':'.join( ( _filter_name, *arguments ) ),
+                    reason = "Too many arguments." )
         match includes:
             case '*': includes = _aliases
             case '': includes = _defaults
@@ -116,7 +120,7 @@ class Filter( __.Filter ):
 
 # TODO: Convert into docstring template and pass 'available' and 'default' via
 #       'docstring_arguments' metaclass argument for 'ImmutableClass'.
-Filter.__doc__ += (
+Filter.__doc__ = ( Filter.__doc__ or '' ) + (
     "\n\nAvailable Matchers: {available}\nDefault Matchers: {default}".format(
         available = ', '.join( _aliases ), default = ', '.join( _defaults ) ) )
 __.filters_registry[ _filter_name ] = Filter

@@ -29,14 +29,24 @@ from . import interfaces as _interfaces
 
 # TODO: Python 3.12: type statement for aliases
 AdaptersRegistry: __.typx.TypeAlias = (
-    __.cabc.Mapping[ str, type[ '_interfaces.GeneralAdapter' ] ] )
+    __.accret.Dictionary[ str, type[ '_interfaces.GeneralAdapter' ] ] )
 CachesRegistry: __.typx.TypeAlias = (
-    __.cabc.Mapping[ str, type[ '_interfaces.CacheManager' ] ] )
+    __.accret.Dictionary[ str, type[ '_interfaces.CacheManager' ] ] )
 FilePresentersRegistry: __.typx.TypeAlias = (
-    __.cabc.Mapping[ str, type[ '_interfaces.FilePresenter' ] ] )
+    __.accret.Dictionary[ str, type[ '_interfaces.FilePresenter' ] ] )
 # TODO: Content filters versus dirent filters.
 FiltersRegistry: __.typx.TypeAlias = (
-    __.cabc.Mapping[ str, type[ '_interfaces.Filter' ] ] )
+    __.accret.Dictionary[ str, type[ '_interfaces.Filter' ] ] )
+
+
+@__.typx.runtime_checkable
+class _CacheProducer( __.typx.Protocol ):
+    ''' Object capable of producing a cache for an adapter. '''
+
+    def produce_cache(
+        self, adapter: '_interfaces.GeneralAdapter'
+    ) -> '_interfaces.GeneralCache':
+        raise NotImplementedError
 
 
 # TODO: Use accretive validator dictionaries for registries.
@@ -72,16 +82,21 @@ def cache_from_url(
 ) -> '_interfaces.GeneralCache':
     ''' Produces cache from URL and cache manager. '''
     adapter = adapter_from_url( url = url )
+    adapter_ = adapter
     if adapter.is_cache_manager( ):
         if __.absent is not manager:
             # TODO: raise error
             pass
-        manager = adapter
-    elif __.absent is manager:
+        if not _can_produce_cache( adapter ):
+            # TODO: raise error
+            raise TypeError( adapter )
+        manager_ = adapter
+    elif _can_produce_cache( manager ):
+        manager_ = manager
+    else:
         # TODO: raise error
-        pass
-    # TODO: assert manager type
-    return manager.produce_cache( adapter )
+        raise TypeError( adapter )
+    return manager_.produce_cache( adapter_ )
 
 
 def directory_adapter_from_url(
@@ -109,12 +124,15 @@ async def file_presenter_from_accessor(
     if __.absent is mimetype:
         inode = await accessor.examine(
             attributes = _core.InodeAttributes.Mimetype )
-        mimetype = inode.mimetype
-    if mimetype in file_presenters_registry:
-        return file_presenters_registry[ mimetype ]( accessor = accessor )
-    mimetype = '/'.join( ( mimetype.split( '/', maxsplit = 1 )[ 0 ], '*' ) )
-    if mimetype in file_presenters_registry:
-        return file_presenters_registry[ mimetype ]( accessor = accessor )
+        if not inode.mimetype: return accessor
+        mimetype_ = inode.mimetype
+    elif isinstance( mimetype, str ): mimetype_ = mimetype
+    else: return accessor
+    if mimetype_ in file_presenters_registry:
+        return file_presenters_registry[ mimetype_ ]( accessor = accessor )
+    mimetype_ = '/'.join( ( mimetype_.split( '/', maxsplit = 1 )[ 0 ], '*' ) )
+    if mimetype_ in file_presenters_registry:
+        return file_presenters_registry[ mimetype_ ]( accessor = accessor )
     return accessor
 
 
@@ -184,7 +202,9 @@ def filters_from_specifiers(
 
 def _parse_filter_specifier(
     specifier: str
-) -> ( str, __.cabc.Sequence[ __.typx.Any ] ):
+) -> tuple[ str, __.cabc.Sequence[ __.typx.Any ] ]:
+    name = specifier
+    arguments: __.cabc.Sequence[ __.typx.Any ] = ( )
     for index, delim in enumerate( specifier ):
         if ':' == delim: break
         if delim in ( '<', '>' ): break
@@ -196,6 +216,12 @@ def _parse_filter_specifier(
             if index1 < len( specifier ) and '=' == specifier[ index1 ]:
                 splitter = f"{delim}="
             else: splitter = delim
-            name, *arguments = specifier.split( splitter, maxsplit = 1 )
-            arguments = ( splitter, *arguments )
+            name, *arguments_ = specifier.split( splitter, maxsplit = 1 )
+            arguments = ( splitter, *arguments_ )
     return name, tuple( arguments )
+
+
+def _can_produce_cache(
+    obj: __.typx.Any
+) -> __.typx.TypeGuard[ _CacheProducer ]:
+    return isinstance( obj, _CacheProducer )
