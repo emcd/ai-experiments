@@ -33,6 +33,14 @@ InvocationDescriptor: __.typx.TypeAlias = (
     __.cabc.Mapping[ str, __.typx.Any ] )
 
 
+class ResponseIndices( __.immut.DataclassObject ):
+    ''' Tracks canisters and callback references by response index. '''
+
+    canisters: __.accret.Dictionary[ int, __.MessageCanister ]
+    records: __.accret.Dictionary[ int, dict[ str, __.typx.Any ] ]
+    references: __.accret.Dictionary[ int, __.typx.Any ]
+
+
 class ClientDefaults( __.immut.DataclassObject ):
     ''' Collection of default values for AI provider. '''
 
@@ -300,6 +308,14 @@ ModelsIntegratorsByGenusMutable: __.typx.TypeAlias = (
 conversation_reactors_minimal = ConversationReactors( )
 
 
+def create_response_indices( ) -> ResponseIndices:
+    ''' Creates accretive response indices. '''
+    return ResponseIndices(
+        canisters = __.accret.Dictionary( ),
+        records = __.accret.Dictionary( ),
+        references = __.accret.Dictionary( ) )
+
+
 def _merge_dictionaries_recursive(
     theirs: __.cabc.MutableMapping[ str, __.typx.Any ],
     ours: __.cabc.Mapping[ str, __.typx.Any ],
@@ -309,7 +325,7 @@ def _merge_dictionaries_recursive(
             theirs[ name ] = our_value
             continue
         their_value = theirs[ name ]
-        if (    not isinstance( their_value, __.cabc.Mapping )
+        if (    not isinstance( their_value, __.cabc.MutableMapping )
             or  not isinstance( our_value, __.cabc.Mapping )
         ):
             theirs[ name ] = our_value

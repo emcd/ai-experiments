@@ -26,7 +26,8 @@ from . import imports as __
 
 ClassDecorators: __.typx.TypeAlias = (
     __.cabc.Iterable[ __.typx.Callable[ [ type ], type ] ] )
-NominativeArguments: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
+NominativeArguments: __.typx.TypeAlias = (
+    __.cabc.Mapping[ str, __.typx.Any ] )
 TextComparand: __.typx.TypeAlias = str | __.re.Pattern
 TextComparands: __.typx.TypeAlias = __.cabc.Iterable[ TextComparand ]
 

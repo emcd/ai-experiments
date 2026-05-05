@@ -72,7 +72,8 @@ class Attributes( __.ConverserAttributes ):
     def from_descriptor(
         selfclass, descriptor: AttributesDescriptor
     ) -> __.typx.Self:
-        args = super( ).init_args_from_descriptor( descriptor )
+        args = __.accret.Dictionary(
+            super( ).init_args_from_descriptor( descriptor ) )
         sdescriptor = descriptor.get( 'special', { } )
         for arg_name in (
             'extra-tokens-for-actor-name',
@@ -95,7 +96,9 @@ class Attributes( __.ConverserAttributes ):
         return selfclass( **args )
 
 
-class ControlsProcessor( __.ControlsProcessor ):
+class ControlsProcessor(
+    __.ControlsProcessorBase[ 'Model' ],
+):
     ''' Controls nativization for OpenAI chat models. '''
 
     def nativize_controls(
@@ -112,7 +115,9 @@ class ControlsProcessor( __.ControlsProcessor ):
         return args
 
 
-class InvocationsProcessor( __.InvocationsProcessor ):
+class InvocationsProcessor(
+    __.ProcessorBase[ 'Model' ]
+):
     ''' Handles functions and tool calls for OpenAI chat models. '''
 
     async def __call__(
@@ -248,7 +253,9 @@ def _filter_stray_tool_results(
     return filtered
 
 
-class MessagesProcessor( __.MessagesProcessor ):
+class MessagesProcessor(
+    __.ProcessorBase[ 'Model' ],
+):
     ''' Handles conversation messages in OpenAI format. '''
 
     def nativize_messages_v0(
@@ -269,11 +276,14 @@ class MessagesProcessor( __.MessagesProcessor ):
 class Model( __.ConverserModel ):
     ''' OpenAI chat model. '''
 
+    attributes: Attributes
+
     @classmethod
     def from_descriptor(
         selfclass, client: __.Client, name: str, descriptor: ModelDescriptor
     ) -> __.typx.Self:
-        args = __.accret.Dictionary( client = client, name = name )
+        args: __.NominativeArguments = __.accret.Dictionary(
+            client = client, name = name )
         args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
         return selfclass( **args )
 
@@ -326,7 +336,9 @@ class Model( __.ConverserModel ):
         return _process_complete_response_v0( self, response, reactors )
 
 
-class SerdeProcessor( __.ConverserSerdeProcessor ):
+class SerdeProcessor(
+    __.ProcessorBase[ Model ]
+):
     ''' (De)serialization for OpenAI chat models. '''
 
     def deserialize_data( self, data: str ) -> __.typx.Any:
@@ -348,7 +360,9 @@ class SerdeProcessor( __.ConverserSerdeProcessor ):
             data_format.value, 'serialize' )
 
 
-class Tokenizer( __.ConversationTokenizer ):
+class Tokenizer(
+    __.ProcessorBase[ Model ]
+):
     ''' Tokenizes conversations and text with OpenAI tokenizers. '''
 
     async def count_text_tokens( self, text: str ) -> int:
@@ -584,7 +598,7 @@ def _nativize_message_content(
         case _:
             # Build multipart message.
             return [
-                { 'type': 'text', 'text': content.data }
+                { 'type': 'text', 'text': getattr( content, 'data' ) }
                 for content in canister ]
 
 
@@ -599,6 +613,7 @@ def _nativize_result_message(
             model.attributes.supports_invocations
         and model.provider.name == model_context[ 'provider' ] )
     supplement = model_context[ 'supplement' ]
+    role = ''
     if supports_invocations:
         role = supplement.get(
             'role', 'tool' if 'tool_call_id' in supplement else 'function' )
@@ -683,10 +698,7 @@ def _postprocess_response_canisters( model, indices, reactors ):
 
 def _process_complete_response_v0( model, response, reactors ):
     # TODO? Collect usage stats.
-    indices = __.accret.Namespace(
-        canisters = __.accret.Dictionary( ),
-        records = __.accret.Dictionary( ),
-        references = __.accret.Dictionary( ) )
+    indices = __.create_response_indices( )
     indices.canisters.update( {
         element.index: _canister_from_response_element( model, element )
         for element in response.choices } )
@@ -706,10 +718,7 @@ def _process_complete_response_v0( model, response, reactors ):
 
 async def _process_iterative_response_v0( model, response, reactors ):
     # TODO? Collect usage stats.
-    indices = __.accret.Namespace(
-        canisters = __.accret.Dictionary( ),
-        records = __.accret.Dictionary( ),
-        references = __.accret.Dictionary( ) )
+    indices = __.create_response_indices( )
     async for segment in response:
         for element in segment.choices:
             try:

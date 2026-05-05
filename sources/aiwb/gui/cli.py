@@ -23,15 +23,16 @@
 
 from . import __
 from . import server as _server
-from . import state as _state
 
 
 class ExecuteServerCommand( __.ApplicationCliExecuteServerCommand ):
     ''' Runs GUI server until signal. '''
 
+    def __init__( self ) -> None: pass
+
     async def __call__(
         self,
-        auxdata: _state.Globals,
+        auxdata: __.ApplicationGlobals,
         display: __.CliConsoleDisplay,
     ):
         scribe = __.acquire_scribe( __package__ )
@@ -65,7 +66,8 @@ class Cli( __.ApiServerCli ):
     def prepare_invocation_args(
         self,
     ) -> __.cabc.Mapping[ str, __.typx.Any ]:
-        args = __.ApiServerCli.prepare_invocation_args( self )
+        args = __.accret.Dictionary(
+            __.ApiServerCli.prepare_invocation_args( self ) )
         args[ 'guiserver' ] = self.guiserver
         return args
 

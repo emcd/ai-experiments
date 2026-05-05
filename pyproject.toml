@@ -181,6 +181,11 @@ pretty = true
 #strict = true
 
 [tool.pyright]
+exclude = [
+  'sources/scrapy-projects',
+  'tests',
+]
+include = [ 'sources/aiwb' ]
 reportPrivateImportUsage = false
 reportSelfClsParameterName = false
 stubPath = 'sources/aiwb/_typedecls'

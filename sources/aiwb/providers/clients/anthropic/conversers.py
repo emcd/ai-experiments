@@ -55,7 +55,8 @@ class Attributes( __.ConverserAttributes ):
     def from_descriptor(
         selfclass, descriptor: AttributesDescriptor
     ) -> __.typx.Self:
-        args = super( ).init_args_from_descriptor( descriptor )
+        args = __.accret.Dictionary(
+            super( ).init_args_from_descriptor( descriptor ) )
         sdescriptor = descriptor.get( 'special', { } )
         for arg_name in (
             'supports-computer-use',
@@ -67,7 +68,9 @@ class Attributes( __.ConverserAttributes ):
         return selfclass( **args )
 
 
-class ControlsProcessor( __.ControlsProcessor ):
+class ControlsProcessor(
+    __.ControlsProcessorBase[ 'Model' ],
+):
     ''' Controls nativization for Anthropic chat models. '''
 
     def nativize_controls(
@@ -89,7 +92,9 @@ class ControlsProcessor( __.ControlsProcessor ):
         return args
 
 
-class InvocationsProcessor( __.InvocationsProcessor ):
+class InvocationsProcessor(
+    __.ProcessorBase[ 'Model' ]
+):
     ''' Handles tool calls for Anthropic chat models. '''
 
     async def __call__(
@@ -164,7 +169,9 @@ class InvocationsProcessor( __.InvocationsProcessor ):
         return requests
 
 
-class MessagesProcessor( __.MessagesProcessor ):
+class MessagesProcessor(
+    __.ProcessorBase[ 'Model' ],
+):
     ''' Handles conversation messages in Anthropic format. '''
 
     def nativize_messages_v0(
@@ -183,11 +190,14 @@ class MessagesProcessor( __.MessagesProcessor ):
 class Model( __.ConverserModel ):
     ''' Anthropic chat model. '''
 
+    attributes: Attributes
+
     @classmethod
     def from_descriptor(
         selfclass, client: __.Client, name: str, descriptor: ModelDescriptor
     ) -> __.typx.Self:
-        args = __.accret.Dictionary( client = client, name = name )
+        args: __.NominativeArguments = __.accret.Dictionary(
+            client = client, name = name )
         args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
         return selfclass( **args )
 
@@ -231,7 +241,9 @@ class Model( __.ConverserModel ):
         return await _converse_complete_v0( self, args, reactors )
 
 
-class SerdeProcessor( __.ConverserSerdeProcessor ):
+class SerdeProcessor(
+    __.ProcessorBase[ Model ]
+):
     ''' (De)serialization for Anthropic chat models. '''
 
     def deserialize_data( self, data: str ) -> __.typx.Any:
@@ -253,7 +265,9 @@ class SerdeProcessor( __.ConverserSerdeProcessor ):
             data_format.value, 'serialize' )
 
 
-class Tokenizer( __.ConversationTokenizer ):
+class Tokenizer(
+    __.ProcessorBase[ Model ]
+):
     ''' Tokenizes conversations and text with Anthropic tokenizers. '''
 
     async def count_text_tokens( self, text: str ) -> int:
@@ -387,7 +401,7 @@ def _collect_response_as_content_v0( model, indices, event, reactors ):
 
 def _collect_supervisor_instructions(
     model: Model, canisters: __.MessagesCanisters
-) -> dict[ str, str ]:
+) -> dict[ str, __.typx.Any ]:
     instructions = [ ]
     for canister in canisters:
         if __.MessageRole.Supervisor is not canister.role: continue
@@ -554,7 +568,7 @@ def _nativize_message_content(
         case _:
             # Build multipart message.
             return [
-                { 'text': content.data, 'type': 'text' }
+                { 'text': getattr( content, 'data' ), 'type': 'text' }
                 for content in canister ]
 
 
@@ -650,10 +664,7 @@ def _prepare_client_arguments(
 
 
 def _process_complete_response_v0( model, response, reactors ):
-    indices = __.accret.Namespace(
-        canisters = __.accret.Dictionary( ),
-        records = __.accret.Dictionary( ),
-        references = __.accret.Dictionary( ) )
+    indices = __.create_response_indices( )
     indices.canisters.update( {
         i: _canister_from_response_element( model, element )
         for i, element in enumerate( response.content ) } )
@@ -670,10 +681,7 @@ def _process_complete_response_v0( model, response, reactors ):
 
 
 async def _process_continuous_response_v0( model, response, reactors ):
-    indices = __.accret.Namespace(
-        canisters = __.accret.Dictionary( ),
-        records = __.accret.Dictionary( ),
-        references = __.accret.Dictionary( ) )
+    indices = __.create_response_indices( )
     async for event in response:
         #ic( event )
         try:

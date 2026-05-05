@@ -26,8 +26,12 @@ from . import core as _core
 from . import exceptions as _exceptions
 
 
-ModelDescriptor = __.typx.TypeVar(
-    'ModelDescriptor' ) # TODO? Typed dictionary.
+ModelDescriptor: __.typx.TypeAlias = (
+    __.cabc.Mapping[ str, __.typx.Any ] ) # TODO? Typed dictionary.
+ModelT = __.typx.TypeVar(
+    'ModelT', bound = 'Model', covariant = True )
+ConverserModelT = __.typx.TypeVar(
+    'ConverserModelT', bound = 'ConverserModel', covariant = True )
 
 
 class Provider(
@@ -176,12 +180,19 @@ class Client(
 
 
 class ControlsProcessor(
-    __.immut.DataclassProtocol, __.typx.Protocol[ _core.NativeControls ],
+    __.immut.DataclassProtocol,
+    __.typx.Protocol[ ModelT, _core.NativeControls ],
     decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Handles model controls. '''
 
-    model: 'Model'
+    @property
+    @__.abc.abstractmethod
+    def model( self ) -> ModelT:
+        ''' Model bound to this processor. '''
+        raise NotImplementedError
+
+    def __init__( self, *, model: ModelT ) -> None: pass
 
     @property
     def controls( self ) -> __.cabc.Sequence[ __.Control ]:
@@ -194,7 +205,7 @@ class ControlsProcessor(
         # TODO? Cache.
         # TODO: Recursively gather control names. (Requires definitions.)
         # TODO: Use 'control.name'. (Requires definitions.)
-        return frozenset( { control[ 'name' ] for control in self.controls } )
+        return frozenset( { control.name for control in self.controls } )
 
     @__.abc.abstractmethod
     def nativize_controls(
@@ -205,13 +216,44 @@ class ControlsProcessor(
         raise NotImplementedError
 
 
+class ProcessorBase(
+    __.immut.DataclassObject, __.typx.Generic[ ModelT ]
+):
+    ''' Base for processors bound to an AI model. '''
+
+    model: ModelT
+
+
+class ControlsProcessorBase( ProcessorBase[ ModelT ] ):
+    ''' Base for controls processors bound to an AI model. '''
+
+    @property
+    def controls( self ) -> __.cabc.Sequence[ __.Control ]:
+        ''' Array of controls available to model. '''
+        return self.model.attributes.controls
+
+    @property
+    def control_names( self ) -> frozenset[ str ]:
+        ''' Names of controls available to model. '''
+        # TODO? Cache.
+        # TODO: Recursively gather control names. (Requires definitions.)
+        # TODO: Use 'control.name'. (Requires definitions.)
+        return frozenset( { control.name for control in self.controls } )
+
+
 class ConversationTokenizer(
-    __.immut.DataclassProtocol, __.typx.Protocol,
+    __.immut.DataclassProtocol, __.typx.Protocol[ ConverserModelT ],
     decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Tokenizes conversation or piece of text for counting. '''
 
-    model: 'ConverserModel'
+    @property
+    @__.abc.abstractmethod
+    def model( self ) -> ConverserModelT:
+        ''' Model bound to this tokenizer. '''
+        raise NotImplementedError
+
+    def __init__( self, *, model: ConverserModelT ) -> None: pass
 
     # TODO: count_conversation_tokens
 
@@ -232,12 +274,18 @@ class ConversationTokenizer(
 
 
 class InvocationsProcessor(
-    __.immut.DataclassProtocol, __.typx.Protocol,
+    __.immut.DataclassProtocol, __.typx.Protocol[ ModelT ],
     decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Handles everything related to invocations. '''
 
-    model: 'Model'
+    @property
+    @__.abc.abstractmethod
+    def model( self ) -> ModelT:
+        ''' Model bound to this processor. '''
+        raise NotImplementedError
+
+    def __init__( self, *, model: ModelT ) -> None: pass
 
     @__.abc.abstractmethod
     async def __call__(
@@ -274,12 +322,19 @@ class InvocationsProcessor(
 
 
 class MessagesProcessor(
-    __.immut.DataclassProtocol, __.typx.Protocol[ _core.NativeMessages ],
+    __.immut.DataclassProtocol,
+    __.typx.Protocol[ ModelT, _core.NativeMessages ],
     decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Handles everything related to messages. '''
 
-    model: 'Model'
+    @property
+    @__.abc.abstractmethod
+    def model( self ) -> ModelT:
+        ''' Model bound to this processor. '''
+        raise NotImplementedError
+
+    def __init__( self, *, model: ModelT ) -> None: pass
 
     # TODO: nativize_messages
 
@@ -357,7 +412,7 @@ class ModelAttributes(
         descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.NominativeArguments:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = __.accret.Dictionary( )
+        args: __.NominativeArguments = __.accret.Dictionary( )
         # TODO: Control descriptors to definitions.
         args[ 'controls' ] = descriptor.get( 'controls', ( ) )
         return args
@@ -368,6 +423,8 @@ class ConverserModel(
     decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' Represents AI chat model. '''
+
+    attributes: 'ConverserAttributes'
 
     @property
     @__.abc.abstractmethod
@@ -427,7 +484,8 @@ class ConverserAttributes( ModelAttributes ):
         descriptor: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.NominativeArguments:
         ''' Extracts dictionary of initializer arguments from descriptor. '''
-        args = super( ).init_args_from_descriptor( descriptor )
+        args = __.accret.Dictionary(
+            super( ).init_args_from_descriptor( descriptor ) )
         for arg_name in (
             'accepts-supervisor-instructions',
             'supports-continuous-response',
@@ -450,12 +508,18 @@ class ConverserAttributes( ModelAttributes ):
 
 
 class ConverserSerdeProcessor(
-    __.immut.DataclassProtocol, __.typx.Protocol,
+    __.immut.DataclassProtocol, __.typx.Protocol[ ConverserModelT ],
     decorators = ( __.typx.runtime_checkable, ),
 ):
     ''' (De)serialization in preferred formats for converser model. '''
 
-    model: 'ConverserModel'
+    @property
+    @__.abc.abstractmethod
+    def model( self ) -> ConverserModelT:
+        ''' Model bound to this processor. '''
+        raise NotImplementedError
+
+    def __init__( self, *, model: ConverserModelT ) -> None: pass
 
     @__.abc.abstractmethod
     def deserialize_data( self, data: str ) -> __.typx.Any:
