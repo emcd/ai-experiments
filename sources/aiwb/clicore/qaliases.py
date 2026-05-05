@@ -28,6 +28,8 @@
 
 from .cli import (
     Cli as                  CoreCli,
+    CliBase as              CoreCliBase,
+                            CliCommand,
     ConsoleDisplay as       CliConsoleDisplay,
                             CliInscriptionControl,
     InspectCommand as       CoreCliInspectCommand,

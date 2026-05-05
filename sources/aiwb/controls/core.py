@@ -191,11 +191,6 @@ class FlexArray( DefinitionBase ):
             element.serialize( ) for element in self.default )
         return self.Instance( self, subvalues )
 
-    def deserialize( self, data ):
-        return [
-            self.element_definition.deserialize( subdata )
-            for subdata in data ]
-
     def validate_value( self, value ):
         elements = value
         element_class = self.element_definition.Instance

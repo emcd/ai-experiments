@@ -43,6 +43,22 @@ class EnablementTristate( __.enum.Enum ): # TODO: Python 3.11: StrEnum
         return self.Retain is self
 
 
+class _ElementsEntryEdit( __.appcore.dictedits.ElementsEntryEdit ):
+    ''' Concrete elements-entry edit for type checkers. '''
+
+    # TODO: Remove after appcore.dictedits concrete edit classes expose
+    #       inherited protocol attributes to Pyright.
+    address: __.cabc.Sequence[ str ]
+
+
+class _SimpleEdit( __.appcore.dictedits.SimpleEdit ):
+    ''' Concrete simple edit for type checkers. '''
+
+    # TODO: Remove after appcore.dictedits concrete edit classes expose
+    #       inherited protocol attributes to Pyright.
+    address: __.cabc.Sequence[ str ]
+
+
 class ConfigurationModifiers( __.immut.DataclassObject ):
     ''' Configuration injectors/modifiers. '''
 
@@ -119,7 +135,7 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
         ''' Returns modifications as sequence of configuration edits. '''
         edits = [ ]
         if None is not self.maintenance:
-            edits.append( __.appcore.dictedits.SimpleEdit(
+            edits.append( _SimpleEdit(
                 address = ( 'maintenance-mode', ),
                 value = self.maintenance ) )
         for collection_name in (
@@ -127,22 +143,22 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
         ):
             collection = getattr( self, f"all_{collection_name}" )
             if not collection.is_retain( ):
-                edits.append( __.appcore.dictedits.ElementsEntryEdit(
+                edits.append( _ElementsEntryEdit(
                     address = ( collection_name, ),
                     editee = ( 'enable', bool( collection ) ) ) )
             disables = frozenset(
-                getattr( self, f"enable_{collection_name}" ) )
+                getattr( self, f"disable_{collection_name}" ) )
             enables = frozenset(
                 getattr( self, f"enable_{collection_name}" ) )
             # TODO: Raise error if intersection of sets is not empty.
             edits.extend(
-                __.appcore.dictedits.ElementsEntryEdit(
+                _ElementsEntryEdit(
                     address = ( collection_name, ),
                     identifier = ( 'name', disable ),
                     editee = ( 'enable', False ) )
                 for disable in disables )
             edits.extend(
-                __.appcore.dictedits.ElementsEntryEdit(
+                _ElementsEntryEdit(
                     address = ( collection_name, ),
                     identifier = ( 'name', enable ),
                     editee = ( 'enable', True ) )
@@ -150,11 +166,25 @@ class ConfigurationModifiers( __.immut.DataclassObject ):
         return tuple( edits )
 
 
-class Cli( __.CoreCli ):
+class CliBase( __.CoreCliBase ):
     ''' Utility for configuration, inspection, and tests of application. '''
 
     # TODO: Add commands for prompts, providers, and vectorstores.
     configuration: ConfigurationModifiers
+
+    def prepare_invocation_args(
+        self,
+    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
+        args: __.accret.Dictionary[ str, __.typx.Any ] = __.accret.Dictionary(
+            __.CoreCliBase.prepare_invocation_args( self ) )
+        args[ 'configedits' ] = self.configuration.as_edits( )
+        return args
+
+
+class Cli( CliBase ):
+    ''' Utility for configuration, inspection, and tests of application. '''
+
+    command: __.CliCommand
 
     async def __call__( self ):
         ''' Invokes command after application preparation. '''
@@ -163,13 +193,6 @@ class Cli( __.CoreCli ):
         async with __.ctxl.AsyncExitStack( ) as exits:
             auxdata = await prepare( exits = exits, **nomargs )
             await self.command( auxdata = auxdata, display = self.display )
-
-    def prepare_invocation_args(
-        self,
-    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
-        args = __.CoreCli.prepare_invocation_args( self )
-        args[ 'configedits' ] = self.configuration.as_edits( )
-        return args
 
 
 class ExecuteServerCommand( metaclass = __.immut.ProtocolClass ):

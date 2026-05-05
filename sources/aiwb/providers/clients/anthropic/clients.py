@@ -25,12 +25,8 @@ from . import __
 
 
 # We do not want to import 'anthropic' package on module initialization,
-# as it is not guaranteed to be available then. However, we can appease
-# typecheckers by pretending as though it is available.
-if __.typx.TYPE_CHECKING:
-    from anthropic import AsyncAnthropic as _AsyncAnthropic  # type: ignore
-else:
-    _AsyncAnthropic: __.typx.TypeAlias = __.typx.Any
+# as it is not guaranteed to be available then.
+_AsyncAnthropic: __.typx.TypeAlias = __.typx.Any
 
 
 ClientDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
@@ -57,7 +53,8 @@ class ProviderVariants( __.enum.Enum ):
         match self:
             case ProviderVariants.Anthropic:
                 client_class = AnthropicClient
-            # TODO: Other variants.
+            case _:
+                raise __.ProviderConfigurationInvalidity( self.value )
         # TODO: Return future.
         return await client_class.from_descriptor(
             auxdata = auxdata, provider = provider, descriptor = descriptor )

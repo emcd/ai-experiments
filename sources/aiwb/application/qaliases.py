@@ -28,6 +28,7 @@
 
 from .cli import (
     Cli as                      ApplicationCli,
+    CliBase as                  ApplicationCliBase,
     ConfigurationModifiers as   ApplicationCliConfigurationModifiers,
     ExecuteServerCommand as     ApplicationCliExecuteServerCommand,
 )

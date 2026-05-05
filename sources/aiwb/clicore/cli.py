@@ -251,22 +251,39 @@ class LocationCommand( metaclass = __.accret.Dataclass ):
     ): await self.command( auxdata = auxdata, display = display )
 
 
-class Cli( __.immut.DataclassObject ):
-    ''' Utility for inspection and tests of library core. '''
+CliCommand: __.typx.TypeAlias = __.typx.Union[
+    __.typx.Annotated[
+        InspectCommand,
+        __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
+    ],
+    __.typx.Annotated[
+        LocationCommand,
+        __.tyro.conf.subcommand( 'location', prefix_name = False ),
+    ],
+]
+
+
+class CliBase( __.immut.DataclassObject ):
+    ''' Base for command-line interfaces. '''
 
     configfile: __.typx.Optional[ str ] = None
     display: ConsoleDisplay
     inscription: CliInscriptionControl
-    command: __.typx.Union[
-        __.typx.Annotated[
-            InspectCommand,
-            __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
-        ],
-        __.typx.Annotated[
-            LocationCommand,
-            __.tyro.conf.subcommand( 'location', prefix_name = False ),
-        ],
-    ]
+
+    def prepare_invocation_args(
+        self,
+    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
+        inscription = self.inscription.as_control( )
+        args: __.accret.Dictionary[ str, __.typx.Any ] = __.accret.Dictionary(
+            environment = True, inscription = inscription )
+        if self.configfile: args[ 'configfile' ] = self.configfile
+        return args
+
+
+class Cli( CliBase ):
+    ''' Utility for inspection and tests of library core. '''
+
+    command: CliCommand
 
     async def __call__( self ):
         ''' Invokes command after library preparation. '''
@@ -274,15 +291,6 @@ class Cli( __.immut.DataclassObject ):
         async with __.ctxl.AsyncExitStack( ) as exits:
             auxdata = await _preparation.prepare( exits = exits, **nomargs )
             await self.command( auxdata = auxdata, display = self.display )
-
-    def prepare_invocation_args(
-        self,
-    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
-        inscription = self.inscription.as_control( )
-        args: __.NominativeArguments = dict(
-            environment = True, inscription = inscription )
-        if self.configfile: args[ 'configfile' ] = self.configfile
-        return args
 
 
 def execute_cli( ):

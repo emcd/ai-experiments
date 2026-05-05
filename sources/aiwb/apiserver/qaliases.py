@@ -26,7 +26,10 @@
 # ruff: noqa: F401
 
 
-from .cli import Cli as ApiServerCli
+from .cli import (
+    Cli as      ApiServerCli,
+    CliBase as  ApiServerCliBase,
+)
 from .preparation import prepare as prepare_apiserver
 from .server import (
     Accessor as     ApiServerAccessor,

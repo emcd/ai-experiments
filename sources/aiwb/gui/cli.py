@@ -40,20 +40,23 @@ class ExecuteServerCommand( __.ApplicationCliExecuteServerCommand ):
             auxdata = auxdata, display = display, scribe = scribe )
 
 
-class Cli( __.ApiServerCli ):
+GuiCliCommand: __.typx.TypeAlias = __.typx.Union[
+    __.typx.Annotated[
+        __.CoreCliInspectCommand,
+        __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
+    ],
+    __.typx.Annotated[
+        ExecuteServerCommand,
+        __.tyro.conf.subcommand( 'execute', prefix_name = False ),
+    ],
+]
+
+
+class Cli( __.ApiServerCliBase ):
     ''' Configuration and execution of GUI application. '''
 
     guiserver: _server.Control = _server.Control( )
-    command: __.typx.Union[
-        __.typx.Annotated[
-            __.CoreCliInspectCommand,
-            __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
-        ],
-        __.typx.Annotated[
-            ExecuteServerCommand,
-            __.tyro.conf.subcommand( 'execute', prefix_name = False ),
-        ],
-    ]
+    command: GuiCliCommand
 
     async def __call__( self ):
         ''' Invokes command after GUI server preparation. '''
@@ -66,8 +69,8 @@ class Cli( __.ApiServerCli ):
     def prepare_invocation_args(
         self,
     ) -> __.cabc.Mapping[ str, __.typx.Any ]:
-        args = __.accret.Dictionary(
-            __.ApiServerCli.prepare_invocation_args( self ) )
+        args: __.accret.Dictionary[ str, __.typx.Any ] = __.accret.Dictionary(
+            __.ApiServerCliBase.prepare_invocation_args( self ) )
         args[ 'guiserver' ] = self.guiserver
         return args
 

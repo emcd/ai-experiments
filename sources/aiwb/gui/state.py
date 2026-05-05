@@ -23,14 +23,41 @@
 
 from . import __
 from . import server as _server
-from . import updaters as _updaters
+
+
+_NOMARGS_DEFAULT = __.types.MappingProxyType( { } )
+
+
+class UpdatesDeduplicator( __.typx.Protocol ):
+    ''' Schedules GUI component updates without duplicate work. '''
+
+    @__.abc.abstractmethod
+    async def execute(
+        self,
+        updater: __.typx.Callable[ ..., __.typx.Any ],
+        posargs: __.cabc.Sequence[ __.typx.Any ] = ( ),
+        nomargs: __.cabc.Mapping[ str, __.typx.Any ] = _NOMARGS_DEFAULT,
+    ) -> None:
+        ''' Executes update if not already in progress. '''
+        raise NotImplementedError
+
+    @__.abc.abstractmethod
+    async def schedule(
+        self,
+        updater: __.typx.Callable[ ..., __.typx.Any ],
+        posargs: __.cabc.Sequence[ __.typx.Any ] = ( ),
+        nomargs: __.cabc.Mapping[ str, __.typx.Any ] = _NOMARGS_DEFAULT,
+        delay: float = 0.1,
+    ) -> None:
+        ''' Schedules update if not already in progress. '''
+        raise NotImplementedError
 
 
 class Manager( __.immut.DataclassObject ):
     ''' Manager for GUI components and server. '''
 
     components: __.types.SimpleNamespace
-    deduplicator: _updaters.UpdatesDeduplicator
+    deduplicator: UpdatesDeduplicator
     server: _server.Accessor
     transformers: __.accret.Dictionary
 

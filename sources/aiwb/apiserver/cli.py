@@ -40,20 +40,36 @@ class ExecuteServerCommand( __.ApplicationCliExecuteServerCommand ):
             auxdata = auxdata, display = display, scribe = scribe )
 
 
-class Cli( __.ApplicationCli ):
+ApiServerCliCommand: __.typx.TypeAlias = __.typx.Union[
+    __.typx.Annotated[
+        __.CoreCliInspectCommand,
+        __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
+    ],
+    __.typx.Annotated[
+        ExecuteServerCommand,
+        __.tyro.conf.subcommand( 'execute', prefix_name = False ),
+    ],
+]
+
+
+class CliBase( __.ApplicationCliBase ):
     ''' CLI for execution, inspection, and tests of API server. '''
 
     apiserver: _server.Control = _server.Control( )
-    command: __.typx.Union[
-        __.typx.Annotated[
-            __.CoreCliInspectCommand,
-            __.tyro.conf.subcommand( 'inspect', prefix_name = False ),
-        ],
-        __.typx.Annotated[
-            ExecuteServerCommand,
-            __.tyro.conf.subcommand( 'execute', prefix_name = False ),
-        ],
-    ]
+
+    def prepare_invocation_args(
+        self,
+    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
+        args: __.accret.Dictionary[ str, __.typx.Any ] = __.accret.Dictionary(
+            __.ApplicationCliBase.prepare_invocation_args( self ) )
+        args[ 'apiserver' ] = self.apiserver
+        return args
+
+
+class Cli( CliBase ):
+    ''' CLI for execution, inspection, and tests of API server. '''
+
+    command: ApiServerCliCommand
 
     async def __call__( self ):
         ''' Invokes command after API server preparation. '''
@@ -62,14 +78,6 @@ class Cli( __.ApplicationCli ):
         async with __.ctxl.AsyncExitStack( ) as exits:
             auxdata = await prepare( exits = exits, **nomargs )
             await self.command( auxdata = auxdata, display = self.display )
-
-    def prepare_invocation_args(
-        self,
-    ) -> __.cabc.Mapping[ str, __.typx.Any ]:
-        args = __.accret.Dictionary(
-            __.ApplicationCli.prepare_invocation_args( self ) )
-        args[ 'apiserver' ] = self.apiserver
-        return args
 
 
 def execute_cli( ):
