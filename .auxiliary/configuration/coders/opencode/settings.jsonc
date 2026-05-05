@@ -1,33 +1,89 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  // "provider": {
+  //   "ollama": {
+  //     "npm": "@ai-sdk/openai-compatible",
+  //     "name": "Ollama (local)",
+  //     "options": {
+  //       "baseURL": "http://localhost:11434/v1"
+  //     },
+  //     "models": {
+  //       "nemotron-3-nano": {
+  //         "name": "Nemotron 3 Nano",
+  //         "limit": {
+  //           "context": 262144,
+  //           "output": 262144
+  //         }
+  //       }
+  //     }
+  //   }
+  // },
+
+  "provider": {
+    "vllm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Vllm (local)",
+      "options": {
+        "baseURL": "http://localhost:13080/v1"
+      },
+      "models": {
+        "nemotron-3-nano": {
+          "name": "Nemotron 3 Nano",
+          "limit": {
+              "context": 262144,
+              "output": 262144
+          }
+        }
+      }
+    }
+  },
 
   "agent": {
+    "nemotron-build": {
+      "mode": "primary",
+      "model": "vllm/nemotron-3-nano",
+      "prompt": "{file:./.auxiliary/configuration/coders/opencode/prompt/nemotron-3-build.md}"
+    },
     "build": {
       "mode": "primary",
-      // "model": "zai-coding-plan/glm-4.6"
-      "model": "deepseek/deepseek-chat"
+      // "model": "zai-coding-plan/glm-4.7"
+      // "model": "deepseek/deepseek-chat"
+      "model": "minimax-coding-plan/MiniMax-M2.7"
     },
     "plan": {
       "mode": "primary",
-      // "model": "zai-coding-plan/glm-4.6"
-      "model": "deepseek/deepseek-chat"
+      // "model": "zai-coding-plan/glm-4.7"
+      // "model": "deepseek/deepseek-chat"
+      "model": "minimax-coding-plan/MiniMax-M2.7"
     }
   },
 
   "mcp": {
-    "pyright": {
+    "agentmux": {
       "type": "local",
-      "command": ["mcp-language-server", "--lsp", "pyright-langserver", "--workspace", ".", "--", "--stdio"],
-      "enabled": true
+      "command": [
+        "agentmux",
+        "host",
+        "mcp",
+        "--bundle",
+        "ai-experiments"
+      ],
+      "enabled": true,
+      "timeout": 900000
     },
     "context7": {
       "type": "local",
       "command": ["npx", "-y", "@upstash/context7-mcp"],
       "enabled": true
     },
-    "librovore": {
+    "nb": {
       "type": "local",
-      "command": ["uvx", "librovore", "serve"],
+      "command": [
+        "nb-mcp",
+        "--notebook",
+        "ai-experiments",
+        "--no-commit-signing"
+      ],
       "enabled": true
     }
   },
@@ -58,16 +114,25 @@
       "gh run list *": "allow",
       "gh run view *": "allow",
       "gh run watch *": "allow",
+      "gh search issues *": "allow",
       "gh status *": "allow",
       "git add *": "allow",
       "git branch *": "allow",
+      "git checkout *": "allow",
       "git diff *": "allow",
+      "git fetch *": "allow",
       "git log *": "allow",
+      "git rebase *": "allow",
+      "git restore *": "allow",
+      "git rev-parse *": "allow",
       "git show *": "allow",
+      "git stash list": "allow",
+      "git stash list *": "allow",
       "git status *": "allow",
       "grep *": "allow",
       "head *": "allow",
       "ls *": "allow",
+      "mkdir *": "allow",
       "ps *": "allow",
       "pwd *": "allow",
       "rg *": "allow",

@@ -1,8 +1,9 @@
 # Changes here will be overwritten by Copier
-_commit: v1.0a7-25-gbb445ee
+_commit: v1.0a10-8-g9386604
 _src_path: gh:emcd/agents-common
 coders:
 - claude
+- codex
 - gemini
 - opencode
 instructions_sources:
@@ -13,5 +14,7 @@ instructions_sources:
 instructions_target: .auxiliary/instructions
 languages:
 - python
+project_bundle_name: ai-experiments
 project_name: ai-experiments
 provide_instructions: true
+support_local_models: true
