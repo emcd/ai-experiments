@@ -356,6 +356,35 @@ class DirectoryAdapter(
 ):
     ''' Directory access adapter. '''
 
+    @__.abc.abstractmethod
+    async def create_directory(
+        self,
+        name: 'PossibleRelativeLocator',
+        permissions: _core.Permissions | _core.PermissionsTable,
+        exist_ok: bool = True,
+        parents: 'CreateParentsArgument' = True,
+    ) -> 'DirectoryAdapter':
+        ''' Creates directory relative to URL of this adapter. '''
+        raise NotImplementedError
+
+    @__.abc.abstractmethod
+    async def create_file(
+        self,
+        name: 'PossibleRelativeLocator',
+        permissions: _core.Permissions | _core.PermissionsTable,
+        exist_ok: bool = True,
+        parents: 'CreateParentsArgument' = True,
+    ) -> 'FileAdapter':
+        ''' Creates file relative to URL of this adapter. '''
+        raise NotImplementedError
+
+    @__.abc.abstractmethod
+    def produce_entry_accessor(
+        self, name: 'PossibleRelativeLocator'
+    ) -> 'GeneralAdapter':
+        ''' Derives new adapter relative to URL of this adapter. '''
+        raise NotImplementedError
+
 
 class FileAdapter(
     AdapterBase, FileOperations, __.typx.Protocol,

@@ -176,7 +176,7 @@ class Inode(
 
     species: 'LocationSpecies'
     permissions: 'Permissions'
-    supplement: AdapterInode
+    supplement: object
     bytes_count: __.typx.Optional[ int ] = None
     content_id: __.typx.Optional[ str ] = None
     mimetype: __.typx.Optional[ str ] = None

@@ -38,26 +38,45 @@ from . import __
 
 _module_name = __name__.replace( f"{__package__}.", '' )
 _entity_name = f"cache '{_module_name}'"
+_A = __.typx.TypeVar( '_A', bound = __.AdapterBase )
+_C = __.typx.TypeVar( '_C', bound = '_CacheEnsurable' )
+_P = __.typx.ParamSpec( '_P' )
+_R = __.typx.TypeVar( '_R' )
 
 
-def _ensures_cache( function: __.typx.Callable ):
+class _CacheEnsurable( __.typx.Protocol ):
+
+    async def _ingest_if_absent( self ) -> None:
+        raise NotImplementedError
+
+
+def _ensures_cache(
+    function: __.cabc.Callable[
+        __.typx.Concatenate[ _C, _P ],
+        __.types.CoroutineType[ __.typx.Any, __.typx.Any, _R ] ]
+) -> __.cabc.Callable[
+    __.typx.Concatenate[ _C, _P ],
+    __.types.CoroutineType[ __.typx.Any, __.typx.Any, _R ]
+]:
     ''' Decorator which ensures cache is filled before operation. '''
     from functools import wraps
 
     @wraps( function )
-    async def invoker( cache: '_Common', *posargs, **nomargs ):
+    async def invoker(
+        cache: _C, *posargs: _P.args, **nomargs: _P.kwargs
+    ) -> _R:
         await cache._ingest_if_absent( )  # noqa: SLF001
         return await function( cache, *posargs, **nomargs )
 
     return invoker
 
 
-class _Common( __.CacheBase, __.typx.Protocol ):
+class _Common( __.CacheBase, __.typx.Protocol, __.typx.Generic[ _A ] ):
 
-    adapter: __.AdapterBase
+    adapter: _A
     cache_url: __.Url
 
-    def __init__( self, adapter: __.AdapterBase, cache_url: __.Url ):
+    def __init__( self, adapter: _A, cache_url: __.Url ):
         self.adapter = adapter
         self.cache_url = cache_url
         super( ).__init__( )
@@ -71,7 +90,7 @@ class _Common( __.CacheBase, __.typx.Protocol ):
         pursue_indirection: bool = True,
     ) -> bool:
         cache_adapter = __.adapter_from_url( self.cache_url )
-        return cache_adapter.check_access(
+        return await cache_adapter.check_access(
             permissions = permissions,
             pursue_indirection = pursue_indirection )
 
@@ -95,7 +114,7 @@ class _Common( __.CacheBase, __.typx.Protocol ):
         pursue_indirection: bool = True,
     ) -> __.Inode:
         cache_adapter = __.adapter_from_url( self.cache_url )
-        return cache_adapter.examine(
+        return await cache_adapter.examine(
             attributes = attributes,
             pursue_indirection = pursue_indirection )
 
@@ -124,10 +143,10 @@ class CacheManager( __.CacheManager ):
 
     @classmethod
     async def from_url( selfclass, url: __.PossibleUrl ) -> __.typx.Self:
-        adapter = (
-            await __.adapter_from_url( url )
-            .as_specific( species = __.LocationSpecies.Directory ) )
-        return selfclass( adapter = adapter )
+        general_adapter = __.adapter_from_url( url )
+        await general_adapter.as_specific(
+            species = __.LocationSpecies.Directory )
+        return selfclass( adapter = general_adapter.as_directory( ) )
 
     def __init__( self, adapter: __.DirectoryAdapter ):
         super( ).__init__( )
@@ -146,14 +165,14 @@ class CacheManager( __.CacheManager ):
     ) -> __.typx.Self:
         # No concept of aliens or impurities. Everything is considered.
         # TODO: Implement.
-        pass
+        raise NotImplementedError
 
     async def difference(
         self
     ) -> __.cabc.Sequence[ __.CacheDifferenceBase ]:
         # No concept of aliens or impurities. Everything is considered.
         # TODO: Implement.
-        pass
+        raise NotImplementedError
 
     async def is_divergent( self ) -> bool:
         # No concept of aliens or impurities. Everything is considered.
@@ -161,15 +180,15 @@ class CacheManager( __.CacheManager ):
         #       Derive source URL from cache URL.
         #       Compare entries in source directories versus cache directories.
         #       Compare contents of source files versus cache files.
-        pass
+        raise NotImplementedError
 
     def produce_cache(
-        self, source_adapter: '__.GeneralAdapter'
+        self, adapter: '__.GeneralAdapter'
     ) -> '__.GeneralCache':
         cache_url = self._calculate_cache_url(
-            source_adapter = source_adapter )
+            source_adapter = adapter )
         return GeneralCache(
-            adapter = source_adapter, cache_url = cache_url )
+            adapter = adapter, cache_url = cache_url )
 
     async def reingest(
         self, *,
@@ -182,7 +201,7 @@ class CacheManager( __.CacheManager ):
     ) -> __.typx.Self:
         # No concept of aliens or impurities. Everything is considered.
         # TODO: Implement.
-        pass
+        raise NotImplementedError
 
     def _calculate_cache_url(
         self, source_adapter: __.AdapterBase
@@ -201,14 +220,16 @@ class CacheManager( __.CacheManager ):
         return cache_url_base.with_path( cache_path )
 
 
-class GeneralCache( _Common, __.GeneralCache ):
+class GeneralCache( _Common[ __.GeneralAdapter ], __.GeneralCache ):
     ''' Simple cache for general location. '''
     # TODO: Immutable instance attributes.
 
-    adapter: '__.GeneralAdapter'
+    @classmethod
+    def from_url( selfclass, url: __.PossibleUrl ) -> __.typx.Self:
+        raise NotImplementedError
 
     def as_directory( self ) -> '__.DirectoryCache':
-        adapter = self.adapter.as_file( )
+        adapter = self.adapter.as_directory( )
         return DirectoryCache( adapter = adapter, cache_url = self.cache_url )
 
     def as_file( self ) -> '__.FileCache':
@@ -228,17 +249,22 @@ class GeneralCache( _Common, __.GeneralCache ):
             species_ = species if force else await self.discover_species(
                 pursue_indirection = pursue_indirection, species = species )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        adapter = await self.adapter.as_specific(
+        if __.is_absent( species_ ):
+            reason = "Could not determine location species."
+            raise Error( reason = reason )
+        await self.adapter.as_specific(
             force = True,
             pursue_indirection = pursue_indirection,
             species = species_ )
         match species_:
             case __.LocationSpecies.Directory:
                 return DirectoryCache(
-                    adapter = adapter, cache_url = self.cache_url )
+                    adapter = self.adapter.as_directory( ),
+                    cache_url = self.cache_url )
             case __.LocationSpecies.File:
                 return FileCache(
-                    adapter = adapter, cache_url = self.cache_url )
+                    adapter = self.adapter.as_file( ),
+                    cache_url = self.cache_url )
             case _:
                 reason = (
                     "No derivative available for species "
@@ -266,26 +292,24 @@ class GeneralCache( _Common, __.GeneralCache ):
         Error = __.funct.partial(
             __.LocationCacheIngestFailure,
             source_url = self.adapter.as_url( ), cache_url = self.cache_url )
-        try: adapter = await self.adapter.as_specific( )
+        try: species = await self.discover_species( )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
-        if isinstance( adapter, __.DirectoryAdapter ):
+        if __.LocationSpecies.Directory is species:
             cache = DirectoryCache(
-                adapter = adapter, cache_url = self.cache_url )
-        elif isinstance( adapter, __.FileAdapter ):
+                adapter = self.adapter.as_directory( ),
+                cache_url = self.cache_url )
+        elif __.LocationSpecies.File is species:
             cache = FileCache(
-                adapter = adapter, cache_url = self.cache_url )
+                adapter = self.adapter.as_file( ), cache_url = self.cache_url )
         else:
-            species = ( await adapter.examine( ) ).inode.species
             reason = f"Cannot ingest entities of species {species.value!r}."
             raise Error( reason = reason )
         await cache._ingest( )  # noqa: SLF001
 
 
-class DirectoryCache( _Common, __.DirectoryCache ):
+class DirectoryCache( _Common[ __.DirectoryAdapter ], __.DirectoryCache ):
     ''' Simple cache for directory. '''
     # TODO: Immutable instance attributes.
-
-    adapter: __.DirectoryAdapter
 
     @_ensures_cache
     async def create_directory(
@@ -295,7 +319,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
         exist_ok: bool = True,
         parents: __.CreateParentsArgument = True,
     ) -> __.DirectoryAccessor:
-        cache_adapter = __.adapter_from_url( self.cache_url )
+        cache_adapter = __.adapter_from_url( self.cache_url ).as_directory( )
         return await cache_adapter.create_directory(
             name = name,
             permissions = permissions,
@@ -310,7 +334,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
         exist_ok: bool = True,
         parents: __.CreateParentsArgument = True,
     ) -> __.FileAccessor:
-        cache_adapter = __.adapter_from_url( self.cache_url )
+        cache_adapter = __.adapter_from_url( self.cache_url ).as_directory( )
         return await cache_adapter.create_file(
             name = name,
             permissions = permissions,
@@ -324,7 +348,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
         recurse: bool = True,
         safe: bool = True,
     ):
-        cache_adapter = __.adapter_from_url( self.cache_url )
+        cache_adapter = __.adapter_from_url( self.cache_url ).as_directory( )
         return await cache_adapter.delete_directory(
             name = name,
             absent_ok = absent_ok,
@@ -335,21 +359,20 @@ class DirectoryCache( _Common, __.DirectoryCache ):
         self,
         name: __.PossibleRelativeLocator,
         absent_ok: bool = True,
-        recurse: bool = True,
         safe: bool = True,
     ):
-        cache_adapter = __.adapter_from_url( self.cache_url )
+        cache_adapter = __.adapter_from_url( self.cache_url ).as_directory( )
         return await cache_adapter.delete_file(
             name = name,
             absent_ok = absent_ok,
-            recurse = recurse,
             safe = safe )
 
-    async def produce_entry_accessor(
+    def produce_entry_accessor(
         self, name: __.PossibleRelativeLocator
-    ) -> __.GeneralAccessor:
-        if isinstance( name, __.PossiblePath ): name = ( name, )
-        if isinstance( name, __.cabc.Iterable[ __.PossiblePath ] ):
+    ) -> 'GeneralCache':
+        if isinstance( name, bytes | str | __.PathLike ): name = ( name, )
+        if isinstance( name, __.cabc.Iterable ):
+            name = _normalize_path_parts( name )
             source_base_url = self.adapter.as_url( )
             source_url = source_base_url.with_path(
                 __.Path( source_base_url.path ).joinpath( *name ) )
@@ -369,7 +392,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
         ] = __.absent,
         recurse: bool = True
     ) -> __.cabc.Sequence[ __.DirectoryEntry ]:
-        cache_adapter = __.adapter_from_url( self.cache_url )
+        cache_adapter = __.adapter_from_url( self.cache_url ).as_directory( )
         return await cache_adapter.survey_entries(
             attributes = attributes, filters = filters, recurse = recurse )
 
@@ -377,7 +400,7 @@ class DirectoryCache( _Common, __.DirectoryCache ):
         Error = __.funct.partial(
             __.LocationCacheIngestFailure,
             source_url = self.adapter.as_url( ), cache_url = self.cache_url )
-        cache_adapter = __.adapter_from_url( self.cache_url )
+        cache_adapter = __.adapter_from_url( self.cache_url ).as_directory( )
         try:
             await cache_adapter.create_directory(
                 name = '.',
@@ -402,11 +425,9 @@ class DirectoryCache( _Common, __.DirectoryCache ):
                 raise Error( reason = str( exc ) ) from exc
 
 
-class FileCache( _Common, __.FileCache ):
+class FileCache( _Common[ __.FileAdapter ], __.FileCache ):
     ''' Simple cache for file. '''
     # TODO: Immutable instance attributes.
-
-    adapter: __.DirectoryAdapter
 
     async def acquire_content( self ) -> bytes:
         return ( await self.acquire_content_result( ) ).content
@@ -443,7 +464,7 @@ class FileCache( _Common, __.FileCache ):
     async def _create_cache_file_if_absent( self ) -> '__.FileAdapter':
         path = __.Path( self.cache_url.path )
         parent_url = self.cache_url.with_path( path.parent )
-        parent_adapter = __.adapter_from_url( parent_url )
+        parent_adapter = __.adapter_from_url( parent_url ).as_directory( )
         return await parent_adapter.create_file(
             name = path.name,
             permissions = __.accret.Dictionary( {
@@ -451,3 +472,11 @@ class FileCache( _Common, __.FileCache ):
                 __.Possessor.CurrentUser: __.Permissions_RCUD } ),
             exist_ok = True,
             parents = True )
+
+
+def _normalize_path_parts(
+    parts: __.cabc.Iterable[ __.PossiblePath ]
+) -> tuple[ str | __.PathLike[ str ], ... ]:
+    return tuple(
+        part.decode( ) if isinstance( part, bytes ) else part
+        for part in parts )

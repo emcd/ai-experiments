@@ -167,6 +167,9 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
             species_ = species if force else await self.discover_species(
                 pursue_indirection = pursue_indirection, species = species )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        if __.is_absent( species_ ):
+            reason = "Could not determine location species."
+            raise Error( reason = reason )
         match species_:
             case __.LocationSpecies.File:
                 return FileAdapter( url = self.url )
@@ -233,7 +236,7 @@ class FileAdapter( _Common, __.FileAdapter ):
         headers = _headers_from_file_update_options( options, inode_, content )
         async with _httpx.AsyncClient( ) as client:
             response = await client.put(
-                self.implement, content, headers = headers )
+                self.implement, content = content, headers = headers )
         try: response.raise_for_status( )
         except _httpx.HTTPStatusError as exc:
             _react_http_status_error( exc, headers, Error )
@@ -301,8 +304,8 @@ def _inode_from_headers(
     species: __.LocationSpecies,
 ) -> __.Inode:
     from email.utils import parsedate_to_datetime
-    bytes_count = headers.get( 'Content-Length' )
-    if bytes_count: bytes_count = int( bytes_count )
+    bytes_count_s = headers.get( 'Content-Length' )
+    bytes_count = int( bytes_count_s ) if bytes_count_s else None
     content_id = None
     if ( etag := headers.get( 'ETag' ) ): content_id = f"etag:{etag}"
     content_type = headers.get( 'Content-Type', '' )
@@ -311,8 +314,8 @@ def _inode_from_headers(
     if __.is_textual_mimetype( mimetype ) and 'charset=' in params:
         charset = params.split( 'charset=' )[ -1 ].strip( )
     mimetype = mimetype or None
-    mtime = headers.get( 'Last-Modified' )
-    if mtime: mtime = parsedate_to_datetime( mtime )
+    mtime_s = headers.get( 'Last-Modified' )
+    mtime = parsedate_to_datetime( mtime_s ) if mtime_s else None
     etime = _expiration_from_headers( headers )
     supplement = dict( headers )
     return __.Inode(

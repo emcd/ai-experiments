@@ -145,6 +145,9 @@ class GeneralAdapter( _Common, __.GeneralAdapter ):
             species_ = species if force else await self.discover_species(
                 pursue_indirection = pursue_indirection, species = species )
         except Exception as exc: raise Error( reason = str( exc ) ) from exc
+        if __.is_absent( species_ ):
+            reason = "Could not determine location species."
+            raise Error( reason = reason )
         match species_:
             case __.LocationSpecies.Directory:
                 return DirectoryAdapter( url = self.url )
@@ -199,7 +202,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         permissions: __.Permissions | __.PermissionsTable,
         exist_ok: bool = True,
         parents: __.CreateParentsArgument = True,
-    ) -> __.DirectoryAccessor:
+    ) -> __.DirectoryAdapter:
         try: accessor = self.produce_entry_accessor( name )
         except Exception as exc:
             raise __.LocationCreateFailure(
@@ -221,8 +224,8 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
             try: await mkdir( url.path, mode = mode )
             except Exception as exc:
                 raise Error( reason = str( exc ) ) from exc
-        return await accessor.as_specific(
-            species = __.LocationSpecies.Directory )
+        await accessor.as_specific( species = __.LocationSpecies.Directory )
+        return accessor.as_directory( )
 
     async def create_file(
         self,
@@ -230,7 +233,7 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         permissions: __.Permissions | __.PermissionsTable,
         exist_ok: bool = True,
         parents: __.CreateParentsArgument = True,
-    ) -> __.FileAccessor:
+    ) -> __.FileAdapter:
         try: accessor = self.produce_entry_accessor( name )
         except Exception as exc:
             raise __.LocationCreateFailure(
@@ -252,8 +255,8 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
             try: __.Path( url.path ).touch( mode = mode )
             except Exception as exc:
                 raise Error( reason = str( exc ) ) from exc
-        return await accessor.as_specific(
-            species = __.LocationSpecies.File )
+        await accessor.as_specific( species = __.LocationSpecies.File )
+        return accessor.as_file( )
 
     # TODO: create_indirection
 
@@ -279,11 +282,12 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
 
     # TODO: delete_indirection
 
-    async def produce_entry_accessor(
+    def produce_entry_accessor(
         self, name: __.PossibleRelativeLocator
-    ) -> __.GeneralAccessor:
-        if isinstance( name, __.PossiblePath ): name = ( name, )
-        if isinstance( name, __.cabc.Iterable[ __.PossiblePath ] ):
+    ) -> __.GeneralAdapter:
+        if isinstance( name, bytes | str | __.PathLike ): name = ( name, )
+        if isinstance( name, __.cabc.Iterable ):
+            name = _normalize_path_parts( name )
             return __.adapter_from_url(
                 self.url.with_path(
                     __.Path( self.url.path ).joinpath( *name ) ) )
@@ -298,7 +302,9 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
         recurse: bool = True
     ) -> __.cabc.Sequence[ __.DirectoryEntry ]:
         from aiofiles.os import scandir
-        if filters: filters = __.filters_from_specifiers( filters )
+        filters_ = (
+            ( ) if __.is_absent( filters )
+            else __.filters_from_specifiers( filters ) )
         scanners = [ ]
         results = [ ]
         # TODO: Handle scandir exceptions.
@@ -312,14 +318,14 @@ class DirectoryAdapter( _Common, __.DirectoryAdapter ):
                         attributes = attributes,
                         pursue_indirection = False ) )
                 dirent_ = __.DirectoryEntry( inode = inode, url = url )
-                if filters and await __.apply_filters( dirent_, filters ):
+                if filters_ and await __.apply_filters( dirent_, filters_ ):
                     continue
                 if recurse and inode.is_directory( ):
                     scanners.append(
                         DirectoryAdapter( url = url )
                         .survey_entries(
                             attributes = attributes,
-                            filters = filters,
+                            filters = filters_,
                             recurse = recurse ) )
                 results.append( dirent_ )
             if recurse:
@@ -368,8 +374,9 @@ class FileAdapter( _Common, __.FileAdapter ):
             self.url, __.Permissions_RCUD, error_to_raise = Error )
         try:
             from os import fstat
-            from aiofiles import open as open_
-            async with open_( self.implement, f"{flags}b" ) as stream:
+            async with __.ctxl.AsyncExitStack( ) as exits:
+                stream = await exits.enter_async_context(
+                    _open_binary_for_update( self.implement, flags ) )
                 await stream.write( content )
                 await stream.flush( ) # Cannot use bytes count in append mode.
                 stat = fstat( stream.fileno( ) )
@@ -389,7 +396,7 @@ async def register_defaults( ):
 
 
 def _access_mode_from_permissions(
-    permissions: '__.Permisisons | __.PermissionsTable'
+    permissions: '__.Permissions | __.PermissionsTable'
 ) -> int:
     from os import R_OK, W_OK, X_OK
     table = _tabulate_permissions( permissions )
@@ -413,7 +420,7 @@ def _access_mode_from_permissions(
 async def _create_parent_directories(
     url: __.Url,
     permissions: __.Permissions | __.PermissionsTable,
-    error_to_raise: __.LocationOperateFailure,
+    error_to_raise: __.typx.Callable[ ..., __.LocationOperateFailure ],
 ):
     from aiofiles.os import makedirs
     path = __.Path( url.path )
@@ -487,18 +494,34 @@ def _permissions_from_stat( inode: _StatResult ) -> __.Permissions:
     return permissions
 
 
+def _normalize_path_parts(
+    parts: __.cabc.Iterable[ __.PossiblePath ]
+) -> tuple[ str | __.PathLike[ str ], ... ]:
+    return tuple(
+        part.decode( ) if isinstance( part, bytes ) else part
+        for part in parts )
+
+
+def _open_binary_for_update( location: __.Path, flags: str ) -> __.typx.Any:
+    from aiofiles import open as open_
+    match flags:
+        case 'a': return open_( location, 'ab' )
+        case 'x': return open_( location, 'xb' )
+        case _: return open_( location, 'wb' )
+
+
 async def _probe_accessor_if_exists(
     accessor: __.GeneralAccessor,
     species: __.LocationSpecies,
     permissions: __.Permissions | __.PermissionsTable,
-    error_to_raise: __.LocationOperateFailure,
+    error_to_raise: __.typx.Callable[ ..., __.LocationOperateFailure ],
     exist_ok = True,
 ) -> bool:
     exists = await accessor.check_existence( pursue_indirection = False )
     if exists:
         if not exist_ok:
             raise error_to_raise( reason = "Entry already exists." )
-        inode = await accessor.examine( puruse_indirection = False )
+        inode = await accessor.examine( pursue_indirection = False )
         if species is not inode.species:
             reason = (
                 f"Entry already exists as {inode.species.value}. "
@@ -522,7 +545,7 @@ def _species_from_stat( stat: _StatResult ) -> __.LocationSpecies:  # noqa: PLR0
     if S_ISFIFO( mode ):    return __.LocationSpecies.Pipe
     if S_ISSOCK( mode ):    return __.LocationSpecies.Socket
     if S_ISCHR( mode ):     return __.LocationSpecies.Stream
-    inode_type = mode & S_IFMT
+    inode_type = S_IFMT( mode )
     # TODO? Other entities: doors, etc....
     raise __.InodeSpeciesNoSupport( inode_type, _entity_name )
 
