@@ -34,6 +34,7 @@ from panel.layout.base import ListLike
 from typing_extensions import ClassVar as _ClassVar
 
 from . import __
+from . import exceptions as _exceptions
 
 
 # Applying stylesheets from native Panel widgets to custom widgets is not
@@ -430,11 +431,11 @@ class AdaptiveTextArea( ReactiveHTML ):
         'resize': 'none',
     } )
 
-    _child_config: _ClassVar[ dict ] = {
+    _child_config: _ClassVar[ __.cabc.Mapping[ str, str ] ] = {
         'value': 'template',
     }
 
-    _scripts: _ClassVar[ dict ] = {
+    _scripts: _ClassVar[ __.cabc.Mapping[ str, str | list[ str ] ] ] = {
         'init': '''
             state.debounce_timer = null;
             textarea.value = data.value || '';
@@ -526,7 +527,8 @@ class AdaptiveTextArea( ReactiveHTML ):
         # Force change event to occur when necessary.
         # Otherwise, do not trigger change event to avoid flashing.
         if value != self.value_to_ingest: self.value_to_ingest = value
-        if self.value_to_ingest: self.value_to_ingest = ''
+        if isinstance( self.value_to_ingest, str ) and self.value_to_ingest:
+            self.value_to_ingest = ''
 
 
 class CompactSelector( ReactiveHTML ):
@@ -591,9 +593,9 @@ class ConversationIndicator( ReactiveHTML ):
 
     clicked = param.Event( default = False )
     mouse_hover__ = param.Boolean( False )
-    row__ = param.Parameter( )
+    row__: __.typx.Any = param.Parameter( )
 
-    _scripts: _ClassVar[ dict ] = {
+    _scripts: _ClassVar[ __.cabc.Mapping[ str, str | list[ str ] ] ] = {
         'my_mouseenter': '''
             if (event.target && event.target.matches(':hover')) {
                 var timeout = setTimeout(
@@ -643,9 +645,9 @@ class ConversationIndicator( ReactiveHTML ):
 class ConversationMessage( ReactiveHTML ):
 
     mouse_hover__ = param.Boolean( False )
-    row__ = param.Parameter( )
+    row__: __.typx.Any = param.Parameter( )
 
-    _scripts: _ClassVar[ dict ] = {
+    _scripts: _ClassVar[ __.cabc.Mapping[ str, str | list[ str ] ] ] = {
         'my_mouseenter': '''
             if (event.target && event.target.matches(':hover')) {
                 var timeout = setTimeout(
@@ -675,14 +677,35 @@ class ConversationMessage( ReactiveHTML ):
         self.row__.gui__.row_actions.visible = self.mouse_hover__
 
 
-class EventsInterceptor( ListLike, ReactiveHTML ):
+class _ListLikeReactiveHTML( ListLike, ReactiveHTML ):
+    ''' Reactive HTML component with list-like child construction. '''
+
+    def clone(
+        self, *objects: __.typx.Any, **params: __.typx.Any
+    ) -> __.typx.Self:
+        ''' Makes a copy of the component sharing the same parameters. '''
+        objects_ = objects
+        if not objects_:
+            if 'objects' in params:
+                objects_ = tuple( params.pop( 'objects' ) )
+            elif isinstance( self.objects, list ):
+                objects_ = tuple( self.objects )
+        elif 'objects' in params:
+            raise _exceptions.ComponentObjectsArgumentConflict(
+                type( self ).__name__ )
+        params_ = dict( self.param.values( ), **params )
+        del params_[ 'objects' ]
+        return type( self )( *objects_, **params_ )
+
+
+class EventsInterceptor( _ListLikeReactiveHTML ):
     ''' Container which intercepts and posts DOM events. '''
 
     clicked = param.Boolean( )
     key_pressed = param.String( )
     objects = Children( )
 
-    _scripts: _ClassVar[ dict ] = {
+    _scripts: _ClassVar[ __.cabc.Mapping[ str, str | list[ str ] ] ] = {
         'handle_click': '''
             data.clicked = true;
             event.stopPropagation();
@@ -726,7 +749,7 @@ _menu_objects_stylesheets = '''
             background-color: transparent;
         }
 '''
-class MenuObjects( ListLike, ReactiveHTML ):
+class MenuObjects( _ListLikeReactiveHTML ):
     ''' Dropdown menu which can contain arbitrary widgets. '''
 
     objects = Children( )
@@ -738,7 +761,7 @@ class MenuObjects( ListLike, ReactiveHTML ):
         _menu_objects_stylesheets,
     ]
 
-    _scripts: _ClassVar[ dict ] = {
+    _scripts: _ClassVar[ __.cabc.Mapping[ str, str | list[ str ] ] ] = {
         'handle_mouseleave': '''
             state.menuVisible = false;
             menu.style.display = 'none';

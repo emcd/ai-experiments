@@ -31,3 +31,21 @@ class ComponentAttributeAbsence( __.Omnierror, AttributeError ):
         super( ).__init__(
             f"Cannot {operation}: component of type {component_class!r} "
             f"has no {attribute_name!r} attribute." )
+
+
+class ComponentObjectsArgumentConflict( __.Omnierror, RuntimeError ):
+    ''' Component objects argument conflict. '''
+
+    def __init__( self, component_class ):
+        super( ).__init__(
+            f"A {component_class}'s objects should be supplied either "
+            "as positional arguments or as a keyword, not both." )
+
+
+class ConversationPersistenceInvalidity( __.Omnierror, ValueError ):
+    ''' Conversation persistence data is invalid. '''
+
+    def __init__( self, identity, location, reason ):
+        super( ).__init__(
+            f"Conversation {identity!r} at {location!s} is invalid: "
+            f"{reason}." )

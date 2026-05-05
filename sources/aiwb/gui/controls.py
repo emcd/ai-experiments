@@ -81,15 +81,22 @@ class DiscreteInterval( ComponentManager ):
         attributes = definition.attributes
         if isinstance( definition.grade, Integral ):
             component_class = widgets.IntSlider
-            converter = int
+            minimum = int( float( definition.minimum ) )
+            maximum = int( float( definition.maximum ) )
+            grade = int( definition.grade )
         elif isinstance( definition.grade, Rational ):
             component_class = widgets.FloatSlider
-            converter = float
+            minimum = float( definition.minimum )
+            maximum = float( definition.maximum )
+            grade = float( definition.grade )
+        else:
+            raise _control_exceptions.ControlValueMisclassification(
+                definition.name, 'Rational', definition.grade )
         component = component_class(
             name = attributes.label,
-            start = converter( definition.minimum ),
-            end = converter( definition.maximum ),
-            step = converter( definition.grade ),
+            start = minimum,
+            end = maximum,
+            step = grade,
             value = control.value )
         component.param.watch( callback, 'value' )
         return component

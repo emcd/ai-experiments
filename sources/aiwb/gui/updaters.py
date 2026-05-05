@@ -24,6 +24,7 @@
 from . import __
 from . import components as _components
 from . import conversations as _conversations
+from . import exceptions as _exceptions
 from . import invocables as _invocables
 from . import providers as _providers
 from . import state as _state
@@ -82,7 +83,7 @@ class UpdatesDeduplicator(
         __.dcls.field( default_factory = set ) )
     updates_mutexes: dict[ UpdateRequest, __.MutexAsync ] = (
         __.dcls.field( default_factory = dict ) )
-    updates_tasks: dict[ UpdateRequest, __.cabc.Coroutine ] = (
+    updates_tasks: dict[ UpdateRequest, __.asyncio.Task[ None ] ] = (
         __.dcls.field( default_factory = dict ) )
 
     async def __aenter__( self ): return self
@@ -183,7 +184,11 @@ class UpdatesDeduplicator(
 
 
 
-def add_conversation_indicator( components, descriptor, position = 0 ):
+def add_conversation_indicator(
+    components,
+    descriptor,
+    position: int | str = 0,
+):
     ''' Adds conversation indicator to conversations index. '''
     from .classes import ConversationIndicator
     from .events import on_select_conversation
@@ -257,8 +262,6 @@ def configure_message_interface( canister_gui, dto ):
     behaviors = dto.attributes.behaviors
     role = dto.role
     canister.styles.update( _roles_styles[ role ] )
-    # TODO: Use user-supplied logos, when available.
-    canister_gui.toggle_active.name = _roles_emoji[ role ]
     match role:
         case __.MessageRole.Assistant:
             canister_gui.button_fork.visible = True
@@ -317,13 +320,23 @@ async def create_conversation( components, descriptor, state = None ):
 
 def create_message( gui, dto ):
     # TODO: Handle content arrays properly.
-    layout = determine_message_layout( dto )
+    layout = determine_message_layout( dto ).copy( )
+    toggle_active = layout[ 'toggle_active' ].copy( )
+    toggle_active[ 'component_arguments' ] = (
+        toggle_active[ 'component_arguments' ] | {
+            # TODO: Use user-supplied logos, when available.
+            'name': _roles_emoji[ dto.role ],
+        } )
+    layout[ 'toggle_active' ] = toggle_active
     gui_ = __.types.SimpleNamespace(
         canister__ = dto,
         index__ = None,
         layout__ = layout,
         parent__ = gui )
     widget = _components.generate( gui_, layout, 'row_canister' )
+    if widget is None:
+        raise _exceptions.ComponentAttributeAbsence(
+            'row_canister', 'component', 'create message' )
     widget.gui__ = gui_
     gui_.row_content.gui__ = gui_
     # TODO: Handle non-textual messages and text messages with attachments.
@@ -628,16 +641,18 @@ def update_conversation_hilite( components, new_descriptor = None ):
     conversations = components.column_conversations_indicators
     old_descriptor = conversations.current_descriptor__
     if None is new_descriptor: new_descriptor = old_descriptor
-    if new_descriptor is not old_descriptor:  # noqa: SIM102
-        if None is not old_descriptor.indicator:
+    if new_descriptor is None: return
+    if None is not old_descriptor and new_descriptor is not old_descriptor:
+        old_indicator = old_descriptor.indicator
+        if None is not old_indicator:
             # TODO: Cycle to a "previously seen" background color.
-            old_descriptor.indicator.styles.pop( 'background', None )
-            old_descriptor.indicator.param.trigger( 'styles' )
-    if None is not new_descriptor.indicator:
+            old_indicator.styles.pop( 'background', None )
+            old_indicator.param.trigger( 'styles' )
+    new_indicator = new_descriptor.indicator
+    if None is not new_indicator:
         # TODO: Use style variable rather than hard-coded value.
-        new_descriptor.indicator.styles.update(
-            { 'background': 'LightGray' } )
-        new_descriptor.indicator.param.trigger( 'styles' )
+        new_indicator.styles.update( { 'background': 'LightGray' } )
+        new_indicator.param.trigger( 'styles' )
 
 
 async def update_conversation_postpopulate( components ):

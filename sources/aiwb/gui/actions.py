@@ -187,9 +187,11 @@ async def _chat( components ):
 
 
 def _detect_ai_completion( components, component = None ):
-    if None is component:
-        component = components.column_conversation_history[ -1 ]
-    canister = component.gui__.canister__
+    component_ = (
+        components.column_conversation_history[ -1 ]
+        if component is None else component )
+    if component_ is None: return False
+    canister = component_.gui__.canister__
     match canister.role:
         case __.MessageRole.Assistant:
             return not hasattr( canister.attributes, 'invocation_data' )

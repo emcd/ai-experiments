@@ -51,7 +51,8 @@ class DefaultTemplate( Template ):
         doc = '''A Design applies a specific design system to a template.'''
     )
 
-    _css = pathlib.Path( __file__ ).parent / 'default.css'
+    _css: ClassVar[ list[ pathlib.Path | str ] ] = [
+        pathlib.Path( __file__ ).parent / 'default.css' ]
 
     _resources: ClassVar[Dict[str, Dict[str, str]]] = {
         'css': {

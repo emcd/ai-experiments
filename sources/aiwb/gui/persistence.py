@@ -25,6 +25,7 @@
 
 from . import __
 from . import conversations as _conversations
+from . import exceptions as _exceptions
 from . import state as _state
 
 
@@ -295,10 +296,12 @@ async def upgrade_conversation( components, identity ):
     ic( file )
     async with open_( file ) as stream:
         try: state = loads( await stream.read( ) )
-        except JSONDecodeError: state = None
-    if None is state:
-        file.unlink( )
-        return
+        except JSONDecodeError as exception:
+            raise _exceptions.ConversationPersistenceInvalidity(
+                identity, file, 'malformed JSON' ) from exception
+    if not isinstance( state, __.cabc.MutableMapping ):
+        raise _exceptions.ConversationPersistenceInvalidity(
+            identity, file, 'top-level state is not an object' )
     # TODO: Consider format version.
     restorers = tuple(
         restore_canister( directory_manager, canister_state )

@@ -31,9 +31,11 @@ async def extract_invocation_requests(
     silent_extraction_failure: bool = False,
 ):
     ''' Extracts invocation requests from message canister GUI component. '''
-    if None is component:
-        component = components.column_conversation_history[ -1 ]
-    canister = component.gui__.canister__
+    component_ = (
+        components.column_conversation_history[ -1 ]
+        if component is None else component )
+    if component_ is None: return ( )
+    canister = component_.gui__.canister__
     # TODO: Use selected multichoice values instead of all possible.
     invocables = components.auxdata__.invocables
     # TODO: Provide supplements based on specification from invocable.
