@@ -45,7 +45,9 @@ def descriptors_from_configuration(
     return tuple( descriptors )
 
 
-async def prepare( auxdata: __.CoreGlobals ) -> __.accret.Dictionary:
+async def prepare(
+    auxdata: __.CoreGlobals,
+) -> __.cabc.Mapping[ str, _interfaces.Client ]:
     ''' Prepares clients from configuration and returns futures to them. '''
     # TODO: Return clients and models.
     providers = await prepare_providers( auxdata )

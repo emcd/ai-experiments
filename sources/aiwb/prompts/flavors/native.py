@@ -26,7 +26,19 @@ from .. import exceptions as _exceptions
 from . import __
 
 
+class _PromptsProvider( __.typx.Protocol ):
+    ''' Provides prepared prompt stores. '''
+
+    prompts: object
+
+
 class Definition( _core.Definition ):
+
+    attributes: __.cabc.Mapping[ str, __.typx.Any ]
+    fragments: __.cabc.Mapping[ str, str ]
+    species: str
+    templates: __.cabc.Sequence[ str ]
+    variables: __.cabc.Mapping[ str, __.typx.Any ]
 
     class Instance( _core.Definition.Instance ):
         # TODO: Immutability of class and instances.
@@ -34,11 +46,11 @@ class Definition( _core.Definition ):
         __slots__ = ( 'controls', )
 
         controls: __.typx.Any # TODO: Correct type for controls.
-
         def __init__(
             self,
             definition: 'Definition',
-            values: __.cabc.Mapping[ str, __.typx.Any ] = None
+            values: __.typx.Optional[
+                __.cabc.Mapping[ str, __.typx.Any ] ] = None,
         ):
             super( ).__init__( definition )
             values = values or { }
@@ -46,7 +58,7 @@ class Definition( _core.Definition ):
                 name: (
                     variable.create_control( values[ name ] )
                     if name in values else variable.create_control_default( ) )
-                for name, variable in self.definition.variables.items( ) } )
+                for name, variable in definition.variables.items( ) } )
 
         def render( self, auxdata: __.Globals ) -> str:
             # TODO: Async execution.
@@ -56,13 +68,15 @@ class Definition( _core.Definition ):
             variables = __.accret.Namespace( **self.serialize( ) )
             templates = tuple(
                 acquire_template( auxdata, template_id )
-                for template_id in self.definition.templates )
+                for template_id in getattr( definition, 'templates' ) )
             fragments = __.accret.Namespace( **{
                 name: acquire_fragment( auxdata, filename )
-                for name, filename in definition.fragments.items( ) } )
+                for name, filename
+                in getattr( definition, 'fragments' ).items( ) } )
             # TODO: Additional context, such as current provider and model.
             text = '\n\n'.join( # TODO: Configurable delimiter.
-                template.render( variables = variables, fragments = fragments )
+                str( template.render(
+                    variables = variables, fragments = fragments ) )
                 for template in templates )
             if not text:
                 raise _exceptions.PromptRenderFailure( issue = 'empty output' )
@@ -87,7 +101,6 @@ class Definition( _core.Definition ):
             variable[ 'name' ]: descriptor_to_definition( variable )
             for variable in variables } )
 
-
 class Store( _core.Store ):
 
     async def acquire_definitions(
@@ -96,9 +109,7 @@ class Store( _core.Store ):
     ) -> __.cabc.Mapping[ str, 'Definition' ]:
         scribe = __.acquire_scribe( __package__ )
         location = self.location
-        match location:
-            case __.Path( ): pass
-            case _: raise NotImplementedError
+        if not isinstance( location, __.Path ): raise NotImplementedError
         # TODO: Rename 'descriptors' to 'definitions'.
         location = location / 'descriptors'
         files = tuple( location.resolve( strict = True ).glob( '*.toml' ) )
@@ -141,18 +152,21 @@ def acquire_template( auxdata: __.Globals, identifier: str ):
     )
 
 
-def discover_file_from_stores( auxdata: __.Globals, name: str ) -> __.Path:
+def discover_file_from_stores(
+    auxdata: object, name: str
+) -> __.Path:
     ''' Returns path to file if it exists in any store.
 
         Stores are searched in reverse order, under the assumption that
         custom prompt stores come later than default prompt stores and should
         override them.
     '''
-    files = tuple(
-        ( store.location / name ).resolve( strict = True )
-        for store in reversed( auxdata.prompts.stores.values( ) )
-        if isinstance( store, Store ) )
-    for file in files:
+    prompts = getattr( auxdata, 'prompts' )
+    for store in reversed( prompts.stores.values( ) ):
+        if not isinstance( store, Store ): continue
+        location = store.location
+        if not isinstance( location, __.Path ): continue
+        file = ( location / name ).resolve( strict = True )
         if not file.exists( ): continue
         return file
     raise _exceptions.PromptTemplateAbsence( name )

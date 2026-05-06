@@ -124,7 +124,7 @@ def invocation_requests_from_canister(
     auxdata: __.CoreGlobals,
     supplements: __.accret.Dictionary,
     canister: __.MessageCanister,
-    invocables: __.accret.Namespace,
+    invocables: object,
     ignore_invalid_canister: bool = False,
 ) -> _core.InvocationsRequests:
     if not hasattr( canister.attributes, 'invocation_data' ):
@@ -138,7 +138,7 @@ def invocation_requests_from_canister(
             expected_type = 'Sequence',
             received_type = type( descriptors ).__qualname__ )
     # TODO: Construct context at caller.
-    invokers = invocables.invokers
+    invokers = getattr( invocables, 'invokers' )
     context = __.accret.Namespace(
         auxdata = auxdata, invokers = invokers, supplements = supplements )
     # TODO: Handle errors from construction attempts.
@@ -176,9 +176,9 @@ async def memcache_acquire_models(
         auxdata, client = client, genera = genera, acquirer = acquirer )
 
 
-_models_integrators_caches: __.cabc.Mapping[
+_models_integrators_caches: __.cabc.MutableMapping[
     str, _core.ModelsIntegratorsByGenusMutable
-] = __.accret.Dictionary( )
+] = { }
 async def memcache_acquire_models_integrators(
     auxdata: __.CoreGlobals,
     provider: _interfaces.Provider,
@@ -194,7 +194,11 @@ async def memcache_acquire_models_integrators(
     if force or not cache:
         # TODO? async mutex in case of clear-update during access
         cache.clear( )
-        cache.update( await acquire_models_integrators( auxdata, name ) )
+        cache.update( {
+            genus: list( integrators )
+            for genus, integrators
+            in ( await acquire_models_integrators( auxdata, name ) ).items( )
+        } )
     return __.types.MappingProxyType( cache )
 
 

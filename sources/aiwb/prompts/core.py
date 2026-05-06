@@ -37,8 +37,6 @@ class Definition(
     __slots__ = ( 'name', 'store', )
 
     class Instance(
-        __.immut.Protocol, __.typx.Protocol,
-        decorators = ( __.typx.runtime_checkable, ),
     ):
         ''' Renderable instance of prompt. '''
         # TODO: Immutability of instances.
@@ -47,7 +45,7 @@ class Definition(
 
         definition: 'Definition'
 
-        def __init__( self, definition: 'Definition' ):
+        def __init__( self, definition: 'Definition', values = None ):
             self.definition = definition
 
         def render( self, auxdata: __.Globals ) -> str:

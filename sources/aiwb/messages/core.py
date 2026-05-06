@@ -25,10 +25,18 @@ from . import __
 from .exceptions import MimetypeInvalidity as _MimetypeInvalidity
 
 
+class _StateLocationsProvider( __.typx.Protocol ):
+    ''' Provides state directory paths. '''
+
+    @__.abc.abstractmethod
+    def provide_state_location( self, *appendages: str ) -> __.Path:
+        raise NotImplementedError
+
+
 class DirectoryManager( __.immut.DataclassObject ):
     ''' Manages conversation and message content directories. '''
 
-    auxdata: __.accret.Namespace
+    auxdata: _StateLocationsProvider
 
     _mkdir_nomargs_default = __.types.MappingProxyType( dict(
         exist_ok = True, parents = True ) )
@@ -126,7 +134,7 @@ class Role( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     User =          'user'
 
     @classmethod
-    def from_canister( selfclass, canister: 'Canister' ) -> __.typx.Self:
+    def from_canister( selfclass, canister: 'Canister' ) -> 'Role':
         ''' Provides role associated with canister. '''
         # TODO: Use 'role' property on canister instead.
         return canister.role

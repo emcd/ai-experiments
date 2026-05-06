@@ -83,7 +83,8 @@ async def prepare( auxdata: __.Globals ) -> __.accret.Dictionary:
 
 
 async def prepare_clients(
-    auxdata: __.Globals, factories: __.accret.Dictionary
+    auxdata: __.Globals,
+    factories: __.cabc.Mapping[ str, Factory ],
 ):
     ''' Prepares clients from configuration. '''
     # TODO: Return futures for background loading.

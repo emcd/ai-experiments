@@ -159,6 +159,9 @@ class AnthropicClient( Client ):
 
 class Provider( __.Provider ):
 
+    name: str
+    configuration: __.cabc.Mapping[ str, __.typx.Any ]
+
     async def produce_client(
         self, auxdata: __.CoreGlobals, descriptor: ClientDescriptor
     ) -> Client:
