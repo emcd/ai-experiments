@@ -34,7 +34,7 @@ AnthropicMessage: __.typx.TypeAlias = dict[ str, __.typx.Any ]
 AnthropicMessageContent: __.typx.TypeAlias = (
     str | list[ dict[ str, __.typx.Any ] ] )
 AttributesDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
-ModelDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
+ModelConfiguration: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
 
 
 class NativeMessageRefinementActions(
@@ -68,37 +68,44 @@ class Attributes( __.ConverserAttributes ):
         return selfclass( **args )
 
 
-class ControlsProcessor(
-    __.ControlsProcessorBase[ 'Model' ],
-):
-    ''' Controls nativization for Anthropic chat models. '''
+class Model( __.ConverserModel ):
+    ''' Anthropic chat model. '''
+
+    attributes: Attributes
+
+    @classmethod
+    def from_descriptor(
+        selfclass, client: __.Client, name: str, descriptor: ModelConfiguration
+    ) -> __.typx.Self:
+        args: __.NominativeArguments = __.accret.Dictionary(
+            client = client, name = name )
+        args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
+        return selfclass( **args )
+
+
+class Conversers( __.immut.DataclassObject ):
+    ''' Client-owned operations for Anthropic chat models. '''
 
     def nativize_controls(
-        self, controls: __.ControlsInstancesByName
+        self, model: Model, controls: __.ControlsInstancesByName
     ) -> AnthropicControls:
         # TODO: https://docs.anthropic.com/en/api/rate-limits#updated-rate-limits
         #       Cap max tokens by per-tier rate limits.
         #       (Need to add tier awareness and custom configs.)
-        #assert self.model.name == controls[ 'model' ] # TODO: enable for -O
+        #assert model.name == controls[ 'model' ] # TODO: enable for -O
         args: AnthropicControls = dict(
-            max_tokens = self.model.attributes.tokens_limits.per_response,
-            model = self.model.name )
+            max_tokens = model.attributes.tokens_limits.per_response,
+            model = model.name )
         args.update( {
             name.replace( '-', '_' ): value
             for name, value in controls.items( )
-            if name in self.control_names } )
-        #if self.model.attributes.supports_continuous_response:
+            if name in _control_names( model ) } )
+        #if model.attributes.supports_continuous_response:
         #    args[ 'stream' ] = True
         return args
 
-
-class InvocationsProcessor(
-    __.ProcessorBase[ 'Model' ]
-):
-    ''' Handles tool calls for Anthropic chat models. '''
-
-    async def __call__(
-        self, request: __.InvocationRequest
+    async def execute_invocation(
+        self, model: Model, request: __.InvocationRequest
     ) -> __.MessageCanister:
         result = await request.invocation( )
         specifics = request.specifics
@@ -110,13 +117,15 @@ class InvocationsProcessor(
             __.ResultMessageCanister( )
             .add_content( message, mimetype = 'application/json' ) )
         canister.attributes.model_context = {
-            'provider': self.model.provider.name,
-            'model': self.model.name,
+            'provider': model.provider.name,
+            'model': model.name,
             'supplement': result_context,
         } # TODO? Immutable
         return canister
 
-    def nativize_invocable( self, invoker: __.Invoker ) -> __.typx.Any:
+    def nativize_invocable(
+        self, model: Model, invoker: __.Invoker
+    ) -> __.typx.Any:
         # TODO: return type: anthropic.types.ToolParam
         return dict(
             name = invoker.name,
@@ -125,18 +134,22 @@ class InvocationsProcessor(
 
     def nativize_invocables(
         self,
+        model: Model,
         invokers: __.cabc.Iterable[ __.Invoker ],
     ) -> __.typx.Any:
         # TODO: return type: list[ anthropic.types.ToolParam ]
-        tools = [ self.nativize_invocable( invoker ) for invoker in invokers ]
+        tools = [
+            self.nativize_invocable( model, invoker )
+            for invoker in invokers ]
         # Note: Caching of invocables is not worth it in sporadic
         #       conversational contexts. Only worthwhile when tools are being
         #       continuously shared by multiple conversational contexts.
         #if tools: tools[ -1 ][ 'cache_control' ] = { 'type': 'ephemeral' }
         return dict( tools = tools )
 
-    def requests_from_canister(
+    def requests_from_canister(  # noqa: PLR0913
         self,
+        model: Model,
         auxdata: __.CoreGlobals, *,
         supplements: __.accret.Dictionary,
         canister: __.MessageCanister,
@@ -144,12 +157,12 @@ class InvocationsProcessor(
         ignore_invalid_canister: bool = False,
     ) -> __.InvocationsRequests:
         # TODO: Provide supplements based on specification from invocable.
-        supplements[ 'model' ] = self.model
+        supplements[ 'model' ] = model
         model_context = getattr( canister.attributes, 'model_context', { } )
-        if self.model.provider.name != model_context.get( 'provider' ):
+        if model.provider.name != model_context.get( 'provider' ):
             if ignore_invalid_canister: return [ ]
             raise __.ProviderIncompatibilityError(
-                provider = self.model.provider,
+                provider = model.provider,
                 entity_name = "foreign invocation requests" )
         requests = __.invocation_requests_from_canister(
             auxdata = auxdata,
@@ -168,86 +181,20 @@ class InvocationsProcessor(
             request.specifics.update( specifics[ i ] )
         return requests
 
-
-class MessagesProcessor(
-    __.ProcessorBase[ 'Model' ],
-):
-    ''' Handles conversation messages in Anthropic format. '''
-
     def nativize_messages_v0(
-        self, canisters: __.MessagesCanisters, supplements
+        self, model: Model, canisters: __.MessagesCanisters, supplements
     ) -> list[ AnthropicMessage ]:
         # TODO: return type: list[ anthropic.types.MessageParam ]
         messages_pre: list[ AnthropicMessage ] = [ ]
         for canister in canisters:
-            if _decide_exclude_message( self.model, canister ): continue
+            if _decide_exclude_message( model, canister ): continue
             message = _nativize_message(
-                self.model, canister, supplements )
+                model, canister, supplements )
             messages_pre.append( message )
-        return _refine_native_messages( self.model, messages_pre )
+        return _refine_native_messages( model, messages_pre )
 
-
-class Model( __.ConverserModel ):
-    ''' Anthropic chat model. '''
-
-    attributes: Attributes
-
-    @classmethod
-    def from_descriptor(
-        selfclass, client: __.Client, name: str, descriptor: ModelDescriptor
-    ) -> __.typx.Self:
-        args: __.NominativeArguments = __.accret.Dictionary(
-            client = client, name = name )
-        args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
-        return selfclass( **args )
-
-    @property
-    def controls_processor( self ) -> ControlsProcessor:
-        return ControlsProcessor( model = self )
-
-    @property
-    def invocations_processor( self ) -> InvocationsProcessor:
-        return InvocationsProcessor( model = self )
-
-    @property
-    def messages_processor( self ) -> MessagesProcessor:
-        return MessagesProcessor( model = self )
-
-    @property
-    def serde_processor( self ) -> 'SerdeProcessor':
-        return SerdeProcessor( model = self )
-
-    @property
-    def tokenizer( self ) -> 'Tokenizer':
-        return Tokenizer( model = self )
-
-    async def converse_v0(
-        self,
-        messages: __.MessagesCanisters,
-        supplements,
-        controls: __.ControlsInstancesByName,
-        reactors, # TODO? Accept context manager with reactor functions.
-    ):
-        args = _prepare_client_arguments(
-            model = self,
-            messages = messages,
-            supplements = supplements,
-            controls = controls )
-        should_stream = (
-                self.attributes.supports_continuous_response
-            and args.get( 'stream', True ) )
-        if should_stream:
-            return await _converse_continuous_v0( self, args, reactors )
-        return await _converse_complete_v0( self, args, reactors )
-
-
-class SerdeProcessor(
-    __.ProcessorBase[ Model ]
-):
-    ''' (De)serialization for Anthropic chat models. '''
-
-    def deserialize_data( self, data: str ) -> __.typx.Any:
-        data_format = self.model.attributes.format_preferences.response_data
+    def deserialize_data( self, model: Model, data: str ) -> __.typx.Any:
+        data_format = model.attributes.format_preferences.response_data
         match data_format:
             case __.DataFormatPreferences.JSON:
                 from ....codecs.json import loads
@@ -255,8 +202,8 @@ class SerdeProcessor(
         raise __.ProviderDataFormatNoSupport(
             data_format.value, 'deserialize' )
 
-    def serialize_data( self, data: __.typx.Any ) -> str:
-        data_format = self.model.attributes.format_preferences.request_data
+    def serialize_data( self, model: Model, data: __.typx.Any ) -> str:
+        data_format = model.attributes.format_preferences.request_data
         match data_format:
             case __.DataFormatPreferences.JSON:
                 from json import dumps
@@ -264,36 +211,31 @@ class SerdeProcessor(
         raise __.ProviderDataFormatNoSupport(
             data_format.value, 'serialize' )
 
-
-class Tokenizer(
-    __.ProcessorBase[ Model ]
-):
-    ''' Tokenizes conversations and text with Anthropic tokenizers. '''
-
-    async def count_text_tokens( self, text: str ) -> int:
+    async def count_text_tokens( self, model: Model, text: str ) -> int:
         # TODO: Caching.
         # TODO? Client-side rate-limiting.
-        client = self.model.client.produce_implement( )
+        client = model.client.produce_implement( )
         messages, extra_count = _sanitize_messages_for_tokenization(
             dict( messages = [ { 'role': 'user', 'content': text } ] ) )
         try:
             response = await client.beta.messages.count_tokens(
-                messages = messages, model = self.model.name )
+                messages = messages, model = model.name )
         except Exception as exc:
             # TODO? Use client-side fallback counting method.
             raise __.ModelOperateFailure(
-                model = self.model,
+                model = model,
                 operation = 'count text tokens',
                 cause = exc ) from exc
         return response.input_tokens - extra_count
 
     async def count_conversation_tokens_v0(
-        self, messages: __.MessagesCanisters, supplements
+        self, model: Model, messages: __.MessagesCanisters, supplements
     ) -> int:
         # TODO: Caching.
         # TODO? Client-side rate-limiting.
         args = _prepare_client_arguments(
-            model = self.model,
+            service = self,
+            model = model,
             messages = messages,
             supplements = supplements,
             controls = { } )
@@ -301,15 +243,42 @@ class Tokenizer(
         args.pop( 'stream', None )
         messages_, extra_count = _sanitize_messages_for_tokenization( args )
         args[ 'messages' ] = messages_
-        client = self.model.client.produce_implement( )
+        client = model.client.produce_implement( )
         try: response = await client.beta.messages.count_tokens( **args )
         except Exception as exc:
             # TODO? Use client-side fallback counting method.
             raise __.ModelOperateFailure(
-                model = self.model,
+                model = model,
                 operation = 'count conversation tokens',
                 cause = exc ) from exc
         return response.input_tokens - extra_count
+
+    async def converse_v0(
+        self,
+        model: Model,
+        messages: __.MessagesCanisters,
+        supplements,
+        controls: __.ControlsInstancesByName,
+        reactors, # TODO? Accept context manager with reactor functions.
+    ):
+        args = _prepare_client_arguments(
+            service = self,
+            model = model,
+            messages = messages,
+            supplements = supplements,
+            controls = controls )
+        should_stream = (
+                model.attributes.supports_continuous_response
+            and args.get( 'stream', True ) )
+        if should_stream:
+            return await _converse_continuous_v0( model, args, reactors )
+        return await _converse_complete_v0( model, args, reactors )
+
+
+def _control_names( model: Model ) -> frozenset[ str ]:
+    ''' Names of controls available to model. '''
+    return frozenset(
+        { control.name for control in model.attributes.controls } )
 
 
 def _sanitize_messages_for_tokenization(
@@ -600,12 +569,13 @@ def _nativize_result_message(
     return dict( content = content, **context )
 
 
-def _nativize_supplements_v0( model: Model, supplements ):
+def _nativize_supplements_v0(
+    service: Conversers, model: Model, supplements
+):
     nomargs = { }
     if 'invokers' in supplements:
-        nomargs.update(
-            model.invocations_processor
-            .nativize_invocables( supplements[ 'invokers' ] ) )
+        nomargs.update( service.nativize_invocables(
+            model, supplements[ 'invokers' ] ) )
     return nomargs
 
 
@@ -646,18 +616,19 @@ def _postprocess_response_canisters( model, indices, reactors ):
 
 
 def _prepare_client_arguments(
+    service: Conversers,
     model: Model,
     messages: __.MessagesCanisters,
     supplements,
     controls: __.ControlsInstancesByName,
 ) -> dict[ str, __.typx.Any ]:
-    controls_native = model.controls_processor.nativize_controls( controls )
+    controls_native = service.nativize_controls( model, controls )
     supervisor_instructions = (
         _collect_supervisor_instructions( model, messages ) )
-    supplements_native = _nativize_supplements_v0( model, supplements )
-    messages_native = (
-        model.messages_processor.nativize_messages_v0(
-            messages, supplements ) )
+    supplements_native = _nativize_supplements_v0(
+        service, model, supplements )
+    messages_native = service.nativize_messages_v0(
+        model, messages, supplements )
     return dict(
         messages = messages_native,
         **supervisor_instructions, **supplements_native, **controls_native )

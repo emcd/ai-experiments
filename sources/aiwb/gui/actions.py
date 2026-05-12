@@ -97,8 +97,10 @@ async def use_invocables(
             components,
             silent_extraction_failure = silent_extraction_failure ) )
     if not requests: return
+    conversers = model.client.conversers
     invokers = tuple(
-        model.invocations_processor( request ) for request in requests )
+        conversers.execute_invocation( model, request )
+        for request in requests )
     with _update_conversation_progress( components, 'Invoking tools...' ):
         canisters = await __.asyncf.gather_async( *invokers )
     for canister in canisters: _add_message( components, canister )
@@ -182,8 +184,8 @@ async def _chat( components ):
                 _update_gui_on_chat( components, canister_components ) ),
     )
     model = await _providers.access_model_selection( components )
-    return await model.converse_v0(
-        messages, special_data, controls, callbacks )
+    return await model.client.conversers.converse_v0(
+        model, messages, special_data, controls, callbacks )
 
 
 def _detect_ai_completion( components, component = None ):
@@ -216,11 +218,11 @@ async def generate_conversation_title( components ):
     with _update_conversation_progress(
         components, 'Generating conversation title...'
     ):
-        ai_canister = await model.converse_v0(
-            messages, { }, controls, __.conversation_reactors_minimal )
+        ai_canister = await model.client.conversers.converse_v0(
+            model, messages, { }, controls, __.conversation_reactors_minimal )
     response = ai_canister[ 0 ].data
     scribe.info( f"New conversation title: {response}" )
-    response = model.serde_processor.deserialize_data( response )
+    response = model.client.conversers.deserialize_data( model, response )
     return response[ 'title' ], response[ 'labels' ]
 
 

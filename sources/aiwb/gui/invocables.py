@@ -42,7 +42,8 @@ async def extract_invocation_requests(
     supplements = __.accret.Dictionary(
         controls = _providers.package_controls( components ) )
     model = await _providers.access_model_selection( components )
-    requests = model.invocations_processor.requests_from_canister(
+    requests = model.client.conversers.requests_from_canister(
+        model,
         auxdata = components.auxdata__,
         supplements = supplements,
         canister = canister,

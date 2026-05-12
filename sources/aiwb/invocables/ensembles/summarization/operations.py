@@ -61,6 +61,7 @@ async def _analyze_file( context, path, control = None ):
     auxdata = context.auxdata
     controls = context.supplements[ 'controls' ]
     model = context.supplements[ 'model' ]
+    conversers = model.client.conversers
     ai_messages = [ ]
     format_name = model.attributes.format_preferences.request_data.value
     summarization_prompt = (
@@ -86,8 +87,8 @@ async def _analyze_file( context, path, control = None ):
         _, content = _render_analysis_prompt(
             context, control, chunk, mime_type )
         messages.append( UserCanister( ).add_content( content ) )
-        ai_canister = await model.converse_v0(
-            messages, { }, controls, conversation_reactors_minimal )
+        ai_canister = await conversers.converse_v0(
+            model, messages, { }, controls, conversation_reactors_minimal )
         # TODO: Handle combination of analysis and metadata.
         ai_messages.append( ai_canister[ 0 ].data )
     return ai_messages
@@ -100,7 +101,8 @@ async def _analyze_http( context, url, control = None ):
 
 async def _count_tokens( context, content ):
     model = context.supplements[ 'model' ]
-    return await model.tokenizer.count_text_tokens( str( content ) )
+    return await model.client.conversers.count_text_tokens(
+        model, str( content ) )
 
 
 # TODO: Process bytes buffer.
@@ -124,6 +126,7 @@ async def _discriminate_dirents( context, dirents, control = None ):
     auxdata = context.auxdata
     controls = context.supplements[ 'controls' ]
     model = context.supplements[ 'model' ]
+    conversers = model.client.conversers
     format_name = model.attributes.format_preferences.request_data.value
     prompt = (
         auxdata.prompts.definitions[ 'Discriminate Directory Entries' ]
@@ -141,11 +144,10 @@ async def _discriminate_dirents( context, dirents, control = None ):
         _, content = _render_analysis_prompt(
             context, control, dirents_batch, 'directory-entries' )
         messages.append( UserCanister( ).add_content( content ) )
-        ai_canister = await model.converse_v0(
-            messages, { }, controls, conversation_reactors_minimal )
+        ai_canister = await conversers.converse_v0(
+            model, messages, { }, controls, conversation_reactors_minimal )
         #ic( ai_canister[ 0 ].data )
-        result = (
-            model.serde_processor.deserialize_data( ai_canister[ 0 ].data ) )
+        result = conversers.deserialize_data( model, ai_canister[ 0 ].data )
         ic( result[ 'blacklist' ] )
         complete_result.extend( result[ 'whitelist' ] )
     return complete_result
@@ -270,5 +272,5 @@ def _render_analysis_prompt( context, control, content, mime_type ):
                 values = dict(
                     mime_type = mime_type, instructions = instructions ) )
             .render( auxdata ) )
-    return model.serde_processor.serialize_data(
-        dict( content = content, instructions = instructions ) )
+    return model.client.conversers.serialize_data(
+        model, dict( content = content, instructions = instructions ) )

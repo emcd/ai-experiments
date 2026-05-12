@@ -25,8 +25,6 @@ from . import __
 
 
 ClientImplement = __.typx.TypeVar( 'ClientImplement', covariant = True )
-NativeControls = __.typx.TypeVar( 'NativeControls', covariant = True )
-NativeMessages = __.typx.TypeVar( 'NativeMessages', covariant = True )
 ProviderVariants = __.typx.TypeVar( 'ProviderVariants', covariant = True )
 
 InvocationDescriptor: __.typx.TypeAlias = (
@@ -104,6 +102,23 @@ class ConversationReactors( __.immut.DataclassObject ):
         lambda status: None )
     updater: __.typx.Callable[ [ __.typx.Any ], None ] = (
         lambda handle: None )
+
+
+class ModelAddress( __.immut.DataclassObject ):
+    ''' Stable identity of a model within a provider client. '''
+
+    provider: str
+    client: str
+    genus: 'ModelGenera'
+    name: str
+
+
+class ModelDescriptor( __.immut.DataclassObject ):
+    ''' Runtime descriptor for operating on a provider model. '''
+
+    address: ModelAddress
+    client: __.typx.Any # TODO: Narrow after interface module split.
+    attributes: __.typx.Any # TODO: Narrow after interface module split.
 
 
 class DataFormatPreferences( __.enum.Enum ): # TODO: Python 3.11: StrEnum

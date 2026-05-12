@@ -26,7 +26,7 @@ from . import __
 # TODO: Python 3.12: Use type statement for aliases.
 # TODO? Use typing.TypedDictionary.
 AttributesDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
-ModelDescriptor: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
+ModelConfiguration: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
 OpenAiControls: __.typx.TypeAlias = dict[ str, __.typx.Any ]
 OpenAiMessage: __.typx.TypeAlias = dict[ str, __.typx.Any ]
 OpenAiMessageContent: __.typx.TypeAlias = (
@@ -96,32 +96,39 @@ class Attributes( __.ConverserAttributes ):
         return selfclass( **args )
 
 
-class ControlsProcessor(
-    __.ControlsProcessorBase[ 'Model' ],
-):
-    ''' Controls nativization for OpenAI chat models. '''
+class Model( __.ConverserModel ):
+    ''' OpenAI chat model. '''
+
+    attributes: Attributes
+
+    @classmethod
+    def from_descriptor(
+        selfclass, client: __.Client, name: str, descriptor: ModelConfiguration
+    ) -> __.typx.Self:
+        args: __.NominativeArguments = __.accret.Dictionary(
+            client = client, name = name )
+        args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
+        return selfclass( **args )
+
+
+class Conversers( __.immut.DataclassObject ):
+    ''' Client-owned operations for OpenAI chat models. '''
 
     def nativize_controls(
-        self, controls: __.ControlsInstancesByName
+        self, model: Model, controls: __.ControlsInstancesByName
     ) -> OpenAiControls:
         #assert self.model.name == controls[ 'model' ] # TODO: enable for -O
         args: OpenAiControls = dict( model = controls[ 'model' ] )
         args.update( {
             name.replace( '-', '_' ): value
             for name, value in controls.items( )
-            if name in self.control_names } )
-        if self.model.attributes.supports_continuous_response:
+            if name in _control_names( model ) } )
+        if model.attributes.supports_continuous_response:
             args[ 'stream' ] = True
         return args
 
-
-class InvocationsProcessor(
-    __.ProcessorBase[ 'Model' ]
-):
-    ''' Handles functions and tool calls for OpenAI chat models. '''
-
-    async def __call__(
-        self, request: __.InvocationRequest
+    async def execute_invocation(
+        self, model: Model, request: __.InvocationRequest
     ) -> __.MessageCanister:
         result = await request.invocation( )
         specifics = request.specifics
@@ -138,13 +145,15 @@ class InvocationsProcessor(
             __.ResultMessageCanister( )
             .add_content( message, mimetype = 'application/json' ) )
         canister.attributes.model_context = {
-            'provider': self.model.provider.name,
-            'model': self.model.name,
+            'provider': model.provider.name,
+            'model': model.name,
             'supplement': result_context,
         } # TODO? Immutable
         return canister
 
-    def nativize_invocable( self, invoker: __.Invoker ) -> __.typx.Any:
+    def nativize_invocable(
+        self, model: Model, invoker: __.Invoker
+    ) -> __.typx.Any:
         return dict(
             name = invoker.name,
             description = invoker.invocable.__doc__,
@@ -152,24 +161,27 @@ class InvocationsProcessor(
 
     def nativize_invocables(
         self,
+        model: Model,
         invokers: __.cabc.Iterable[ __.Invoker ],
     ) -> __.typx.Any:
-        if not self.model.attributes.supports_invocations: return { }
+        if not model.attributes.supports_invocations: return { }
         args = { }
-        match self.model.attributes.invocations_support_level:
+        match model.attributes.invocations_support_level:
             case InvocationsSupportLevels.Concurrent:
                 args[ 'tools' ] = [
                     {   'type': 'function',
-                        'function': self.nativize_invocable( invoker ) }
+                        'function': self.nativize_invocable(
+                            model, invoker ) }
                     for invoker in invokers ]
             case InvocationsSupportLevels.Single:
                 args[ 'functions' ] = [
-                    self.nativize_invocable( invoker )
+                    self.nativize_invocable( model, invoker )
                     for invoker in invokers ]
         return args
 
-    def requests_from_canister(
+    def requests_from_canister(  # noqa: PLR0913
         self,
+        model: Model,
         auxdata: __.CoreGlobals, *,
         supplements: __.accret.Dictionary,
         canister: __.MessageCanister,
@@ -177,12 +189,12 @@ class InvocationsProcessor(
         ignore_invalid_canister: bool = False,
     ) -> __.InvocationsRequests:
         # TODO: Provide supplements based on specification from invocable.
-        supplements[ 'model' ] = self.model
+        supplements[ 'model' ] = model
         model_context = getattr( canister.attributes, 'model_context', { } )
-        if self.model.provider.name != model_context.get( 'provider' ):
+        if model.provider.name != model_context.get( 'provider' ):
             if ignore_invalid_canister: return [ ]
             raise __.ProviderIncompatibilityError(
-                provider = self.model.provider,
+                provider = model.provider,
                 entity_name = "foreign invocation requests" )
         requests = __.invocation_requests_from_canister(
             auxdata = auxdata,
@@ -207,6 +219,104 @@ class InvocationsProcessor(
             for i, request in enumerate( requests ):
                 request.specifics.update( specifics[ i ] )
         return requests
+
+    def nativize_messages_v0(
+        self, model: Model, canisters: __.MessagesCanisters, supplements
+    ) -> list[ OpenAiMessage ]:
+        messages_pre: list[ OpenAiMessage ] = [ ]
+        for canister in canisters:
+            if _decide_exclude_message( model, canister ):
+                continue
+            message = _nativize_message( model, canister )
+            messages_pre.append( message )
+        # TODO: Move filters into '_refine_native_messages'.
+        messages_pre = _filter_unmatched_tool_calls( messages_pre )
+        messages_pre = _filter_stray_tool_results( messages_pre )
+        return _refine_native_messages( model, messages_pre )
+
+    def deserialize_data( self, model: Model, data: str ) -> __.typx.Any:
+        data_format = model.attributes.format_preferences.response_data
+        match data_format:
+            case __.DataFormatPreferences.JSON:
+                from ....codecs.json import loads
+                return loads( data )
+        raise __.ProviderDataFormatNoSupport(
+            data_format.value, 'deserialize' )
+
+    def serialize_data( self, model: Model, data: __.typx.Any ) -> str:
+        data_format = model.attributes.format_preferences.request_data
+        match data_format:
+            case __.DataFormatPreferences.JSON:
+                from json import dumps
+                return dumps( data )
+        raise __.ProviderDataFormatNoSupport(
+            data_format.value, 'serialize' )
+
+    async def count_text_tokens( self, model: Model, text: str ) -> int:
+        from tiktoken import encoding_for_model, get_encoding
+        try: encoding = encoding_for_model( model.name )
+        # TODO? Warn about unknown model via callback.
+        except KeyError: encoding = get_encoding( 'cl100k_base' )
+        return len( encoding.encode( text ) )
+
+    async def count_conversation_tokens_v0(
+        self, model: Model, messages: __.MessagesCanisters, supplements
+    ) -> int:
+        # https://github.com/openai/openai-cookbook/blob/2e9704b3b34302c30174e7d8e7211cb8da603ca9/examples/How_to_count_tokens_with_tiktoken.ipynb
+        from json import dumps
+        tokens_per_message = model.attributes.extra_tokens_per_message
+        tokens_for_actor_name = model.attributes.extra_tokens_for_actor_name
+        tokens_count = 0
+        for message in self.nativize_messages_v0(
+                model, messages, supplements
+        ):
+            tokens_count += tokens_per_message
+            for index, value in message.items( ):
+                value_ = value if isinstance( value, str ) else dumps( value )
+                tokens_count += await self.count_text_tokens( model, value_ )
+                if 'name' == index: tokens_count += tokens_for_actor_name
+        for invoker in supplements.get( 'invokers', ( ) ):
+            tokens_count += (
+                await self.count_text_tokens( model, dumps(
+                    self.nativize_invocable( model, invoker ) ) ) )
+            # TODO: Determine if metadata from multifunctions adds more tokens.
+        return tokens_count
+
+    async def converse_v0(
+        self,
+        model: Model,
+        messages: __.MessagesCanisters,
+        supplements,
+        controls: __.ControlsInstancesByName,
+        reactors, # TODO? Accept context manager with reactor functions.
+    ):
+        args = _prepare_client_arguments(
+            service = self,
+            model = model,
+            messages = messages,
+            supplements = supplements,
+            controls = controls )
+        client = model.client.produce_implement( )
+        from openai import OpenAIError
+        try: response = await client.chat.completions.create( **args )
+        except OpenAIError as exc:
+            raise __.ModelOperateFailure(
+                model = model, operation = 'chat completion', cause = exc
+            ) from exc
+        should_stream = (
+                model.attributes.supports_continuous_response
+            and args.get( 'stream', True ) )
+        if should_stream:
+            return (
+                await _process_iterative_response_v0(
+                    model, response, reactors ) )
+        return _process_complete_response_v0( model, response, reactors )
+
+
+def _control_names( model: Model ) -> frozenset[ str ]:
+    ''' Names of controls available to model. '''
+    return frozenset(
+        { control.name for control in model.attributes.controls } )
 
 
 def _filter_unmatched_tool_calls(
@@ -251,151 +361,6 @@ def _filter_stray_tool_results(
             if tid not in valid_call_ids: continue
         filtered.append( message )
     return filtered
-
-
-class MessagesProcessor(
-    __.ProcessorBase[ 'Model' ],
-):
-    ''' Handles conversation messages in OpenAI format. '''
-
-    def nativize_messages_v0(
-        self, canisters: __.MessagesCanisters, supplements
-    ) -> list[ OpenAiMessage ]:
-        messages_pre: list[ OpenAiMessage ] = [ ]
-        for canister in canisters:
-            if _decide_exclude_message( self.model, canister ):
-                continue
-            message = _nativize_message( self.model, canister )
-            messages_pre.append( message )
-        # TODO: Move filters into '_refine_native_messages'.
-        messages_pre = _filter_unmatched_tool_calls( messages_pre )
-        messages_pre = _filter_stray_tool_results( messages_pre )
-        return _refine_native_messages( self.model, messages_pre )
-
-
-class Model( __.ConverserModel ):
-    ''' OpenAI chat model. '''
-
-    attributes: Attributes
-
-    @classmethod
-    def from_descriptor(
-        selfclass, client: __.Client, name: str, descriptor: ModelDescriptor
-    ) -> __.typx.Self:
-        args: __.NominativeArguments = __.accret.Dictionary(
-            client = client, name = name )
-        args[ 'attributes' ] = Attributes.from_descriptor( descriptor )
-        return selfclass( **args )
-
-    @property
-    def controls_processor( self ) -> 'ControlsProcessor':
-        return ControlsProcessor( model = self )
-
-    @property
-    def invocations_processor( self ) -> 'InvocationsProcessor':
-        return InvocationsProcessor( model = self )
-
-    @property
-    def messages_processor( self ) -> MessagesProcessor:
-        return MessagesProcessor( model = self )
-
-    @property
-    def serde_processor( self ) -> 'SerdeProcessor':
-        return SerdeProcessor( model = self )
-
-    @property
-    def tokenizer( self ) -> 'Tokenizer':
-        return Tokenizer( model = self )
-
-    async def converse_v0(
-        self,
-        messages: __.MessagesCanisters,
-        supplements,
-        controls: __.ControlsInstancesByName,
-        reactors, # TODO? Accept context manager with reactor functions.
-    ):
-        args = _prepare_client_arguments(
-            model = self,
-            messages = messages,
-            supplements = supplements,
-            controls = controls )
-        client = self.client.produce_implement( )
-        from openai import OpenAIError
-        try: response = await client.chat.completions.create( **args )
-        except OpenAIError as exc:
-            raise __.ModelOperateFailure(
-                model = self, operation = 'chat completion', cause = exc
-            ) from exc
-        should_stream = (
-                self.attributes.supports_continuous_response
-            and args.get( 'stream', True ) )
-        if should_stream:
-            return (
-                await _process_iterative_response_v0(
-                    self, response, reactors ) )
-        return _process_complete_response_v0( self, response, reactors )
-
-
-class SerdeProcessor(
-    __.ProcessorBase[ Model ]
-):
-    ''' (De)serialization for OpenAI chat models. '''
-
-    def deserialize_data( self, data: str ) -> __.typx.Any:
-        data_format = self.model.attributes.format_preferences.response_data
-        match data_format:
-            case __.DataFormatPreferences.JSON:
-                from ....codecs.json import loads
-                return loads( data )
-        raise __.ProviderDataFormatNoSupport(
-            data_format.value, 'deserialize' )
-
-    def serialize_data( self, data: __.typx.Any ) -> str:
-        data_format = self.model.attributes.format_preferences.request_data
-        match data_format:
-            case __.DataFormatPreferences.JSON:
-                from json import dumps
-                return dumps( data )
-        raise __.ProviderDataFormatNoSupport(
-            data_format.value, 'serialize' )
-
-
-class Tokenizer(
-    __.ProcessorBase[ Model ]
-):
-    ''' Tokenizes conversations and text with OpenAI tokenizers. '''
-
-    async def count_text_tokens( self, text: str ) -> int:
-        from tiktoken import encoding_for_model, get_encoding
-        try: encoding = encoding_for_model( self.model.name )
-        # TODO? Warn about unknown model via callback.
-        except KeyError: encoding = get_encoding( 'cl100k_base' )
-        return len( encoding.encode( text ) )
-
-    async def count_conversation_tokens_v0(
-        self, messages: __.MessagesCanisters, supplements
-    ) -> int:
-        # https://github.com/openai/openai-cookbook/blob/2e9704b3b34302c30174e7d8e7211cb8da603ca9/examples/How_to_count_tokens_with_tiktoken.ipynb
-        from json import dumps
-        model = self.model
-        tokens_per_message = model.attributes.extra_tokens_per_message
-        tokens_for_actor_name = model.attributes.extra_tokens_for_actor_name
-        tokens_count = 0
-        for message in model.messages_processor.nativize_messages_v0(
-                messages, supplements
-        ):
-            tokens_count += tokens_per_message
-            for index, value in message.items( ):
-                value_ = value if isinstance( value, str ) else dumps( value )
-                tokens_count += await self.count_text_tokens( value_ )
-                if 'name' == index: tokens_count += tokens_for_actor_name
-        iprocessor = self.model.invocations_processor
-        for invoker in supplements.get( 'invokers', ( ) ):
-            tokens_count += (
-                await self.count_text_tokens( dumps(
-                    iprocessor.nativize_invocable( invoker ) ) ) )
-            # TODO: Determine if metadata from multifunctions adds more tokens.
-        return tokens_count
 
 
 def _canister_from_response_element( model, element ):
@@ -473,7 +438,7 @@ def _collect_response_as_legacy_invocation_v0(
 
 
 def _decide_exclude_message(
-    model: 'Model', canister: __.MessageCanister
+    model: Model, canister: __.MessageCanister
 ) -> bool:
     role = canister.role
     if not model.attributes.accepts_supervisor_instructions:  # noqa: SIM102
@@ -482,7 +447,7 @@ def _decide_exclude_message(
 
 
 def _merge_native_message(
-    model: 'Model',
+    model: Model,
     anchor: OpenAiMessage,
     cursor: OpenAiMessage,
     indicate_elision: bool = False,
@@ -515,7 +480,7 @@ def _merge_native_message(
 
 
 def _nativize_assistant_message(
-    model: 'Model', canister: __.MessageCanister
+    model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     content: OpenAiMessageContent
     context = { 'role': 'assistant' }
@@ -531,7 +496,7 @@ def _nativize_assistant_message(
 
 
 def _nativize_document_message(
-    model: 'Model', canister: __.MessageCanister
+    model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     context = { 'role': 'user' }
     content = '\n\n'.join( (
@@ -540,7 +505,7 @@ def _nativize_document_message(
 
 
 def _nativize_invocation_message(
-    model: 'Model', canister: __.MessageCanister
+    model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     attributes = canister.attributes
     content: OpenAiMessageContent
@@ -568,7 +533,7 @@ def _nativize_invocation_message(
 
 
 def _nativize_message(
-    model: 'Model', canister: __.MessageCanister
+    model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     role = canister.role
     match role:
@@ -589,7 +554,7 @@ def _nativize_message(
 
 
 def _nativize_message_content(
-    model: 'Model', canister: __.MessageCanister
+    model: Model, canister: __.MessageCanister
 ) -> OpenAiMessageContent:
     # TODO: Handle audio and image contents.
     match len( canister ):
@@ -603,7 +568,7 @@ def _nativize_message_content(
 
 
 def _nativize_result_message(
-    model: 'Model', canister: __.MessageCanister
+    model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     attributes = canister.attributes
     content: OpenAiMessageContent
@@ -636,7 +601,7 @@ def _nativize_result_message(
 
 
 def _nativize_supervisor_message(
-    model: 'Model', canister: __.MessageCanister
+    model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     content: OpenAiMessageContent
     if model.attributes.honors_supervisor_instructions:
@@ -647,17 +612,18 @@ def _nativize_supervisor_message(
     return dict( content = content, **context )
 
 
-def _nativize_supplements_v0( model: 'Model', supplements ):
+def _nativize_supplements_v0(
+    service: Conversers, model: Model, supplements
+):
     nomargs = { }
     if 'invokers' in supplements:
-        nomargs.update(
-            model.invocations_processor
-            .nativize_invocables( supplements[ 'invokers' ] ) )
+        nomargs.update( service.nativize_invocables(
+            model, supplements[ 'invokers' ] ) )
     return nomargs
 
 
 def _nativize_user_message(
-    model: 'Model', canister: __.MessageCanister
+    model: Model, canister: __.MessageCanister
 ) -> OpenAiMessage:
     content: OpenAiMessageContent
     context = { 'role': 'user' }
@@ -666,16 +632,17 @@ def _nativize_user_message(
 
 
 def _prepare_client_arguments(
-    model: 'Model',
+    service: Conversers,
+    model: Model,
     messages: __.MessagesCanisters,
     supplements,
     controls: __.ControlsInstancesByName,
 ) -> dict[ str, __.typx.Any ]:
-    controls_native = model.controls_processor.nativize_controls( controls )
-    supplements_native = _nativize_supplements_v0( model, supplements )
-    messages_native = (
-        model.messages_processor.nativize_messages_v0(
-            messages, supplements ) )
+    controls_native = service.nativize_controls( model, controls )
+    supplements_native = _nativize_supplements_v0(
+        service, model, supplements )
+    messages_native = service.nativize_messages_v0(
+        model, messages, supplements )
     return dict(
         messages = messages_native, **supplements_native, **controls_native )
 
@@ -780,7 +747,7 @@ def _reconstitute_invocations( record ):
 
 
 def _refine_native_assistant_message(
-    model: 'Model', anchor: OpenAiMessage, cursor: OpenAiMessage
+    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     anchor_role = anchor[ 'role' ]
     cursor_role = cursor[ 'role' ]
@@ -794,7 +761,7 @@ def _refine_native_assistant_message(
 
 
 def _refine_native_function_message(
-    model: 'Model', anchor: OpenAiMessage, cursor: OpenAiMessage
+    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     cursor_role = cursor[ 'role' ]
@@ -809,7 +776,7 @@ def _refine_native_function_message(
 
 
 def _refine_native_message(
-    model: 'Model', anchor: OpenAiMessage, cursor: OpenAiMessage
+    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     # TODO? Consider models which allow some adjaceny. (gpt-3.5-turbo)
@@ -830,7 +797,7 @@ def _refine_native_message(
 
 
 def _refine_native_messages(
-    model: 'Model', messages_pre: list[ OpenAiMessage ]
+    model: Model, messages_pre: list[ OpenAiMessage ]
 ) -> list[ OpenAiMessage ]:
     anchor = None
     messages: list[ OpenAiMessage ] = [ ]
@@ -849,7 +816,7 @@ def _refine_native_messages(
 
 
 def _refine_native_tool_message(
-    model: 'Model', anchor: OpenAiMessage, cursor: OpenAiMessage
+    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     cursor_role = cursor[ 'role' ]
@@ -860,7 +827,7 @@ def _refine_native_tool_message(
 
 
 def _refine_native_user_message(
-    model: 'Model', anchor: OpenAiMessage, cursor: OpenAiMessage
+    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
     anchor_role = anchor[ 'role' ]

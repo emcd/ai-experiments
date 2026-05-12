@@ -26,12 +26,10 @@ from . import core as _core
 from . import exceptions as _exceptions
 
 
-ModelDescriptor: __.typx.TypeAlias = (
+ModelConfiguration: __.typx.TypeAlias = (
     __.cabc.Mapping[ str, __.typx.Any ] ) # TODO? Typed dictionary.
-ModelT = __.typx.TypeVar(
-    'ModelT', bound = 'Model', covariant = True )
 ConverserModelT = __.typx.TypeVar(
-    'ConverserModelT', bound = 'ConverserModel', covariant = True )
+    'ConverserModelT', bound = 'ConverserModel', contravariant = True )
 
 
 class Provider(
@@ -154,7 +152,7 @@ class Client(
         self,
         genus: _core.ModelGenera,
         name: str,
-        descriptor: ModelDescriptor,
+        descriptor: ModelConfiguration,
     ) -> 'Model':
         ''' Produces model from descriptor. '''
         raise NotImplementedError
@@ -174,180 +172,14 @@ class Client(
 
     @property
     @__.abc.abstractmethod
+    def conversers( self ) -> 'ConverserOperations':
+        ''' Operations for conversation models served by this client. '''
+        raise NotImplementedError
+
+    @property
+    @__.abc.abstractmethod
     def variant( self ) -> _core.ProviderVariants:
         ''' Provider variant. '''
-        raise NotImplementedError
-
-
-class ControlsProcessor(
-    __.immut.DataclassProtocol,
-    __.typx.Protocol[ ModelT, _core.NativeControls ],
-    decorators = ( __.typx.runtime_checkable, ),
-):
-    ''' Handles model controls. '''
-
-    @property
-    @__.abc.abstractmethod
-    def model( self ) -> ModelT:
-        ''' Model bound to this processor. '''
-        raise NotImplementedError
-
-    def __init__( self, *, model: ModelT ) -> None: pass
-
-    @property
-    def controls( self ) -> __.cabc.Sequence[ __.Control ]:
-        ''' Array of controls available to model. '''
-        return self.model.attributes.controls
-
-    @property
-    def control_names( self ) -> frozenset[ str ]:
-        ''' Names of controls available to model. '''
-        # TODO? Cache.
-        # TODO: Recursively gather control names. (Requires definitions.)
-        # TODO: Use 'control.name'. (Requires definitions.)
-        return frozenset( { control.name for control in self.controls } )
-
-    @__.abc.abstractmethod
-    def nativize_controls(
-        self,
-        controls: __.cabc.Mapping[ str, __.Control.Instance ],
-    ) -> _core.NativeControls:
-        ''' Converts normalized controls into native arguments. '''
-        raise NotImplementedError
-
-
-class ProcessorBase(
-    __.immut.DataclassObject, __.typx.Generic[ ModelT ]
-):
-    ''' Base for processors bound to an AI model. '''
-
-    model: ModelT
-
-
-class ControlsProcessorBase( ProcessorBase[ ModelT ] ):
-    ''' Base for controls processors bound to an AI model. '''
-
-    @property
-    def controls( self ) -> __.cabc.Sequence[ __.Control ]:
-        ''' Array of controls available to model. '''
-        return self.model.attributes.controls
-
-    @property
-    def control_names( self ) -> frozenset[ str ]:
-        ''' Names of controls available to model. '''
-        # TODO? Cache.
-        # TODO: Recursively gather control names. (Requires definitions.)
-        # TODO: Use 'control.name'. (Requires definitions.)
-        return frozenset( { control.name for control in self.controls } )
-
-
-class ConversationTokenizer(
-    __.immut.DataclassProtocol, __.typx.Protocol[ ConverserModelT ],
-    decorators = ( __.typx.runtime_checkable, ),
-):
-    ''' Tokenizes conversation or piece of text for counting. '''
-
-    @property
-    @__.abc.abstractmethod
-    def model( self ) -> ConverserModelT:
-        ''' Model bound to this tokenizer. '''
-        raise NotImplementedError
-
-    def __init__( self, *, model: ConverserModelT ) -> None: pass
-
-    # TODO: count_conversation_tokens
-
-    @__.abc.abstractmethod
-    async def count_text_tokens( self, text: str ) -> int:
-        ''' Counts tokens, using tokenizer for model, in text. '''
-        raise NotImplementedError
-
-    ## v0 Compatibility Functions ##
-    # TODO: Remove once cutover to conversation objects is complete.
-
-    @__.abc.abstractmethod
-    async def count_conversation_tokens_v0(
-        self, messages: __.MessagesCanisters, supplements
-    ) -> int:
-        ''' Counts tokens across entire conversation. '''
-        raise NotImplementedError
-
-
-class InvocationsProcessor(
-    __.immut.DataclassProtocol, __.typx.Protocol[ ModelT ],
-    decorators = ( __.typx.runtime_checkable, ),
-):
-    ''' Handles everything related to invocations. '''
-
-    @property
-    @__.abc.abstractmethod
-    def model( self ) -> ModelT:
-        ''' Model bound to this processor. '''
-        raise NotImplementedError
-
-    def __init__( self, *, model: ModelT ) -> None: pass
-
-    @__.abc.abstractmethod
-    async def __call__(
-        self, request: _core.InvocationRequest
-    ) -> __.MessageCanister: # TODO? Return InvocationResult.
-        ''' Uses invocable to produce result for conversation. '''
-        raise NotImplementedError
-
-    @__.abc.abstractmethod
-    def nativize_invocable( self, invoker: __.Invoker ) -> __.typx.Any:
-        ''' Converts normalized invocable into native tool call. '''
-        raise NotImplementedError
-
-    @__.abc.abstractmethod
-    def nativize_invocables(
-        self,
-        invokers: __.cabc.Iterable[ __.Invoker ],
-    ) -> __.typx.Any:
-        ''' Converts normalized invocables into native tool calls. '''
-        raise NotImplementedError
-
-    @__.abc.abstractmethod
-    def requests_from_canister(
-        self,
-        auxdata: __.CoreGlobals, *,
-        supplements: __.accret.Dictionary,
-        canister: __.MessageCanister,
-        invocables: __.accret.Namespace,
-        ignore_invalid_canister: bool = False,
-    ) -> _core.InvocationsRequests:
-        ''' Converts invocation requests into invoker coroutines. '''
-        # TODO: Return InvocationRequest instance.
-        raise NotImplementedError
-
-
-class MessagesProcessor(
-    __.immut.DataclassProtocol,
-    __.typx.Protocol[ ModelT, _core.NativeMessages ],
-    decorators = ( __.typx.runtime_checkable, ),
-):
-    ''' Handles everything related to messages. '''
-
-    @property
-    @__.abc.abstractmethod
-    def model( self ) -> ModelT:
-        ''' Model bound to this processor. '''
-        raise NotImplementedError
-
-    def __init__( self, *, model: ModelT ) -> None: pass
-
-    # TODO: nativize_messages
-
-    ## v0 Compatibility Functions ##
-    # TODO: Remove once cutover to conversation objects is complete.
-
-    @__.abc.abstractmethod
-    def nativize_messages_v0(
-        self,
-        canisters: __.MessagesCanisters,
-        supplements,
-    ) -> _core.NativeMessages:
-        ''' Converts normalized message canisters into native messages. '''
         raise NotImplementedError
 
 
@@ -357,8 +189,6 @@ class Model(
 ):
     ''' Represents an AI model. '''
 
-    # TODO? Move client and name to ModelAddress class.
-    #       Subclass from ModelAddress class.
     client: 'Client'
     name: str
     attributes: 'ModelAttributes'
@@ -378,9 +208,26 @@ class Model(
         raise NotImplementedError
 
     @property
+    def address( self ) -> _core.ModelAddress:
+        ''' Stable identity of model. '''
+        return _core.ModelAddress(
+            provider = self.provider.name,
+            client = self.client.name,
+            genus = self.genus,
+            name = self.name )
+
+    @property
+    def descriptor( self ) -> _core.ModelDescriptor:
+        ''' Runtime descriptor for model operations. '''
+        return _core.ModelDescriptor(
+            address = self.address,
+            client = self.client,
+            attributes = self.attributes )
+
+    @property
     @__.abc.abstractmethod
-    def controls_processor( self ) -> 'ControlsProcessor':
-        ''' Controls processor for model. '''
+    def genus( self ) -> _core.ModelGenera:
+        ''' Model genus. '''
         raise NotImplementedError
 
     @property
@@ -427,42 +274,9 @@ class ConverserModel(
     attributes: 'ConverserAttributes'
 
     @property
-    @__.abc.abstractmethod
-    def invocations_processor( self ) -> 'InvocationsProcessor':
-        ''' Invocations processor for model. '''
-        raise NotImplementedError
-
-    @property
-    @__.abc.abstractmethod
-    def messages_processor( self ) -> 'MessagesProcessor':
-        ''' Conversation messages processor for model. '''
-        raise NotImplementedError
-
-    @property
-    @__.abc.abstractmethod
-    def serde_processor( self ) -> 'ConverserSerdeProcessor':
-        ''' (De)serialization processor for model. '''
-        raise NotImplementedError
-
-    @property
-    @__.abc.abstractmethod
-    def tokenizer( self ) -> 'ConversationTokenizer':
-        ''' Appropriate tokenizer for conversations. '''
-        raise NotImplementedError
-
-    ## v0 Compatibility Functions ##
-    # TODO: Remove once cutover to conversation objects is complete.
-
-    @__.abc.abstractmethod
-    async def converse_v0(
-        self,
-        messages: __.cabc.Sequence[ __.MessageCanister ],
-        supplements, # TODO: Annotate.
-        controls: __.cabc.Mapping[ str, __.Control.Instance ],
-        reactors, # TODO: Annotate.
-    ):
-        ''' Interacts with model to complete a round of conversation. '''
-        raise NotImplementedError
+    def genus( self ) -> _core.ModelGenera:
+        ''' Model genus. '''
+        return _core.ModelGenera.Converser
 
 
 class ConverserAttributes( ModelAttributes ):
@@ -507,33 +321,95 @@ class ConverserAttributes( ModelAttributes ):
         return args
 
 
-class ConverserSerdeProcessor(
-    __.immut.DataclassProtocol, __.typx.Protocol[ ConverserModelT ],
-    decorators = ( __.typx.runtime_checkable, ),
+class ConverserOperations(
+    __.typx.Protocol[ ConverserModelT ],
 ):
-    ''' (De)serialization in preferred formats for converser model. '''
+    ''' Client-owned operations for conversation models. '''
 
-    @property
-    @__.abc.abstractmethod
-    def model( self ) -> ConverserModelT:
-        ''' Model bound to this processor. '''
+    def nativize_controls(
+        self,
+        model: ConverserModelT,
+        controls: __.cabc.Mapping[ str, __.Control.Instance ],
+    ) -> __.typx.Any:
+        ''' Converts normalized controls into native arguments. '''
         raise NotImplementedError
 
-    def __init__( self, *, model: ConverserModelT ) -> None: pass
+    def nativize_invocable(
+        self, model: ConverserModelT, invoker: __.Invoker
+    ) -> __.typx.Any:
+        ''' Converts normalized invocable into native tool call. '''
+        raise NotImplementedError
 
-    @__.abc.abstractmethod
-    def deserialize_data( self, data: str ) -> __.typx.Any:
+    def nativize_invocables(
+        self,
+        model: ConverserModelT,
+        invokers: __.cabc.Iterable[ __.Invoker ],
+    ) -> __.typx.Any:
+        ''' Converts normalized invocables into native tool calls. '''
+        raise NotImplementedError
+
+    def requests_from_canister(  # noqa: PLR0913
+        self,
+        model: ConverserModelT,
+        auxdata: __.CoreGlobals, *,
+        supplements: __.accret.Dictionary,
+        canister: __.MessageCanister,
+        invocables: __.accret.Namespace,
+        ignore_invalid_canister: bool = False,
+    ) -> _core.InvocationsRequests:
+        ''' Converts invocation requests into invoker coroutines. '''
+        raise NotImplementedError
+
+    async def execute_invocation(
+        self, model: ConverserModelT, request: _core.InvocationRequest
+    ) -> __.MessageCanister:
+        ''' Uses invocable to produce result for conversation. '''
+        raise NotImplementedError
+
+    def nativize_messages_v0(
+        self,
+        model: ConverserModelT,
+        canisters: __.MessagesCanisters,
+        supplements,
+    ) -> __.typx.Any:
+        ''' Converts normalized message canisters into native messages. '''
+        raise NotImplementedError
+
+    def deserialize_data(
+        self, model: ConverserModelT, data: str
+    ) -> __.typx.Any:
         ''' Deserializes text in preferred format of model to data. '''
         raise NotImplementedError
 
-    @__.abc.abstractmethod
-    def serialize_data( self, data: __.typx.Any ) -> str:
+    def serialize_data(
+        self, model: ConverserModelT, data: __.typx.Any
+    ) -> str:
         ''' Serializes data to text in preferred format of model. '''
         raise NotImplementedError
 
-    # TODO: deserialize_math / serialize_math
+    async def count_text_tokens(
+        self, model: ConverserModelT, text: str
+    ) -> int:
+        ''' Counts tokens, using tokenizer for model, in text. '''
+        raise NotImplementedError
 
-    # TODO: deserialize_text / serialize_text
+    async def count_conversation_tokens_v0(
+        self, model: ConverserModelT, messages: __.MessagesCanisters,
+        supplements,
+    ) -> int:
+        ''' Counts tokens across entire conversation. '''
+        raise NotImplementedError
+
+    async def converse_v0(
+        self,
+        model: ConverserModelT,
+        messages: __.MessagesCanisters,
+        supplements,
+        controls: __.cabc.Mapping[ str, __.Control.Instance ],
+        reactors,
+    ):
+        ''' Interacts with model to complete a round of conversation. '''
+        raise NotImplementedError
 
 
 # TODO: Python 3.12: Use type statement for aliases.

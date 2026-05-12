@@ -65,7 +65,7 @@ class Client( __.Client ):
         self,
         genus: __.ModelGenera,
         name: str,
-        descriptor: __.ModelDescriptor,
+        descriptor: __.ModelConfiguration,
     ) -> __.Model:
         match genus:
             case __.ModelGenera.Converser:
@@ -73,6 +73,11 @@ class Client( __.Client ):
                 return conversers.Model.from_descriptor(
                     client = self, name = name, descriptor = descriptor )
         raise NotImplementedError( f"Unsupported genus {genus.value!r}." )
+
+    @property
+    def conversers( self ) -> __.ConverserOperations:
+        from . import conversers
+        return conversers.Conversers( )
 
     async def survey_models(
         self,
