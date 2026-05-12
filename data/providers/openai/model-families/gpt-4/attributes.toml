@@ -1,7 +1,7 @@
 format-version = 1
 
 [converser]
-name-regex = '^gpt-4(-.*)?$'
+name-regex = '^gpt-4(?!-turbo)(-.*)?$'
 modalities = [ 'text' ]
 
 [converser.special]

@@ -1,7 +1,7 @@
 format-version = 1
 
 [converser]
-name-regex = '^gpt-4\.1(-.*)?$'
+name-regex = '^gpt-4\.1(?!-nano)(-.*)?$'
 modalities = [ 'text', 'pictures' ]
 
 [converser.special]

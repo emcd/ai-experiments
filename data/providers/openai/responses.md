@@ -6,13 +6,16 @@ This configuration does **not** currently support models that are **only availab
 
 ## Affected Models
 
-The following models are only available through the Responses API and are therefore **not included** in our model family configurations:
+The following models are only available through the Responses API, or are not included because this configuration currently targets Chat Completions:
 
-1. **GPT-5.1 Codex** (`gpt-5.1-codex`)
-2. **GPT-5.1 Codex Max** (`gpt-5.1-codex-max`)
-3. **GPT-5 Codex** (`gpt-5-codex`)
-4. **GPT-5.1 Codex mini** (`gpt-5.1-codex-mini`)
-5. **codex-mini-latest** (deprecated)
+1. **GPT-5.5 pro** (`gpt-5.5-pro`)
+2. **GPT-5.4 pro** (`gpt-5.4-pro`)
+3. **GPT-5.2 Codex** (`gpt-5.2-codex`, deprecated)
+4. **GPT-5.1 Codex** (`gpt-5.1-codex`, deprecated)
+5. **GPT-5.1 Codex Max** (`gpt-5.1-codex-max`, deprecated)
+6. **GPT-5 Codex** (`gpt-5-codex`, deprecated)
+7. **GPT-5.1 Codex mini** (`gpt-5.1-codex-mini`, deprecated)
+8. **codex-mini-latest** (deprecated)
 
 ## Example Configuration (If Supported)
 

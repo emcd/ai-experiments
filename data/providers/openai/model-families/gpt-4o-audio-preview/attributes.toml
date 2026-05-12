@@ -1,8 +1,0 @@
-format-version = 1
-
-[converser]
-name-regex = '^gpt-4o-audio-preview(-.*)?$'
-modalities = [ 'audio' ]
-
-[converser.special]
-supports-duplex-exchanges = false
