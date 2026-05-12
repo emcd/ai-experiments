@@ -49,9 +49,9 @@
 - [x] 6.1 Run `hatch --env develop run pyright`.
 - [x] 6.2 Run targeted Ruff over changed Python files.
 - [x] 6.3 Run `hatch run aiwb-application inspect`.
-- [ ] 6.4 Smoke test GUI conversation selection and a new conversation.
-- [ ] 6.5 Smoke test at least one provider conversation and invocation flow when
+- [x] 6.4 Smoke test GUI conversation selection and a new conversation.
+- [x] 6.5 Smoke test at least one provider conversation and invocation flow when
   API credentials and credits are available.
 
-Note: Provider smoke testing is deferred until OpenAI model metadata is refreshed
-and a live chat with tool calls can be exercised.
+Note: Provider smoke testing passed with OpenAI `gpt-5.4-mini` and server-side
+tool invocation flow.

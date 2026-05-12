@@ -668,7 +668,8 @@ def update_conversation_status( components, content = None, progress = False ):
     components.text_conversation_status.visible = False
     # TODO: Hide retry and stack trace inspection buttons.
     if progress:
-        components.spinner_ai_progress.name = content
+        components.text_conversation_status.value = content
+        components.text_conversation_status.visible = True
         components.spinner_ai_progress.visible = True
         components.spinner_ai_progress.value = True
     elif None is not content:

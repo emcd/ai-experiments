@@ -277,8 +277,13 @@ class Conversers( __.immut.DataclassObject ):
 
 def _control_names( model: Model ) -> frozenset[ str ]:
     ''' Names of controls available to model. '''
-    return frozenset(
-        { control.name for control in model.attributes.controls } )
+    names: set[ str ] = set( )
+    for control in model.attributes.controls:
+        if isinstance( control, __.cabc.Mapping ):
+            if name := control.get( 'name' ): names.add( name )
+            continue
+        names.add( control.name )
+    return frozenset( names )
 
 
 def _sanitize_messages_for_tokenization(
