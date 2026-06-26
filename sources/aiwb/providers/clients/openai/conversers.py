@@ -33,13 +33,6 @@ OpenAiMessageContent: __.typx.TypeAlias = (
     str | list[ dict[ str, __.typx.Any ] ] )
 
 
-class InvocationsSupportLevels( __.enum.Enum ): # TODO: Python 3.11: StrEnum
-    ''' Degree to which invocations are supported. '''
-
-    Single      = 'single'      # Mid-2023.
-    Concurrent  = 'concurrent'  # Late 2023 and beyond.
-
-
 class NativeMessageRefinementActions(
     __.enum.Enum
 ): # TODO: Python 3.11: StrEnum
@@ -62,8 +55,6 @@ class Attributes( __.ConverserAttributes ):
     extra_tokens_for_actor_name: int = 0
     extra_tokens_per_message: int = 0
     honors_supervisor_instructions: bool = False
-    invocations_support_level: InvocationsSupportLevels = (
-        InvocationsSupportLevels.Single )
     native_supervisor_role: NativeSupervisorRoles = (
         NativeSupervisorRoles.System )
     supports_duplex_exchanges: bool = False
@@ -85,10 +76,6 @@ class Attributes( __.ConverserAttributes ):
             if None is arg: continue
             arg_name_ = arg_name.replace( '-', '_' )
             args[ arg_name_ ] = arg
-        if 'invocations-support-level' in sdescriptor:
-            args[ 'invocations_support_level' ] = (
-                InvocationsSupportLevels(
-                    sdescriptor[ 'invocations-support-level' ] ) )
         if 'native-supervisor-role' in sdescriptor:
             args[ 'native_supervisor_role' ] = (
                 NativeSupervisorRoles(
@@ -132,13 +119,14 @@ class Conversers( __.immut.DataclassObject ):
     ) -> __.MessageCanister:
         result = await request.invocation( )
         specifics = request.specifics
-        if 'id' in specifics: # late 2023+ format: parallel tool calls
-            result_context = dict(
-                name = specifics[ 'function' ][ 'name' ],
-                role = 'tool',
-                tool_call_id = specifics[ 'id' ] )
-        else: # mid-2023 format: single function call
-            result_context = dict( name = request.name, role = 'function' )
+        # 'id' in specifics identifies the parallel tool-call request whose
+        # result this canister satisfies. Every request constructed via
+        # 'requests_from_canister' for the modern 'tools' / 'tool_calls'
+        # path carries this key.
+        result_context = dict(
+            name = specifics[ 'function' ][ 'name' ],
+            role = 'tool',
+            tool_call_id = specifics[ 'id' ] )
         from json import dumps
         message = dumps( result )
         canister = (
@@ -165,19 +153,10 @@ class Conversers( __.immut.DataclassObject ):
         invokers: __.cabc.Iterable[ __.Invoker ],
     ) -> __.typx.Any:
         if not model.attributes.supports_invocations: return { }
-        args = { }
-        match model.attributes.invocations_support_level:
-            case InvocationsSupportLevels.Concurrent:
-                args[ 'tools' ] = [
-                    {   'type': 'function',
-                        'function': self.nativize_invocable(
-                            model, invoker ) }
-                    for invoker in invokers ]
-            case InvocationsSupportLevels.Single:
-                args[ 'functions' ] = [
-                    self.nativize_invocable( model, invoker )
-                    for invoker in invokers ]
-        return args
+        return { 'tools': [
+            {   'type': 'function',
+                'function': self.nativize_invocable( model, invoker ) }
+            for invoker in invokers ] }
 
     def requests_from_canister(  # noqa: PLR0913
         self,
@@ -203,14 +182,7 @@ class Conversers( __.immut.DataclassObject ):
             invocables = invocables,
             ignore_invalid_canister = ignore_invalid_canister )
         supplement = model_context.get( 'supplement', { } )
-        if ( specifics := supplement.get( 'function_call' ) ):
-            if 1 != len( requests ):
-                raise __.InvocationRequestCountMismatch(
-                    expected_count = 1,
-                    received_count = len( requests ),
-                    invocation_type = 'legacy function' )
-            requests[ 0 ].specifics.update( specifics )
-        elif ( specifics := supplement.get( 'tool_calls' ) ):
+        if ( specifics := supplement.get( 'tool_calls' ) ):
             if len( requests ) != len( specifics ):
                 raise __.InvocationRequestCountMismatch(
                     expected_count = len( specifics ),
@@ -388,7 +360,7 @@ def _canister_from_response_element( model, element ):
             __.MessageRole.Assistant
             .produce_canister( attributes = attributes )
             .add_content( content, mimetype = mimetype ) )
-    if message.function_call or message.tool_calls:
+    if message.tool_calls:
         attributes.invocation_data = [ ]
         return (
             __.MessageRole.Invocation
@@ -426,20 +398,6 @@ def _collect_response_as_invocations_v0(
                 function[ 'name' ] = tool_call.function.name
             if tool_call.function.arguments:
                 function[ 'arguments' ] += tool_call.function.arguments
-
-
-def _collect_response_as_legacy_invocation_v0(
-    model, indices, index, delta, reactors
-):
-    if not delta.function_call: return
-    from collections import defaultdict
-    if index not in indices.records:
-        indices.records[ index ] = dict( function_call = defaultdict( str ) )
-    call = indices.records[ index ][ 'function_call' ]
-    if delta.function_call.name:
-        call[ 'name' ] = delta.function_call.name
-    if delta.function_call.arguments:
-        call[ 'arguments' ] += delta.function_call.arguments
 
 
 def _decide_exclude_message(
@@ -520,15 +478,10 @@ def _nativize_invocation_message(
     supports_invocations = (
             model.attributes.supports_invocations
         and model.provider.name == model_context.get( 'provider' )
-        and { 'function_call', 'tool_calls' } & supplement.keys( ) )
+        and 'tool_calls' in supplement )
     if (    supports_invocations
         and ( calls := supplement.get( 'tool_calls', ( ) ) )
     ): supports_invocations = all( 'id' in call for call in calls )
-    if supports_invocations:
-        match model.attributes.invocations_support_level:
-            case InvocationsSupportLevels.Single:
-                supports_invocations = 'function_call' in supplement
-            case InvocationsSupportLevels.Concurrent: pass
     if not supports_invocations:
         # TODO? Customizable elision text.
         content = '(Note: Functions invocation elided from conversation.)'
@@ -583,19 +536,9 @@ def _nativize_result_message(
             model.attributes.supports_invocations
         and model.provider.name == model_context[ 'provider' ] )
     supplement = model_context[ 'supplement' ]
-    role = ''
     if supports_invocations:
-        role = supplement.get(
-            'role', 'tool' if 'tool_call_id' in supplement else 'function' )
-        supplement[ 'role' ] = role
-        supports_invocations = (
-                ( 'function' == role and 'tool_call_id' not in supplement )
-            or  ( 'tool' == role and 'tool_call_id' in supplement ) )
-    if supports_invocations:
-        match model.attributes.invocations_support_level:
-            case InvocationsSupportLevels.Single:
-                supports_invocations = 'function' == role
-            case InvocationsSupportLevels.Concurrent: pass
+        supplement[ 'role' ] = 'tool'
+        supports_invocations = 'tool_call_id' in supplement
     if not supports_invocations:
         content = '\n\n'.join( (
             '## Functions Invocation Result ##', canister[ 0 ].data ) )
@@ -660,8 +603,6 @@ def _postprocess_response_canisters( model, indices, reactors ):
         canister.attributes.model_context[ 'supplement' ] = record
         if 'tool_calls' in record:
             invocation_data = _reconstitute_invocations( record )
-        elif 'function_call' in record:
-            invocation_data = _reconstitute_legacy_invocation( record )
         else: invocation_data = None
         if invocation_data:
             canister.attributes.invocation_data = invocation_data
@@ -674,9 +615,6 @@ def _process_complete_response_v0( model, response, reactors ):
     indices.canisters.update( {
         element.index: _canister_from_response_element( model, element )
         for element in response.choices } )
-    indices.records.update( {
-        element.index: dict( function_call = element.message.function_call )
-        for element in response.choices if element.message.function_call } )
     indices.records.update( {
         element.index: dict( tool_calls = element.message.tool_calls )
         for element in response.choices if element.message.tool_calls } )
@@ -710,7 +648,7 @@ def _process_iterative_response_element_v0(
 ):
     delta = element.delta
     if not (
-        delta.content or delta.function_call or delta.tool_calls
+        delta.content or delta.tool_calls
     ): return # Fast forward until we know response species.
     if ( index := element.index ) not in indices.canisters:
         indices.canisters[ index ] = canister = (
@@ -721,21 +659,9 @@ def _process_iterative_response_element_v0(
     if delta.tool_calls:
         _collect_response_as_invocations_v0(
             model, indices, index, delta, reactors )
-    elif delta.function_call:
-        _collect_response_as_legacy_invocation_v0(
-            model, indices, index, delta, reactors )
     elif delta.content:
         _collect_response_as_content_v0(
             model, indices, index, delta, reactors )
-
-
-def _reconstitute_legacy_invocation( record ):
-    from json import loads
-    invocation = record[ 'function_call' ]
-    return [ dict(
-        name = invocation[ 'name' ],
-        arguments = loads( invocation[ 'arguments' ] ),
-    ) ]
 
 
 def _reconstitute_invocations( record ):
@@ -765,32 +691,14 @@ def _refine_native_assistant_message(
     return NativeMessageRefinementActions.Retain
 
 
-def _refine_native_function_message(
-    model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
-) -> NativeMessageRefinementActions:
-    # TODO: Appropriate error classes.
-    cursor_role = cursor[ 'role' ]
-    match cursor_role:
-        case 'function':
-            raise __.MessageRefinementFailure(
-                issue_type = 'adjacent', detected_role = cursor_role )
-        case 'tool':
-            raise __.MessageRefinementFailure(
-                issue_type = 'mixed', detected_role = cursor_role )
-    return NativeMessageRefinementActions.Retain
-
-
 def _refine_native_message(
     model: Model, anchor: OpenAiMessage, cursor: OpenAiMessage
 ) -> NativeMessageRefinementActions:
     # TODO: Appropriate error classes.
-    # TODO? Consider models which allow some adjaceny. (gpt-3.5-turbo)
     anchor_role = anchor[ 'role' ]
     match anchor_role:
         case 'assistant':
             return _refine_native_assistant_message( model, anchor, cursor )
-        case 'function':
-            return _refine_native_function_message( model, anchor, cursor )
         case 'developer' | 'system':
             return NativeMessageRefinementActions.Retain
         case 'tool':
