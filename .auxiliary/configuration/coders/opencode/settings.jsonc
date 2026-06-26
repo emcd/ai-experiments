@@ -85,6 +85,21 @@
         "--no-commit-signing"
       ],
       "enabled": true
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@playwright/mcp@latest",
+        "--browser",
+        "chromium",
+        "--headless",
+        "--output-dir",
+        ".auxiliary/scribbles/playwright"
+      ],
+      "enabled": true,
+      "timeout": 120000
     }
   },
 

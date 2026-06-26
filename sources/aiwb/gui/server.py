@@ -42,6 +42,7 @@ class Control( __.immut.DataclassObject ):
     ''' Binding address and port, etc... for server. '''
 
     address: str = '127.0.0.1'
+    open_browser: bool = True
     port: int = 0
     reload: bool = False
 
@@ -49,7 +50,8 @@ class Control( __.immut.DataclassObject ):
         ''' Returns new instance with mutated address and port. '''
         # TODO: Generic 'with_attributes' method.
         return type( self )(
-            address = address, port = port, reload = self.reload )
+            address = address, port = port,
+            open_browser = self.open_browser, reload = self.reload )
 
 
 @__.ctxl.asynccontextmanager
@@ -72,8 +74,10 @@ async def _execute_server_thread(
 def _start_gui(
     components: __.types.SimpleNamespace, control: Control
 ) -> __.typx.Any: # TODO: Proper type.
-    # TODO: Honor address and port for listener socket binding.
     return components.template__.show(
+        address = control.address,
         autoreload = control.reload,
+        open = control.open_browser,
+        port = control.port,
         threaded = True,
         title = 'AI Workbench' )
