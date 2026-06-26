@@ -208,8 +208,5 @@ Author-provided review concerns are supplemental context, not a limit on review 
 <!-- This section accumulates project-specific knowledge, constraints, and deviations.
      For structured items, use `nb`.
 
-     TODO: If this project uses multiple agent/worktree roles, create a stable
-     team-organization note in `nb`, modeled after one of the examples at:
-     https://raw.githubusercontent.com/emcd/agents-common/master/examples/nb-notes/team-organization/README.md
-     Then link the note here, for example:
-     - Team org, role ownership, signoff policy, and merge workflow: `coordination/general/<n>` -->
+     Team org, role ownership, signoff policy, and merge workflow:
+     `coordination/general/2` -->
