@@ -3,6 +3,11 @@
 # litrpg/scripts/web-dev/stop.sh.
 #
 # Usage: scripts/web-dev/stop.sh [STATE_DIR]
+#
+# Cleanup ownership: kills only the recorded setsid session leader's
+# process group via `kill -- -<pid>`. No pattern-matching or unscoped
+# pkill — manually-launched aiwb processes on other ports are never
+# touched.
 
 set -euo pipefail
 
@@ -37,22 +42,19 @@ STOPPED=0
 while IFS= read -r line; do
   name="${line%%:*}"
   pid="${line#*:}"
-  # Try the recorded PID first, then fall back to the process group (setsid
-  # in start.sh detaches via a new session). Finally fall back to pkill by
-  # command name in case the recorded PID was a transient shell wrapper.
+  # Strictly harness-owned: kill the recorded process group first
+  # (setsid session leader), fall back to the recorded PID if the
+  # group has already been reaped. Never pattern-match by command.
   if kill -0 "$pid" 2>/dev/null; then
-    kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
-    echo "    stopped $name (pid=$pid)" && STOPPED=1
-  elif kill -0 "-$pid" 2>/dev/null; then
-    kill -- "-$pid" 2>/dev/null
-    echo "    stopped $name (pgid=$pid)" && STOPPED=1
+    if kill -- "-$pid" 2>/dev/null; then
+      echo "    stopped $name (pgid=$pid)" && STOPPED=1
+    elif kill "$pid" 2>/dev/null; then
+      echo "    stopped $name (pid=$pid)" && STOPPED=1
+    fi
   else
     echo "    $name (pid=$pid) already dead"
   fi
 done < "$PID_FILE"
-# Belt-and-suspenders: kill any leftover aiwb python processes bound to the
-# recorded PID's command line.
-pkill -f 'aiwb --gui-address' 2>/dev/null && STOPPED=1 || true
 rm -f "$PID_FILE"
 
 # Wait for port to be released (up to 10s)
