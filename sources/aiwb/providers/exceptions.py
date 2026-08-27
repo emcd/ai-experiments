@@ -67,6 +67,14 @@ class InvocationRequestCountMismatch( __.Omnierror, ValueError ):
         super( ).__init__( message )
 
 
+class InvocationProcessorInvalidity( __.Omnierror, ValueError ):
+    ''' Invocation processor discriminator is not a known value. '''
+
+    def __init__( self, value: __.typx.Any ):
+        super( ).__init__(
+            f"Invalid invocation processor {value!r}." )
+
+
 class InvocableInaccessibility( __.Omnierror, ValueError ):
     ''' Requested invocable not available in current context. '''
 

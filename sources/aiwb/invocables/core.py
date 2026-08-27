@@ -55,6 +55,65 @@ class Deduplicator(
         raise NotImplementedError
 
 
+class ContextSupplements(
+    __.immut.DataclassObject
+):
+    ''' Typed supplements shell with nested-dictionary escape. '''
+
+    model: __.typx.Optional[ __.typx.Any ] = None
+    controls: __.cabc.Mapping[ str, __.typx.Any ] = (
+        __.dcls.field(
+            default_factory = lambda: __.types.MappingProxyType( { } ) ) )
+    extras: __.cabc.Mapping[ str, __.typx.Any ] = (
+        __.dcls.field(
+            default_factory = lambda: __.types.MappingProxyType( { } ) ) )
+
+    @classmethod
+    def from_mapping(
+        selfclass,
+        mapping: __.cabc.Mapping[ str, __.typx.Any ],
+    ) -> __.typx.Self:
+        ''' Splits known keys from provider-defined extras. '''
+        extras: dict[ str, __.typx.Any ] = { }
+        model = None
+        controls: dict[ str, __.typx.Any ] = { }
+        for key, value in mapping.items( ):
+            if 'model' == key:
+                model = value
+                continue
+            if 'controls' == key:
+                if isinstance( value, __.cabc.Mapping ):
+                    controls = dict( value )
+                continue
+            extras[ key ] = value
+        return selfclass(
+            model = model,
+            controls = __.types.MappingProxyType( controls ),
+            extras = __.types.MappingProxyType( extras ) )
+
+    def __contains__( self, key: object ) -> bool:
+        if 'model' == key: return None is not self.model
+        if 'controls' == key: return True
+        return key in self.extras
+
+    def __getitem__( self, key: str ) -> __.typx.Any:
+        if 'model' == key:
+            if None is self.model:
+                raise KeyError( key )
+            return self.model
+        if 'controls' == key: return self.controls
+        return self.extras[ key ]
+
+    def get(
+        self,
+        key: str,
+        default: __.typx.Any = None,
+    ) -> __.typx.Any:
+        ''' Mapping-compatible read with default. '''
+        try: return self[ key ]
+        except KeyError: return default
+
+
 class Context(
     __.immut.DataclassObject
 ):
@@ -62,7 +121,8 @@ class Context(
 
     auxdata: __.Globals
     invoker: 'Invoker'
-    supplements: __.cabc.Mapping[ str, __.typx.Any ]
+    supplements: ContextSupplements
+    correlation_id: str
 
 
 class Ensemble(
@@ -126,12 +186,21 @@ class Invoker(
         self,
         auxdata: __.Globals,
         arguments: Arguments, *,
-        supplements: __.typx.Optional[ Arguments ] = None,
+        supplements: __.typx.Optional[
+            Arguments | ContextSupplements
+        ] = None,
+        correlation_id: __.typx.Optional[ str ] = None,
     ) -> __.typx.Any:
+        if isinstance( supplements, ContextSupplements ):
+            supplements_ = supplements
+        else:
+            supplements_ = ContextSupplements.from_mapping(
+                supplements or { } )
         context = Context(
             auxdata = auxdata,
             invoker = self,
-            supplements = supplements or __.types.MappingProxyType( { } ) )
+            supplements = supplements_,
+            correlation_id = correlation_id or __.uuid4( ).hex )
         return await self.invocable( context, arguments )
 
 
