@@ -1,13 +1,13 @@
 ## 1. Implementation
 
-- [ ] 1.1 Add `InvocationRequest`, `InvocationResult`, `InvocationSupplement` dataclasses to `sources/aiwb/providers/core.py` with `immut.DataclassObject` semantics. The supplement is opaque to the application layer; only the converser for the originating provider interprets it.
-- [ ] 1.2 Define a provider-neutral correlation ID type (`InvocationCorrelationId`, opaque string) in the same module. Stable across persistence.
-- [ ] 1.3 Update `Invoker.__call__` and `Context` so the correlation ID is available to the invocable implementation without ad-hoc dict reads on `Context.supplements`. Note: this task also covers the OQ4 typed `Context.supplements` accessor; intended to land first in the work order as the OQ4 precursor even though the surrounding task numbers reflect the type-definition order.
+- [x] 1.1 Add `InvocationRequest`, `InvocationResult`, `InvocationSupplement` dataclasses to `sources/aiwb/providers/core.py` with `immut.DataclassObject` semantics. The supplement is opaque to the application layer; only the converser for the originating provider interprets it.
+- [x] 1.2 Define a provider-neutral correlation ID type (`InvocationCorrelationId`, opaque string) in the same module. Stable across persistence.
+- [x] 1.3 Update `Invoker.__call__` and `Context` so the correlation ID is available to the invocable implementation without ad-hoc dict reads on `Context.supplements`. Note: this task also covers the OQ4 typed `Context.supplements` accessor; intended to land first in the work order as the OQ4 precursor even though the surrounding task numbers reflect the type-definition order.
 - [ ] 1.4 Replace `result_index = i + j + 1` in `sources/aiwb/gui/actions.py:283` with correlation-ID-based result pairing; positional indexing of the history column is preserved for unrelated operations.
 - [ ] 1.5 Update `_deactivate_duplicate_invocations` in `sources/aiwb/gui/actions.py:256-304` to use correlation IDs.
 - [ ] 1.6 Add a GUI display projection boundary: a `display_payload` projection that exposes only normalized `(name, arguments, correlation_id)` for the user-visible invocation display; raw provider-originated envelopes remain available behind an explicit "show details" affordance.
 - [ ] 1.7 Update persistence (`sources/aiwb/gui/persistence.py:_standardize_invocation_requests_v0:366`) and rehydration (`sources/aiwb/messages/core.py:restore_canister:270`) to serialize/deserialize normalized records with correlation IDs and opaque supplements.
-- [ ] 1.8 Reserve the processor dichotomy in the contract: `InvocationProcessor` enum or equivalent with values `Application` and `Provider`. Each `InvocationRequest` carries its processor discriminator so the GUI and persistence can distinguish. Provenance distinctions within `Application` (local vs MCP) live at the registry/layer level, not on every `InvocationRequest`.
+- [x] 1.8 Reserve the processor dichotomy in the contract: `InvocationProcessor` enum or equivalent with values `Application` and `Provider`. Each `InvocationRequest` carries its processor discriminator so the GUI and persistence can distinguish. Provenance distinctions within `Application` (local vs MCP) live at the registry/layer level, not on every `InvocationRequest`.
 
 ## 2. Provider adaptation
 
