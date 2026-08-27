@@ -55,14 +55,14 @@ ApiServerCliCommand: __.typx.TypeAlias = __.typx.Union[
 class CliBase( __.ApplicationCliBase ):
     ''' CLI for execution, inspection, and tests of API server. '''
 
-    apiserver: _server.Control = _server.Control( )
+    api: _server.Control = _server.Control( )
 
     def prepare_invocation_args(
         self,
     ) -> __.cabc.Mapping[ str, __.typx.Any ]:
         args: __.accret.Dictionary[ str, __.typx.Any ] = __.accret.Dictionary(
             __.ApplicationCliBase.prepare_invocation_args( self ) )
-        args[ 'apiserver' ] = self.apiserver
+        args[ 'apiserver' ] = self.api
         return args
 
 

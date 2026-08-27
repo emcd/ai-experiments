@@ -36,9 +36,15 @@ class Accessor( __.immut.DataclassObject ):
 class Control( __.immut.DataclassObject ):
     ''' Binding address and port, etc... for server. '''
 
-    address: str = '127.0.0.1'
-    port: int = 0
-    reload: bool = True
+    address: __.typx.Annotated[
+        str, __.tyro.conf.arg( name = 'api-address', prefix_name = False )
+    ] = '127.0.0.1'
+    port: __.typx.Annotated[
+        int, __.tyro.conf.arg( name = 'api-port', prefix_name = False )
+    ] = 0
+    reload: __.typx.Annotated[
+        bool, __.tyro.conf.arg( name = 'api-reload', prefix_name = False )
+    ] = True
 
     def with_address_and_port( self, address: str, port: int ) -> __.typx.Self:
         ''' Returns new instance with mutated address and port. '''
