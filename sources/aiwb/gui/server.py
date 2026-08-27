@@ -41,10 +41,18 @@ class Accessor( __.immut.DataclassObject ):
 class Control( __.immut.DataclassObject ):
     ''' Binding address and port, etc... for server. '''
 
-    address: str = '127.0.0.1'
-    open_browser: bool = True
-    port: int = 0
-    reload: bool = False
+    address: __.typx.Annotated[
+        str, __.tyro.conf.arg( name = 'gui-address', prefix_name = False )
+    ] = '127.0.0.1'
+    open_browser: __.typx.Annotated[
+        bool, __.tyro.conf.arg( prefix_name = False )
+    ] = True
+    port: __.typx.Annotated[
+        int, __.tyro.conf.arg( name = 'gui-port', prefix_name = False )
+    ] = 0
+    reload: __.typx.Annotated[
+        bool, __.tyro.conf.arg( name = 'gui-reload', prefix_name = False )
+    ] = False
 
     def with_address_and_port( self, address: str, port: int ) -> __.typx.Self:
         ''' Returns new instance with mutated address and port. '''

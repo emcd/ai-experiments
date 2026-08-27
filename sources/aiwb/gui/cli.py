@@ -55,7 +55,7 @@ GuiCliCommand: __.typx.TypeAlias = __.typx.Union[
 class Cli( __.ApiServerCliBase ):
     ''' Configuration and execution of GUI application. '''
 
-    guiserver: _server.Control = _server.Control( )
+    gui: _server.Control = _server.Control( )
     command: GuiCliCommand
 
     async def __call__( self ):
@@ -71,7 +71,7 @@ class Cli( __.ApiServerCliBase ):
     ) -> __.cabc.Mapping[ str, __.typx.Any ]:
         args: __.accret.Dictionary[ str, __.typx.Any ] = __.accret.Dictionary(
             __.ApiServerCliBase.prepare_invocation_args( self ) )
-        args[ 'guiserver' ] = self.guiserver
+        args[ 'guiserver' ] = self.gui
         return args
 
 
@@ -81,7 +81,7 @@ def execute_cli( ):
         __.tyro.conf.EnumChoicesFromValues,
     )
     default = Cli(
-        apiserver = __.ApiServerControl( ),
+        api = __.ApiServerControl( ),
         configuration = __.ApplicationCliConfigurationModifiers( ),
         display = __.CliConsoleDisplay( ),
         inscription = (
