@@ -1,4 +1,78 @@
-# Tool Calls
+# Invocables
+
+Application-side tools the harness can present to language models and execute
+locally (or, later, via MCP). Provider clients adapt model-native tool-call
+envelopes to and from the normalized invocation records defined under
+`aiwb.providers.core`.
+
+## Architecture overview
+
+```
+Ensemble  →  Invoker  →  Invocable(context, arguments)
+                │
+                ├─ processor: application | provider   (who runs the tool)
+                └─ provenance: local | mcp             (registry origin; Application only)
+```
+
+**Registration.** Ensembles (`io`, `probability`, `summarization`, …) prepare
+named `Invoker` instances. Each invoker holds a JSON-Schema `argschema`, the
+async invocable, optional deduplicator class, `processor`, and `provenance`.
+Local ensembles register with `processor=application` and `provenance=local`.
+MCP-sourced tools are reserved as the same Application processor with
+`provenance=mcp` via `Invoker.reserve_mcp_registration` (transport/discovery
+not implemented yet). Provider-native/server-side tools are **not** registered
+as invocables. `processor=provider` is a reserved normalized-record
+discriminator and presentation seam only; constructing or presenting
+provider-native requests is deferred to OpenSpec task 3.2 / future provider
+support. Today `InvocationRequest.from_descriptor` still requires a registered
+`Invoker` and an executable `invocation` (Application path).
+
+**Execution context.** `Invoker.__call__` builds an immutable `Context` with
+`auxdata`, the invoker, typed `ContextSupplements` (`model` / `controls` plus
+an `extras` escape), and a harness-owned `correlation_id`. Invocables read
+known supplements through the typed shell (or mapping-compatible access) and
+must not scrape provider envelopes from supplements for control flow.
+
+**Normalized records** (`aiwb.providers.core`):
+
+| Record | Role |
+|--------|------|
+| `InvocationRequest` | `name`, `arguments`, harness `correlation_id`, `processor`, opaque `supplement`; callable `invocation` for Application execution |
+| `InvocationResult` | Symmetric result shape with `content` and the same correlation/processor/supplement fields |
+| `InvocationSupplement` | Opaque provider-originated payload (`MappingProxyType`); application code does not interpret it |
+
+**Correlation IDs.** The harness always mints UUID4 hex IDs
+(`produce_invocation_correlation_id`). They drive dedup, deactivation, elision,
+display pairing, and persistence. Provider or MCP call IDs never become the
+application-facing correlation ID; they may appear only inside the opaque
+supplement for same-provider replay or tracing.
+
+**Processor dichotomy.**
+
+- **Application** — harness supplies JSON Schema and runs the tool (local
+  invocable or future MCP). GUI treats output as client-provided.
+- **Provider** — reserved discriminator for provider-run tools (server-side).
+  Not constructed by this package yet; see task 3.2. When supported, the
+  harness still mints the correlation ID and keeps provider IDs in the
+  supplement.
+
+`Invoker.processor` stores the matching value string (`application` /
+`provider`). During request normalization (`from_descriptor`), an invalid
+processor on the descriptor or on the invoker is rejected with
+`InvocationProcessorInvalidity` — it is never silently coerced to Application.
+Absent processor defaults to the invoker’s value, then to Application.
+
+**Replay boundary.** Conversers alone read and write `InvocationSupplement` for
+same-provider replay/continuation. Dedup, GUI default display, and application
+invocables use normalized fields only. A future GUI “show details” affordance
+may expose the supplement on explicit opt-in.
+
+**Argschemata.** Argument schemas remain plain JSON-Schema dictionaries (see
+below). That choice is independent of the normalized request/result contract.
+
+OpenSpec change: `define-invocation-data-contract`.
+
+## Tool argument schemata
 
 Currently, we use Python dictionaries as a source of truth for tool input
 parameters. This is a deliberate design decision, based on limitations

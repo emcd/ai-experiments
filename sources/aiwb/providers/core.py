@@ -268,13 +268,14 @@ class InvocationRequest(
         name = descriptor[ 'name' ]
         if name not in context.invokers:
             raise _exceptions.InvocableInaccessibility( name = name )
+        invoker = context.invokers[ name ]
         arguments = descriptor.get( 'arguments', { } )
         correlation_id = produce_invocation_correlation_id( )
-        processor = _processor_from_descriptor( descriptor )
+        processor = _processor_from_descriptor( descriptor, invoker = invoker )
         supplement = _supplement_from_descriptor( descriptor )
         # TODO: Provide supplements based on specification from invocable.
         invocation = __.funct.partial(
-            context.invokers[ name ],
+            invoker,
             auxdata = context.auxdata,
             arguments = arguments,
             supplements = context.supplements,
@@ -410,11 +411,15 @@ def _merge_dictionaries_recursive(
 
 def _processor_from_descriptor(
     descriptor: InvocationDescriptor,
+    invoker: __.typx.Any = None,
 ) -> InvocationProcessor:
     from . import exceptions as _exceptions
-    if 'processor' not in descriptor:
+    if 'processor' in descriptor:
+        raw = descriptor[ 'processor' ]
+    elif None is not invoker and hasattr( invoker, 'processor' ):
+        raw = invoker.processor
+    else:
         return InvocationProcessor.Application
-    raw = descriptor[ 'processor' ]
     if isinstance( raw, InvocationProcessor ): return raw
     try: return InvocationProcessor( raw )
     except ValueError as exception:

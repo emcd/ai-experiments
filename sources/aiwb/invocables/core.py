@@ -125,6 +125,13 @@ class Context(
     correlation_id: str
 
 
+class InvocableProvenance( __.enum.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Registry-level origin within the Application processor. '''
+
+    Local = 'local'
+    Mcp = 'mcp'
+
+
 class Ensemble(
     __.immut.DataclassProtocol, __.typx.Protocol,
     decorators = ( __.typx.runtime_checkable, ),
@@ -162,6 +169,9 @@ class Invoker(
     invocable: 'Invocable'
     argschema: ArgumentsModel # TODO: Transform/validate on init.
     deduplicator_class: __.typx.Optional[ type[ Deduplicator ] ] = None
+    # Matches providers.core.InvocationProcessor value strings.
+    processor: str = 'application'
+    provenance: InvocableProvenance = InvocableProvenance.Local
 
     @classmethod
     def from_invocable(
@@ -174,13 +184,40 @@ class Invoker(
         ''' Produces invoker from invocable and arguments model.
 
             The name of the invocable is used as the name of the invoker
-            and the arguments model is validated. '''
+            and the arguments model is validated. Defaults to Application
+            processor and Local provenance. MCP-sourced tools use
+            ``reserve_mcp_registration`` instead. '''
         return selfclass(
             name = invocable.__name__,
             ensemble = ensemble,
             invocable = invocable,
             argschema = _validate_argschema( argschema ),
             deduplicator_class = deduplicator_class )
+
+    @classmethod
+    def reserve_mcp_registration(
+        selfclass,
+        ensemble: Ensemble,
+        name: str,
+        argschema: ArgumentsModel,
+        invocable: 'Invocable',
+        *,
+        deduplicator_class: __.typx.Optional[ type[ Deduplicator ] ] = None,
+    ) -> __.typx.Self:
+        ''' Reserved factory for MCP-sourced Application-processor tools.
+
+            MCP transport and discovery are not implemented. When added, MCP
+            tools register through this path with Application processor and
+            Mcp provenance. Correlation IDs stay harness-minted; any
+            MCP-supplied call id remains opaque supplemental tracing data. '''
+        return selfclass(
+            name = name,
+            ensemble = ensemble,
+            invocable = invocable,
+            argschema = _validate_argschema( argschema ),
+            deduplicator_class = deduplicator_class,
+            processor = 'application',
+            provenance = InvocableProvenance.Mcp )
 
     async def __call__(
         self,
