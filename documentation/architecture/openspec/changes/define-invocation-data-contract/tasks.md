@@ -22,15 +22,15 @@
 ## 3. Three-layer tool-source support
 
 - [ ] 3.1 Define the `InvocationProcessor` taxonomy (`Application`, `Provider`) and ensure each `Invoker` and `InvocationRequest` carries its processor discriminator.
-- [ ] 3.2 Add a presentation channel for provider-native/server-side tools so the harness can opt in to including them in the `tools` emission without running any code on its side. Open question for human decision: opt-in granularity (per-tool / per-model / global). Default if no decision: per-model, recorded as a default in `design.md` and surfaced for explicit Coordinator/human approval.
-- [ ] 3.3 Reserve MCP-sourced tool representation as application-layer invocables. Open question for human decision: harness-minted correlation IDs always, or adapt MCP-supplied correlation primitives if present. Default if no decision: harness-minted always, with an extension point to honor an MCP-supplied primitive if present and shaped compatibly.
+- [ ] 3.2 Reserve the configuration and presentation seam for provider-native/server-side tools so a future provider can opt in to including them without the harness running code on its side. Do not implement an actual provider-native tool in R2. Opt-in policy is per-conversation with a global configuration default.
+- [ ] 3.3 Reserve MCP-sourced tool representation as application-layer invocables. Do not implement MCP transport or discovery in R2. The harness always mints the application correlation ID; any MCP-supplied primitive remains opaque supplemental tracing data.
 
 ## 4. Tests and validation
 
 - [ ] 4.1 Mock multi-tool invocation smoke (per `todos/invocables/3`): mock converser + mock invokers through `extract_invocation_requests` → `gather_async` → `_deactivate_duplicate_invocations`. Coverage: parallel tool calls, dedup supersession via `IoContentDeduplicator`, correlation-ID-based linkage, display projection boundary.
 - [ ] 4.2 Run `hatch --env develop run pyright` and Ruff over touched files (per `pyproject.toml` linters).
 - [ ] 4.3 Run `hatch run aiwb-application inspect` (non-GUI; do **not** use `hatch run aiwb inspect`, which launches GUI/browser per the standing note in `coordination/general/1`).
-- [ ] 4.4 Live smoke for OpenAI Responses API and OpenAI Chat Completions tool calls (deferred to BE Providers lane per coordination/general/2 lane ownership).
+- [ ] 4.4 Live smoke for OpenAI Chat Completions tool calls (BE Providers lane per coordination/general/2 lane ownership). OpenAI Responses API smoke is deferred to `todos/providers/3` because Responses API implementation is out of scope for R2.
 
 ## 5. Documentation
 

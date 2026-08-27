@@ -200,7 +200,7 @@ class Inode(
         ''' Does inode represent nothing? '''
         return LocationSpecies.Void is self.species
 
-    def with_attributes(  # noqa: C901, PLR0912, PLR0913, PLR0915
+    def with_attributes(  # noqa: C901, PLR0912, PLR0913, PLR0915, PLR0917
         self,
         bytes_count: __.Absential[ __.typx.Optional[ int ] ] = __.absent,
         content_id: __.Absential[ __.typx.Optional[ str ] ] = __.absent,
