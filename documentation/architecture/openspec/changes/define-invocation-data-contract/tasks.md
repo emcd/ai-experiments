@@ -21,9 +21,9 @@
 
 ## 3. Three-layer tool-source support
 
-- [ ] 3.1 Define the `InvocationProcessor` taxonomy (`Application`, `Provider`) and ensure each `Invoker` and `InvocationRequest` carries its processor discriminator.
+- [x] 3.1 Define the `InvocationProcessor` taxonomy (`Application`, `Provider`) and ensure each `Invoker` and `InvocationRequest` carries its processor discriminator.
 - [ ] 3.2 Reserve the configuration and presentation seam for provider-native/server-side tools so a future provider can opt in to including them without the harness running code on its side. Do not implement an actual provider-native tool in R2. Opt-in policy is per-conversation with a global configuration default.
-- [ ] 3.3 Reserve MCP-sourced tool representation as application-layer invocables. Do not implement MCP transport or discovery in R2. The harness always mints the application correlation ID; any MCP-supplied primitive remains opaque supplemental tracing data.
+- [x] 3.3 Reserve MCP-sourced tool representation as application-layer invocables. Do not implement MCP transport or discovery in R2. The harness always mints the application correlation ID; any MCP-supplied primitive remains opaque supplemental tracing data.
 
 ## 4. Tests and validation
 
@@ -34,5 +34,5 @@
 
 ## 5. Documentation
 
-- [ ] 5.1 Update `sources/aiwb/invocables/README.md` to add an architecture-level overview of the invocable stack (currently JSON-Schema/Pydantic-only per R1 finding 6).
+- [x] 5.1 Update `sources/aiwb/invocables/README.md` to add an architecture-level overview of the invocable stack (currently JSON-Schema/Pydantic-only per R1 finding 6).
 - [ ] 5.2 Cross-link from `todos/providers/2` (OpenAI legacy function_call removal) and `todos/providers/3` (OpenAI Responses API) once this proposal lands.
