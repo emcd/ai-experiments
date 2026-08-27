@@ -127,6 +127,22 @@ def invocation_requests_from_canister(
     invocables: object,
     ignore_invalid_canister: bool = False,
 ) -> _core.InvocationsRequests:
+    ''' Builds InvocationRequests from normalized records on a canister.
+
+        Per invocation-data-contract: each entry in
+        ``canister.attributes.invocation_data`` is a normalized record
+        carrying ``(name, arguments)`` plus optional ``processor`` and
+        ``supplement`` keys. The harness mints the application correlation
+        ID via ``InvocationRequest.from_descriptor``; provider envelopes
+        live on the result canister and are attached to each request by
+        the converser's ``requests_from_canister`` wrapper, not here.
+
+        Fails closed for malformed descriptors via ``from_descriptor``:
+        missing ``name`` (InvocationFieldAbsence), non-Mapping supplement
+        (InvocationFieldTypeMismatch), invalid processor
+        (InvocationProcessorInvalidity), and inaccessible invoker name
+        (InvocableInaccessibility).
+    '''
     if not hasattr( canister.attributes, 'invocation_data' ):
         if ignore_invalid_canister: return [ ]
         raise _exceptions.InvocationFieldAbsence( field = 'invocation_data' )

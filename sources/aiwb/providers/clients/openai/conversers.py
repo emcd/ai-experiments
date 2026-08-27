@@ -118,20 +118,20 @@ class Conversers( __.immut.DataclassObject ):
         self, model: Model, request: __.InvocationRequest
     ) -> __.MessageCanister:
         result = await request.invocation( )
-        specifics = request.specifics
-        # 'id' in specifics identifies the parallel tool-call request whose
-        # result this canister satisfies. Every request constructed via
-        # 'requests_from_canister' for the modern 'tools' / 'tool_calls'
-        # path carries this key.
+        # Per invocation-data-contract: the provider envelope travels in
+        # the opaque InvocationSupplement. Only this converser interprets
+        # it; the application pairs results via the harness correlation_id.
+        envelope = request.supplement.payload
         result_context = dict(
-            name = specifics[ 'function' ][ 'name' ],
+            name = envelope[ 'function' ][ 'name' ],
             role = 'tool',
-            tool_call_id = specifics[ 'id' ] )
+            tool_call_id = envelope[ 'id' ] )
         from json import dumps
         message = dumps( result )
         canister = (
             __.ResultMessageCanister( )
             .add_content( message, mimetype = 'application/json' ) )
+        canister.attributes.correlation_id = request.correlation_id
         canister.attributes.model_context = {
             'provider': model.provider.name,
             'model': model.name,
@@ -152,6 +152,12 @@ class Conversers( __.immut.DataclassObject ):
         model: Model,
         invokers: __.cabc.Iterable[ __.Invoker ],
     ) -> __.typx.Any:
+        ''' Produces wire-shape tool declarations from application invokers.
+
+            Per invocation-data-contract: invokers are normalized application
+            entities; the nativized output is the OpenAI Chat Completions
+            `tools` array shape. Provider-issued identifiers appear later, on
+            the InvocationRequest supplement, not in the declaration. '''
         if not model.attributes.supports_invocations: return { }
         return { 'tools': [
             {   'type': 'function',
@@ -188,8 +194,20 @@ class Conversers( __.immut.DataclassObject ):
                     expected_count = len( specifics ),
                     received_count = len( requests ),
                     invocation_type = 'tool calls' )
-            for i, request in enumerate( requests ):
-                request.specifics.update( specifics[ i ] )
+            # Per invocation-data-contract: each provider envelope entry
+            # (tool_call shape) is preserved as opaque InvocationSupplement
+            # data on the corresponding InvocationRequest. Replace each
+            # request so the envelope travels alongside the harness
+            # correlation_id minted by InvocationRequest.from_descriptor.
+            # Use a shallow copy of the envelope; the converser must not
+            # retain external references to nested mutable data afterward.
+            return tuple(
+                __.dcls.replace(
+                    request,
+                    supplement = __.InvocationSupplement.from_mapping(
+                        envelope ) )
+                for request, envelope in zip(
+                    requests, specifics, strict = True ) )
         return requests
 
     def nativize_messages_v0(
@@ -486,6 +504,10 @@ def _nativize_invocation_message(
         # TODO? Customizable elision text.
         content = '(Note: Functions invocation elided from conversation.)'
         return dict( content = content, **context )
+    # Per invocation-data-contract: round-trip the provider supplement as
+    # opaque payload onto the wire message. The supplement carries the
+    # provider-issued tool_call IDs that the same-provider replay path
+    # depends on; the application never inspects it.
     context.update( supplement )
     return context
 
@@ -535,9 +557,14 @@ def _nativize_result_message(
     supports_invocations = (
             model.attributes.supports_invocations
         and model.provider.name == model_context[ 'provider' ] )
-    supplement = model_context[ 'supplement' ]
+    # Per invocation-data-contract: the supplement on the canister is the
+    # provider-originated result envelope and is the source of truth for
+    # same-provider replay. Copy before adding wire-only keys so the
+    # canister attribute stays byte-stable across re-emission.
+    supplement: __.cabc.Mapping[ str, __.typx.Any ] = (
+        dict( model_context[ 'supplement' ] ) )
     if supports_invocations:
-        supplement[ 'role' ] = 'tool'
+        supplement = dict( supplement, role = 'tool' )
         supports_invocations = 'tool_call_id' in supplement
     if not supports_invocations:
         content = '\n\n'.join( (
@@ -665,6 +692,12 @@ def _process_iterative_response_element_v0(
 
 
 def _reconstitute_invocations( record ):
+    ''' Produces normalized invocation records from wire-shape tool calls.
+
+        Per invocation-data-contract: writes `(name, arguments)` records
+        for application consumption; provider envelope data (id, type)
+        travels separately in `model_context.supplement` for same-provider
+        replay. '''
     from json import loads
     invocations = record[ 'tool_calls' ]
     invocations_ = [ ]

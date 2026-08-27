@@ -230,9 +230,22 @@ class InvocationSupplement(
         selfclass,
         mapping: __.cabc.Mapping[ str, __.typx.Any ],
     ) -> __.typx.Self:
-        ''' Produces opaque supplement from mapping. '''
+        ''' Produces opaque supplement from mapping.
+
+            Per invocation-data-contract: the supplement is opaque to the
+            application and must not alias nested mutable data from the
+            caller's envelope. The top-level payload is exposed as a
+            MappingProxyType (read-only); nested mutable values are
+            detached via a bounded ``copy.deepcopy`` so the converser can
+            not accidentally observe later mutations of the source
+            envelope (e.g., provider response objects that continue to
+            accumulate streaming deltas). The external shallow interface
+            is preserved: callers still see ``payload`` as a single-layer
+            read-only mapping. '''
+        from copy import deepcopy
+        detached = deepcopy( dict( mapping ) )
         return selfclass(
-            payload = __.types.MappingProxyType( dict( mapping ) ) )
+            payload = __.types.MappingProxyType( detached ) )
 
 
 class InvocationRequest(
@@ -435,4 +448,8 @@ def _supplement_from_descriptor(
     if isinstance( raw, InvocationSupplement ): return raw
     if isinstance( raw, __.cabc.Mapping ):
         return InvocationSupplement.from_mapping( raw )
-    return InvocationSupplement( )
+    from . import exceptions as _exceptions
+    raise _exceptions.InvocationFieldTypeMismatch(
+        field = 'supplement',
+        expected_type = 'Mapping or InvocationSupplement',
+        received_type = type( raw ).__qualname__ )
