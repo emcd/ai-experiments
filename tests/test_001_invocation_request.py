@@ -171,3 +171,93 @@ def test_009_request_correlation_ids_are_unique( ) -> None:
         descriptor = { 'name': 'greet', 'arguments': { } },
         context = context )
     assert request_a.correlation_id != request_b.correlation_id
+
+
+def test_010_descriptor_with_malformed_supplement_raises( ) -> None:
+    ''' Non-Mapping, non-InvocationSupplement supplement value fails closed.
+
+        Per invocation-data-contract: malformed provider metadata must fail
+        closed. A present supplement that is neither a Mapping nor an
+        InvocationSupplement instance must raise
+        InvocationFieldTypeMismatch with field='supplement'.
+    '''
+    invokers = { 'greet': _StubInvoker( 'greet' ) }
+    context = _make_context( invokers )
+    try:
+        _core.InvocationRequest.from_descriptor(
+            descriptor = {
+                'name': 'greet',
+                'arguments': { },
+                'supplement': 'not a mapping',
+            },
+            context = context )
+    except _exceptions.InvocationFieldTypeMismatch as exc:
+        message = str( exc )
+        assert 'supplement' in message, (
+            f"Expected field name in message, got {message!r}" )
+        assert (
+            'Mapping' in message
+            or 'InvocationSupplement' in message
+        ), f"Expected type hint in message, got {message!r}"
+        return
+    raise AssertionError(
+        'Expected InvocationFieldTypeMismatch for malformed supplement.' )
+
+
+def test_011_descriptor_with_mapping_supplement_accepted( ) -> None:
+    ''' Mapping supplement is accepted and wrapped into the supplement. '''
+    invokers = { 'greet': _StubInvoker( 'greet' ) }
+    context = _make_context( invokers )
+    request = _core.InvocationRequest.from_descriptor(
+        descriptor = {
+            'name': 'greet',
+            'arguments': { },
+            'supplement': { 'id': 'call_xyz', 'name': 'greet' },
+        },
+        context = context )
+    assert request.supplement.payload[ 'id' ] == 'call_xyz'
+
+
+def test_012_supplement_detaches_nested_mutable_envelope( ) -> None:
+    ''' Supplement must not alias nested mutable envelope data.
+
+        Per invocation-data-contract: the supplement is opaque and must
+        not share nested mutable references with the source envelope.
+        Provider envelopes contain nested mappings (e.g., OpenAI
+        tool_call.function, Anthropic tool_use.input); if the
+        converser's source envelope is mutated after the supplement is
+        attached, the supplement must remain unchanged.
+    '''
+    envelope = {
+        'type': 'function',
+        'id': 'call_abc',
+        'function': {
+            'name': 'greet',
+            'arguments': '{"who":"world"}',
+        },
+    }
+    supplement = _core.InvocationSupplement.from_mapping( envelope )
+    # Mutate nested members of the source envelope after construction.
+    envelope[ 'function' ][ 'name' ] = 'changed'
+    envelope[ 'function' ][ 'arguments' ] = 'tampered'
+    envelope[ 'id' ] = 'call_tampered'
+    # The supplement must remain unchanged.
+    assert supplement.payload[ 'id' ] == 'call_abc'
+    assert supplement.payload[ 'function' ][ 'name' ] == 'greet'
+    assert (
+        supplement.payload[ 'function' ][ 'arguments' ] == '{"who":"world"}' )
+
+
+def test_013_supplement_payload_remains_read_only_mapping( ) -> None:
+    ''' Top-level MappingProxyType surface is preserved after deep detach. '''
+    envelope = { 'id': 'call_xyz', 'nested': { 'k': 'v' } }
+    supplement = _core.InvocationSupplement.from_mapping( envelope )
+    import types as _types
+    assert isinstance( supplement.payload, _types.MappingProxyType )
+    # Mutating the supplement payload must raise.
+    raised = False
+    try:
+        supplement.payload[ 'id' ] = 'tampered'
+    except TypeError:
+        raised = True
+    assert raised, 'Expected TypeError on MappingProxyType assignment.'
