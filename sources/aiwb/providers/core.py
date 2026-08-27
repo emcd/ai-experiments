@@ -206,6 +206,35 @@ class ConverserTokensLimits(
         return selfclass( **args )
 
 
+class InvocationProcessor( __.enum.Enum ): # TODO: Python 3.11: StrEnum
+    ''' Which side executes an invocation. '''
+
+    Application = 'application'
+    Provider = 'provider'
+
+
+InvocationCorrelationId: __.typx.TypeAlias = str
+
+
+class InvocationSupplement(
+    __.immut.DataclassObject
+):
+    ''' Opaque provider-originated payload for same-provider replay. '''
+
+    payload: __.cabc.Mapping[ str, __.typx.Any ] = (
+        __.dcls.field(
+            default_factory = lambda: __.types.MappingProxyType( { } ) ) )
+
+    @classmethod
+    def from_mapping(
+        selfclass,
+        mapping: __.cabc.Mapping[ str, __.typx.Any ],
+    ) -> __.typx.Self:
+        ''' Produces opaque supplement from mapping. '''
+        return selfclass(
+            payload = __.types.MappingProxyType( dict( mapping ) ) )
+
+
 class InvocationRequest(
     __.immut.DataclassObject
 ):
@@ -214,7 +243,11 @@ class InvocationRequest(
     name: str
     arguments: __.cabc.Mapping[ str, __.typx.Any ]
     invocation: __.typx.Callable # TODO: Full signature.
-    specifics: __.accret.Dictionary = ( # TODO: Full signature.
+    correlation_id: InvocationCorrelationId
+    processor: InvocationProcessor = InvocationProcessor.Application
+    supplement: InvocationSupplement = (
+        __.dcls.field( default_factory = InvocationSupplement ) )
+    specifics: __.accret.Dictionary = (
         __.dcls.field( default_factory = __.accret.Dictionary ) )
 
     @classmethod
@@ -236,14 +269,36 @@ class InvocationRequest(
         if name not in context.invokers:
             raise _exceptions.InvocableInaccessibility( name = name )
         arguments = descriptor.get( 'arguments', { } )
+        correlation_id = produce_invocation_correlation_id( )
+        processor = _processor_from_descriptor( descriptor )
+        supplement = _supplement_from_descriptor( descriptor )
         # TODO: Provide supplements based on specification from invocable.
         invocation = __.funct.partial(
             context.invokers[ name ],
             auxdata = context.auxdata,
             arguments = arguments,
-            supplements = context.supplements )
+            supplements = context.supplements,
+            correlation_id = correlation_id )
         return selfclass(
-            name = name, arguments = arguments, invocation = invocation )
+            name = name,
+            arguments = arguments,
+            invocation = invocation,
+            correlation_id = correlation_id,
+            processor = processor,
+            supplement = supplement )
+
+
+class InvocationResult(
+    __.immut.DataclassObject
+):
+    ''' Provider-neutral invocation (tool use) result. '''
+
+    name: str
+    correlation_id: InvocationCorrelationId
+    content: __.typx.Any
+    processor: InvocationProcessor = InvocationProcessor.Application
+    supplement: InvocationSupplement = (
+        __.dcls.field( default_factory = InvocationSupplement ) )
 
 
 class ModelIntegrationBehaviors( __.enum.IntFlag ):
@@ -331,6 +386,11 @@ def create_response_indices( ) -> ResponseIndices:
         references = __.accret.Dictionary( ) )
 
 
+def produce_invocation_correlation_id( ) -> InvocationCorrelationId:
+    ''' Mints a harness-owned UUID4 correlation identifier. '''
+    return __.uuid4( ).hex
+
+
 def _merge_dictionaries_recursive(
     theirs: __.cabc.MutableMapping[ str, __.typx.Any ],
     ours: __.cabc.Mapping[ str, __.typx.Any ],
@@ -346,3 +406,28 @@ def _merge_dictionaries_recursive(
             theirs[ name ] = our_value
             continue
         _merge_dictionaries_recursive( their_value, our_value )
+
+
+def _processor_from_descriptor(
+    descriptor: InvocationDescriptor,
+) -> InvocationProcessor:
+    from . import exceptions as _exceptions
+    if 'processor' not in descriptor:
+        return InvocationProcessor.Application
+    raw = descriptor[ 'processor' ]
+    if isinstance( raw, InvocationProcessor ): return raw
+    try: return InvocationProcessor( raw )
+    except ValueError as exception:
+        raise _exceptions.InvocationProcessorInvalidity(
+            value = raw ) from exception
+
+
+def _supplement_from_descriptor(
+    descriptor: InvocationDescriptor,
+) -> InvocationSupplement:
+    raw = descriptor.get( 'supplement' )
+    if None is raw: return InvocationSupplement( )
+    if isinstance( raw, InvocationSupplement ): return raw
+    if isinstance( raw, __.cabc.Mapping ):
+        return InvocationSupplement.from_mapping( raw )
+    return InvocationSupplement( )
