@@ -364,11 +364,59 @@ def _restore_prompt_variables_v0( gui, state, species ):
 
 
 def _standardize_invocation_requests_v0( canister_state ):
+    ''' Bounded legacy upgrade for assistant/invocation canisters.
+
+        Per OpenSpec define-invocation-data-contract (Persistence and
+        Rehydration Semantics, scenario "Legacy upgrade path is bounded"):
+        pre-R2 records predate the normalized record contract and carry
+        a provider envelope under ``model_context.supplement``; this
+        function adapts those records to the post-R2 normalized
+        descriptor list. Post-R2 records already satisfy the contract
+        and pass through unchanged. The path is removable once all
+        in-tree conversations are migrated.
+
+        Bounded behavior: this function does not invent provider
+        identifiers as correlation_ids. Pre-R2 descriptors carry
+        ``(name, arguments)`` only; the correlation_id is fresh-minted
+        at extract time by ``InvocationRequest.from_descriptor`` per
+        Invocables step 1 of the durable-id adaptation. Post-R2
+        descriptors round-trip through this function unmodified.
+
+        The pass-through predicate is shape-based: it requires each
+        item to be a mapping with both ``name`` and ``arguments``
+        keys, which is the shape every descriptor carries across both
+        pre-R2 and post-R2 formats. Correlation_id and processor are
+        NOT part of this predicate because they are post-R2 fields that
+        the legacy extraction path never wrote; an item with only
+        ``(name, arguments)`` is still a valid legacy descriptor and
+        the predicate matches it correctly. The function falls through
+        to the legacy envelope extraction only when ``content`` is NOT
+        a list of descriptors, i.e., when it is the raw provider
+        envelope shape that predates the normalized-record contract. '''
     from json import dumps, loads
+    from collections.abc import Mapping, MutableMapping, Sequence
     content = canister_state[ 'content' ]
     try: extra_context = loads( content )
     except Exception: return content, { }
     requests = [ ]
+    # Post-R2 path: ``extra_context`` is a list of normalized
+    # descriptors. The predicate verifies shape only (name +
+    # arguments on each item) so it tolerates both pre-R2 and post-R2
+    # items, but it excludes the legacy provider-envelope shape
+    # (``tool_calls`` or single ``(name, arguments)`` dict at the
+    # top level) so that shape still falls through to the legacy
+    # extraction below.
+    if (    isinstance( extra_context, Sequence )
+        and not isinstance( extra_context, ( str, bytes ) )
+        and all(
+            isinstance( item, Mapping )
+            and 'name' in item and 'arguments' in item
+            for item in extra_context
+        )
+    ): return content, { }
+    # Pre-R2 path: extra_context is a mutable mapping (provider envelope).
+    if not isinstance( extra_context, MutableMapping ):
+        return content, { }
     if 'tool_calls' in extra_context:
         for tool_call in extra_context[ 'tool_calls' ]:
             function = tool_call[ 'function' ]

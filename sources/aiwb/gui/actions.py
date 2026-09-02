@@ -256,9 +256,33 @@ async def _deactivate_duplicate_invocations( components ):
 async def _deduplicate_invocations(  # noqa: PLR0915
     components
 ) -> __.cabc.Sequence[ int ]:
-    ''' Deduplicates invocations and their results. '''
+    ''' Deduplicates invocations and their results.
+
+        Per OpenSpec define-invocation-data-contract (Provider-Neutral
+        Correlation IDs, scenarios "Correlation identifier drives
+        dedup" and "Correlation identifier is the result-pairing
+        key"): two invocation results with the same harness-minted
+        correlation identifier are treated as duplicates and the
+        older result is superseded by the newer one without inspecting
+        provider-shaped envelopes. Request-to-result pairing is by the
+        ``correlation_id`` on the normalized descriptor plus
+        ``attributes.correlation_id`` on the result canister; the
+        historical positional ``result_index = i + j + 1`` is no
+        longer the primary surface. Iteration over the history column
+        continues to use the positional index for unrelated
+        operations (the "all duplicates, disable the canister
+        itself" shortcut); only the result-pairing lookup replaces
+        ``i + j + 1``. The whole-invocation deactivation behavior is
+        preserved: an invocation canister whose every call has been
+        superseded by a newer invocation is deactivated wholesale. The
+        ``all_duplicates`` flag is cleared only when a call is NOT yet
+        matched (and thus registers as a candidate deduper for older
+        invocations), not when it is itself matched by a newer one. '''
     history = components.column_conversation_history
-    deduplicators = { }  # { tool_name: [ deduplicator_instances ] }
+    correlation_id_to_index = _result_canister_index_by_id( history )
+    deduplicators: __.accret.Dictionary[ str, list ] = (
+        __.accret.Dictionary( ) )
+    invokers = components.auxdata__.invocables.invokers
     deactivations = [ ]
     for i in range( len( history ) - 1, -1, -1 ): # Process in reverse order
         message_components = history[ i ].gui__
@@ -269,39 +293,110 @@ async def _deduplicate_invocations(  # noqa: PLR0915
         all_duplicates = True
         for j, invocation in enumerate( invocation_data ):
             name = invocation[ 'name' ]
-            if name not in components.auxdata__.invocables.invokers:
+            if name not in invokers:
                 all_duplicates = False
                 continue
-            invoker = components.auxdata__.invocables.invokers[ name ]
+            invoker = invokers[ name ]
             if invoker.deduplicator_class is None:
                 all_duplicates = False
                 continue
-            for dedup in deduplicators.get( name, [ ] ):
-                # Check if this call is duplicated by any newer ones.
-                if not dedup.is_duplicate( name, invocation[ 'arguments' ] ):
-                    continue
-                result_index = i + j + 1
-                result_components = history[ result_index ].gui__
-                if (    result_index < len( history )
-                    and result_components.toggle_active.value
-                    and not result_components.toggle_pinned.value
-                ): deactivations.append( result_index )
-                break
-            else:
-                # Not duplicated, so this one might duplicate older ones.
-                dedup = invoker.deduplicator_class(
-                    invocable_name = name,
-                    arguments = invocation[ 'arguments' ] )
-                all_duplicates = False
-                for name_ in (
-                    invoker.deduplicator_class.provide_invocable_names( )
-                ): deduplicators.setdefault( name_, [ ] ).append( dedup )
+            duplicate_target = _scan_newer_deduplicators(
+                j, invocation, deduplicators,
+                correlation_id_to_index, history, i )
+            if duplicate_target is not None:
+                if duplicate_target >= 0:
+                    deactivations.append( duplicate_target )
+                # Per the historical semantics, finding that this
+                # call is itself a duplicate of a newer invocation
+                # does NOT clear ``all_duplicates``. The flag is
+                # cleared only when this call is NOT yet matched
+                # (and thus registers as a candidate deduper for older
+                # invocations), so the outer whole-invocation
+                # deactivation shortcut still fires when every call
+                # in the canister has been superseded.
+                continue
+            # Not duplicated, so this one might duplicate older ones.
+            # Per scenario "Correlation identifier drives dedup": this
+            # invocation is the OLDER relative to anything dedup-matched
+            # later. Its durable correlation_id is recorded alongside
+            # the dedup instance so a future older call's successor can
+            # pair to this invocation's result via the index.
+            _register_newer_dedup( invocation, invoker, deduplicators )
+            all_duplicates = False
         # If all calls would be deduplicated, we can disable invocation.
         if (    all_duplicates
             and canister.role is __.MessageRole.Invocation
             and not message_components.toggle_pinned.value
         ): deactivations.append( i )
     return tuple( sorted( deactivations, reverse = True ) )
+
+
+def _scan_newer_deduplicators(  # noqa: PLR0913, PLR0917
+    j, invocation, deduplicators,
+    correlation_id_to_index, history, index_of_invocation_canister,
+):
+    ''' Returns this invocation's result index if a newer invocation
+        registered in ``deduplicators`` matches this invocation's args.
+        Iteration is newest-first, so by the time this is called the
+        dictionaries contain entries for every invocation the current
+        one is older than. Returns ``-1`` if a newer duplicate exists
+        but its result is already deactivated or pinned, and ``None``
+        when no newer duplicate exists.
+
+        Per scenario "Correlation identifier is the result-pairing
+        key": the lookup prefers this invocation's own
+        ``correlation_id`` (the older one) so the result can be found
+        by durable id. The positional fallback ``i + j + 1`` is
+        preserved for pre-R2 / un-hydrated descriptors whose
+        correlation_id is None. '''
+    name = invocation[ 'name' ]
+    for _, dedup in deduplicators.get( name, [ ] ):
+        if not dedup.is_duplicate( name, invocation[ 'arguments' ] ):
+            continue
+        current_correlation_id = invocation.get( 'correlation_id' )
+        if current_correlation_id is None:
+            result_index = index_of_invocation_canister + j + 1
+        else:
+            result_index = (
+                correlation_id_to_index.get( current_correlation_id ) )
+        if (    result_index is not None
+            and result_index < len( history )
+            and history[ result_index ].gui__.toggle_active.value
+            and not history[ result_index ].gui__.toggle_pinned.value
+        ): return result_index
+        return -1
+    return None
+
+
+def _result_canister_index_by_id( history ):
+    ''' Builds ``correlation_id -> history index`` for canisters whose
+        ``attributes.correlation_id`` is set. Used to locate an older
+        invocation's result canister by durable id (rather than by
+        ``i + j + 1``). First occurrence wins; well-formed conversations
+        have one correlation_id per result canister. '''
+    index: __.accret.Dictionary[ str, int ] = __.accret.Dictionary( )
+    for index_, message in enumerate( history ):
+        attributes = getattr( message.gui__.canister__, 'attributes', None )
+        cid = getattr( attributes, 'correlation_id', None ) if (
+            attributes is not None ) else None
+        if cid and cid not in index: index[ cid ] = index_
+    return index
+
+
+def _register_newer_dedup( invocation, invoker, deduplicators ):
+    ''' Registers this invocation as a candidate deduper for any
+        older invocation processed later. Per scenario "Correlation
+        identifier drives dedup", the durable ``correlation_id`` from
+        the descriptor is recorded alongside the dedup instance so a
+        future older call can pair to this invocation's result via
+        the correlation_id index. '''
+    dedup = invoker.deduplicator_class(
+        invocable_name = invocation[ 'name' ],
+        arguments = invocation[ 'arguments' ] )
+    stored_correlation_id = invocation.get( 'correlation_id' )
+    for name_ in invoker.deduplicator_class.provide_invocable_names( ):
+        deduplicators.setdefault( name_, [ ] ).append(
+            ( stored_correlation_id, dedup ) )
 
 
 @__.ctxl.contextmanager
