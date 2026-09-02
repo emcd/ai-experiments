@@ -113,16 +113,28 @@ def render_projection( record ):
 def render_raw_envelope( canister ):
     ''' Raw provider envelope rendered as JSON for opt-in details view.
 
-        Per opt-in-only contract: supplement and per-invocation raw
+        Per opt-in-only contract: the supplement and per-invocation raw
         provider envelope are surfaced here only when the user has
-        explicitly enabled details on the message canister. The
-        application never inspects this for pairing, dedup, or default
-        display correlation. '''
+        explicitly enabled details on the message canister. Per the
+        spec narrative around "opaque supplement", this renderer
+        focuses on ``model_context['supplement']`` (the opaque payload)
+        and lists the ``provider``/``model`` metadata alongside it so
+        the user can identify which converser session produced the
+        envelope, without exposing additional application state.
+        The application never inspects any of this for pairing,
+        dedup, or default display correlation. '''
     from json import dumps
     attributes = getattr( canister, 'attributes', None )
     model_context = getattr( attributes, 'model_context', { } ) if (
         attributes is not None ) else { }
-    return dumps( model_context, indent = 2, default = str )
+    supplement = model_context.get( 'supplement', { } )
+    metadata = {
+        key: model_context.get( key )
+        for key in ( 'provider', 'client', 'model' )
+        if key in model_context
+    }
+    rendered = { 'metadata': metadata, 'supplement': supplement }
+    return dumps( rendered, indent = 2, default = str )
 
 
 def render_invocation_data_projection( invocation_data ):
