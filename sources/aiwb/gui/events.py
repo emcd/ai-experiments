@@ -344,6 +344,22 @@ async def on_toggle_functions_display( components, event ):
         components.toggle_functions_display.value )
 
 
+async def on_toggle_invocation_details( message_components, event ):
+    ''' Switches the message body between normalized projection and the
+        raw provider envelope.
+
+        Per OpenSpec define-invocation-data-contract (GUI Display
+        Projection Boundary, scenario "Debug affordance exposes raw
+        envelope on demand"): the toggle defaults to off and renders
+        only the normalized projection; opt-in via the per-message
+        ``row_actions`` bar reveals the supplement and per-invocation
+        raw provider envelope. The application never inspects the
+        envelope for pairing, dedup, or default display correlation;
+        this handler only switches the rendered body. '''
+    from . import conversations as _conversations
+    _conversations.assimilate_canister_dto_to_gui( message_components )
+
+
 async def on_toggle_message_active( message_components, event ):
     if message_components.parent__.mutex__.locked( ): return
     from .updaters import update_and_save_conversation

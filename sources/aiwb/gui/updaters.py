@@ -26,6 +26,7 @@ from . import components as _components
 from . import conversations as _conversations
 from . import exceptions as _exceptions
 from . import invocables as _invocables
+from . import projections as _projections
 from . import providers as _providers
 from . import state as _state
 
@@ -278,6 +279,7 @@ def configure_message_interface( canister_gui, dto ):
         case __.MessageRole.Invocation:
             # TODO: Only enable 'Invoke' button if model supports invocations.
             canister_gui.button_invoke.visible = True
+            canister_gui.toggle_details.visible = True
         case __.MessageRole.Result: pass
         case __.MessageRole.User:
             canister_gui.button_edit.visible = True
@@ -342,7 +344,13 @@ def create_message( gui, dto ):
     # TODO: Handle non-textual messages and text messages with attachments.
     if dto: content = dto[ 0 ].data
     elif hasattr( dto.attributes, 'invocation_data' ):
-        content = dto.attributes.invocation_data
+        # Per OpenSpec define-invocation-data-contract (GUI Display
+        # Projection Boundary, "Default user display shows normalized
+        # fields only"): invocation canisters default to the normalized
+        # projection. Raw provider envelope is reachable only via the
+        # per-message `toggle_details` affordance, not via this default.
+        content = _projections.render_invocation_data_projection(
+            dto.attributes.invocation_data )
     else: content = ''
     text_message = gui_.text_message
     if hasattr( text_message, 'value' ): text_message.value = content
@@ -380,7 +388,13 @@ def determine_message_layout( dto ):
     # TODO: Consider contents array.
     if dto: mimetype = dto[ 0 ].mimetype
     elif hasattr( dto.attributes, 'invocation_data' ):
-        mimetype = 'application/json'
+        # Per OpenSpec define-invocation-data-contract (GUI Display
+        # Projection Boundary): invocation canisters route to the
+        # projection layout. The JSON layout is preserved for non-
+        # invocation JSON content (e.g., tool result payloads that
+        # surface directly as JSON without an invocation_data wrapper).
+        from .layouts import invocation_message_layout as layout
+        return layout
     else: mimetype = 'text/plain' # TODO? Raise error.
     # TODO: Handle layouts for pictorial messages.
     match mimetype:
@@ -717,6 +731,20 @@ async def update_invocations_prompt( components ):
         ( await access_model_selection( components ) )
         .attributes.supports_invocations )
     components.row_functions_prompt.visible = supports_invocations
+    # Per OpenSpec define-invocation-data-contract section 3.2 (provider-
+    # native configuration/presentation seam reservation): all
+    # invokers are Application in R2; the seam reserves a hook for
+    # Provider invokers (visible-but-disabled with a server-side
+    # execution tooltip) and a per-conversation opt-in policy with a
+    # global default at the configuration level. The hook here reads
+    # `invoker.processor` and `invoker.provenance` via
+    # `gui.invocables.provide_invoker_metadata` and lets the layout
+    # bind per-row state. Selection-state storage surface for the
+    # per-conversation policy does not yet exist (no
+    # ``auxdata.configuration['provider_native_tools_policy']`` key
+    # consumed); the seam is reserved for a follow-on that wires the
+    # storage surface and the disabled-row rendering together once a
+    # Provider invoker actually exists.
     if supports_invocations:
         attributes = components.auxdata__.prompts.definitions[
             components.selector_system_prompt.value ].attributes

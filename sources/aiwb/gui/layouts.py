@@ -976,6 +976,7 @@ conversation_message_common_layout = {
         contains = [
             'toggle_pinned',
             # TODO: Vertical separator.
+            'toggle_details',
             'button_copy',
             'button_delete',
             'button_edit',
@@ -993,6 +994,16 @@ conversation_message_common_layout = {
             **_icon_button_attributes,
         ),
         event_functions = dict( value = 'on_toggle_message_pinned' ),
+    ),
+    'toggle_details': dict(
+        component_class = Toggle,
+        component_arguments = dict(
+            icon = 'eye',
+            value = False,
+            visible = False,
+            **_icon_button_attributes,
+        ),
+        event_functions = dict( value = 'on_toggle_invocation_details' ),
     ),
     'button_copy': dict(
         component_class = Button,
@@ -1077,6 +1088,27 @@ plain_conversation_message_layout.update( {
 
 rich_conversation_message_layout = conversation_message_common_layout.copy( )
 rich_conversation_message_layout.update( {
+    'text_message': dict(
+        component_class = Markdown,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+            margin = sizes.standard_margin,
+            styles = { 'overflow': 'auto' },
+            stylesheets = [ _css_code_overflow ],
+            **_message_column_width_attributes,
+        ),
+    ),
+} )
+
+# Per OpenSpec define-invocation-data-contract (GUI Display Projection
+# Boundary, scenarios "Default user display shows normalized fields only"
+# and "Debug affordance exposes raw envelope on demand"): invocation
+# canisters default to a markdown render of the normalized projection
+# `(name, arguments, correlation_id, processor)`. The per-message
+# `toggle_details` affordance on the `row_actions` bar surfaces the raw
+# provider envelope on explicit opt-in; default state is off.
+invocation_message_layout = conversation_message_common_layout.copy( )
+invocation_message_layout.update( {
     'text_message': dict(
         component_class = Markdown,
         component_arguments = dict(

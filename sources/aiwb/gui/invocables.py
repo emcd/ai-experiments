@@ -75,3 +75,32 @@ def provide_invokers_selection( components ):
     return tuple(
         invoker for name, invoker in invokers.items( )
         if name in components.multichoice_functions.value )
+
+
+def provide_invoker_metadata( components ):
+    ''' Returns per-invoker metadata for the invocable selector.
+
+        Per OpenSpec define-invocation-data-contract (Three-Layer Tool-
+        Source Model, requirement, scenario "Processor-aware rendering
+        in the invocable selector"): each selector row is labeled with
+        provenance (MCP badge for MCP-sourced Application tools) and
+        rendered with respect to processor (Application selectable;
+        Provider visible-but-disabled with a server-side execution
+        tooltip). All current invokers are Application; the Provider
+        branch is reserved for a future provider-native invoker and
+        not exercised in R2.
+
+        Yields ``(name, processor, provenance)`` tuples covering every
+        invoker registered with the harness, regardless of the current
+        selector value, so callers can render the full visible-but-
+        disabled state even when no tool is currently checked. '''
+    invokers = components.auxdata__.invocables.invokers
+    rows = [ ]
+    for name, invoker in invokers.items( ):
+        processor = getattr( invoker, 'processor', 'application' )
+        provenance = getattr( invoker, 'provenance', None )
+        provenance_str = getattr( provenance, 'value', None ) or (
+            provenance if isinstance( provenance, str ) else 'local' )
+        rows.append( dict(
+            name = name, processor = processor, provenance = provenance_str ) )
+    return tuple( rows )
