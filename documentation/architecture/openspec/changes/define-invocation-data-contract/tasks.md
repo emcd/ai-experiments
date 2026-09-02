@@ -35,4 +35,4 @@
 ## 5. Documentation
 
 - [x] 5.1 Update `sources/aiwb/invocables/README.md` to add an architecture-level overview of the invocable stack (currently JSON-Schema/Pydantic-only per R1 finding 6).
-- [ ] 5.2 Cross-link from `todos/providers/2` (OpenAI legacy function_call removal) and `todos/providers/3` (OpenAI Responses API) once this proposal lands.
+- [x] 5.2 Cross-link from `todos/providers/2` (OpenAI legacy function_call removal) and `todos/providers/3` (OpenAI Responses API) once this proposal lands. Notebook anchors: `ai-experiments:todos/providers/2` (done; distinct from GUI legacy persistence at `todos/providers/8`), `ai-experiments:todos/providers/3` (deferred out of R2; Responses smoke not part of 4.4). Durable-correlation merge `9e1499f`; `todos/providers/9` remains deferred and non-blocking for default-stream 4.4.
