@@ -721,17 +721,23 @@ def _process_response_event_v0( model, indices, event, reactors ):
 def _reconstitute_invocations( records ):
     ''' Produces normalized invocation records from wire-shape tool uses.
 
-        Per invocation-data-contract: writes `(name, arguments)` records
-        for application consumption; provider envelope data (id, type)
-        travels separately in `model_context.supplement` for same-provider
-        replay. '''
+        Per invocation-data-contract: writes durable descriptors with
+        ``name``, ``arguments``, harness-minted ``correlation_id``, and
+        ``processor`` for application consumption. Provider envelope data
+        (id, type) travels only in ``model_context.supplement`` for
+        same-provider replay and is never used as ``correlation_id``. '''
     invocations = [ ]
     for record in records.values( ):
         if 'tool_use' not in record: continue
         tool_use = record[ 'tool_use' ]
         name = tool_use.name
         arguments = dict( tool_use.input )
-        invocations.append( dict( name = name, arguments = arguments ) )
+        invocations.append( dict(
+            name = name,
+            arguments = arguments,
+            correlation_id = __.produce_invocation_correlation_id( ),
+            processor = __.InvocationProcessor.Application.value,
+        ) )
     return invocations
 
 

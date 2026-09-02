@@ -694,10 +694,11 @@ def _process_iterative_response_element_v0(
 def _reconstitute_invocations( record ):
     ''' Produces normalized invocation records from wire-shape tool calls.
 
-        Per invocation-data-contract: writes `(name, arguments)` records
-        for application consumption; provider envelope data (id, type)
-        travels separately in `model_context.supplement` for same-provider
-        replay. '''
+        Per invocation-data-contract: writes durable descriptors with
+        ``name``, ``arguments``, harness-minted ``correlation_id``, and
+        ``processor`` for application consumption. Provider envelope data
+        (id, type) travels only in ``model_context.supplement`` for
+        same-provider replay and is never used as ``correlation_id``. '''
     from json import loads
     invocations = record[ 'tool_calls' ]
     invocations_ = [ ]
@@ -706,6 +707,8 @@ def _reconstitute_invocations( record ):
         invocations_.append( dict(
             name = function[ 'name' ],
             arguments = loads( function[ 'arguments' ] ),
+            correlation_id = __.produce_invocation_correlation_id( ),
+            processor = __.InvocationProcessor.Application.value,
         ) )
     return invocations_
 
