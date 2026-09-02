@@ -173,6 +173,54 @@ def test_009_request_correlation_ids_are_unique( ) -> None:
     assert request_a.correlation_id != request_b.correlation_id
 
 
+def test_014_request_reuses_valid_descriptor_correlation_id( ) -> None:
+    ''' Present valid UUID4 hex correlation_id is reused, not reminted. '''
+    import asyncio
+    from uuid import uuid4
+    invokers = { 'greet': _StubInvoker( 'greet' ) }
+    context = _make_context( invokers )
+    stable = uuid4( ).hex
+    request = _core.InvocationRequest.from_descriptor(
+        descriptor = {
+            'name': 'greet',
+            'arguments': { 'who': 'world' },
+            'correlation_id': stable,
+        },
+        context = context )
+    assert request.correlation_id == stable
+    result = asyncio.get_event_loop( ).run_until_complete(
+        request.invocation( ) )
+    assert invokers[ 'greet' ].calls[ -1 ][ 'correlation_id' ] == stable
+    assert result == { 'result': 'ok' }
+
+
+def test_015_request_invalid_correlation_id_raises( ) -> None:
+    ''' Present malformed correlation_id fails closed (no silent remint). '''
+    from uuid import uuid1, uuid4
+    invokers = { 'greet': _StubInvoker( 'greet' ) }
+    context = _make_context( invokers )
+    non_v4_hex = uuid1( ).hex
+    assert len( non_v4_hex ) == 32
+    uppercase_v4 = uuid4( ).hex.upper( )
+    # 32-char lowercase hex that is not UUID version 4.
+    non_v4_shaped = 'a' * 32
+    for bad in (
+        '', 'not-a-uuid', uppercase_v4, non_v4_shaped, non_v4_hex, 123, None,
+    ):
+        try:
+            _core.InvocationRequest.from_descriptor(
+                descriptor = {
+                    'name': 'greet',
+                    'arguments': { },
+                    'correlation_id': bad,
+                },
+                context = context )
+        except _exceptions.InvocationCorrelationIdInvalidity:
+            continue
+        raise AssertionError(
+            f'Expected InvocationCorrelationIdInvalidity for {bad!r}.' )
+
+
 def test_010_descriptor_with_malformed_supplement_raises( ) -> None:
     ''' Non-Mapping, non-InvocationSupplement supplement value fails closed.
 
