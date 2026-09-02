@@ -268,7 +268,26 @@ def create_content( data, /, **descriptor ):
 
 
 async def restore_canister( manager, canister_state ):
-    ''' Restores canister into memory from persistent storage. '''
+    ''' Restores canister into memory from persistent storage.
+
+        Per OpenSpec define-invocation-data-contract (Persistence and
+        Rehydration Semantics, scenarios "Persisted record round-trips
+        through rehydration" and "Supplement is opaque to persistence"):
+        post-R2 records hydrate via the wholesale ``SimpleNamespace``
+        materialization of ``attributes`` (which carries
+        ``invocation_data`` with normalized descriptors including
+        ``correlation_id`` and ``processor``, plus
+        ``model_context.supplement`` with the opaque provider
+        envelope). The legacy ``TEMP`` contents-based fallback
+        remains for conversations persisted before this contract
+        landed and is the only branch that constructs
+        ``invocation_data`` from saved content rather than reading it
+        from attributes. The legacy path is removable once all
+        in-tree conversations are migrated. The post-R2 path does
+        not inspect ``model_context.supplement`` for pairing,
+        dedup, or default display correlation; only the originating
+        provider's converser reads the supplement for replay or
+        session continuation. '''
     nomargs = { }
     role = Role( canister_state[ 'role' ] )
     attributes = canister_state.get( 'attributes', { } )
