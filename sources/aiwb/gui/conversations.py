@@ -21,7 +21,7 @@
 ''' Management of conversations for Holoviz Panel GUI. '''
 
 
-#from . import __
+from . import projections as _projections
 
 
 def alter_message_edit_mode( message_components, mode ):
@@ -62,8 +62,22 @@ def assimilate_canister_dto_to_gui( canister_components ):
     if canister:
         canister_components.text_message.object = canister[ 0 ].data
     elif hasattr( canister.attributes, 'invocation_data' ):
-        canister_components.text_message.object = (
-            canister.attributes.invocation_data )
+        # Per OpenSpec define-invocation-data-contract (GUI Display
+        # Projection Boundary): render the normalized projection by
+        # default; the per-message `toggle_details` affordance on the
+        # row_actions bar switches to the raw provider envelope on
+        # explicit opt-in, and the toggle handler in events.py re-runs
+        # this assimilation when the user enables it.
+        details = (
+            getattr( canister_components, 'toggle_details', None )
+            and canister_components.toggle_details.value )
+        if details:
+            canister_components.text_message.object = (
+                _projections.render_raw_envelope( canister ) )
+        else:
+            canister_components.text_message.object = (
+                _projections.render_invocation_data_projection(
+                    canister.attributes.invocation_data ) )
     behaviors = getattr( canister.attributes, 'behaviors', [ ] )
     for behavior in ( 'active', 'pinned' ):
         value = behavior in behaviors
