@@ -75,6 +75,14 @@ class InvocationProcessorInvalidity( __.Omnierror, ValueError ):
             f"Invalid invocation processor {value!r}." )
 
 
+class InvocationCorrelationIdInvalidity( __.Omnierror, ValueError ):
+    ''' Invocation correlation identifier is not a valid harness id. '''
+
+    def __init__( self, value: __.typx.Any ):
+        super( ).__init__(
+            f"Invalid invocation correlation id {value!r}." )
+
+
 class InvocableInaccessibility( __.Omnierror, ValueError ):
     ''' Requested invocable not available in current context. '''
 

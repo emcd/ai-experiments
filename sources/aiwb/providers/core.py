@@ -30,6 +30,8 @@ ProviderVariants = __.typx.TypeVar( 'ProviderVariants', covariant = True )
 InvocationDescriptor: __.typx.TypeAlias = (
     __.cabc.Mapping[ str, __.typx.Any ] )
 
+_CORRELATION_ID_UUID_VERSION = 4
+
 
 class ResponseIndices( __.immut.DataclassObject ):
     ''' Tracks canisters and callback references by response index. '''
@@ -283,7 +285,7 @@ class InvocationRequest(
             raise _exceptions.InvocableInaccessibility( name = name )
         invoker = context.invokers[ name ]
         arguments = descriptor.get( 'arguments', { } )
-        correlation_id = produce_invocation_correlation_id( )
+        correlation_id = _correlation_id_from_descriptor( descriptor )
         processor = _processor_from_descriptor( descriptor, invoker = invoker )
         supplement = _supplement_from_descriptor( descriptor )
         # TODO: Provide supplements based on specification from invocable.
@@ -403,6 +405,29 @@ def create_response_indices( ) -> ResponseIndices:
 def produce_invocation_correlation_id( ) -> InvocationCorrelationId:
     ''' Mints a harness-owned UUID4 correlation identifier. '''
     return __.uuid4( ).hex
+
+
+def _correlation_id_from_descriptor(
+    descriptor: InvocationDescriptor,
+) -> InvocationCorrelationId:
+    ''' Reuses a present canonical UUID4 hex id; mints only when absent. '''
+    from uuid import UUID
+    from . import exceptions as _exceptions
+    if 'correlation_id' not in descriptor:
+        return produce_invocation_correlation_id( )
+    raw = descriptor[ 'correlation_id' ]
+    if not isinstance( raw, str ):
+        raise _exceptions.InvocationCorrelationIdInvalidity( value = raw )
+    try: parsed = UUID( hex = raw )
+    except ( TypeError, ValueError ) as exception:
+        raise _exceptions.InvocationCorrelationIdInvalidity(
+            value = raw ) from exception
+    if (
+            _CORRELATION_ID_UUID_VERSION != parsed.version
+        or  parsed.hex != raw
+    ):
+        raise _exceptions.InvocationCorrelationIdInvalidity( value = raw )
+    return raw
 
 
 def _merge_dictionaries_recursive(
