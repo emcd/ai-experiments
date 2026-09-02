@@ -301,8 +301,8 @@ async def _deduplicate_invocations(  # noqa: PLR0915
                 all_duplicates = False
                 continue
             duplicate_target = _scan_newer_deduplicators(
-                j, invocation, deduplicators,
-                correlation_id_to_index, history, i )
+                invocation, deduplicators, correlation_id_to_index,
+                history, i + j + 1 )
             if duplicate_target is not None:
                 if duplicate_target >= 0:
                     deactivations.append( duplicate_target )
@@ -331,9 +331,9 @@ async def _deduplicate_invocations(  # noqa: PLR0915
     return tuple( sorted( deactivations, reverse = True ) )
 
 
-def _scan_newer_deduplicators(  # noqa: PLR0913, PLR0917
-    j, invocation, deduplicators,
-    correlation_id_to_index, history, index_of_invocation_canister,
+def _scan_newer_deduplicators(
+    invocation, deduplicators, correlation_id_to_index,
+    history, legacy_result_index,
 ):
     ''' Returns this invocation's result index if a newer invocation
         registered in ``deduplicators`` matches this invocation's args.
@@ -355,7 +355,7 @@ def _scan_newer_deduplicators(  # noqa: PLR0913, PLR0917
             continue
         current_correlation_id = invocation.get( 'correlation_id' )
         if current_correlation_id is None:
-            result_index = index_of_invocation_canister + j + 1
+            result_index = legacy_result_index
         else:
             result_index = (
                 correlation_id_to_index.get( current_correlation_id ) )
