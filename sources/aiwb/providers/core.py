@@ -281,12 +281,21 @@ class InvocationRequest(
         if 'name' not in descriptor:
             raise _exceptions.InvocationFieldAbsence( field = 'name' )
         name = descriptor[ 'name' ]
+        # Resolve processor before invoker bind so Provider descriptors never
+        # enter local Application execution via a name collision.
+        if 'processor' in descriptor:
+            processor = _processor_from_descriptor( descriptor )
+            if InvocationProcessor.Provider is processor:
+                raise _exceptions.ProviderInvocationLocalExecution(
+                    name = name )
         if name not in context.invokers:
             raise _exceptions.InvocableInaccessibility( name = name )
         invoker = context.invokers[ name ]
         arguments = descriptor.get( 'arguments', { } )
         correlation_id = _correlation_id_from_descriptor( descriptor )
         processor = _processor_from_descriptor( descriptor, invoker = invoker )
+        if InvocationProcessor.Provider is processor:
+            raise _exceptions.ProviderInvocationLocalExecution( name = name )
         supplement = _supplement_from_descriptor( descriptor )
         # TODO: Provide supplements based on specification from invocable.
         invocation = __.funct.partial(

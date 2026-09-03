@@ -22,10 +22,11 @@ MCP-sourced tools are reserved as the same Application processor with
 `provenance=mcp` via `Invoker.reserve_mcp_registration` (transport/discovery
 not implemented yet). Provider-native/server-side tools are **not** registered
 as invocables. `processor=provider` is a reserved normalized-record
-discriminator and presentation seam only; constructing or presenting
-provider-native requests is deferred to OpenSpec task 3.2 / future provider
-support. Today `InvocationRequest.from_descriptor` still requires a registered
-`Invoker` and an executable `invocation` (Application path).
+discriminator and presentation seam only (OpenSpec task 3.2). Application
+extract/execute refuses Provider-processor descriptors via
+`ProviderInvocationLocalExecution` so a colliding local invoker name cannot
+run server-side tools on the harness. Full provider-native presentation,
+opt-in policy storage, and selector disabled-row UI remain task 3.2 follow-on.
 
 **Execution context.** `Invoker.__call__` builds an immutable `Context` with
 `auxdata`, the invoker, typed `ContextSupplements` (`model` / `controls` plus
@@ -52,9 +53,11 @@ supplement for same-provider replay or tracing.
 - **Application** — harness supplies JSON Schema and runs the tool (local
   invocable or future MCP). GUI treats output as client-provided.
 - **Provider** — reserved discriminator for provider-run tools (server-side).
-  Not constructed by this package yet; see task 3.2. When supported, the
-  harness still mints the correlation ID and keeps provider IDs in the
-  supplement.
+  Application extract via `from_descriptor` raises
+  `ProviderInvocationLocalExecution` and never binds a local `Invoker`.
+  Presentation/opt-in policy (task 3.2) is still follow-on. When fully
+  supported, the harness still mints the correlation ID; provider IDs stay
+  in the supplement.
 
 `Invoker.processor` stores the matching value string (`application` /
 `provider`). During request normalization (`from_descriptor`), an invalid
