@@ -124,6 +124,19 @@ class Context(
     supplements: ContextSupplements
     correlation_id: str
 
+    @property
+    def controls( self ) -> __.cabc.Mapping[ str, __.typx.Any ]:
+        ''' Session controls map from harness supplements (may be empty). '''
+        return self.supplements.controls
+
+    @property
+    def model( self ) -> __.typx.Any:
+        ''' Converser model from harness supplements.
+
+            Raises ``KeyError`` when no model was injected, matching
+            ``supplements['model']`` miss semantics. '''
+        return self.supplements[ 'model' ]
+
 
 class InvocableProvenance( __.enum.Enum ): # TODO: Python 3.11: StrEnum
     ''' Registry-level origin within the Application processor. '''
