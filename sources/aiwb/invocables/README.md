@@ -55,9 +55,10 @@ supplement for same-provider replay or tracing.
 - **Provider** — reserved discriminator for provider-run tools (server-side).
   Application extract via `from_descriptor` raises
   `ProviderInvocationLocalExecution` and never binds a local `Invoker`.
-  Presentation/opt-in policy (task 3.2) is still follow-on. When fully
-  supported, the harness still mints the correlation ID; provider IDs stay
-  in the supplement.
+   The GUI reserves an inherited global/per-conversation opt-in policy and
+   visible disabled Provider rows; it still never locally executes them.
+   When fully supported, the harness still mints the correlation ID; provider
+   IDs stay in the supplement.
 
 `Invoker.processor` stores the matching value string (`application` /
 `provider`). During request normalization (`from_descriptor`), an invalid
