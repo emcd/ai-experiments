@@ -740,11 +740,11 @@ async def update_invocations_prompt( components ):
     # ``column_provider_tools_disabled`` as visible-but-disabled rows
     # with explanatory tooltip and Provider badge. The policy resolves
     # from the per-conversation override (the
-    # ``toggle_provider_native_tools_policy`` Toggle's ``value``,
+    # ``toggle_provider_native_tools_policy`` Select's ``value``,
     # persisted via the layout's value-attribute path) and the global
     # default in ``auxdata.configuration['provider_native_tools_policy']``.
-    # ``True`` -> ``include``; ``False`` -> ``exclude``; ``None`` (unset)
-    # -> global default.
+    # ``'include'`` -> ``True``; ``'exclude'`` -> ``False``;
+    # ``'inherit'`` -> ``None`` (use global).
     per_conversation_override = _resolve_per_conversation_override(
         components )
     effective_policy = _resolve_provider_native_tools_policy(

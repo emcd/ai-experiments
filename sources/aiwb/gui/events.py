@@ -266,6 +266,28 @@ async def on_select_invocables( components, event ):
     await update_invocables_selection( components )
 
 
+async def on_select_provider_native_tools_policy( components, event ):
+    ''' Refresh the invocable selector and persist the conversation.
+
+        Per OpenSpec define-invocation-data-contract section 3.2 (Three-
+        Layer Tool-Source Model): changing the per-conversation
+        ``provider_native_tools_policy`` override must re-run
+        ``update_invocations_prompt`` so the visible-but-disabled
+        Provider column reflects the new effective policy, and the
+        conversation must be saved so the new value round-trips via the
+        existing collect/inject machinery on the layout's
+        ``value``-attribute path. Guarded by the conversation mutex
+        to avoid interleaving with chat, model selection, or summarization
+        updates. '''
+    if components.mutex__.locked( ): return
+    from .updaters import (
+        update_and_save_conversation,
+        update_invocations_prompt,
+    )
+    await update_invocations_prompt( components )
+    await update_and_save_conversation( components )
+
+
 async def on_select_model( components, event ):
     if None is event.new: return
     if components.mutex__.locked( ): return

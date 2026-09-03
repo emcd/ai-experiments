@@ -395,13 +395,18 @@ system_prompts_layout = {
         # default. ``inherit`` defers to the global; ``include`` /
         # ``exclude`` override. Persisted via the existing
         # collect_conversation/inject_conversation machinery on the
-        # layout's ``value`` attribute path. No migration code change.
+        # layout's ``value`` attribute path. The ``on_select_provider_
+        # native_tools_policy`` event handler refreshes the disabled
+        # column and persists the conversation when the user picks a
+        # value. No migration code change.
         component_class = Select,
         component_arguments = dict(
             name = 'Provider tools',
             options = [ 'inherit', 'include', 'exclude' ],
             value = 'inherit',
         ),
+        event_functions = dict(
+            value = 'on_select_provider_native_tools_policy' ),
     ),
     'toggle_functions_display': dict(
         component_class = Toggle,

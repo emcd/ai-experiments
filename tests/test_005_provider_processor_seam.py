@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import asyncio
 import types as _types
+import unittest.mock as _mock
 from uuid import uuid4
 
 from sources.aiwb.invocables.core import Invoker
@@ -490,6 +491,115 @@ def test_disabled_specs_filters_unassociated( ):
     # ``code_interpreter`` is not in associated_functions.
     associated = { 'read': True }
     assert _disabled_specs( invokers, associated, 'include' ) == [ ]
+
+
+# -- Event handler regression --------------------------------------------
+
+def _run_async( coroutine ):
+    loop = asyncio.new_event_loop( )
+    try: return loop.run_until_complete( coroutine )
+    finally: loop.close( )
+
+
+def test_018_handler_invokes_refresh_and_persist( ):
+    ''' Changing the actual per-conversation control (Select.value)
+        must invoke the refresh + persist behavior, not just exercise
+        the resolver. Verifies that the layout wires the
+        ``on_select_provider_native_tools_policy`` handler, that the
+        handler runs ``update_invocations_prompt`` (so the disabled
+        column reflects the new policy), and that it calls
+        ``update_and_save_conversation`` so the new value round-trips
+        via the layout's ``value``-attribute path. '''
+    from sources.aiwb.gui import events as _events
+    from sources.aiwb.gui import updaters as _updaters
+
+    invokers = {
+        'read': _build_application_invoker( 'read' ),
+        'code_interpreter': _build_provider_invoker( 'code_interpreter' ),
+    }
+    toggle = _types.SimpleNamespace( value = 'inherit' )
+    column_provider = _types.SimpleNamespace(
+        visible = False, objects = [ ] )
+    multichoice = _types.SimpleNamespace(
+        value = [ ], options = [ 'read' ] )
+    prompt_definition = _types.SimpleNamespace(
+        attributes = { 'functions': {
+            'read': True, 'code_interpreter': True,
+        } },
+    )
+
+    class _Mutex:
+        def __init__( self ): self._locked = False
+        def locked( self ): return self._locked
+
+    components = _types.SimpleNamespace(
+        toggle_provider_native_tools_policy = toggle,
+        column_provider_tools_disabled = column_provider,
+        multichoice_functions = multichoice,
+        auxdata__ = _types.SimpleNamespace(
+            invokers = _types.SimpleNamespace( invokers = invokers ),
+            configuration = {
+                'provider_native_tools_policy': 'exclude',
+            },
+            prompts = _types.SimpleNamespace(
+                definitions = { 'system': prompt_definition },
+            ),
+        ),
+        selector_system_prompt = _types.SimpleNamespace( value = 'system' ),
+        mutex__ = _Mutex( ),
+    )
+    with _mock.patch.object(
+        _updaters, 'update_invocations_prompt',
+        _mock.AsyncMock( ),
+    ) as refresh, _mock.patch.object(
+        _updaters, 'update_and_save_conversation',
+        _mock.AsyncMock( ),
+    ) as persist:
+        toggle.value = 'include'
+        _run_async( _events.on_select_provider_native_tools_policy(
+            components, _types.SimpleNamespace( new = 'include' ) ) )
+    refresh.assert_awaited_once_with( components )
+    persist.assert_awaited_once_with( components )
+
+
+def test_019_handler_respects_conversation_mutex( ):
+    ''' When the conversation mutex is held, the handler must bail out
+        early so it does not interleave with other in-flight updates
+        (chat, model selection, summarization). '''
+    from sources.aiwb.gui import events as _events
+    from sources.aiwb.gui import updaters as _updaters
+
+    class _Mutex:
+        def locked( self ): return True
+    components = _types.SimpleNamespace(
+        toggle_provider_native_tools_policy = _types.SimpleNamespace(
+            value = 'include' ),
+        auxdata__ = _types.SimpleNamespace( configuration = { } ),
+        mutex__ = _Mutex( ),
+    )
+    with _mock.patch.object(
+        _updaters, 'update_invocations_prompt',
+        _mock.AsyncMock( ),
+    ) as refresh, _mock.patch.object(
+        _updaters, 'update_and_save_conversation',
+        _mock.AsyncMock( ),
+    ) as persist:
+        _run_async( _events.on_select_provider_native_tools_policy(
+            components, _types.SimpleNamespace( new = 'include' ) ) )
+    refresh.assert_not_called( )
+    persist.assert_not_called( )
+
+
+def test_020_handler_layout_event_binding_exists( ):
+    ''' The conversation layout must wire
+        ``on_select_provider_native_tools_policy`` to the per-
+        conversation Select so Panel wires the event at component
+        construction time. '''
+    from sources.aiwb.gui import layouts as _layouts
+    layout = _layouts.system_prompts_layout
+    toggle = layout[ 'toggle_provider_native_tools_policy' ]
+    assert toggle[ 'event_functions' ].get( 'value' ) == (
+        'on_select_provider_native_tools_policy' )
 
 
 # -- Display projection invariant -----------------------------------------
