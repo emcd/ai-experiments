@@ -636,14 +636,88 @@ def _postprocess_response_canisters( model, indices, reactors ):
         reactors.updater( indices.references[ index ] )
 
 
+def _mapping_from_sdk_or_mapping(
+    value: __.typx.Any,
+) -> dict[ str, __.typx.Any ]:
+    ''' Best-effort plain dict from a Mapping or Pydantic-like SDK object.
+
+        Serialization methods are invoked without swallowing failures: a
+        broken ``model_dump`` / ``to_dict`` must surface. When those
+        methods are absent, returns empty so callers can use attribute
+        fallback (non-Mapping SDK-shaped stubs).
+    '''
+    if isinstance( value, __.cabc.Mapping ): return dict( value )
+    if value is None: return { }
+    for method_name in ( 'model_dump', 'to_dict' ):
+        method = getattr( value, method_name, None )
+        if not callable( method ): continue
+        dumped = method( )
+        if isinstance( dumped, __.cabc.Mapping ): return dict( dumped )
+    return { }
+
+
+def _function_mapping_from_tool_call(
+    tool_call: __.typx.Any,
+    payload: dict[ str, __.typx.Any ],
+) -> dict[ str, str ]:
+    ''' Extracts ``{name, arguments}`` from payload or SDK attributes. '''
+    function_raw = payload.get( 'function' )
+    if function_raw is None:
+        function_raw = getattr( tool_call, 'function', None )
+    function = _mapping_from_sdk_or_mapping( function_raw )
+    if not function and function_raw is not None:
+        function = {
+            'name': getattr( function_raw, 'name', '' ) or '',
+            'arguments': getattr( function_raw, 'arguments', '' ) or '',
+        }
+    return {
+        'name': str( function.get( 'name', '' ) or '' ),
+        'arguments': str( function.get( 'arguments', '' ) or '' ),
+    }
+
+
+def _nativize_tool_call_mapping(
+    tool_call: __.typx.Any,
+) -> dict[ str, __.typx.Any ]:
+    ''' Coerces an OpenAI tool_call SDK object or mapping to a plain dict.
+
+        Streaming builds plain dicts (``_collect_response_as_invocations_v0``).
+        Complete responses yield Pydantic SDK objects
+        (``ChatCompletionMessageFunctionToolCall`` in openai>=2.x) that are
+        not ``Mapping`` and are not subscriptable. Supplement storage and
+        ``_reconstitute_invocations`` require the stream dict shape
+        ``{id, type, function: {name, arguments}}`` with ``arguments`` as the
+        wire JSON string. Prefer ``model_dump`` / ``to_dict`` when present;
+        fall back to attribute access. Opaque supplement contract is
+        preserved: provider ids stay in the envelope, never become harness
+        correlation ids. (``todos/providers/9``)
+    '''
+    payload = _mapping_from_sdk_or_mapping( tool_call )
+    if not payload:
+        payload = {
+            'id': getattr( tool_call, 'id', '' ) or '',
+            'type': getattr( tool_call, 'type', 'function' ) or 'function',
+        }
+    return {
+        'id': payload.get( 'id', '' ) or '',
+        'type': payload.get( 'type', 'function' ) or 'function',
+        'function': _function_mapping_from_tool_call( tool_call, payload ),
+    }
+
+
 def _process_complete_response_v0( model, response, reactors ):
     # TODO? Collect usage stats.
     indices = __.create_response_indices( )
     indices.canisters.update( {
         element.index: _canister_from_response_element( model, element )
         for element in response.choices } )
+    # SDK tool_calls -> stream-equivalent plain dicts (todos/providers/9).
     indices.records.update( {
-        element.index: dict( tool_calls = element.message.tool_calls )
+        element.index: dict(
+            tool_calls = [
+                _nativize_tool_call_mapping( tool_call )
+                for tool_call in element.message.tool_calls
+            ] )
         for element in response.choices if element.message.tool_calls } )
     # TODO: Callbacks support for response arrays.
     indices.references.update( {
