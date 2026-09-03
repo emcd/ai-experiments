@@ -267,6 +267,181 @@ def create_content( data, /, **descriptor ):
     raise NotImplementedError( f"MIME type not implemented: {mimetype}" )
 
 
+def coerce_invocation_arguments(
+    raw: __.typx.Any,
+) -> __.typx.Optional[ dict[ str, __.typx.Any ] ]:
+    ''' Coerces persisted tool arguments to a plain mapping.
+
+        Accepts a mapping or a JSON object string (OpenAI wire form).
+        Returns ``None`` when the value is missing-invalid or unparseable
+        so callers can elide the descriptor (approved ``todos/providers/8``
+        policy: malformed blobs must not become empty-argument calls).
+        Absent arguments default to an empty mapping only when the caller
+        supplies ``{}`` explicitly as the default for a missing key.
+    '''
+    from json import loads
+    if isinstance( raw, __.cabc.Mapping ) and not isinstance(
+        raw, ( str, bytes )
+    ):
+        return dict( raw )
+    if isinstance( raw, str ):
+        try: parsed = loads( raw )
+        except Exception: return None
+        if isinstance( parsed, __.cabc.Mapping ): return dict( parsed )
+        return None
+    return None
+
+
+def _descriptor_from_mapping(
+    item: __.cabc.Mapping[ str, __.typx.Any ],
+) -> __.typx.Optional[ dict[ str, __.typx.Any ] ]:
+    ''' Builds one normalized descriptor; never copies provider ids.
+
+        Returns ``None`` when arguments are unparseable so the caller
+        elides the record instead of inventing empty arguments.
+    '''
+    if 'name' not in item or 'arguments' not in item: return None
+    arguments = coerce_invocation_arguments( item[ 'arguments' ] )
+    if None is arguments: return None
+    descriptor: dict[ str, __.typx.Any ] = {
+        'name': item[ 'name' ],
+        'arguments': arguments,
+    }
+    if 'correlation_id' in item:
+        descriptor[ 'correlation_id' ] = item[ 'correlation_id' ]
+    if 'processor' in item:
+        descriptor[ 'processor' ] = item[ 'processor' ]
+    return descriptor
+
+
+def _upgrade_descriptor_sequence(
+    raw: __.cabc.Sequence[ __.typx.Any ],
+) -> list[ dict[ str, __.typx.Any ] ]:
+    ''' Upgrades a sequence already shaped as descriptors, else elides. '''
+    if not raw: return [ ]
+    if not all(
+        isinstance( item, __.cabc.Mapping )
+        and 'name' in item and 'arguments' in item
+        for item in raw
+    ):
+        return [ ]
+    upgraded: list[ dict[ str, __.typx.Any ] ] = [ ]
+    for item in raw:
+        descriptor = _descriptor_from_mapping( item )
+        if descriptor is not None:
+            upgraded.append( descriptor )
+    return upgraded
+
+
+def _upgrade_tool_calls_envelope(
+    raw: __.cabc.Mapping[ str, __.typx.Any ],
+) -> list[ dict[ str, __.typx.Any ] ]:
+    ''' Extracts descriptors from an OpenAI-style tool_calls envelope.
+
+        Omits individual tool_call entries whose arguments are unparseable.
+    '''
+    tool_calls = raw.get( 'tool_calls' ) or ( )
+    if not isinstance( tool_calls, __.cabc.Sequence ) or isinstance(
+        tool_calls, ( str, bytes )
+    ):
+        return [ ]
+    upgraded: list[ dict[ str, __.typx.Any ] ] = [ ]
+    for tool_call in tool_calls:
+        if not isinstance( tool_call, __.cabc.Mapping ): continue
+        function = tool_call.get( 'function', { } )
+        if not isinstance( function, __.cabc.Mapping ): continue
+        if 'name' not in function: continue
+        # Missing arguments key → empty mapping (valid no-arg call).
+        if 'arguments' not in function:
+            arguments: __.typx.Optional[ dict[ str, __.typx.Any ] ] = { }
+        else:
+            arguments = coerce_invocation_arguments( function[ 'arguments' ] )
+        if None is arguments: continue
+        upgraded.append( {
+            'name': function[ 'name' ],
+            'arguments': arguments,
+        } )
+    return upgraded
+
+
+def upgrade_invocation_data(
+    raw: __.typx.Any,
+) -> list[ dict[ str, __.typx.Any ] ]:
+    ''' One-shot legacy upgrade to normalized invocation descriptors.
+
+        Per OpenSpec define-invocation-data-contract (bounded legacy
+        upgrade) and ``todos/providers/8`` policy:
+
+        * Descriptor lists with ``name`` + ``arguments`` pass through;
+          arguments are coerced to mappings; optional ``correlation_id``
+          and ``processor`` are preserved when already present.
+        * ``tool_calls[]`` envelopes and single ``{name, arguments}``
+          records become descriptor lists (arguments may be mapping or
+          JSON string).
+        * Literal ``function_call`` envelopes and malformed payloads
+          elide to an empty list (no crash; no honest replay).
+        * Provider-issued ids are never written as ``correlation_id``.
+    '''
+    upgraded: list[ dict[ str, __.typx.Any ] ] = [ ]
+    if (    isinstance( raw, __.cabc.Sequence )
+        and not isinstance( raw, ( str, bytes ) )
+    ):
+        upgraded = _upgrade_descriptor_sequence( raw )
+    elif isinstance( raw, __.cabc.Mapping ):
+        # Explicit elide: legacy single-call wire key without modern shapes.
+        if (
+                'function_call' in raw
+            and 'tool_calls' not in raw
+            and not ( 'name' in raw and 'arguments' in raw )
+        ):
+            upgraded = [ ]
+        elif 'tool_calls' in raw:
+            upgraded = _upgrade_tool_calls_envelope( raw )
+        elif 'name' in raw and 'arguments' in raw:
+            descriptor = _descriptor_from_mapping( raw )
+            upgraded = [ descriptor ] if descriptor is not None else [ ]
+    return upgraded
+
+
+def _is_provider_invocation_envelope( raw: __.typx.Any ) -> bool:
+    ''' True when raw looks like a provider tool envelope, not descriptors. '''
+    if not isinstance( raw, __.cabc.Mapping ): return False
+    if 'tool_calls' in raw or 'tool_use' in raw or 'function_call' in raw:
+        return True
+    return (
+            'name' in raw and 'arguments' in raw
+        and not isinstance( raw.get( 'arguments' ), __.cabc.Sequence )
+    )
+
+
+def apply_invocation_data_upgrade(
+    attributes: dict[ str, __.typx.Any ],
+) -> dict[ str, __.typx.Any ]:
+    ''' Mutates a restored attributes dict with one-shot descriptor upgrade.
+
+        When ``invocation_data`` holds a provider envelope and
+        ``model_context.supplement`` is absent/empty, copies the envelope
+        into supplement for same-provider replay opacity. Never promotes
+        provider ids to ``correlation_id``.
+    '''
+    from copy import deepcopy
+    if 'invocation_data' not in attributes: return attributes
+    raw = attributes[ 'invocation_data' ]
+    if _is_provider_invocation_envelope( raw ):
+        model_context = attributes.get( 'model_context' )
+        if not isinstance( model_context, dict ):
+            model_context = { }
+            attributes[ 'model_context' ] = model_context
+        else:
+            attributes[ 'model_context' ] = dict( model_context )
+            model_context = attributes[ 'model_context' ]
+        supplement = model_context.get( 'supplement' )
+        if not supplement:
+            model_context[ 'supplement' ] = deepcopy( dict( raw ) )
+    attributes[ 'invocation_data' ] = upgrade_invocation_data( raw )
+    return attributes
+
+
 async def restore_canister( manager, canister_state ):
     ''' Restores canister into memory from persistent storage.
 
@@ -282,15 +457,20 @@ async def restore_canister( manager, canister_state ):
         remains for conversations persisted before this contract
         landed and is the only branch that constructs
         ``invocation_data`` from saved content rather than reading it
-        from attributes. The legacy path is removable once all
-        in-tree conversations are migrated. The post-R2 path does
-        not inspect ``model_context.supplement`` for pairing,
-        dedup, or default display correlation; only the originating
-        provider's converser reads the supplement for replay or
-        session continuation. '''
+        from attributes. Both paths run a bounded one-shot upgrade
+        (``todos/providers/8``) so subsequent saves persist post-R2
+        attributes. The post-R2 path does not inspect
+        ``model_context.supplement`` for pairing, dedup, or default
+        display correlation; only the originating provider's converser
+        reads the supplement for replay or session continuation. '''
     nomargs = { }
     role = Role( canister_state[ 'role' ] )
-    attributes = canister_state.get( 'attributes', { } )
+    # Copy attributes so one-shot upgrade does not mutate caller state.
+    attributes = dict( canister_state.get( 'attributes', { } ) or { } )
+    if 'model_context' in attributes and isinstance(
+        attributes[ 'model_context' ], dict
+    ):
+        attributes[ 'model_context' ] = dict( attributes[ 'model_context' ] )
     restorers = tuple(
         restore_content( manager, content_identity )
         for content_identity in canister_state.get( 'contents', ( ) ) )
@@ -305,8 +485,11 @@ async def restore_canister( manager, canister_state ):
             case Role.Invocation:
                 invocation_data = (
                     contents.pop( 0 ).data if contents else '[]' )
-        if invocation_data:
-            attributes[ 'invocation_data' ] = loads( invocation_data )
+        if invocation_data is not None:
+            try: attributes[ 'invocation_data' ] = loads( invocation_data )
+            except Exception: attributes[ 'invocation_data' ] = [ ]
+    if 'invocation_data' in attributes:
+        apply_invocation_data_upgrade( attributes )
     if attributes:
         # TODO? Convert hyphenated keys to underscored.
         nomargs[ 'attributes' ] = __.types.SimpleNamespace( **attributes )
