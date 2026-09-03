@@ -639,17 +639,20 @@ def _postprocess_response_canisters( model, indices, reactors ):
 def _mapping_from_sdk_or_mapping(
     value: __.typx.Any,
 ) -> dict[ str, __.typx.Any ]:
-    ''' Best-effort plain dict from a Mapping or Pydantic-like SDK object. '''
+    ''' Best-effort plain dict from a Mapping or Pydantic-like SDK object.
+
+        Serialization methods are invoked without swallowing failures: a
+        broken ``model_dump`` / ``to_dict`` must surface. When those
+        methods are absent, returns empty so callers can use attribute
+        fallback (non-Mapping SDK-shaped stubs).
+    '''
     if isinstance( value, __.cabc.Mapping ): return dict( value )
     if value is None: return { }
     for method_name in ( 'model_dump', 'to_dict' ):
         method = getattr( value, method_name, None )
         if not callable( method ): continue
-        try:
-            dumped = method( )
-            if isinstance( dumped, __.cabc.Mapping ):
-                return dict( dumped )
-        except Exception: continue  # noqa: S112
+        dumped = method( )
+        if isinstance( dumped, __.cabc.Mapping ): return dict( dumped )
     return { }
 
 

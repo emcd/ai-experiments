@@ -178,7 +178,27 @@ def test_004_complete_response_stores_plain_dict_tool_calls( ) -> None:
     assert data[ 0 ][ 'correlation_id' ] != 'call_a'
 
 
-def test_005_stream_collect_path_still_builds_plain_dicts( ) -> None:
+def test_005_model_dump_failure_surfaces( ) -> None:
+    ''' Broken model_dump must not be swallowed into a lossy fallback. '''
+
+    class _BrokenDump:
+        id = 'call_bad'
+        type = 'function'
+        function = _SdkFunction( 'greet', '{}' )
+
+        def model_dump( self ):
+            raise RuntimeError( 'sdk serialization failed' )
+
+    raised = False
+    try:
+        _openai._nativize_tool_call_mapping( _BrokenDump( ) )
+    except RuntimeError as exc:
+        raised = True
+        assert 'sdk serialization failed' in str( exc )
+    assert raised, 'expected RuntimeError from broken model_dump'
+
+
+def test_006_stream_collect_path_still_builds_plain_dicts( ) -> None:
     ''' Streaming collector remains plain-dict (unchanged contract). '''
     from sources.aiwb.providers import core as _core
     indices = _core.create_response_indices( )
