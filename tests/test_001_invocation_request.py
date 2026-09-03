@@ -104,18 +104,18 @@ def test_004_request_default_processor_is_application( ) -> None:
         request.processor == _core.InvocationProcessor.Application )
 
 
-def test_005_request_explicit_processor_round_trips( ) -> None:
-    ''' Descriptor with provider processor is honored. '''
-    invokers = { 'code_interpreter': _StubInvoker( 'code_interpreter' ) }
+def test_005_request_explicit_application_processor_round_trips( ) -> None:
+    ''' Descriptor with explicit application processor is honored. '''
+    invokers = { 'greet': _StubInvoker( 'greet' ) }
     context = _make_context( invokers )
     request = _core.InvocationRequest.from_descriptor(
         descriptor = {
-            'name': 'code_interpreter',
-            'arguments': { 'code': 'print(1)' },
-            'processor': 'provider',
+            'name': 'greet',
+            'arguments': { },
+            'processor': 'application',
         },
         context = context )
-    assert request.processor == _core.InvocationProcessor.Provider
+    assert request.processor == _core.InvocationProcessor.Application
 
 
 def test_006_request_invalid_processor_raises( ) -> None:
@@ -192,6 +192,41 @@ def test_014_request_reuses_valid_descriptor_correlation_id( ) -> None:
         request.invocation( ) )
     assert invokers[ 'greet' ].calls[ -1 ][ 'correlation_id' ] == stable
     assert result == { 'result': 'ok' }
+
+
+def test_016_provider_processor_descriptor_refuses_local_execution(
+) -> None:
+    ''' Provider-processor descriptors never bind a local invoker. '''
+    invokers = { 'read': _StubInvoker( 'read' ) }
+    context = _make_context( invokers )
+    try:
+        _core.InvocationRequest.from_descriptor(
+            descriptor = {
+                'name': 'read',
+                'arguments': { 'location': 'mock://x' },
+                'processor': 'provider',
+            },
+            context = context )
+    except _exceptions.ProviderInvocationLocalExecution as exc:
+        assert 'read' in str( exc )
+        return
+    raise AssertionError( 'Expected ProviderInvocationLocalExecution.' )
+
+
+def test_017_provider_processor_unknown_name_still_refuses( ) -> None:
+    ''' Provider processor is refused before invoker lookup. '''
+    context = _make_context( { } )
+    try:
+        _core.InvocationRequest.from_descriptor(
+            descriptor = {
+                'name': 'code_interpreter',
+                'arguments': { },
+                'processor': 'provider',
+            },
+            context = context )
+    except _exceptions.ProviderInvocationLocalExecution:
+        return
+    raise AssertionError( 'Expected ProviderInvocationLocalExecution.' )
 
 
 def test_015_request_invalid_correlation_id_raises( ) -> None:

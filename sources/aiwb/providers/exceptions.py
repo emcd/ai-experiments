@@ -75,6 +75,14 @@ class InvocationProcessorInvalidity( __.Omnierror, ValueError ):
             f"Invalid invocation processor {value!r}." )
 
 
+class ProviderInvocationLocalExecution( __.Omnierror, RuntimeError ):
+    ''' Provider-processor tools cannot execute on the application harness. '''
+
+    def __init__( self, name: str ):
+        super( ).__init__(
+            f"Provider-processor invocation {name!r} cannot execute locally." )
+
+
 class InvocationCorrelationIdInvalidity( __.Omnierror, ValueError ):
     ''' Invocation correlation identifier is not a valid harness id. '''
 
