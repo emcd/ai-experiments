@@ -737,14 +737,22 @@ async def update_invocations_prompt( components ):
     # Provider invokers (visible-but-disabled with a server-side
     # execution tooltip) and a per-conversation opt-in policy with a
     # global default at the configuration level. The hook here reads
-    # `invoker.processor` and `invoker.provenance` via
-    # `gui.invocables.provide_invoker_metadata` and lets the layout
-    # bind per-row state. Selection-state storage surface for the
-    # per-conversation policy does not yet exist (no
-    # ``auxdata.configuration['provider_native_tools_policy']`` key
-    # consumed); the seam is reserved for a follow-on that wires the
-    # storage surface and the disabled-row rendering together once a
-    # Provider invoker actually exists.
+    # ``invoker.processor`` and ``invoker.provenance`` via
+    # ``gui.invocables.provide_invoker_metadata`` and filters
+    # Provider invokers out of the selectable ``multichoice.options``
+    # so they are never picked into a chat turn (the harness has no
+    # local execution path for Provider tools).
+    #
+    # The global default policy is read from
+    # ``auxdata.configuration['provider_native_tools_policy']``. Today
+    # only the default ``exclude`` is honored (Provider invokers are
+    # filtered out); a follow-on that wires a real Provider invoker and
+    # its disabled-row rendering can extend the policy values without
+    # changing this filter. The per-conversation override storage
+    # surface does not yet exist; that is the next phase of §3.2.
+    provider_native_tools_policy = (  # noqa: F841
+        components.auxdata__.configuration.get(
+            'provider_native_tools_policy', 'exclude' ) )
     if supports_invocations:
         attributes = components.auxdata__.prompts.definitions[
             components.selector_system_prompt.value ].attributes
@@ -752,16 +760,33 @@ async def update_invocations_prompt( components ):
     else: associated_functions = { } # TODO? Return instead of blanking.
     invokers = components.auxdata__.invocables.invokers
     multiselect = components.multichoice_functions
-    names = [
-        name for name in invokers if name in associated_functions ]
+    selectable_names = _selectable_invoker_names(
+        invokers, associated_functions )
     multiselect.value = [ # Preserve previous selections if possible.
-        element for element in multiselect.value if element in names ]
-    multiselect.options = names
+        element for element in multiselect.value
+        if element in selectable_names ]
+    multiselect.options = selectable_names
     if not multiselect.value:
         multiselect.value = [
             name for name in invokers
-            if associated_functions.get( name, False ) ]
+            if associated_functions.get( name, False )
+            and getattr( invokers[ name ], 'processor', 'application' )
+                != 'provider' ]
     await update_invocables_selection( components )
+
+
+def _selectable_invoker_names( invokers, associated_functions ):
+    ''' Returns invoker names that are selectable in the model selector.
+
+        Per OpenSpec define-invocation-data-contract section 3.2:
+        Application invokers are selectable; Provider invokers are
+        filtered out regardless of policy value until the disabled-row
+        rendering lands. Names not in ``associated_functions`` are also
+        filtered out (the prompt does not opt them in). '''
+    return [
+        name for name, invoker in invokers.items( )
+        if name in associated_functions
+        and getattr( invoker, 'processor', 'application' ) != 'provider' ]
 
 
 async def update_supervisor_prompt( components ):

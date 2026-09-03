@@ -277,7 +277,19 @@ async def _deduplicate_invocations(  # noqa: PLR0915
         superseded by a newer invocation is deactivated wholesale. The
         ``all_duplicates`` flag is cleared only when a call is NOT yet
         matched (and thus registers as a candidate deduper for older
-        invocations), not when it is itself matched by a newer one. '''
+        invocations), not when it is itself matched by a newer one.
+
+        Per scenario "Provider tools are visible but disabled in the
+        selector": descriptors whose ``processor`` is ``provider`` are
+        excluded from the Application dedup/supersession pool. They
+        neither register as dedup candidates nor attempt to match
+        against Application descriptors, and they do not contribute
+        to ``all_duplicates`` for the whole-canister shortcut. The
+        Provider processor is reserved for future provider-native
+        invokers whose supersession is server-side; today no Provider
+        invokers are registered, but the seam is enforced so a
+        future Provider invoker cannot trigger Application
+        supersession or whole-canister Application dedup deactivation. '''
     history = components.column_conversation_history
     correlation_id_to_index = _result_canister_index_by_id( history )
     deduplicators: __.accret.Dictionary[ str, list ] = (
@@ -292,6 +304,17 @@ async def _deduplicate_invocations(  # noqa: PLR0915
         invocation_data = canister.attributes.invocation_data
         all_duplicates = True
         for j, invocation in enumerate( invocation_data ):
+            # Provider-processor descriptors are excluded from the
+            # Application dedup/supersession pool entirely. They are
+            # neither registered as dedup candidates nor matched as
+            # duplicates; they do not contribute to ``all_duplicates``;
+            # and they do not trigger whole-canister deactivation.
+            # ``all_duplicates`` is also cleared so a Provider-only
+            # canister is not deactivated wholesale by the shortcut
+            # below.
+            if invocation.get( 'processor' ) == 'provider':
+                all_duplicates = False
+                continue
             name = invocation[ 'name' ]
             if name not in invokers:
                 all_duplicates = False
