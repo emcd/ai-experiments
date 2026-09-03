@@ -18,14 +18,7 @@
 #============================================================================#
 
 
-''' Inventory fixtures for legacy invocation persistence shapes.
-
-    Documents current behavior of
-    ``gui.persistence._standardize_invocation_requests_v0`` for
-    ``todos/providers/8`` policy work. Does **not** change production
-    migration policy; locks observed shapes so a human decision can
-    choose support / one-shot migrate / drop with reproducible facts.
-'''
+''' Legacy invocation persistence upgrade fixtures (todos/providers/8). '''
 
 
 from __future__ import annotations
@@ -33,6 +26,7 @@ from __future__ import annotations
 from json import dumps, loads
 
 from sources.aiwb.gui.persistence import _standardize_invocation_requests_v0
+from sources.aiwb.messages import core as _messages
 
 
 def _state( payload: object ) -> dict[ str, str ]:
@@ -53,7 +47,7 @@ def test_001_post_r2_descriptor_list_passes_through( ) -> None:
 
 
 def test_002_tool_calls_with_dict_arguments_normalizes( ) -> None:
-    ''' Pre-R2 tool_calls with mapping arguments become descriptor list. '''
+    ''' tool_calls with mapping arguments become descriptor list. '''
     payload = {
         'tool_calls': [ {
             'id': 'call_a',
@@ -68,19 +62,12 @@ def test_002_tool_calls_with_dict_arguments_normalizes( ) -> None:
     assert loads( content ) == [
         { 'name': 'greet', 'arguments': { 'who': 'a' } },
     ]
-    # Helper rewrites envelope arguments to OpenAI wire JSON strings.
-    assert extra[ 'tool_calls' ][ 0 ][ 'function' ][ 'arguments' ] == (
-        '{"who": "a"}' )
+    assert extra[ 'tool_calls' ][ 0 ][ 'id' ] == 'call_a'
+    assert 'correlation_id' not in loads( content )[ 0 ]
 
 
-def test_003_tool_calls_with_json_string_arguments_raises( ) -> None:
-    ''' OpenAI-wire JSON-string arguments are not handled today.
-
-        Current implementation calls ``.copy()`` on arguments and
-        AttributeError on ``str``. Any support/migrate policy must
-        accept string-or-mapping arguments before re-enabling this
-        helper on a live restore path.
-    '''
+def test_003_tool_calls_with_json_string_arguments_normalizes( ) -> None:
+    ''' OpenAI-wire JSON-string arguments coerce to mappings. '''
     payload = {
         'tool_calls': [ {
             'id': 'call_a',
@@ -91,50 +78,60 @@ def test_003_tool_calls_with_json_string_arguments_raises( ) -> None:
             },
         } ],
     }
-    raised = False
-    try:
-        _standardize_invocation_requests_v0( _state( payload ) )
-    except AttributeError as exc:
-        raised = True
-        assert 'copy' in str( exc )
-    assert raised, 'expected AttributeError for JSON-string arguments'
+    content, extra = _standardize_invocation_requests_v0( _state( payload ) )
+    assert loads( content ) == [
+        { 'name': 'greet', 'arguments': { 'who': 'a' } },
+    ]
+    assert extra[ 'tool_calls' ][ 0 ][ 'id' ] == 'call_a'
 
 
 def test_004_single_name_arguments_dict_normalizes( ) -> None:
-    ''' Single top-level name+arguments mapping (function_call-era). '''
+    ''' Single top-level name+arguments mapping normalizes. '''
     payload = { 'name': 'greet', 'arguments': { 'who': 'b' } }
     content, extra = _standardize_invocation_requests_v0( _state( payload ) )
     assert loads( content ) == [
         { 'name': 'greet', 'arguments': { 'who': 'b' } },
     ]
-    assert extra[ 'arguments' ] == '{"who": "b"}'
+    assert extra[ 'name' ] == 'greet'
 
 
-def test_005_single_name_arguments_json_string_raises( ) -> None:
-    ''' Single-record JSON-string arguments also fail on .copy(). '''
+def test_005_single_name_arguments_json_string_normalizes( ) -> None:
+    ''' Single-record JSON-string arguments coerce to mappings. '''
     payload = { 'name': 'greet', 'arguments': '{"who":"b"}' }
-    raised = False
-    try:
-        _standardize_invocation_requests_v0( _state( payload ) )
-    except AttributeError:
-        raised = True
-    assert raised
+    content, extra = _standardize_invocation_requests_v0( _state( payload ) )
+    assert extra[ 'name' ] == 'greet'
+    assert loads( content ) == [
+        { 'name': 'greet', 'arguments': { 'who': 'b' } },
+    ]
 
 
-def test_006_function_call_key_is_not_upgraded( ) -> None:
-    ''' Literal function_call envelope key is not recognized.
-
-        Returns original content unchanged and empty extra_context.
-        Replay cannot be reconstructed from this branch today.
-    '''
+def test_006_function_call_key_is_elided( ) -> None:
+    ''' Literal function_call envelope elides to empty descriptors. '''
     payload = {
         'function_call': {
             'name': 'greet',
             'arguments': '{"who":"c"}',
         },
     }
-    raw = dumps( payload )
-    content, extra = _standardize_invocation_requests_v0(
-        { 'content': raw } )
-    assert content == raw
-    assert extra == { }
+    content, extra = _standardize_invocation_requests_v0( _state( payload ) )
+    assert loads( content ) == [ ]
+    assert 'function_call' in extra
+
+
+def test_007_upgrade_never_copies_provider_id_as_correlation( ) -> None:
+    ''' Provider call ids must not become correlation_id. '''
+    raw = {
+        'tool_calls': [ {
+            'id': 'call_provider',
+            'type': 'function',
+            'function': {
+                'name': 'greet',
+                'arguments': '{"x":1}',
+            },
+        } ],
+    }
+    descriptors = _messages.upgrade_invocation_data( raw )
+    assert len( descriptors ) == 1
+    assert 'correlation_id' not in descriptors[ 0 ]
+    assert descriptors[ 0 ][ 'name' ] == 'greet'
+    assert descriptors[ 0 ][ 'arguments' ] == { 'x': 1 }
