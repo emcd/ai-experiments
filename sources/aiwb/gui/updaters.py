@@ -731,20 +731,24 @@ async def update_invocations_prompt( components ):
         ( await access_model_selection( components ) )
         .attributes.supports_invocations )
     components.row_functions_prompt.visible = supports_invocations
-    # Per OpenSpec define-invocation-data-contract section 3.2 (provider-
-    # native configuration/presentation seam reservation): all
-    # invokers are Application in R2; the seam reserves a hook for
-    # Provider invokers (visible-but-disabled with a server-side
-    # execution tooltip) and a per-conversation opt-in policy with a
-    # global default at the configuration level. The hook here reads
-    # `invoker.processor` and `invoker.provenance` via
-    # `gui.invocables.provide_invoker_metadata` and lets the layout
-    # bind per-row state. Selection-state storage surface for the
-    # per-conversation policy does not yet exist (no
-    # ``auxdata.configuration['provider_native_tools_policy']`` key
-    # consumed); the seam is reserved for a follow-on that wires the
-    # storage surface and the disabled-row rendering together once a
-    # Provider invoker actually exists.
+    # Per OpenSpec define-invocation-data-contract section 3.2 (Three-
+    # Layer Tool-Source Model): Provider invokers are reserved for
+    # future provider-native tools whose supersession is server-side.
+    # They are excluded from the selectable ``multichoice_functions``
+    # (the harness has no local execution path for Provider tools).
+    # When the policy resolves to ``include``, they are surfaced in
+    # ``column_provider_tools_disabled`` as visible-but-disabled rows
+    # with explanatory tooltip and Provider badge. The policy resolves
+    # from the per-conversation override (the
+    # ``toggle_provider_native_tools_policy`` Select's ``value``,
+    # persisted via the layout's value-attribute path) and the global
+    # default in ``auxdata.configuration['provider_native_tools_policy']``.
+    # ``'include'`` -> ``True``; ``'exclude'`` -> ``False``;
+    # ``'inherit'`` -> ``None`` (use global).
+    per_conversation_override = _resolve_per_conversation_override(
+        components )
+    effective_policy = _resolve_provider_native_tools_policy(
+        components.auxdata__.configuration, per_conversation_override )
     if supports_invocations:
         attributes = components.auxdata__.prompts.definitions[
             components.selector_system_prompt.value ].attributes
@@ -752,16 +756,125 @@ async def update_invocations_prompt( components ):
     else: associated_functions = { } # TODO? Return instead of blanking.
     invokers = components.auxdata__.invocables.invokers
     multiselect = components.multichoice_functions
-    names = [
-        name for name in invokers if name in associated_functions ]
+    selectable_names = _selectable_invoker_names(
+        invokers, associated_functions )
     multiselect.value = [ # Preserve previous selections if possible.
-        element for element in multiselect.value if element in names ]
-    multiselect.options = names
+        element for element in multiselect.value
+        if element in selectable_names ]
+    multiselect.options = selectable_names
     if not multiselect.value:
         multiselect.value = [
             name for name in invokers
-            if associated_functions.get( name, False ) ]
+            if associated_functions.get( name, False )
+            and getattr( invokers[ name ], 'processor', 'application' )
+                != 'provider' ]
+    _populate_provider_tools_disabled_column(
+        components, invokers, associated_functions, effective_policy )
     await update_invocables_selection( components )
+
+
+def _resolve_per_conversation_override( components ):
+    ''' Returns the per-conversation ``provider_native_tools_policy``
+        override as a tri-state, derived from the Select control's
+        ``value`` attribute on the conversation layout.
+
+        The Select's options are ``'inherit'`` (defer to global
+        default), ``'include'``, ``'exclude'``. The control is rendered
+        with default ``'inherit'`` so a fresh conversation does not
+        silently override the global ``provider_native_tools_policy``
+        in ``auxdata.configuration``. The Select's ``value`` round-trips
+        via the existing collect/inject machinery on the layout's
+        ``value`` attribute path. No migration code change.
+
+        Returns ``None`` for ``'inherit'`` (or for a missing control,
+        e.g. on conversations created before the seam was introduced),
+        ``True`` for ``'include'``, ``False`` for ``'exclude'``. Any
+        unexpected string is treated as ``None`` so legacy data does
+        not silently flip the policy.'''
+    control = getattr(
+        components, 'toggle_provider_native_tools_policy', None )
+    if control is None: return None
+    raw = getattr( control, 'value', None )
+    if raw == 'include': return True
+    if raw == 'exclude': return False
+    return None
+
+
+def _resolve_provider_native_tools_policy(
+    configuration, per_conversation_override,
+):
+    ''' Returns ``'include'`` or ``'exclude'`` based on the policy.
+
+        The per-conversation override takes precedence; ``True`` ->
+        ``include`` and ``False`` -> ``exclude``. ``None`` falls through to
+        the global default in ``configuration``.'''
+    if per_conversation_override is True: return 'include'
+    if per_conversation_override is False: return 'exclude'
+    return configuration.get( 'provider_native_tools_policy', 'exclude' )
+
+
+def _selectable_invoker_names( invokers, associated_functions ):
+    ''' Returns invoker names that are selectable in the model selector.
+
+        Per OpenSpec define-invocation-data-contract section 3.2:
+        Application invokers are selectable; Provider invokers are
+        filtered out regardless of policy value until the disabled-row
+        rendering lands. Names not in ``associated_functions`` are also
+        filtered out (the prompt does not opt them in). '''
+    return [
+        name for name, invoker in invokers.items( )
+        if name in associated_functions
+        and getattr( invoker, 'processor', 'application' ) != 'provider' ]
+
+
+def _populate_provider_tools_disabled_column(
+    components, invokers, associated_functions, effective_policy,
+):
+    ''' Populates ``column_provider_tools_disabled`` with visible-but-
+        disabled Button rows for Provider invokers when the effective
+        policy resolves to ``include``. Each row carries an explanatory
+        tooltip (``description``) and a Provider badge in the button
+        label. When the effective policy is ``exclude``, the column is
+        hidden and emptied; Provider invokers are not surfaced at all.'''
+    from panel.widgets import Button as _Button
+    column = getattr( components, 'column_provider_tools_disabled', None )
+    if column is None: return
+    specs = _provider_disabled_button_specs(
+        invokers, associated_functions, effective_policy )
+    if effective_policy != 'include' or not specs:
+        column.visible = False
+        column.objects = [ ]
+        return
+    column.visible = True
+    column.objects = [
+        _Button(
+            name = f'\U0001F512 Provider - {name}',
+            description = description,
+            disabled = True,
+            button_style = 'outline',
+        )
+        for name, description in specs
+    ]
+
+
+def _provider_disabled_button_specs(
+    invokers, associated_functions, effective_policy,
+):
+    ''' Returns ``(name, description)`` tuples for Provider invokers
+        that should be rendered as visible-but-disabled buttons when
+        the effective policy resolves to ``include``. Returns ``[]``
+        when the policy resolves to ``exclude`` or no Provider invokers
+        match the prompt's ``associated_functions``. '''
+    if effective_policy != 'include': return [ ]
+    return [
+        ( name,
+          f'{name} is a Provider-native tool with server-side execution; '
+          f'the harness cannot invoke it locally. It is shown for '
+          f'visibility but cannot be selected.' )
+        for name, invoker in invokers.items( )
+        if getattr( invoker, 'processor', 'application' ) == 'provider'
+        and name in associated_functions
+    ]
 
 
 async def update_supervisor_prompt( components ):

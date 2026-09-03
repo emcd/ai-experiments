@@ -346,7 +346,24 @@ system_prompts_layout = {
             'multichoice_functions',
             'row_function_options',
             'column_functions_json',
+            'column_provider_tools_disabled',
         ],
+    ),
+    'column_provider_tools_disabled': dict(
+        # Per OpenSpec define-invocation-data-contract section 3.2:
+        # Provider invokers are reserved for future provider-native tools
+        # whose supersession is server-side. When the policy resolves to
+        # ``include``, this column carries the disabled-row rendering
+        # with explanatory tooltip so users can see Provider tools without
+        # being able to select them into a chat turn. Default visibility
+        # is False; ``update_invocations_prompt`` flips it when the
+        # effective policy is ``include``.
+        component_class = Column,
+        component_arguments = dict(
+            height_policy = 'auto', width_policy = 'max',
+            margin = sizes.standard_margin,
+            visible = False,
+        ),
     ),
     'multichoice_functions': dict(
         component_class = MultiChoice,
@@ -365,7 +382,31 @@ system_prompts_layout = {
             'checkbox_auto_functions',
             'checkbox_elide_function_history',
             'checkbox_deduplicate_invocations',
+            'toggle_provider_native_tools_policy',
         ],
+    ),
+    'toggle_provider_native_tools_policy': dict(
+        # Per OpenSpec define-invocation-data-contract section 3.2
+        # (Three-Layer Tool-Source Model): per-conversation opt-in for
+        # the Provider processor visibility seam. A three-state ``Select``
+        # is used (not a ``Toggle``) because the seam needs an explicit
+        # ``inherit`` sentinel so a fresh conversation does not
+        # silently override the global ``provider_native_tools_policy``
+        # default. ``inherit`` defers to the global; ``include`` /
+        # ``exclude`` override. Persisted via the existing
+        # collect_conversation/inject_conversation machinery on the
+        # layout's ``value`` attribute path. The ``on_select_provider_
+        # native_tools_policy`` event handler refreshes the disabled
+        # column and persists the conversation when the user picks a
+        # value. No migration code change.
+        component_class = Select,
+        component_arguments = dict(
+            name = 'Provider tools',
+            options = [ 'inherit', 'include', 'exclude' ],
+            value = 'inherit',
+        ),
+        event_functions = dict(
+            value = 'on_select_provider_native_tools_policy' ),
     ),
     'toggle_functions_display': dict(
         component_class = Toggle,
