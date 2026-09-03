@@ -135,3 +135,59 @@ def test_007_upgrade_never_copies_provider_id_as_correlation( ) -> None:
     assert 'correlation_id' not in descriptors[ 0 ]
     assert descriptors[ 0 ][ 'name' ] == 'greet'
     assert descriptors[ 0 ][ 'arguments' ] == { 'x': 1 }
+
+
+def test_008_malformed_json_arguments_elide_single_record( ) -> None:
+    ''' Unparseable single-record arguments yield no descriptor. '''
+    assert _messages.coerce_invocation_arguments( '{not-json' ) is None
+    assert _messages.coerce_invocation_arguments( '[1,2]' ) is None
+    assert _messages.coerce_invocation_arguments( 'null' ) is None
+    assert _messages.upgrade_invocation_data( {
+        'name': 'greet',
+        'arguments': '{not-json',
+    } ) == [ ]
+    content, extra = _standardize_invocation_requests_v0( _state( {
+        'name': 'greet',
+        'arguments': '{not-json',
+    } ) )
+    assert loads( content ) == [ ]
+    assert extra[ 'name' ] == 'greet'
+
+
+def test_009_malformed_json_arguments_omit_tool_call_item( ) -> None:
+    ''' Bad tool_calls item is omitted; valid siblings retained. '''
+    raw = {
+        'tool_calls': [
+            {
+                'id': 'call_bad',
+                'type': 'function',
+                'function': {
+                    'name': 'greet',
+                    'arguments': '{not-json',
+                },
+            },
+            {
+                'id': 'call_good',
+                'type': 'function',
+                'function': {
+                    'name': 'read',
+                    'arguments': '{"location":"x"}',
+                },
+            },
+        ],
+    }
+    descriptors = _messages.upgrade_invocation_data( raw )
+    assert descriptors == [
+        { 'name': 'read', 'arguments': { 'location': 'x' } },
+    ]
+
+
+def test_010_malformed_descriptor_list_item_omitted( ) -> None:
+    ''' Bad arguments on one list descriptor omit only that item. '''
+    raw = [
+        { 'name': 'bad', 'arguments': '{nope' },
+        { 'name': 'good', 'arguments': { 'ok': True } },
+    ]
+    assert _messages.upgrade_invocation_data( raw ) == [
+        { 'name': 'good', 'arguments': { 'ok': True } },
+    ]

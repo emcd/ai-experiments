@@ -167,3 +167,27 @@ def test_006_oneshot_save_shape_is_post_r2_descriptors( ) -> None:
     }
     # dumps must succeed for persistence JSON.
     dumps( saved_attrs[ 'invocation_data' ] )
+
+
+def test_007_restore_malformed_arguments_never_become_descriptors( ) -> None:
+    ''' Malformed JSON arguments must not produce executable descriptors. '''
+    state = {
+        'role': Role.Invocation.value,
+        'attributes': {
+            'invocation_data': {
+                'tool_calls': [ {
+                    'id': 'call_bad',
+                    'type': 'function',
+                    'function': {
+                        'name': 'greet',
+                        'arguments': '{not-json',
+                    },
+                } ],
+            },
+        },
+        'contents': [ ],
+    }
+    canister = _restore( state )
+    assert canister.attributes.invocation_data == [ ]
+    # Empty list means extract/execute will not invent a local call.
+    assert not canister.attributes.invocation_data

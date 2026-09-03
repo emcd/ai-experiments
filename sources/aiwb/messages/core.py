@@ -269,11 +269,15 @@ def create_content( data, /, **descriptor ):
 
 def coerce_invocation_arguments(
     raw: __.typx.Any,
-) -> dict[ str, __.typx.Any ]:
+) -> __.typx.Optional[ dict[ str, __.typx.Any ] ]:
     ''' Coerces persisted tool arguments to a plain mapping.
 
         Accepts a mapping or a JSON object string (OpenAI wire form).
-        Malformed values yield an empty mapping so restore never crashes.
+        Returns ``None`` when the value is missing-invalid or unparseable
+        so callers can elide the descriptor (approved ``todos/providers/8``
+        policy: malformed blobs must not become empty-argument calls).
+        Absent arguments default to an empty mapping only when the caller
+        supplies ``{}`` explicitly as the default for a missing key.
     '''
     from json import loads
     if isinstance( raw, __.cabc.Mapping ) and not isinstance(
@@ -282,19 +286,26 @@ def coerce_invocation_arguments(
         return dict( raw )
     if isinstance( raw, str ):
         try: parsed = loads( raw )
-        except Exception: return { }
+        except Exception: return None
         if isinstance( parsed, __.cabc.Mapping ): return dict( parsed )
-        return { }
-    return { }
+        return None
+    return None
 
 
 def _descriptor_from_mapping(
     item: __.cabc.Mapping[ str, __.typx.Any ],
-) -> dict[ str, __.typx.Any ]:
-    ''' Builds one normalized descriptor; never copies provider ids. '''
+) -> __.typx.Optional[ dict[ str, __.typx.Any ] ]:
+    ''' Builds one normalized descriptor; never copies provider ids.
+
+        Returns ``None`` when arguments are unparseable so the caller
+        elides the record instead of inventing empty arguments.
+    '''
+    if 'name' not in item or 'arguments' not in item: return None
+    arguments = coerce_invocation_arguments( item[ 'arguments' ] )
+    if None is arguments: return None
     descriptor: dict[ str, __.typx.Any ] = {
         'name': item[ 'name' ],
-        'arguments': coerce_invocation_arguments( item[ 'arguments' ] ),
+        'arguments': arguments,
     }
     if 'correlation_id' in item:
         descriptor[ 'correlation_id' ] = item[ 'correlation_id' ]
@@ -314,13 +325,21 @@ def _upgrade_descriptor_sequence(
         for item in raw
     ):
         return [ ]
-    return [ _descriptor_from_mapping( item ) for item in raw ]
+    upgraded: list[ dict[ str, __.typx.Any ] ] = [ ]
+    for item in raw:
+        descriptor = _descriptor_from_mapping( item )
+        if descriptor is not None:
+            upgraded.append( descriptor )
+    return upgraded
 
 
 def _upgrade_tool_calls_envelope(
     raw: __.cabc.Mapping[ str, __.typx.Any ],
 ) -> list[ dict[ str, __.typx.Any ] ]:
-    ''' Extracts descriptors from an OpenAI-style tool_calls envelope. '''
+    ''' Extracts descriptors from an OpenAI-style tool_calls envelope.
+
+        Omits individual tool_call entries whose arguments are unparseable.
+    '''
     tool_calls = raw.get( 'tool_calls' ) or ( )
     if not isinstance( tool_calls, __.cabc.Sequence ) or isinstance(
         tool_calls, ( str, bytes )
@@ -332,10 +351,15 @@ def _upgrade_tool_calls_envelope(
         function = tool_call.get( 'function', { } )
         if not isinstance( function, __.cabc.Mapping ): continue
         if 'name' not in function: continue
+        # Missing arguments key → empty mapping (valid no-arg call).
+        if 'arguments' not in function:
+            arguments: __.typx.Optional[ dict[ str, __.typx.Any ] ] = { }
+        else:
+            arguments = coerce_invocation_arguments( function[ 'arguments' ] )
+        if None is arguments: continue
         upgraded.append( {
             'name': function[ 'name' ],
-            'arguments': coerce_invocation_arguments(
-                function.get( 'arguments', { } ) ),
+            'arguments': arguments,
         } )
     return upgraded
 
@@ -358,23 +382,25 @@ def upgrade_invocation_data(
           elide to an empty list (no crash; no honest replay).
         * Provider-issued ids are never written as ``correlation_id``.
     '''
+    upgraded: list[ dict[ str, __.typx.Any ] ] = [ ]
     if (    isinstance( raw, __.cabc.Sequence )
         and not isinstance( raw, ( str, bytes ) )
     ):
-        return _upgrade_descriptor_sequence( raw )
-    if not isinstance( raw, __.cabc.Mapping ): return [ ]
-    # Explicit elide: legacy single-call wire key without modern shapes.
-    if (
-            'function_call' in raw
-        and 'tool_calls' not in raw
-        and not ( 'name' in raw and 'arguments' in raw )
-    ):
-        return [ ]
-    if 'tool_calls' in raw:
-        return _upgrade_tool_calls_envelope( raw )
-    if 'name' in raw and 'arguments' in raw:
-        return [ _descriptor_from_mapping( raw ) ]
-    return [ ]
+        upgraded = _upgrade_descriptor_sequence( raw )
+    elif isinstance( raw, __.cabc.Mapping ):
+        # Explicit elide: legacy single-call wire key without modern shapes.
+        if (
+                'function_call' in raw
+            and 'tool_calls' not in raw
+            and not ( 'name' in raw and 'arguments' in raw )
+        ):
+            upgraded = [ ]
+        elif 'tool_calls' in raw:
+            upgraded = _upgrade_tool_calls_envelope( raw )
+        elif 'name' in raw and 'arguments' in raw:
+            descriptor = _descriptor_from_mapping( raw )
+            upgraded = [ descriptor ] if descriptor is not None else [ ]
+    return upgraded
 
 
 def _is_provider_invocation_envelope( raw: __.typx.Any ) -> bool:
