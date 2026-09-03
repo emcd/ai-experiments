@@ -27,7 +27,7 @@
 
 ## 4. Tests and validation
 
-- [ ] 4.1 Mock multi-tool invocation smoke (per `todos/invocables/3`): mock converser + mock invokers through `extract_invocation_requests` → `gather_async` → `_deactivate_duplicate_invocations`. Coverage: parallel tool calls, dedup supersession via `IoContentDeduplicator`, correlation-ID-based linkage, display projection boundary.
+- [x] 4.1 Mock multi-tool invocation smoke (per `todos/invocables/3`): mock converser + mock invokers through `extract_invocation_requests` → `gather_async` → `_deactivate_duplicate_invocations`. Coverage: parallel tool calls, dedup supersession via `IoContentDeduplicator`, correlation-ID-based linkage, display projection boundary.
 - [x] 4.2 Run `hatch --env develop run pyright` and Ruff over touched files (per `pyproject.toml` linters).
 - [x] 4.3 Run `hatch run aiwb-application inspect` (non-GUI; do **not** use `hatch run aiwb inspect`, which launches GUI/browser per the standing note in `coordination/general/1`).
 - [ ] 4.4 Live smoke for OpenAI Chat Completions tool calls (BE Providers lane per coordination/general/2 lane ownership). OpenAI Responses API smoke is deferred to `todos/providers/3` because Responses API implementation is out of scope for R2.
