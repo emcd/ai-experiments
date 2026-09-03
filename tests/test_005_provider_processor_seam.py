@@ -337,20 +337,87 @@ def test_provider_excluded_from_selectable( ):
 
 
 def test_provider_excluded_under_include_policy( ):
-    ''' Even when ``provider_native_tools_policy`` is set to ``include``
-        (the future "visible-but-disabled" mode), the current seam
-        keeps Provider invokers out of the selectable options. The
-        disabled-row rendering is the next phase of section 3.2. '''
+    ''' Per OpenSpec section 3.2: the include policy surfaces Provider
+        invokers in the disabled-column for visibility, not in the
+        selectable options. The selector's ``multichoice.options`` stays
+        Application-only regardless of policy value. '''
     invokers = {
         'code_interpreter': _build_provider_invoker( 'code_interpreter' ),
     }
     options = _do_provide_selection(
         invokers,
         configuration = { 'provider_native_tools_policy': 'include' } )
-    # The seam is conservative: regardless of policy value, the
-    # Provider invoker is excluded until the disabled-row rendering
-    # lands.
     assert 'code_interpreter' not in options
+
+
+# -- Policy resolution and disabled column ---------------------------------
+
+def _resolve_policy( configuration, per_conversation_override ):
+    from sources.aiwb.gui import updaters as _updaters
+    return _updaters._resolve_provider_native_tools_policy(
+        configuration, per_conversation_override )
+
+
+def _disabled_specs(
+    invokers, associated_functions, effective_policy,
+):
+    from sources.aiwb.gui import updaters as _updaters
+    return _updaters._provider_disabled_button_specs(
+        invokers, associated_functions, effective_policy )
+
+
+def test_policy_resolution_default_excludes( ):
+    ''' No global config and no per-conversation override -> exclude. '''
+    assert _resolve_policy( { }, None ) == 'exclude'
+
+
+def test_policy_resolution_global_include( ):
+    ''' Global config ``include`` -> include (with no override). '''
+    assert _resolve_policy(
+        { 'provider_native_tools_policy': 'include' }, None ) == 'include'
+
+
+def test_policy_resolution_override_overrides_global( ):
+    ''' Per-conversation override takes precedence over global default.
+    '''
+    # Per-conversation True overrides global exclude.
+    assert _resolve_policy(
+        { 'provider_native_tools_policy': 'exclude' }, True ) == 'include'
+    # Per-conversation False overrides global include.
+    assert _resolve_policy(
+        { 'provider_native_tools_policy': 'include' }, False ) == 'exclude'
+
+
+def test_disabled_specs_only_when_include( ):
+    ''' ``_provider_disabled_button_specs`` returns ``[]`` unless the
+        policy resolves to ``include``. '''
+    invokers = {
+        'read': _build_application_invoker( 'read' ),
+        'code_interpreter': _build_provider_invoker( 'code_interpreter' ),
+    }
+    associated = { 'read': True, 'code_interpreter': True }
+    # exclude -> empty
+    assert _disabled_specs( invokers, associated, 'exclude' ) == [ ]
+    # include -> one entry per Provider invoker
+    specs = _disabled_specs( invokers, associated, 'include' )
+    assert len( specs ) == 1
+    name, description = specs[ 0 ]
+    assert name == 'code_interpreter'
+    assert 'server-side' in description
+    assert 'cannot' in description
+
+
+def test_disabled_specs_filters_unassociated( ):
+    ''' ``_provider_disabled_button_specs`` honors the prompt's
+        ``associated_functions``: a Provider invoker not opted into the
+        prompt does not appear in the disabled column. '''
+    invokers = {
+        'read': _build_application_invoker( 'read' ),
+        'code_interpreter': _build_provider_invoker( 'code_interpreter' ),
+    }
+    # ``code_interpreter`` is not in associated_functions.
+    associated = { 'read': True }
+    assert _disabled_specs( invokers, associated, 'include' ) == [ ]
 
 
 # -- Display projection invariant -----------------------------------------
@@ -427,3 +494,23 @@ def test_007_provider_excluded_under_include_policy( ):
 
 def test_008_default_projection_carries_provider_label( ):
     test_default_projection_carries_provider_label( )
+
+
+def test_009_policy_resolution_default_excludes( ):
+    test_policy_resolution_default_excludes( )
+
+
+def test_010_policy_resolution_global_include( ):
+    test_policy_resolution_global_include( )
+
+
+def test_011_policy_resolution_override_overrides_global( ):
+    test_policy_resolution_override_overrides_global( )
+
+
+def test_012_disabled_specs_only_when_include( ):
+    test_disabled_specs_only_when_include( )
+
+
+def test_013_disabled_specs_filters_unassociated( ):
+    test_disabled_specs_filters_unassociated( )
