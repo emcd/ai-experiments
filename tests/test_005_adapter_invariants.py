@@ -369,3 +369,179 @@ def test_007_openai_invocation_nativize_provider_ids_only( ) -> None:
     assert harness_id not in str( wire )
     # Application pairing field stays on canister only.
     assert attributes.invocation_data[ 0 ][ 'correlation_id' ] == harness_id
+
+
+def test_008_openai_requests_from_canister_refuses_provider_collision(
+) -> None:
+    ''' OpenAI extract refuses Provider descriptor name collision. '''
+    from sources.aiwb.providers import exceptions as _exceptions
+
+    class _TrackingInvoker( _StubInvoker ):
+        def __init__( self, name: str ):
+            super( ).__init__( name )
+            self.calls = 0
+
+        async def __call__( self, *posargs: Any, **nomargs: Any ):
+            self.calls += 1
+            return await super( ).__call__( *posargs, **nomargs )
+
+    invoker = _TrackingInvoker( 'read' )
+    attributes = SimpleNamespace(
+        invocation_data = [ {
+            'name': 'read',
+            'arguments': { 'location': 'mock://x' },
+            'processor': 'provider',
+        } ],
+        model_context = {
+            'provider': 'openai',
+            'model': 'gpt-test',
+            'supplement': { 'tool_calls': [ {
+                'id': 'call_provider_native',
+                'type': 'function',
+                'function': {
+                    'name': 'read',
+                    'arguments': '{"location":"mock://x"}',
+                },
+            } ] },
+        },
+    )
+    canister = MessageRole.Invocation.produce_canister(
+        attributes = attributes )
+    try:
+        _openai.Conversers( ).requests_from_canister(
+            _StubModel( 'openai', 'gpt-test' ),
+            None,
+            supplements = __.accret.Dictionary( ),
+            canister = canister,
+            invocables = __.accret.Namespace(
+                invokers = { 'read': invoker } ),
+        )
+    except _exceptions.ProviderInvocationLocalExecution as exc:
+        assert 'read' in str( exc )
+        assert 0 == invoker.calls
+        return
+    raise AssertionError( 'Expected ProviderInvocationLocalExecution.' )
+
+
+def test_009_anthropic_requests_from_canister_refuses_provider_collision(
+) -> None:
+    ''' Anthropic extract refuses Provider descriptor name collision. '''
+    from sources.aiwb.providers import exceptions as _exceptions
+
+    class _TrackingInvoker( _StubInvoker ):
+        def __init__( self, name: str ):
+            super( ).__init__( name )
+            self.calls = 0
+
+        async def __call__( self, *posargs: Any, **nomargs: Any ):
+            self.calls += 1
+            return await super( ).__call__( *posargs, **nomargs )
+
+    invoker = _TrackingInvoker( 'read' )
+    attributes = SimpleNamespace(
+        invocation_data = [ {
+            'name': 'read',
+            'arguments': { 'location': 'mock://x' },
+            'processor': 'provider',
+        } ],
+        model_context = {
+            'provider': 'anthropic',
+            'model': 'claude-test',
+            'supplement': { 'tool_use': [ {
+                'id': 'toolu_provider_native',
+                'name': 'read',
+                'input': { 'location': 'mock://x' },
+            } ] },
+        },
+    )
+    canister = MessageRole.Invocation.produce_canister(
+        attributes = attributes )
+    try:
+        _anthropic.Conversers( ).requests_from_canister(
+            _StubModel( 'anthropic', 'claude-test' ),
+            None,
+            supplements = __.accret.Dictionary( ),
+            canister = canister,
+            invocables = __.accret.Namespace(
+                invokers = { 'read': invoker } ),
+        )
+    except _exceptions.ProviderInvocationLocalExecution as exc:
+        assert 'read' in str( exc )
+        assert 0 == invoker.calls
+        return
+    raise AssertionError( 'Expected ProviderInvocationLocalExecution.' )
+
+
+def test_010_gui_extract_refuses_provider_collision_before_execute(
+) -> None:
+    ''' GUI extract_invocation_requests fails closed before local execute. '''
+    import asyncio
+    from unittest.mock import AsyncMock, patch
+
+    from sources.aiwb.gui import invocables as _gui_invocables
+    from sources.aiwb.providers import exceptions as _exceptions
+
+    class _TrackingInvoker( _StubInvoker ):
+        def __init__( self, name: str ):
+            super( ).__init__( name )
+            self.calls = 0
+
+        async def __call__( self, *posargs: Any, **nomargs: Any ):
+            self.calls += 1
+            return await super( ).__call__( *posargs, **nomargs )
+
+    invoker = _TrackingInvoker( 'read' )
+    attributes = SimpleNamespace(
+        invocation_data = [ {
+            'name': 'read',
+            'arguments': { 'location': 'mock://gui' },
+            'processor': 'provider',
+        } ],
+        model_context = {
+            'provider': 'openai',
+            'model': 'gpt-test',
+            'supplement': { 'tool_calls': [ {
+                'id': 'call_gui_collision',
+                'type': 'function',
+                'function': {
+                    'name': 'read',
+                    'arguments': '{"location":"mock://gui"}',
+                },
+            } ] },
+        },
+    )
+    canister = MessageRole.Invocation.produce_canister(
+        attributes = attributes )
+    history_entry = SimpleNamespace(
+        gui__ = SimpleNamespace( canister__ = canister ) )
+    components = SimpleNamespace(
+        column_conversation_history = [ history_entry ],
+        auxdata__ = SimpleNamespace(
+            invocables = __.accret.Namespace(
+                invokers = { 'read': invoker } ),
+        ),
+    )
+    model = _StubModel( 'openai', 'gpt-test' )
+    model.client = SimpleNamespace( conversers = _openai.Conversers( ) )
+
+    async def _run( ):
+        with (
+            patch.object(
+                _gui_invocables._providers, 'package_controls',
+                return_value = { },
+            ),
+            patch.object(
+                _gui_invocables._providers, 'access_model_selection',
+                new = AsyncMock( return_value = model ),
+            ),
+        ):
+            return await _gui_invocables.extract_invocation_requests(
+                components )
+
+    try:
+        asyncio.get_event_loop( ).run_until_complete( _run( ) )
+    except _exceptions.ProviderInvocationLocalExecution as exc:
+        assert 'read' in str( exc )
+        assert 0 == invoker.calls
+        return
+    raise AssertionError( 'Expected ProviderInvocationLocalExecution.' )
