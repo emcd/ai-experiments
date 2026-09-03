@@ -43,7 +43,7 @@ class Control( __.immut.DataclassObject ):
 
     address: __.typx.Annotated[
         str, __.tyro.conf.arg( name = 'gui-address', prefix_name = False )
-    ] = '127.0.0.1'
+    ] = 'localhost'
     open_browser: __.typx.Annotated[
         bool, __.tyro.conf.arg( prefix_name = False )
     ] = True
@@ -82,10 +82,15 @@ async def _execute_server_thread(
 def _start_gui(
     components: __.types.SimpleNamespace, control: Control
 ) -> __.typx.Any: # TODO: Proper type.
+    websocket_origin = None if not control.port else [
+        f'localhost:{control.port}',
+        f'127.0.0.1:{control.port}',
+    ]
     return components.template__.show(
         address = control.address,
         autoreload = control.reload,
         open = control.open_browser,
         port = control.port,
         threaded = True,
-        title = 'AI Workbench' )
+        title = 'AI Workbench',
+        websocket_origin = websocket_origin )

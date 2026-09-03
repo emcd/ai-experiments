@@ -36,7 +36,7 @@ mkdir -p "$STATE_DIR"
 STATE_DIR="$(cd "$STATE_DIR" && pwd)"
 PID_FILE="$STATE_DIR/.aiwb-gui-pids"
 GUI_PORT=5006
-GUI_ADDRESS="127.0.0.1"
+GUI_ADDRESS="localhost"
 
 # --- Kill previous harness-owned run if PID file exists ---
 # Tear down the recorded process group (setsid session leader). This
