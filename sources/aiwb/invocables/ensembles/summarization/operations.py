@@ -50,7 +50,7 @@ async def analyze(
 
 
 def _access_tokens_limit( context ):
-    model = context.supplements[ 'model' ]
+    model = context.model
     return model.attributes.tokens_limits.total
 
 
@@ -59,8 +59,8 @@ async def _analyze_file( context, path, control = None ):
         AssistantCanister, Canister, SupervisorCanister, UserCanister )
     from ....providers import conversation_reactors_minimal
     auxdata = context.auxdata
-    controls = context.supplements[ 'controls' ]
-    model = context.supplements[ 'model' ]
+    controls = context.controls
+    model = context.model
     conversers = model.client.conversers
     ai_messages = [ ]
     format_name = model.attributes.format_preferences.request_data.value
@@ -100,7 +100,7 @@ async def _analyze_http( context, url, control = None ):
 
 
 async def _count_tokens( context, content ):
-    model = context.supplements[ 'model' ]
+    model = context.model
     return await model.client.conversers.count_text_tokens(
         model, str( content ) )
 
@@ -124,8 +124,8 @@ async def _discriminate_dirents( context, dirents, control = None ):
     from ....messages import Canister, SupervisorCanister, UserCanister
     from ....providers import conversation_reactors_minimal
     auxdata = context.auxdata
-    controls = context.supplements[ 'controls' ]
-    model = context.supplements[ 'model' ]
+    controls = context.controls
+    model = context.model
     conversers = model.client.conversers
     format_name = model.attributes.format_preferences.request_data.value
     prompt = (
@@ -262,7 +262,7 @@ async def _read_http_core( context, url ):
 
 def _render_analysis_prompt( context, control, content, mime_type ):
     auxdata = context.auxdata
-    model = context.supplements[ 'model' ]
+    model = context.model
     control = control or { }
     instructions = control.get( 'instructions', '' )
     if control.get( 'mode', 'supplement' ):
