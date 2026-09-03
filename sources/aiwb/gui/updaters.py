@@ -775,13 +775,29 @@ async def update_invocations_prompt( components ):
 
 def _resolve_per_conversation_override( components ):
     ''' Returns the per-conversation ``provider_native_tools_policy``
-        override from the toggle's ``value`` attribute, or ``None`` if
-        the toggle is not present on this conversation. The toggle is
-        added to the conversation layout so the value round-trips via
-        the existing collect/inject machinery.'''
-    toggle = getattr( components, 'toggle_provider_native_tools_policy', None )
-    if toggle is None: return None
-    return getattr( toggle, 'value', None )
+        override as a tri-state, derived from the Select control's
+        ``value`` attribute on the conversation layout.
+
+        The Select's options are ``'inherit'`` (defer to global
+        default), ``'include'``, ``'exclude'``. The control is rendered
+        with default ``'inherit'`` so a fresh conversation does not
+        silently override the global ``provider_native_tools_policy``
+        in ``auxdata.configuration``. The Select's ``value`` round-trips
+        via the existing collect/inject machinery on the layout's
+        ``value`` attribute path. No migration code change.
+
+        Returns ``None`` for ``'inherit'`` (or for a missing control,
+        e.g. on conversations created before the seam was introduced),
+        ``True`` for ``'include'``, ``False`` for ``'exclude'``. Any
+        unexpected string is treated as ``None`` so legacy data does
+        not silently flip the policy.'''
+    control = getattr(
+        components, 'toggle_provider_native_tools_policy', None )
+    if control is None: return None
+    raw = getattr( control, 'value', None )
+    if raw == 'include': return True
+    if raw == 'exclude': return False
+    return None
 
 
 def _resolve_provider_native_tools_policy(

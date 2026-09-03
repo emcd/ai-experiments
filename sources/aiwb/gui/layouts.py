@@ -388,18 +388,19 @@ system_prompts_layout = {
     'toggle_provider_native_tools_policy': dict(
         # Per OpenSpec define-invocation-data-contract section 3.2
         # (Three-Layer Tool-Source Model): per-conversation opt-in for
-        # the Provider processor visibility seam. ``False`` (default)
-        # honors the global ``provider_native_tools_policy`` in
-        # ``auxdata.configuration``; ``True`` overrides to ``include``
-        # and surfaces Provider tools in the disabled-row column with
-        # tooltip. Persisted via the existing
+        # the Provider processor visibility seam. A three-state ``Select``
+        # is used (not a ``Toggle``) because the seam needs an explicit
+        # ``inherit`` sentinel so a fresh conversation does not
+        # silently override the global ``provider_native_tools_policy``
+        # default. ``inherit`` defers to the global; ``include`` /
+        # ``exclude`` override. Persisted via the existing
         # collect_conversation/inject_conversation machinery on the
         # layout's ``value`` attribute path. No migration code change.
-        component_class = Toggle,
+        component_class = Select,
         component_arguments = dict(
-            name = 'Show Provider tools',
-            value = False,
-            **_icon_button_attributes,
+            name = 'Provider tools',
+            options = [ 'inherit', 'include', 'exclude' ],
+            value = 'inherit',
         ),
     ),
     'toggle_functions_display': dict(

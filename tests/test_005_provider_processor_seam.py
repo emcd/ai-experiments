@@ -358,6 +358,26 @@ def _resolve_policy( configuration, per_conversation_override ):
         configuration, per_conversation_override )
 
 
+def _resolve_per_conversation( select_value ):
+    ''' Wraps ``_resolve_per_conversation_override`` for tests by
+        simulating a Select control with the given ``value``. The Select's
+        ``value`` is what the layout's collect_conversation/inject
+        conversation machinery round-trips; a real fresh conversation
+        control has ``value == 'inherit'``, which the resolver maps to
+        ``None`` so the global default is honored.'''
+    from sources.aiwb.gui import updaters as _updaters
+    if select_value is None:
+        # Simulate a conversation created before the seam was
+        # introduced; the toggle attribute is absent.
+        components = _types.SimpleNamespace( )
+    else:
+        components = _types.SimpleNamespace(
+            toggle_provider_native_tools_policy = _types.SimpleNamespace(
+                value = select_value ),
+        )
+    return _updaters._resolve_per_conversation_override( components )
+
+
 def _disabled_specs(
     invokers, associated_functions, effective_policy,
 ):
@@ -366,26 +386,78 @@ def _disabled_specs(
         invokers, associated_functions, effective_policy )
 
 
-def test_policy_resolution_default_excludes( ):
-    ''' No global config and no per-conversation override -> exclude. '''
-    assert _resolve_policy( { }, None ) == 'exclude'
-
-
-def test_policy_resolution_global_include( ):
-    ''' Global config ``include`` -> include (with no override). '''
+def test_fresh_conversation_inherits_global_include( ):
+    ''' Fresh conversation with Select.value == 'inherit' and global
+        config ``include`` -> effective policy ``include``. This is the
+        regression case the prior Toggle ``value=False`` default missed:
+        a fresh conversation would silently override the global include
+        to exclude because ``False`` is a valid override value, not an
+        inherit sentinel. '''
+    components = _types.SimpleNamespace(
+        toggle_provider_native_tools_policy = _types.SimpleNamespace(
+            value = 'inherit' ),
+    )
+    from sources.aiwb.gui import updaters as _updaters
+    override = _updaters._resolve_per_conversation_override( components )
+    assert override is None
     assert _resolve_policy(
-        { 'provider_native_tools_policy': 'include' }, None ) == 'include'
+        { 'provider_native_tools_policy': 'include' }, override ) == 'include'
 
 
-def test_policy_resolution_override_overrides_global( ):
-    ''' Per-conversation override takes precedence over global default.
-    '''
-    # Per-conversation True overrides global exclude.
+def test_fresh_conversation_inherits_global_exclude( ):
+    ''' Fresh conversation + global exclude -> exclude. '''
+    override = _resolve_per_conversation( 'inherit' )
+    assert override is None
     assert _resolve_policy(
-        { 'provider_native_tools_policy': 'exclude' }, True ) == 'include'
-    # Per-conversation False overrides global include.
+        { 'provider_native_tools_policy': 'exclude' }, override ) == 'exclude'
+
+
+def test_fresh_conversation_no_global_config_default_excludes( ):
+    ''' Fresh conversation with no global config and Select.value ==
+        'inherit' -> exclude (the safe default). '''
+    override = _resolve_per_conversation( 'inherit' )
+    assert override is None
+    assert _resolve_policy( { }, override ) == 'exclude'
+
+
+def test_persisted_override_include_overrides_global_exclude( ):
+    ''' Restored Select.value == 'include' overrides a global exclude.
+        This is the round-tripped-from-save scenario.'''
+    override = _resolve_per_conversation( 'include' )
+    assert override is True
     assert _resolve_policy(
-        { 'provider_native_tools_policy': 'include' }, False ) == 'exclude'
+        { 'provider_native_tools_policy': 'exclude' }, override ) == 'include'
+
+
+def test_persisted_override_exclude_overrides_global_include( ):
+    ''' Restored Select.value == 'exclude' overrides a global include.'''
+    override = _resolve_per_conversation( 'exclude' )
+    assert override is False
+    assert _resolve_policy(
+        { 'provider_native_tools_policy': 'include' }, override ) == 'exclude'
+
+
+def test_unknown_select_value_falls_through_to_global( ):
+    ''' A Select value that is not one of ``'inherit'``, ``'include'``,
+        ``'exclude'`` (e.g., legacy persisted data) is treated as
+        ``None`` so the resolver falls through to the global default
+        instead of silently flipping the policy. '''
+    override = _resolve_per_conversation( 'legacy_default' )
+    assert override is None
+    assert _resolve_policy(
+        { 'provider_native_tools_policy': 'include' }, override ) == 'include'
+
+
+def test_missing_control_falls_through_to_global( ):
+    ''' Conversations created before the seam was introduced have no
+        ``toggle_provider_native_tools_policy`` attribute; the resolver
+        returns ``None`` so the global default is honored. '''
+    components = _types.SimpleNamespace( )
+    from sources.aiwb.gui import updaters as _updaters
+    override = _updaters._resolve_per_conversation_override( components )
+    assert override is None
+    assert _resolve_policy(
+        { 'provider_native_tools_policy': 'include' }, override ) == 'include'
 
 
 def test_disabled_specs_only_when_include( ):
@@ -496,21 +568,37 @@ def test_008_default_projection_carries_provider_label( ):
     test_default_projection_carries_provider_label( )
 
 
-def test_009_policy_resolution_default_excludes( ):
-    test_policy_resolution_default_excludes( )
+def test_009_fresh_inherits_global_include( ):
+    test_fresh_conversation_inherits_global_include( )
 
 
-def test_010_policy_resolution_global_include( ):
-    test_policy_resolution_global_include( )
+def test_010_fresh_inherits_global_exclude( ):
+    test_fresh_conversation_inherits_global_exclude( )
 
 
-def test_011_policy_resolution_override_overrides_global( ):
-    test_policy_resolution_override_overrides_global( )
+def test_011_fresh_default_excludes_no_global( ):
+    test_fresh_conversation_no_global_config_default_excludes( )
 
 
-def test_012_disabled_specs_only_when_include( ):
+def test_012_persisted_include_overrides_exclude( ):
+    test_persisted_override_include_overrides_global_exclude( )
+
+
+def test_013_persisted_exclude_overrides_include( ):
+    test_persisted_override_exclude_overrides_global_include( )
+
+
+def test_014_unknown_select_value_inherits( ):
+    test_unknown_select_value_falls_through_to_global( )
+
+
+def test_015_missing_control_inherits( ):
+    test_missing_control_falls_through_to_global( )
+
+
+def test_016_disabled_specs_only_when_include( ):
     test_disabled_specs_only_when_include( )
 
 
-def test_013_disabled_specs_filters_unassociated( ):
+def test_017_disabled_specs_filters_unassociated( ):
     test_disabled_specs_filters_unassociated( )
